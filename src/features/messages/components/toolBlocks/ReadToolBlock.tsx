@@ -14,6 +14,7 @@ import {
   resolveToolStatus,
 } from './toolConstants';
 import { FileIcon } from './FileIcon';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 import { Markdown } from '../Markdown';
 
 interface ReadToolBlockProps {
@@ -135,7 +136,7 @@ export const ReadToolBlock = memo(function ReadToolBlock({
             </span>
           )}
         </div>
-        <div className={`tool-status-indicator ${isError ? 'error' : isCompleted ? 'completed' : 'pending'}`} />
+        <ToolStatusIndicator compact tone={isError ? 'error' : isCompleted ? 'completed' : 'pending'} />
       </div>
 
       {expanded && renderedOutput && (

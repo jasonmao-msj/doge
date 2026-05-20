@@ -2,7 +2,7 @@
 
 .message {
   display: flex;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
   content-visibility: auto;
   contain-intrinsic-block-size: auto 120px;
 }
@@ -36,6 +36,7 @@
 
 .message.message-agent-task {
   justify-content: flex-start;
+  margin-bottom: 18px;
 }
 
 .bubble {
@@ -43,8 +44,9 @@
   padding: 10px 14px;
   border-radius: 12px;
   background: var(--surface-bubble);
-  font-size: 14px;
-  line-height: 1.45;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
   overflow-wrap: break-word;
   word-break: break-word;
   min-width: 0;
@@ -116,16 +118,13 @@
 }
 
 .message.user .bubble {
-  max-width: 85%;
+  max-width: min(720px, 82%);
   margin-left: auto;
-  background: var(--color-message-user-bg, var(--surface-bubble-user));
-  color: var(--color-message-user-text, #ffffff);
-  border-radius: 12px 12px 2px 12px;
-  border: 1px solid color-mix(
-    in srgb,
-    var(--color-message-user-text, #ffffff) 10%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--surface-card) 74%, var(--surface-messages));
+  color: var(--text-stronger);
+  border-radius: 22px;
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 30%, transparent);
+  box-shadow: none;
 }
 
 .message.user.message-agent-task .bubble {
@@ -141,7 +140,7 @@
 .message.assistant .bubble {
   max-width: 100%;
   width: 100%;
-  padding: 4px 0;
+  padding: 0;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -149,11 +148,107 @@
 }
 
 .message.assistant.message-agent-task {
-  margin-top: 2px;
+  margin-top: -2px;
 }
 
 .message.assistant .message-bubble-agent-task {
   padding: 0;
+}
+
+.message-agent-task-card {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 6px 0 6px 20px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  position: relative;
+}
+
+.message-agent-task-card::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 9px;
+  bottom: 7px;
+  width: 1px;
+  background: color-mix(in srgb, var(--border-subtle) 72%, transparent);
+}
+
+.message-agent-task-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.message-agent-task-avatar {
+  display: none;
+}
+
+.message-agent-task-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.message-agent-task-eyebrow {
+  color: color-mix(in srgb, var(--text-muted) 76%, transparent);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  line-height: 1.4;
+}
+
+.message-agent-task-title {
+  min-width: 0;
+  color: color-mix(in srgb, var(--text-primary) 82%, transparent);
+  font-size: 12.5px;
+  font-weight: 560;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-agent-task-subtitle {
+  color: color-mix(in srgb, var(--text-muted) 74%, transparent);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.message-agent-task-status {
+  height: 18px;
+  min-height: 18px;
+  margin-left: 2px;
+  padding-inline: 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.message-agent-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.message-agent-task-chip {
+  min-height: 18px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 44%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-card) 42%, transparent);
+  color: color-mix(in srgb, var(--text-muted) 78%, transparent);
+  font-size: 10.5px;
+  line-height: 18px;
+  white-space: nowrap;
 }
 
 /* status state combinators - kept as keepers due to .is-* state class composition */
@@ -167,21 +262,21 @@
 
 /* status state combinators - kept as keepers due to .is-* state class composition */
 .message-agent-task-status.is-completed {
-  color: #22c55e;
-  border-color: color-mix(in srgb, #22c55e 44%, var(--border-strong));
-  background: color-mix(in srgb, #22c55e 10%, var(--surface-card));
+  color: color-mix(in srgb, var(--status-success, #16a34a) 64%, var(--text-muted));
+  border-color: color-mix(in srgb, var(--status-success, #16a34a) 18%, transparent);
+  background: color-mix(in srgb, var(--status-success, #16a34a) 7%, transparent);
 }
 
 .message-agent-task-status.is-running {
-  color: #38bdf8;
-  border-color: color-mix(in srgb, #38bdf8 44%, var(--border-strong));
-  background: color-mix(in srgb, #38bdf8 10%, var(--surface-card));
+  color: color-mix(in srgb, var(--status-info, #2563eb) 64%, var(--text-muted));
+  border-color: color-mix(in srgb, var(--status-info, #2563eb) 18%, transparent);
+  background: color-mix(in srgb, var(--status-info, #2563eb) 7%, transparent);
 }
 
 .message-agent-task-status.is-error {
-  color: #f87171;
-  border-color: color-mix(in srgb, #f87171 44%, var(--border-strong));
-  background: color-mix(in srgb, #f87171 10%, var(--surface-card));
+  color: color-mix(in srgb, var(--status-error, #dc2626) 70%, var(--text-muted));
+  border-color: color-mix(in srgb, var(--status-error, #dc2626) 18%, transparent);
+  background: color-mix(in srgb, var(--status-error, #dc2626) 7%, transparent);
 }
 
 /* base inlined; descendant .codicon retained as keeper (descendant + animation) */

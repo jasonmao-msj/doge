@@ -16,6 +16,7 @@ import Copy from "lucide-react/dist/esm/icons/copy";
 import Terminal from "lucide-react/dist/esm/icons/terminal";
 import { AgentIcon } from "../../../components/AgentIcon";
 import { ImagePreviewOverlay } from "../../../components/common/ImagePreviewOverlay";
+import { Badge } from "../../../components/ui/badge";
 import { hydrateClaudeDeferredImage } from "../../../services/tauri";
 import type { ConversationItem, QueuedMessage } from "../../../types";
 import { DiffBlock } from "../../git/components/DiffBlock";
@@ -1295,36 +1296,40 @@ export const MessageRow = memo(function MessageRow({
         </div>
       ) : null}
       {agentTaskNotification && agentTaskDisplay ? (
-        <div className="message-agent-task-card grid gap-2.5 px-4 pt-3.5 pb-3 mb-2.5 rounded-[18px] border border-[color-mix(in_srgb,var(--border-strong)_84%,#2563eb_16%)] [background:linear-gradient(180deg,color-mix(in_srgb,var(--surface-card)_88%,#2563eb_12%)_0%,color-mix(in_srgb,var(--surface-card)_95%,transparent)_100%)] [box-shadow:0_16px_36px_color-mix(in_srgb,#020617_18%,transparent),inset_0_1px_0_color-mix(in_srgb,#ffffff_8%,transparent)]">
-          <div className="message-agent-task-header grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-            <div className="message-agent-task-avatar w-[34px] h-[34px] rounded-xl inline-flex items-center justify-center bg-[color-mix(in_srgb,#2563eb_18%,var(--surface-card))] text-[color-mix(in_srgb,#2563eb_64%,var(--text-primary))] border border-[color-mix(in_srgb,#2563eb_22%,var(--border-strong))]" aria-hidden>
+        <div className="message-agent-task-card">
+          <div className="message-agent-task-header">
+            <div className="message-agent-task-avatar" aria-hidden>
               <AgentIcon
                 seed={agentTaskDisplay.title || agentTaskNotification.taskId || item.id}
                 fallback="codicon-hubot"
-                className="message-agent-task-avatar-icon inline-flex"
+                className="message-agent-task-avatar-icon"
                 size={18}
               />
             </div>
-            <div className="message-agent-task-heading min-w-0 grid gap-0.5">
-              <span className="message-agent-task-eyebrow text-[11px] leading-none font-bold tracking-[0.08em] uppercase text-[color-mix(in_srgb,var(--text-muted)_84%,#2563eb_16%)]">Agent session</span>
-              <strong className="message-agent-task-title min-w-0 text-[15px] leading-tight font-bold text-(--text-primary)">{agentTaskDisplay.title}</strong>
+            <div className="message-agent-task-heading">
+              <span className="message-agent-task-eyebrow">Agent session</span>
+              <strong className="message-agent-task-title">{agentTaskDisplay.title}</strong>
               {agentTaskDisplay.subtitle ? (
-                <span className="message-agent-task-subtitle min-w-0 text-xs leading-tight text-(--text-secondary)">{agentTaskDisplay.subtitle}</span>
+                <span className="message-agent-task-subtitle">{agentTaskDisplay.subtitle}</span>
               ) : null}
             </div>
-            <span className={`message-agent-task-status is-${agentTaskDisplay.status.tone} inline-flex items-center justify-center min-h-6 px-2.5 rounded-full border border-(--border-strong) bg-[color-mix(in_srgb,var(--surface-card)_88%,transparent)] text-[11px] font-bold tracking-[0.04em] uppercase text-(--text-secondary)`}>
+            <Badge
+              className={`message-agent-task-status is-${agentTaskDisplay.status.tone}`}
+              size="sm"
+              variant={agentTaskDisplay.status.tone === "error" ? "error" : "secondary"}
+            >
               {agentTaskDisplay.status.label}
-            </span>
+            </Badge>
           </div>
-          <div className="message-agent-task-meta flex flex-wrap gap-2">
+          <div className="message-agent-task-meta">
             {agentTaskNotification.taskId ? (
-              <span className="message-agent-task-chip inline-flex items-center min-h-[22px] px-2.25 rounded-full bg-[color-mix(in_srgb,var(--surface-card)_92%,transparent)] border border-[color-mix(in_srgb,var(--border-strong)_92%,transparent)] text-(--text-secondary) text-[11px] leading-none whitespace-nowrap">task {agentTaskNotification.taskId}</span>
+              <span className="message-agent-task-chip">task {agentTaskNotification.taskId}</span>
             ) : null}
             {agentTaskNotification.toolUseId ? (
-              <span className="message-agent-task-chip inline-flex items-center min-h-[22px] px-2.25 rounded-full bg-[color-mix(in_srgb,var(--surface-card)_92%,transparent)] border border-[color-mix(in_srgb,var(--border-strong)_92%,transparent)] text-(--text-secondary) text-[11px] leading-none whitespace-nowrap">tool {agentTaskNotification.toolUseId}</span>
+              <span className="message-agent-task-chip">tool {agentTaskNotification.toolUseId}</span>
             ) : null}
             {agentTaskDisplay.outputFileName ? (
-              <span className="message-agent-task-chip inline-flex items-center min-h-[22px] px-2.25 rounded-full bg-[color-mix(in_srgb,var(--surface-card)_92%,transparent)] border border-[color-mix(in_srgb,var(--border-strong)_92%,transparent)] text-(--text-secondary) text-[11px] leading-none whitespace-nowrap">{agentTaskDisplay.outputFileName}</span>
+              <span className="message-agent-task-chip">{agentTaskDisplay.outputFileName}</span>
             ) : null}
           </div>
         </div>

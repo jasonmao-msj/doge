@@ -1942,6 +1942,9 @@ const zhPart2 = {
     path: "路径",
     lineRange: "第 {{start}}-{{end}} 行",
     failedCount: "{{count}} 个失败",
+    statusCompleted: "已完成",
+    statusFailed: "失败",
+    statusRunning: "运行中",
   },
 
   // 聊天输入框

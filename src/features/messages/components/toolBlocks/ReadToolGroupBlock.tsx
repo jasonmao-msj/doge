@@ -13,6 +13,7 @@ import {
   resolveToolStatus,
 } from './toolConstants';
 import { FileIcon } from './FileIcon';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 
 type ToolItem = Extract<ConversationItem, { kind: 'tool' }>;
 
@@ -202,9 +203,10 @@ export const ReadToolGroupBlock = memo(function ReadToolGroupBlock({
                   {entry.lineInfo}
                 </span>
               )}
-              <div
-                className={`tool-status-indicator ${entry.isError ? 'error' : entry.isCompleted ? 'completed' : 'pending'}`}
-                style={{ marginLeft: '8px' }}
+              <ToolStatusIndicator
+                compact
+                className="tool-list-status"
+                tone={entry.isError ? 'error' : entry.isCompleted ? 'completed' : 'pending'}
               />
             </div>
           ))}

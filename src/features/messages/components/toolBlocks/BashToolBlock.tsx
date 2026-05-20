@@ -12,6 +12,7 @@ import {
   truncateText,
   resolveToolStatus,
 } from './toolConstants';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 
 interface BashToolBlockProps {
   item: Extract<ConversationItem, { kind: 'tool' }>;
@@ -139,7 +140,7 @@ export const BashToolBlock = memo(function BashToolBlock({
             </span>
           ) : null}
         </div>
-        <div className={`tool-status-indicator ${isError ? 'error' : isCompleted ? 'completed' : 'pending'}`} />
+        <ToolStatusIndicator compact tone={isError ? 'error' : isCompleted ? 'completed' : 'pending'} />
       </div>
 
       {showOutput && (

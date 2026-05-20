@@ -19,6 +19,7 @@ import {
 } from './toolConstants';
 import { computeDiffStats, computeDiffFromUnifiedPatch, type DiffStats } from '../../utils/diffUtils';
 import { FileIcon } from './FileIcon';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 
 type ToolItem = Extract<ConversationItem, { kind: 'tool' }>;
 
@@ -179,7 +180,11 @@ export const EditToolGroupBlock = memo(function EditToolGroupBlock({
                 {item.diff.additions > 0 && <span className="diff-stat-add">+{item.diff.additions}</span>}
                 {item.diff.deletions > 0 && <span className="diff-stat-del">-{item.diff.deletions}</span>}
               </span>
-              <div className={`tool-status-indicator ${item.status === 'failed' ? 'error' : item.status}`} />
+              <ToolStatusIndicator
+                compact
+                className="tool-list-status"
+                tone={item.status === 'failed' ? 'error' : item.status}
+              />
             </div>
           ))}
         </div>

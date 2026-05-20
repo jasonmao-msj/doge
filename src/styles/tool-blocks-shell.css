@@ -9,42 +9,43 @@
    ============================================ */
 
 .task-container {
-  background: var(--bg-primary, var(--surface-card));
-  border: 1px solid var(--border-primary, var(--border-subtle));
-  border-radius: 8px;
-  margin: 8px 0;
-  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin: 2px 0 8px;
+  overflow: visible;
 }
 
-/* 折叠态（无详情体）先隐藏外边框，便于观察更轻量的视觉效果 */
 .task-container.task-container-collapsed,
 .task-container:not(:has(.task-details)) {
   border-color: transparent;
-  border-bottom-color: var(--border-primary, var(--border-subtle));
+  border-bottom-color: transparent;
   border-radius: 0;
 }
 
 .task-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: var(--bg-primary, var(--surface-card));
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 24px;
+  padding: 3px 0;
+  background: transparent;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.2s;
+  transition: opacity 0.16s ease;
 }
 
 .task-header:hover {
-  background: var(--bg-secondary, var(--surface-hover));
+  opacity: 0.82;
 }
 
 .task-title-section {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 7px;
   overflow: hidden;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -85,12 +86,13 @@
 
 .task-details {
   padding: 0;
-  border-top: 1px solid var(--border-primary, var(--border-subtle));
-  background: var(--bg-primary, var(--surface-card));
+  margin: 3px 0 0 24px;
+  border-top: 0;
+  background: transparent;
 }
 
 .task-content-wrapper {
-  padding: 10px;
+  padding: 6px 0 4px;
 }
 
 .task-field {
@@ -115,13 +117,13 @@
 .task-field-content {
   font-size: 11px;
   color: var(--text-primary, var(--text-stronger));
-  line-height: 1.4;
+  line-height: 1.45;
   white-space: pre-wrap;
-  background: var(--bg-secondary, var(--surface-command));
-  padding: 8px;
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface-card) 46%, transparent);
+  padding: 7px 9px;
+  border-radius: 8px;
   font-family: var(--code-font-family, 'SF Mono', 'SFMono-Regular', Menlo, Monaco, monospace);
-  border: 1px solid var(--border-primary, var(--border-subtle));
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 54%, transparent);
 }
 
 .read-tool-rendered-content {
@@ -152,9 +154,9 @@
 
 /* 工具标题样式 */
 .tool-title-icon {
-  color: var(--text-primary);
-  font-size: 14px;
-  margin-right: 4px;
+  color: color-mix(in srgb, var(--text-muted) 72%, transparent);
+  font-size: 13px;
+  margin-right: 0;
 }
 
 .tool-title-icon-file-change {
@@ -175,7 +177,7 @@
 
 .tool-title-text {
   font-weight: 500;
-  font-size: 13px;
-  color: var(--text-secondary, var(--text-stronger));
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--text-muted) 84%, transparent);
   white-space: nowrap;
 }

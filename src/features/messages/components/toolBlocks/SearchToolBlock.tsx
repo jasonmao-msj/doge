@@ -14,6 +14,7 @@ import {
   extractToolName,
   resolveToolStatus,
 } from './toolConstants';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 
 interface SearchToolBlockProps {
   item: Extract<ConversationItem, { kind: 'tool' }>;
@@ -205,7 +206,7 @@ export const SearchToolBlock = memo(function SearchToolBlock({
             </span>
           )}
         </div>
-        <div className={`tool-status-indicator ${isError ? 'error' : isCompleted ? 'completed' : 'pending'}`} />
+        <ToolStatusIndicator compact tone={isError ? 'error' : isCompleted ? 'completed' : 'pending'} />
       </div>
       {isExpanded && hasExpandedDetails && (
         <div className="task-details" style={{ border: 'none' }}>

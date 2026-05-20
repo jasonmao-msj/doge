@@ -14,6 +14,7 @@ import {
   extractToolName,
   type ToolStatusTone,
 } from './toolConstants';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 
 type ToolItem = Extract<ConversationItem, { kind: 'tool' }>;
 
@@ -183,7 +184,7 @@ export const SearchToolGroupBlock = memo(function SearchToolGroupBlock({
             ({items.length})
           </span>
         </div>
-        <div className={`tool-status-indicator ${status === 'failed' ? 'error' : status === 'completed' ? 'completed' : 'pending'}`} />
+        <ToolStatusIndicator compact tone={status === 'failed' ? 'error' : status === 'completed' ? 'completed' : 'pending'} />
       </div>
 
       {isExpanded && (
@@ -234,9 +235,10 @@ export const SearchToolGroupBlock = memo(function SearchToolGroupBlock({
                   ))}
                 </span>
               )}
-              <div
-                className={`tool-status-indicator ${entry.status === 'failed' ? 'error' : entry.status === 'completed' ? 'completed' : 'pending'}`}
-                style={{ marginLeft: '8px', marginRight: 0 }}
+              <ToolStatusIndicator
+                compact
+                className="tool-list-status"
+                tone={entry.status === 'failed' ? 'error' : entry.status === 'completed' ? 'completed' : 'pending'}
               />
             </div>
           ))}

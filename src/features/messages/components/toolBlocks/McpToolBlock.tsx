@@ -11,6 +11,7 @@ import {
   truncateText,
   resolveToolStatus,
 } from './toolConstants';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 
 interface McpToolBlockProps {
   item: Extract<ConversationItem, { kind: 'tool' }>;
@@ -111,7 +112,7 @@ export const McpToolBlock = memo(function McpToolBlock({
             </span>
           )}
         </div>
-        <div className={`tool-status-indicator ${isError ? 'error' : isCompleted ? 'completed' : 'pending'}`} />
+        <ToolStatusIndicator compact tone={isError ? 'error' : isCompleted ? 'completed' : 'pending'} />
       </div>
 
       {expanded && hasDetails && (

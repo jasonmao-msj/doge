@@ -19,6 +19,7 @@ import {
 } from './toolConstants';
 import { computeDiff } from '../../utils/diffUtils';
 import { FileIcon } from './FileIcon';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 
 interface EditToolBlockProps {
   item: Extract<ConversationItem, { kind: 'tool' }>;
@@ -104,7 +105,7 @@ export const EditToolBlock = memo(function EditToolBlock({
             </span>
           )}
         </div>
-        <div className={`tool-status-indicator ${isError ? 'error' : isCompleted ? 'completed' : 'pending'}`} />
+        <ToolStatusIndicator compact tone={isError ? 'error' : isCompleted ? 'completed' : 'pending'} />
       </div>
 
       {expanded && (

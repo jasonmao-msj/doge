@@ -1975,6 +1975,9 @@ const enPart2 = {
     path: "Path",
     lineRange: "Line {{start}}-{{end}}",
     failedCount: "{{count}} failed",
+    statusCompleted: "Completed",
+    statusFailed: "Failed",
+    statusRunning: "Running",
   },
 
   // Chat input box

@@ -16,6 +16,7 @@ import {
   asRecord,
   getFirstCommandField,
 } from './toolConstants';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 
 type ToolItem = Extract<ConversationItem, { kind: 'tool' }>;
 
@@ -200,14 +201,16 @@ export const BashToolGroupBlock = memo(function BashToolGroupBlock({
                 >
                   <div className="bash-timeline-row">
                     <span className="bash-timeline-description">{entry.displayText}</span>
-                    <div
-                      className={`tool-status-indicator ${
+                    <ToolStatusIndicator
+                      compact
+                      className="bash-item-status tool-list-status"
+                      tone={
                         entry.status === 'failed'
                           ? 'error'
                           : entry.status === 'completed'
                             ? 'completed'
                             : 'pending'
-                      } bash-item-status`}
+                      }
                     />
                   </div>
                   {isItemExpanded && (

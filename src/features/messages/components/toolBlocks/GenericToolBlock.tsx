@@ -28,6 +28,7 @@ import {
   resolveToolStatus,
 } from './toolConstants';
 import { FileIcon } from './FileIcon';
+import { ToolStatusIndicator } from './ToolStatusIndicator';
 
 type StatusTone = 'completed' | 'processing' | 'failed' | 'pending';
 type NormalizedChangeKind = 'added' | 'modified' | 'deleted' | 'renamed';
@@ -1431,7 +1432,7 @@ export const GenericToolBlock = memo(function GenericToolBlock({
                   </span>
                 </span>
               </div>
-              <div className={`tool-status-indicator ${status === 'failed' ? 'error' : status === 'completed' ? 'completed' : 'pending'}`} />
+              <ToolStatusIndicator compact tone={status === 'failed' ? 'error' : status === 'completed' ? 'completed' : 'pending'} />
             </div>
                 {isChangeExpanded && (
                   <div className="task-details tool-change-details" style={{ border: 'none' }}>
@@ -1590,7 +1591,7 @@ export const GenericToolBlock = memo(function GenericToolBlock({
             </span>
           )}
         </div>
-        <div className={`tool-status-indicator ${status === 'failed' ? 'error' : status === 'completed' ? 'completed' : 'pending'}`} />
+        <ToolStatusIndicator compact tone={status === 'failed' ? 'error' : status === 'completed' ? 'completed' : 'pending'} />
       </div>
 
       {shouldShowDetails && (

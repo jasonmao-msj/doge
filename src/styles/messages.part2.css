@@ -306,8 +306,9 @@
   overflow-wrap: break-word;
   word-break: break-word;
   min-width: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.68;
   color: var(--text-stronger);
 }
 
@@ -316,7 +317,7 @@
 }
 
 .markdown > * + * {
-  margin-top: 8px;
+  margin-top: 13px;
 }
 
 .markdown pre {
@@ -331,12 +332,12 @@
 }
 
 .message .markdown :not(pre) > code {
-  color: var(--text-stronger);
-  background: color-mix(in srgb, var(--surface-command) 82%, transparent);
-  border: 1px solid var(--border-subtle);
-  padding: 1px 5px;
-  border-radius: 6px;
-  font-size: 0.97em;
+  color: color-mix(in srgb, var(--text-stronger) 88%, var(--text-muted));
+  background: color-mix(in srgb, var(--surface-card) 62%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border-subtle) 44%, transparent);
+  padding: 0.04em 0.34em;
+  border-radius: 7px;
+  font-size: 0.92em;
 }
 
 .message .markdown .katex {
@@ -647,17 +648,18 @@
 }
 
 .markdown ul {
-  padding-left: 24px;
+  padding-left: 22px;
   list-style-type: disc;
 }
 
 .markdown ol {
-  padding-left: 30px;
+  padding-left: 28px;
   list-style-type: decimal;
 }
 
 .markdown li {
   margin-bottom: 4px;
+  line-height: 1.6;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
@@ -671,7 +673,8 @@
 }
 
 .markdown :where(strong) {
-  font-weight: 600;
+  color: color-mix(in srgb, var(--text-strongest, var(--text-stronger)) 88%, var(--text-primary));
+  font-weight: 620;
 }
 
 .markdown :where(em) {
@@ -680,17 +683,18 @@
 
 .markdown :where(h1, h2, h3, h4) {
   font-size: 1em;
-  font-weight: 650;
-  letter-spacing: 0.01em;
+  font-weight: 640;
+  letter-spacing: 0;
+  margin-top: 1.05em;
 }
 
 .markdown :where(blockquote) {
   margin: 0;
-  padding: 6px 10px;
-  border-left: 2px solid var(--border-accent-soft);
-  background: color-mix(in srgb, var(--surface-card-strong) 65%, transparent);
-  border-radius: 6px;
-  color: var(--text-muted);
+  padding: 6px 9px;
+  border-left: 2px solid color-mix(in srgb, var(--border-strong) 58%, transparent);
+  background: color-mix(in srgb, var(--surface-card-strong) 38%, transparent);
+  border-radius: 0 8px 8px 0;
+  color: color-mix(in srgb, var(--text-muted) 92%, var(--text-stronger));
 }
 
 .markdown .markdown-alert-label {
@@ -766,12 +770,12 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin: 6px 0;
-  padding: 4px 0 4px 10px;
+  margin: 8px 0;
+  padding: 0;
   border: none;
-  border-left: 3px solid var(--border-strong);
+  border-left: 0;
   border-radius: 0;
-  background: color-mix(in srgb, var(--surface-command) 56%, transparent);
+  background: transparent;
   box-shadow: none;
 }
 
@@ -791,36 +795,8 @@
 }
 
 .message.assistant .markdown-codex-canvas .markdown-lead-text {
-  font-weight: 650;
-  letter-spacing: 0.01em;
-}
-
-.message.assistant .markdown-codex-canvas .markdown-lead-plan {
-  border-left-color: color-mix(in srgb, #2563eb 55%, var(--border-strong));
-}
-
-.message.assistant .markdown-codex-canvas .markdown-lead-result {
-  border-left-color: color-mix(in srgb, #16a34a 58%, var(--border-strong));
-}
-
-.message.assistant .markdown-codex-canvas .markdown-lead-verify {
-  border-left-color: color-mix(in srgb, #0ea5e9 55%, var(--border-strong));
-}
-
-.message.assistant .markdown-codex-canvas .markdown-lead-summary {
-  border-left-color: color-mix(in srgb, #7c3aed 45%, var(--border-strong));
-}
-
-.message.assistant .markdown-codex-canvas .markdown-lead-risk {
-  border-left-color: color-mix(in srgb, #f59e0b 58%, var(--border-strong));
-}
-
-.message.assistant .markdown-codex-canvas .markdown-lead-decision {
-  border-left-color: color-mix(in srgb, #0ea5e9 52%, var(--border-strong));
-}
-
-.message.assistant .markdown-codex-canvas .markdown-lead-next {
-  border-left-color: color-mix(in srgb, #2563eb 56%, var(--border-strong));
+  font-weight: 580;
+  letter-spacing: 0;
 }
 
 .markdown table {
