@@ -13,9 +13,8 @@ vi.mock("react-scan", () => ({
 
 import { setReactScanEnabled } from "./reactScanController";
 
-// react-scan 会把 enabled 持久化到自己的 localStorage 键并在启动时 restore,
-// 一旦盘上残留 enabled:false,instrumentation.isPaused 恒真,我们接入的 onRender
-// 归因回调会被静默跳过(而面板计时不受影响)。控制器必须主动纠正这两处状态。
+// react-scan 会把 enabled 持久化到自己的 localStorage 键并在启动时 restore。
+// 控制器可修复 persisted options，但 mutation 必须只走 public scan() API。
 describe("reactScanController persisted-pause recovery", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -41,10 +40,10 @@ describe("reactScanController persisted-pause recovery", () => {
     );
   });
 
-  it("force-resumes instrumentation so onRender attribution records", async () => {
+  it("does not mutate internal instrumentation signals when enabling", async () => {
     await setReactScanEnabled(true);
 
-    expect(internalsMock.instrumentation.isPaused.value).toBe(false);
+    expect(internalsMock.instrumentation.isPaused.value).toBe(true);
     const options = scanMock.mock.calls.at(-1)?.[0];
     expect(typeof options?.onRender).toBe("function");
   });

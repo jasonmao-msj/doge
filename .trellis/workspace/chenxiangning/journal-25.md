@@ -388,3 +388,136 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 980: 补充 v0.7.2 发布记录并延长 Codex 健康检查超时
+
+**Date**: 2026-07-13
+**Task**: 补充 v0.7.2 发布记录并延长 Codex 健康检查超时
+**Branch**: `feature/v-0.7.2`
+
+### Summary
+
+补充 v0.7.1/v0.7.2 中英文发布日志；将 Codex GUI、workspace core 与 daemon 的 session health probe timeout 从 3 秒统一调整为 15 秒，降低冷启动时正常 runtime 被过早清理的概率。cargo check 与 git diff --check 通过；全仓库 cargo fmt --check 仍受既有未格式化文件影响。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `76c52d81` | (see git log) |
+| `cf17256e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 981: 修复 Messages 自动滚底锚点更新回环
+
+**Date**: 2026-07-13
+**Task**: 修复 Messages 自动滚底锚点更新回环
+**Branch**: `feature/v-0.7.2`
+
+### Summary
+
+定位并修复 long conversation streaming、virtualized row measurement 与 bottom-follow 共同触发的 active anchor state feedback。near-bottom 时稳定选择 latest user anchor，scroll-away 后保留原 viewport geometry tracking；补充 focused regression test 与 OpenSpec change，相关测试、lint、typecheck、build 和 strict validation 均通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b27891b0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 982: 修复 Sidebar ScrollArea React 19 ref 回环
+
+**Date**: 2026-07-13
+**Task**: 修复 Sidebar ScrollArea React 19 ref 回环
+**Branch**: `feature/v-0.7.2`
+
+### Summary
+
+将 radix-ui 内 ScrollArea scoped override 到 1.2.14，补充 React 19 StrictMode ref 连续性回归测试，并完成 OpenSpec、构建与用户实机验证。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `28851873` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 983: 修复 AppShell composer 冷启动状态回环
+
+**Date**: 2026-07-13
+**Task**: 修复 AppShell composer 冷启动状态回环
+**Branch**: `feature/v-0.7.2`
+
+### Summary
+
+切断 composer selection cache state 对 reload layout effect 的自反馈，保证 pending 到 canonical selection 连续迁移，并移除 React Scan 内部 signal 强写；相关回归、lint、typecheck、build、OpenSpec 与用户实机验证通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0c198dc7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

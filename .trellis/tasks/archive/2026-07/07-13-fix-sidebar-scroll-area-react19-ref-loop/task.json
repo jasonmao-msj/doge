@@ -1,0 +1,53 @@
+{
+  "id": "fix-sidebar-scroll-area-react19-ref-loop",
+  "name": "fix-sidebar-scroll-area-react19-ref-loop",
+  "title": "修复 Sidebar ScrollArea React 19 ref 回环 (OpenSpec: fix-sidebar-scroll-area-react19-ref-loop)",
+  "description": "",
+  "status": "completed",
+  "dev_type": "frontend",
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "chenxiangning",
+  "assignee": "chenxiangning",
+  "createdAt": "2026-07-13",
+  "completedAt": "2026-07-13",
+  "branch": null,
+  "base_branch": "feature/v-0.7.2",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

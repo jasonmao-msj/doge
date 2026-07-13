@@ -2,6 +2,76 @@
 
 ---
 
+##### **2026年7月13日（v0.7.2）**
+
+中文：
+
+✨ Features
+- 升级应用版本号到 `0.7.2`，同步前端包配置、lockfile 与 Tauri 打包配置
+- `feat(search)`: 全局搜索结果按文件、看板、会话、消息、历史、技能与命令分组展示，文件结果以文件名作为主标题并保留完整路径；跨分组的键盘选择、排序与打开行为保持不变
+- `feat(web)`: 打通 Web 前端资源下载安装闭环 —— Release 额外生成一份跨平台版本化 ZIP 与 SHA-256，设置页支持状态检测、下载安装、同版本修复、本地包安装与重新检测；backend 在原子替换前完成 checksum、ZIP path、manifest、版本和入口校验，资源未就绪时阻止本地 Web Service 启动且不破坏已有可用版本
+
+🐛 Fixes
+- `fix(ui)`: 从结构上消除 Tooltip 首次启动更新回环 —— `TooltipIconButton` 改用 native button 与 Floating UI portal，退出 Radix `PopperAnchor / SlotClone` 组合，修复 `Maximum update depth exceeded` 导致 AppShell 被 ErrorBoundary 替换的问题
+- `fix(sidebar)`: 会话行正常态不再批量挂载 Radix Tooltip / Popover provider 与 anchor，删除确认仅在交互时按需挂载；修复首次安装启动、批量恢复会话时的 React #185，同时保留 tooltip、置顶、删除与键盘交互
+- `fix(ui)`: 将 `@radix-ui/react-presence` 固定到兼容 React 19 的 `1.1.6`，修复首次启动 React 渲染崩溃
+
+English:
+
+✨ Features
+- Bump the app version to `0.7.2` across frontend package metadata, the lockfile, and Tauri bundle configuration
+- `feat(search)`: group global search results into files, kanban items, threads, messages, history, skills, and commands; use the basename as each file result's primary title while preserving its full path, ranking, cross-group keyboard navigation, and open behavior
+- `feat(web)`: complete the Web frontend assets installation flow — publish one cross-platform versioned ZIP plus SHA-256 with each Release, add status checks, download/install, same-version repair, local-package install, and recheck actions to settings, and validate checksums, ZIP paths, manifests, versions, and entrypoints before atomic activation; local Web Service startup stays blocked until assets are ready without damaging an existing valid installation
+
+🐛 Fixes
+- `fix(ui)`: structurally remove the startup Tooltip update loop by moving `TooltipIconButton` to a native button with a Floating UI portal and out of the Radix `PopperAnchor / SlotClone` composition, preventing `Maximum update depth exceeded` from replacing AppShell with the ErrorBoundary
+- `fix(sidebar)`: stop mounting Radix Tooltip / Popover providers and anchors for every idle thread row, and mount delete confirmation only on demand; this fixes React #185 during first-run bulk session hydration while preserving tooltip, pin, delete, and keyboard behavior
+- `fix(ui)`: pin `@radix-ui/react-presence` to the React 19-compatible `1.1.6` release to fix the first-launch React render crash
+
+---
+
+##### **2026年7月12日（v0.7.1）**
+
+中文：
+
+✨ Features
+- 升级应用版本号到 `0.7.1`，同步前端包配置、lockfile 与 Tauri 打包配置
+- `feat(note-cards)`: 将便签从右侧窄面板迁移到中央 `1:2` 分栏工作台，宽屏采用可搜索的 Master-Detail 列表与编辑器、窄屏自动回退上下布局；支持分隔线拖动、键盘调整、双击复位和比例持久化
+- `feat(note-cards)`: 加固便签编辑工作流 —— 增加 dirty draft 保护与保存状态反馈，切换便签、collection 或新建前不再静默覆盖草稿；支持归档撤销、永久删除确认，并可将当前便签显式引用到 Composer
+- `feat(messages)`: 对话时间线新增回合级文件变更汇总卡，聚合每轮编辑文件数、增删行与失败状态，历史回合显示 inline card、最新回合显示 session cumulative card，并支持长列表展开
+
+🔧 Improvements
+- `perf(ui)`: 降低 idle chrome 的样式重算与渲染成本 —— 将 scrollbar 样式从全局 `*` 收窄到明确的 scroll container，非活动 workspace diff 直接卸载，文件树虚拟化阈值从 250 降至 30，并为 Prism highlight、DiffBlock、GitDiffViewer 与侧栏更新增加缓存或稳定引用
+- `feat(ui)`: 前端产品入口收敛到 Claude 与 Codex，移除 MCP 设置与 AI commit message 菜单中的 Gemini / OpenCode 入口
+- `style(ui)`: Runtime Pool 与加载弹窗统一使用 shadcn semantic tokens；侧栏会话行仅在 hover / focus 时为 pin toggle 预留空间，静止态更紧凑
+- `docs(openspec)`: 校准并归档便签工作台、idle render performance 等已完成变更
+
+🐛 Fixes
+- `fix(terminal)`: 终端面板跟随应用亮暗主题并限制在主内容列，不再遮挡右侧文件面板；移除重复分隔线并修复暗色模式下的亮色 scrollbar gutter
+- `fix(messages)`: 新回合等待回复时，将上一回合的文件变更卡固定在原回合边界，避免累计卡漂移到新用户消息之后
+- `fix(ui)`: 修复 Tooltip trigger 更新回环导致的会话区域空白，并补充重复 rerender 回归测试
+
+English:
+
+✨ Features
+- Bump the app version to `0.7.1` across frontend package metadata, the lockfile, and Tauri bundle configuration
+- `feat(note-cards)`: move notes from the narrow right panel into a central `1:2` split workbench with a searchable Master-Detail list/editor on wide screens and a stacked fallback on narrow screens; support pointer and keyboard resizing, double-click reset, and persisted split ratios
+- `feat(note-cards)`: harden the note editing workflow with dirty-draft protection and explicit save states so switching notes, collections, or creation cannot silently overwrite work; add archive undo, permanent-delete confirmation, and an explicit action to reference the active note in the Composer
+- `feat(messages)`: add turn-level file-change summary cards to the conversation timeline, aggregating edited files, added/deleted lines, and failures; historical turns use inline cards, the latest turn uses a session-cumulative card, and long file lists can expand
+
+🔧 Improvements
+- `perf(ui)`: reduce idle chrome style recalculation and rendering cost by scoping scrollbar rules to explicit scroll containers, unmounting inactive workspace diffs, lowering the file-tree virtualization threshold from 250 to 30, and adding caching or stable references around Prism highlighting, DiffBlock, GitDiffViewer, and sidebar updates
+- `feat(ui)`: narrow frontend product entry points to Claude and Codex by removing Gemini / OpenCode from MCP settings and AI commit-message menus
+- `style(ui)`: align Runtime Pool and the loading dialog with shadcn semantic tokens, and reserve sidebar pin-toggle space only on hover or focus for denser idle rows
+- `docs(openspec)`: align and archive completed changes for the note workbench, idle render performance, and related work
+
+🐛 Fixes
+- `fix(terminal)`: make the terminal follow the app theme and stay within the main content column so it no longer covers the right file panel; remove duplicate dividers and the bright scrollbar gutter in dark mode
+- `fix(messages)`: pin the previous turn's file-change card to its own boundary while a new turn is pending instead of letting the cumulative card drift below the new user message
+- `fix(ui)`: fix the Tooltip trigger update loop that could blank the conversation area, with repeated-rerender regression coverage
+
+---
+
 ##### **2026年7月10日（v0.7.0）**
 
 中文：

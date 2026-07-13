@@ -139,7 +139,8 @@
   },
   "overrides": {
     "radix-ui": {
-      "@radix-ui/react-presence": "1.1.6"
+      "@radix-ui/react-presence": "1.1.6",
+      "@radix-ui/react-scroll-area": "1.2.14"
     }
   },
   "devDependencies": {

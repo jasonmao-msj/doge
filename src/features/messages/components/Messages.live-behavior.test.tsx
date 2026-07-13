@@ -96,6 +96,20 @@ describe("Messages live behavior", () => {
     });
   };
 
+  const setMessageOffsetTop = (container: HTMLElement, messageId: string, offsetTop: number) => {
+    const message = container.querySelector(`[data-message-anchor-id="${messageId}"]`);
+    expect(message).toBeTruthy();
+    Object.defineProperty(message, "offsetTop", {
+      configurable: true,
+      value: offsetTop,
+    });
+  };
+
+  const getActiveAnchorDashIndex = (container: HTMLElement) =>
+    [...container.querySelectorAll(".messages-anchor-dash")].findIndex((dash) =>
+      dash.classList.contains("is-active"),
+    );
+
   it("scrolls the messages container when receiving a jump-to-message event", () => {
     const items: ConversationItem[] = [
       {
@@ -893,6 +907,52 @@ describe("Messages live behavior", () => {
       expect(scrollSpy.mock.calls.length).toBeGreaterThan(baselineCalls);
     });
     scrollSpy.mockRestore();
+  });
+
+  it("keeps the latest anchor stable at the bottom and tracks the viewport after scroll-away", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const { container } = render(
+        <Messages
+          items={[
+            { id: "anchor-user-old", kind: "message", role: "user", text: "older" },
+            { id: "anchor-assistant-old", kind: "message", role: "assistant", text: "reply" },
+            { id: "anchor-user-latest", kind: "message", role: "user", text: "latest" },
+          ]}
+          threadId="thread-bottom-anchor-stability"
+          workspaceId="ws-1"
+          isThinking
+          activeEngine="codex"
+          openTargets={[]}
+          selectedOpenAppId=""
+        />,
+      );
+      const scroller = getMessagesScroller(container);
+      setMessageOffsetTop(container, "anchor-user-old", 1_760);
+      setMessageOffsetTop(container, "anchor-user-latest", 320);
+
+      // At the true bottom, transient virtual-row geometry must not pull the
+      // active state back to an older anchor.
+      setScrollerMetrics(scroller, 1_680, 2_400);
+      for (let index = 0; index < 12; index += 1) {
+        fireEvent.scroll(scroller);
+      }
+      await waitFor(() => expect(getActiveAnchorDashIndex(container)).toBe(1));
+
+      // Once the user leaves the bottom, preserve the existing viewport probe.
+      scroller.scrollTop = 400;
+      setMessageOffsetTop(container, "anchor-user-old", 480);
+      setMessageOffsetTop(container, "anchor-user-latest", 1_760);
+      fireEvent.scroll(scroller);
+      await waitFor(() => expect(getActiveAnchorDashIndex(container)).toBe(0));
+
+      const updateDepthErrors = consoleErrorSpy.mock.calls.filter((call) =>
+        call.some((entry) => String(entry).includes("Maximum update depth exceeded")),
+      );
+      expect(updateDepthErrors).toHaveLength(0);
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
   });
 
   it("re-arms auto-follow and returns to the bottom when focus follow is re-enabled", async () => {

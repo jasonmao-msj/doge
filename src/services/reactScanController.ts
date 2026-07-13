@@ -139,14 +139,6 @@ async function applyReactScan(enabled: boolean): Promise<void> {
         recordReactScanRender(fiber, renders);
       },
     });
-    if (enabled) {
-      // 兜底:即使盘上状态在 scan() 内部又被改写,也强制恢复 instrumentation,
-      // 保证 overlay 开着时 onRender 归因一定在记录。
-      const isPaused = mod.ReactScanInternals.instrumentation?.isPaused;
-      if (isPaused) {
-        isPaused.value = false;
-      }
-    }
   } catch (error) {
     console.error("Failed to apply react-scan overlay:", error);
   }

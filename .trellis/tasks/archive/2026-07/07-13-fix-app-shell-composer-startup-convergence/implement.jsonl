@@ -1,0 +1,5 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "effect 与 state/ref 收敛规范"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "local persistent state 边界"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "回归与质量门禁"}

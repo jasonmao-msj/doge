@@ -1,0 +1,5 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "React 19 update-loop behavior and verification gates"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Focused component regression requirements"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Prefer upstream dependency fix over local primitive rewrite"}

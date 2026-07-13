@@ -1,7 +1,7 @@
 use super::*;
 use tokio::time::Duration;
 
-const SESSION_HEALTH_PROBE_TIMEOUT_SECS: u64 = 3;
+const SESSION_HEALTH_PROBE_TIMEOUT_SECS: u64 = 15;
 const CREATE_SESSION_RUNTIME_RECOVERING_ERROR_PREFIX: &str = "[SESSION_CREATE_RUNTIME_RECOVERING]";
 
 pub(super) fn is_stopping_runtime_race_error(error: &str) -> bool {

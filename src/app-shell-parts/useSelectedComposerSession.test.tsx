@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { StrictMode } from "react";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useSelectedComposerSession } from "./useSelectedComposerSession";
 
@@ -386,6 +388,75 @@ describe("useSelectedComposerSession", () => {
     expect(writeClientStoreValue).toHaveBeenCalledWith(
       "composer",
       "selectedModelByThread.ws-a:claude-pending-late-settings",
+      { modelId: "fable-5", effort: "high" },
+    );
+  });
+
+  it("keeps selection continuous when readiness and pending finalization overlap", async () => {
+    type HookProps = {
+      activeThreadId: string;
+      engineDefaultSelectionReady: boolean;
+    };
+    const pendingThreadId = "claude-pending-startup";
+    const canonicalThreadId = "claude:startup-session";
+    const observedSelections: Array<string | null> = [];
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <StrictMode>{children}</StrictMode>
+    );
+    const resolveCanonicalThreadId = (threadId: string) =>
+      threadId === pendingThreadId ? canonicalThreadId : threadId;
+
+    const { result, rerender } = renderHook(
+      ({ activeThreadId, engineDefaultSelectionReady }: HookProps) => {
+        const session = useSelectedComposerSession({
+          activeWorkspaceId: "ws-a",
+          activeThreadId,
+          resolveCanonicalThreadId,
+          engineDefaultSelectionReady,
+          resolveEngineDefaultComposerSelection: () => ({
+            modelId: "fable-5",
+            effort: "high",
+          }),
+        });
+        observedSelections.push(session.selectedComposerSelection?.modelId ?? null);
+        return session;
+      },
+      {
+        initialProps: {
+          activeThreadId: pendingThreadId,
+          engineDefaultSelectionReady: false,
+        },
+        wrapper,
+      },
+    );
+
+    rerender({
+      activeThreadId: pendingThreadId,
+      engineDefaultSelectionReady: true,
+    });
+    await waitFor(() => {
+      expect(result.current.selectedComposerSelection?.modelId).toBe("fable-5");
+    });
+
+    observedSelections.length = 0;
+    writeClientStoreValue.mockClear();
+    rerender({
+      activeThreadId: canonicalThreadId,
+      engineDefaultSelectionReady: true,
+    });
+
+    await waitFor(() => {
+      expect(result.current.selectedComposerSelection?.modelId).toBe("fable-5");
+    });
+    expect(observedSelections).not.toContain(null);
+    expect(observedSelections.length).toBeLessThanOrEqual(6);
+    expect(
+      result.current.resolveComposerSelectionForThread("ws-a", canonicalThreadId),
+    ).toEqual({ modelId: "fable-5", effort: "high" });
+    expect(writeClientStoreValue).toHaveBeenCalledTimes(1);
+    expect(writeClientStoreValue).toHaveBeenCalledWith(
+      "composer",
+      `selectedModelByThread.ws-a:${canonicalThreadId}`,
       { modelId: "fable-5", effort: "high" },
     );
   });

@@ -1808,8 +1808,12 @@ export const Messages = memo(function Messages({
         anchorUpdateRafRef.current = null;
         const anchorStartedAt =
           typeof performance === "undefined" ? 0 : performance.now();
+        const container = containerRef.current;
+        const latestAnchorId = messageAnchors[messageAnchors.length - 1]?.id ?? null;
         const nextActiveAnchor =
-          computeActiveAnchor() ?? messageAnchors[messageAnchors.length - 1]?.id ?? null;
+          container && isNearBottom(container)
+            ? latestAnchorId
+            : computeActiveAnchor() ?? latestAnchorId;
         const elapsedMs =
           typeof performance === "undefined"
             ? 0
@@ -1825,7 +1829,14 @@ export const Messages = memo(function Messages({
         commitActiveAnchorId(nextActiveAnchor, reason);
       });
     },
-    [commitActiveAnchorId, computeActiveAnchor, hasAnchorRail, messageAnchors, threadId],
+    [
+      commitActiveAnchorId,
+      computeActiveAnchor,
+      hasAnchorRail,
+      isNearBottom,
+      messageAnchors,
+      threadId,
+    ],
   );
   const revealAllHistoryItems = useCallback((mode: "manual" | "jump") => {
     pendingHistoryExpansionModeRef.current = mode;

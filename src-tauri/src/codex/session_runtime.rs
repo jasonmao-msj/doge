@@ -7,7 +7,7 @@ use crate::runtime::{RuntimeAcquireDisposition, RuntimeAcquireToken};
 use tauri::AppHandle;
 use tokio::time::Duration;
 
-const SESSION_HEALTH_PROBE_TIMEOUT_SECS: u64 = 3;
+const SESSION_HEALTH_PROBE_TIMEOUT_SECS: u64 = 15;
 pub(crate) const CREATE_SESSION_RUNTIME_RECOVERING_ERROR_PREFIX: &str =
     "[SESSION_CREATE_RUNTIME_RECOVERING]";
 pub(crate) const HOOK_SAFE_FALLBACK_METADATA_KEY: &str = "ccguiHookSafeFallback";
