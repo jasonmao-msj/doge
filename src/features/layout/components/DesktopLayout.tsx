@@ -61,10 +61,12 @@ type DesktopLayoutProps = {
   showHome: boolean;
   showWorkspace: boolean;
   showKanban: boolean;
+  showPlugins: boolean;
   showGitHistory: boolean;
   hideRightPanel: boolean;
   isSoloMode: boolean;
   kanbanNode: ReactNode;
+  pluginsNode: ReactNode;
   gitHistoryNode: ReactNode;
   settingsOpen: boolean;
   settingsNode: ReactNode;
@@ -105,10 +107,12 @@ export function DesktopLayout({
   showHome,
   showWorkspace,
   showKanban,
+  showPlugins,
   showGitHistory,
   hideRightPanel,
   isSoloMode,
   kanbanNode,
+  pluginsNode,
   gitHistoryNode,
   settingsOpen,
   settingsNode,
@@ -520,6 +524,18 @@ export function DesktopLayout({
     return (
       <section className="main kanban-fullscreen">
         {kanbanNode}
+        {globalRuntimeNoticeDockNode}
+        {runtimeConsoleDockNode}
+        {terminalDockNode}
+      </section>
+    );
+  }
+
+  if (showPlugins) {
+    return (
+      <section className="main plugins-fullscreen">
+        {pluginsNode}
+        {errorToastsNode}
         {globalRuntimeNoticeDockNode}
         {runtimeConsoleDockNode}
         {terminalDockNode}

@@ -385,6 +385,11 @@ pub(crate) fn invoke_handler(
         crate::vendors::vendor_get_gemini_settings,
         crate::vendors::vendor_save_gemini_settings,
         crate::vendors::vendor_gemini_preflight,
+        // Plugins
+        crate::plugins::plugin_list_installed,
+        crate::plugins::plugin_install,
+        crate::plugins::plugin_uninstall,
+        crate::plugins::plugin_read_glossary,
         // Open paths
         crate::get_pending_open_paths
     ]

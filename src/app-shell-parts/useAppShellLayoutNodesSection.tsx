@@ -34,6 +34,11 @@ import {
   configureDetachedExternalChangeMonitor,
 } from "../services/tauri";
 import { openOrFocusBrowserAgentDockWindow } from "../features/browser-agent/browserAgentDockWindow";
+import {
+  setPluginPreviewTarget,
+  subscribePluginHtmlPreviewRequests,
+  type PluginHtmlPreviewRequest,
+} from "../features/plugins/pluginPreviewBus";
 import { shouldEnableMainFileExternalChangeMonitoring } from "./fileExternalMonitoring";
 import {
   getThreadSelectDiffCleanupAction,
@@ -1495,6 +1500,22 @@ export function useAppShellLayoutNodesSection(
       setActiveTab("git");
     }
   });
+  // 插件 HTML 预览请求：消息卡点击 → 事件总线 → 打开右侧预览面板。
+  // useEventCallback 保证回调引用稳定（订阅只建立一次），闭包内总是读到最新的 isCompact。
+  const handlePluginHtmlPreviewRequest = useEventCallback(
+    (request: PluginHtmlPreviewRequest) => {
+      setPluginPreviewTarget(request);
+      setFilePanelMode("pluginPreview");
+      expandRightPanel();
+      if (isCompact) {
+        setActiveTab("git");
+      }
+    },
+  );
+  useEffect(
+    () => subscribePluginHtmlPreviewRequests(handlePluginHtmlPreviewRequest),
+    [handlePluginHtmlPreviewRequest],
+  );
   const handleOpenContextLedgerMemory = useEventCallback(
     (memoryId: string) => {
       setFocusedWorkspaceNoteId(null);

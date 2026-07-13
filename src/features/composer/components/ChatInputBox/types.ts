@@ -846,6 +846,8 @@ export interface ButtonAreaProps {
   panelToggleSurface?: ReactNode;
   /** Curated-skill indicator relocated into the tool popover surface row */
   curatedSkillSurface?: ReactNode;
+  /** 选中一个技能（插件下拉点选时复用 $ 技能选择链路） */
+  onSelectSkill?: (skillName: string) => void;
 }
 
 export interface ShortcutAction {

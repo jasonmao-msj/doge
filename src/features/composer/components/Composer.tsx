@@ -715,10 +715,19 @@ function ComposerImpl({
     dismissedActiveFileReference !== activeFileReferenceSignature,
   );
 
-  const selectedSkills = useMemo(
-    () => resolveSelectedNamedItems(selectedSkillNames, skills),
-    [selectedSkillNames, skills],
-  );
+  const selectedSkills = useMemo(() => {
+    const resolved = resolveSelectedNamedItems(selectedSkillNames, skills);
+    if (resolved.length === selectedSkillNames.length) {
+      return resolved;
+    }
+    // 技能列表可能落后于磁盘（如刚安装插件、列表尚未重拉）：
+    // 未解析到的选中名回退为合成条目，保证芯片可见、/skill 标记照发，不静默丢弃。
+    const resolvedNames = new Set(resolved.map((skill) => skill.name));
+    const fallbacks: typeof skills = selectedSkillNames
+      .filter((name) => !resolvedNames.has(name))
+      .map((name) => ({ name, path: "" }));
+    return [...resolved, ...fallbacks];
+  }, [selectedSkillNames, skills]);
   const selectedCommons = useMemo(
     () => resolveSelectedNamedItems(selectedCommonsNames, commands),
     [commands, selectedCommonsNames],

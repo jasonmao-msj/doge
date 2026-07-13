@@ -1,6 +1,7 @@
 import { memo, useCallback, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import Ellipsis from "lucide-react/dist/esm/icons/ellipsis";
+import Eye from "lucide-react/dist/esm/icons/eye";
 import Folder from "lucide-react/dist/esm/icons/folder";
 import GitBranch from "lucide-react/dist/esm/icons/git-branch";
 import Globe2 from "lucide-react/dist/esm/icons/globe-2";
@@ -30,7 +31,8 @@ export type PanelTabId =
   | "notes"
   | "prompts"
   | "memory"
-  | "activity";
+  | "activity"
+  | "pluginPreview";
 
 export type PanelToolbarTabId =
   | PanelTabId
@@ -116,6 +118,7 @@ const tabIcons: Record<PanelToolbarTabId, ReactNode> = {
   search: <Search aria-hidden />,
   notes: <NotebookPen aria-hidden />,
   memory: <Brain aria-hidden />,
+  pluginPreview: <Eye aria-hidden />,
   projectMap: <Globe2 aria-hidden />,
   intentCanvas: <PenLine aria-hidden />,
   activity: <Activity aria-hidden />,
@@ -131,6 +134,7 @@ const tabI18nKeys: Record<PanelToolbarTabId, string> = {
   search: "panels.search",
   notes: "panels.notes",
   memory: "panels.memory",
+  pluginPreview: "pluginsPage.previewTitle",
   projectMap: "panels.projectMap",
   intentCanvas: "panels.intentCanvas",
   activity: "panels.activity",

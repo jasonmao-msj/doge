@@ -397,7 +397,8 @@ export type LayoutNodesFlatOptions = {
     | "prompts"
     | "memory"
     | "activity"
-    | "radar";
+    | "radar"
+    | "pluginPreview";
   onFilePanelModeChange: (
     mode:
       | "git"
@@ -407,7 +408,8 @@ export type LayoutNodesFlatOptions = {
       | "prompts"
       | "memory"
       | "activity"
-      | "radar",
+      | "radar"
+      | "pluginPreview",
   ) => void;
   focusedProjectMemoryId?: string | null;
   focusedProjectMemoryRequestKey?: number;

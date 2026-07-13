@@ -119,6 +119,7 @@ mod linux_startup_guard;
 mod local_usage;
 mod menu;
 mod note_cards;
+mod plugins;
 mod project_canvas;
 mod project_identity;
 mod project_map;

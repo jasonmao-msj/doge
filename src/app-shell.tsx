@@ -37,6 +37,7 @@ import { useThreadRows } from "./features/app/hooks/useThreadRows";
 import { useLiquidGlassEffect } from "./features/app/hooks/useLiquidGlassEffect";
 import { useCopyThread } from "./features/threads/hooks/useCopyThread";
 import { useKanbanStore } from "./features/kanban/hooks/useKanbanStore";
+import { subscribeOpenPluginsPageRequests } from "./features/plugins/pluginsNavigationBus";
 import { useGitCommitController } from "./features/app/hooks/useGitCommitController";
 import { forceRefreshAgents } from "./features/composer/components/ChatInputBox/providers";
 import { normalizeFsPath } from "./utils/workspacePaths";
@@ -574,6 +575,10 @@ export function AppShell() {
     },
     [closeSettings],
   );
+  useEffect(
+    () => subscribeOpenPluginsPageRequests(() => handleAppModeChange("plugins")),
+    [handleAppModeChange],
+  );
   const {
     panels: kanbanPanels,
     tasks: kanbanTasks,
@@ -1078,6 +1083,7 @@ export function AppShell() {
     showGitHistory,
     showHome,
     showKanban,
+    showPlugins,
     showWorkspaceHome,
     workspaceHomeWorkspaceId,
   } = useAppShellViewStateSection({
@@ -2111,6 +2117,7 @@ export function AppShell() {
       showGitHistory,
       showHome,
       showKanban,
+      showPlugins,
       showNextReleaseNotes,
       showPresetStep,
       showPreviousReleaseNotes,

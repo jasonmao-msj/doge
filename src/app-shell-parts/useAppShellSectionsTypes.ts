@@ -98,6 +98,7 @@ export type UseAppShellSectionsContext = {
   setHomeOpen: any;
   showHome: any;
   showKanban: any;
+  showPlugins: any;
   showGitHistory: any;
   showLoadingProgressDialog: any;
   hideLoadingProgressDialog: any;

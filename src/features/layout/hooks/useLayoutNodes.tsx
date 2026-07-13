@@ -39,6 +39,7 @@ import { WorkspaceFileComparePanel } from "../../files/components/WorkspaceFileC
 import { WorkspaceSearchPanel } from "../../search/components/WorkspaceSearchPanel";
 import { PromptPanel } from "../../prompts/components/PromptPanel";
 import { ProjectMemoryPanel } from "../../project-memory/components/ProjectMemoryPanel";
+import { HtmlPreviewPanel } from "../../plugins/components/HtmlPreviewPanel";
 import type {
   CanvasSemanticGraph,
   IntentCanvasCodeSelectionAnchor,
@@ -1682,6 +1683,10 @@ export function useLayoutNodes(input: LayoutNodesOptions): LayoutNodesResult {
         onRefreshGitStatus={options.queueGitStatusRefresh}
         {...codeAnnotationBridgeProps}
       />
+    );
+  } else if (options.filePanelMode === "pluginPreview") {
+    gitDiffPanelNode = (
+      <HtmlPreviewPanel workspaceId={options.activeWorkspace?.id ?? null} />
     );
   } else if (options.filePanelMode === "radar") {
     gitDiffPanelNode = (

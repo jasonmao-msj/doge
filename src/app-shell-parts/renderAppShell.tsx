@@ -21,6 +21,7 @@ import {
 import {
   GitHistoryPanel,
   KanbanView,
+  PluginsView,
   ReleaseNotesModal,
   SearchPalette,
   SpecHub,
@@ -264,6 +265,7 @@ export function renderAppShell(ctx: RenderAppShellContext) {
     showGitHistory,
     showHome,
     showKanban,
+    showPlugins,
     showNextReleaseNotes,
     showPreviousReleaseNotes,
     showSpecHub,
@@ -500,6 +502,7 @@ export function renderAppShell(ctx: RenderAppShellContext) {
         isTablet={isTablet}
         showHome={showHome}
         showKanban={showKanban}
+        showPlugins={showPlugins}
         showGitHistory={showGitHistory}
         hideRightPanel={activeTab === "spec" && rightPanelCollapsed}
         isSoloMode={isSoloMode}
@@ -536,6 +539,13 @@ export function renderAppShell(ctx: RenderAppShellContext) {
                 terminalOpen={terminalOpen}
                 onToggleTerminal={handleToggleTerminalPanel}
               />
+            </Suspense>
+          ) : null
+        }
+        pluginsNode={
+          showPlugins ? (
+            <Suspense fallback={null}>
+              <PluginsView onAppModeChange={handleAppModeChange} />
             </Suspense>
           ) : null
         }

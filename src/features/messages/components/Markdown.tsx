@@ -3,6 +3,10 @@ import { useTranslation } from "react-i18next";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { LocalImage } from "./LocalImage";
+import { PluginPreviewEntry } from "../../plugins/components/PluginPreviewEntry";
+import { GlossaryTermChip } from "../../plugins/components/GlossaryTermChip";
+import { GLOSSARY_TERM_TAG } from "../../plugins/glossary";
+import { useGlossaryRehypePlugin } from "../../plugins/glossaryStore";
 import { ImageFullscreenViewer } from "../../markdown/imageFullscreen";
 import type { MarkdownOutlineEntry } from "../../markdown/fastMarkdownRenderer";
 import { extractOutlineFromMarkdown } from "../utils/messageOutlineExtractor";
@@ -800,6 +804,10 @@ function PreBlock({
       />
     );
   }
+  // ```ccgui-preview 围栏：插件声明的产物预览入口（显式触发器，见 features/plugins）
+  if (languageTag?.toLowerCase() === "ccgui-preview") {
+    return <PluginPreviewEntry value={value ?? ""} />;
+  }
   const mermaidContent = extractMermaidContent(languageTag, value ?? "");
   if (mermaidContent) {
     return (
@@ -1196,8 +1204,15 @@ export const Markdown = memo(function Markdown({
   // This is critical: when components/plugins change reference, ReactMarkdown
   // discards its entire internal HAST tree and re-parses from scratch.
   const enableCodexLeadEnhancement = className?.includes("markdown-codex-canvas") ?? false;
+  // glossary 插件未安装时恒为 null：不进 rehype 管线，渲染链零开销。
+  // 匹配器仅在安装/卸载词库插件时变化（事件驱动，无轮询）。
+  const glossaryPlugin = useGlossaryRehypePlugin();
   const components = useMemo<FullMarkdownComponents>(() => {
     const result: FullMarkdownComponents = {
+      // glossary 插件标注的技术名词（rehype 阶段包裹的自定义元素）
+      [GLOSSARY_TERM_TAG]: ({ children }) => (
+        <GlossaryTermChip>{children}</GlossaryTermChip>
+      ),
       a: ({ href, children }) => {
         const url = href ?? "";
         if (isFileLinkUrl(url)) {
@@ -1552,11 +1567,13 @@ export const Markdown = memo(function Markdown({
           katexReady={katexReady}
           urlTransform={urlTransform}
           components={components}
+          glossaryPlugin={glossaryPlugin}
         />
       </Suspense>
     );
   }, [
     components,
+    glossaryPlugin,
     katexReady,
     liveRenderMode,
     renderLightweightLink,

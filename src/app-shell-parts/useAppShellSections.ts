@@ -168,6 +168,7 @@ export function useAppShellSections(input: UseAppShellSectionsInput) {
     setHomeOpen,
     showHome,
     showKanban,
+    showPlugins,
     showGitHistory,
     showLoadingProgressDialog,
     hideLoadingProgressDialog,
@@ -1055,6 +1056,8 @@ export function useAppShellSections(input: UseAppShellSectionsInput) {
   }${shouldShowSidebarTopbarContent ? " sidebar-title-relocated" : ""}${
     showHome ? " home-active" : ""
   }${showKanban ? " kanban-active" : ""}${
+    showPlugins ? " plugins-active" : ""
+  }${
     showGitHistory ? " git-history-active" : ""
   }${isSoloMode ? " solo-mode" : ""}`;
 

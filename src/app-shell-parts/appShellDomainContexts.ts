@@ -576,6 +576,7 @@ export const APP_SHELL_DOMAIN_CONTEXT_OWNED_KEYS: Record<
     "showGitHistory",
     "showHome",
     "showKanban",
+    "showPlugins",
     "showNextReleaseNotes",
     "showPresetStep",
     "showPreviousReleaseNotes",

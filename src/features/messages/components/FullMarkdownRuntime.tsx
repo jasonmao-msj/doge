@@ -30,6 +30,8 @@ type FullMarkdownRuntimeProps = {
   softBreaks: boolean;
   urlTransform: FullMarkdownUrlTransform;
   value: string;
+  /** glossary 插件的名词标注 rehype 插件；未安装词库插件时为 null，零开销 */
+  glossaryPlugin?: (() => (tree: unknown) => void) | null;
 };
 
 const SUPPORTS_REGEX_LOOKBEHIND = (() => {
@@ -47,6 +49,7 @@ export function FullMarkdownRuntime({
   softBreaks,
   urlTransform,
   value,
+  glossaryPlugin = null,
 }: FullMarkdownRuntimeProps) {
   const remarkPluginsMemo = useMemo(
     () => {
@@ -83,9 +86,13 @@ export function FullMarkdownRuntime({
       if (katexReady && cachedRehypeKatex) {
         plugins.push(cachedRehypeKatex);
       }
+      // 名词标注必须排在 sanitize 之后，glossary-term 元素才不会被剥掉
+      if (glossaryPlugin) {
+        plugins.push(glossaryPlugin);
+      }
       return plugins as Parameters<typeof ReactMarkdown>[0]["rehypePlugins"];
     },
-    [katexReady],
+    [katexReady, glossaryPlugin],
   );
 
   return (

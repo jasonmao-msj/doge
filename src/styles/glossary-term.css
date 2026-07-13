@@ -1,0 +1,47 @@
+/* 技术名词解释（glossary capability）：消息正文里的名词标注与解释卡 */
+
+.glossary-term-chip {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: help;
+  text-decoration: underline dotted var(--muted-foreground);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.glossary-term-chip:hover,
+.glossary-term-chip[data-state="open"] {
+  text-decoration-color: var(--foreground);
+  text-decoration-style: solid;
+}
+
+.glossary-term-popover {
+  max-width: 300px;
+  width: max-content;
+  padding: 10px 12px;
+}
+
+.glossary-term-popover-term {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  margin-bottom: 4px;
+}
+
+.glossary-term-popover-explanation {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--foreground);
+  margin: 0;
+}
+
+.glossary-term-popover-source {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}

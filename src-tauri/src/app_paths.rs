@@ -43,6 +43,10 @@ pub(crate) fn note_card_dir() -> Result<PathBuf, String> {
     Ok(app_home_dir()?.join("note_card"))
 }
 
+pub(crate) fn plugins_dir() -> Result<PathBuf, String> {
+    Ok(app_home_dir()?.join("plugins"))
+}
+
 pub(crate) fn agent_file_path() -> Result<PathBuf, String> {
     Ok(app_home_dir()?.join("agent.json"))
 }

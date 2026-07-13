@@ -11,7 +11,7 @@ import ArrowUp from 'lucide-react/dist/esm/icons/arrow-up';
 import Square from 'lucide-react/dist/esm/icons/square';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import type { ButtonAreaProps, MemoryReferenceMode, PermissionMode, ReasoningEffort } from './types';
-import { ConfigSelect, ModeSelect, ReasoningSelect } from './selectors';
+import { ConfigSelect, ModeSelect, PluginsSelect, ReasoningSelect } from './selectors';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -88,6 +88,7 @@ export const ButtonArea = ({
   toolSurface,
   panelToggleSurface,
   curatedSkillSurface,
+  onSelectSkill,
 }: ButtonAreaProps) => {
   const { t } = useTranslation();
   const supportsStreamActivityPhaseFx =
@@ -313,6 +314,7 @@ export const ButtonArea = ({
         ) : null}
 
         <div className="button-area-inline-controls">
+          <PluginsSelect onSelectSkill={onSelectSkill} />
           <ModeSelect
             value={permissionMode}
             onChange={onModeSelect ?? NOOP_MODE}

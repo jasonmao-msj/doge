@@ -23,10 +23,12 @@ function renderDesktopLayout(overrides: Partial<ComponentProps<typeof DesktopLay
       showHome={false}
       showWorkspace
       showKanban={false}
+      showPlugins={false}
       showGitHistory={false}
       hideRightPanel={false}
       isSoloMode={false}
       kanbanNode={<div>kanban</div>}
+      pluginsNode={<div>plugins</div>}
       gitHistoryNode={<div>git-history</div>}
       settingsOpen={false}
       settingsNode={<div>settings</div>}

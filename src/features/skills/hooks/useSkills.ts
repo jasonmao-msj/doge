@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DebugEntry, SkillOption, WorkspaceInfo } from "../../../types";
 import { getSkillsList } from "../../../services/tauri";
+import { INSTALLED_PLUGINS_UPDATED_EVENT } from "../../plugins/installedPluginsStore";
 import { startupOrchestrator } from "../../startup-orchestration/utils/startupOrchestrator";
 
 type UseSkillsOptions = {
@@ -190,6 +191,28 @@ export function useSkills({
     }
     refreshSkills("idle-prewarm");
   }, [fetchKey, isConnected, refreshSkills, workspaceId]);
+
+  // 插件安装/卸载会增删 ~/.claude/skills 下的技能，收到变更事件后强制重拉，
+  // 否则 $ 列表与选中技能的名字解析会停留在启动时的快照。
+  useEffect(() => {
+    if (!workspaceId || !isConnected || typeof window === "undefined") {
+      return;
+    }
+    const handleInstalledPluginsUpdated = () => {
+      lastFetchedKey.current = null;
+      void refreshSkills("on-demand");
+    };
+    window.addEventListener(
+      INSTALLED_PLUGINS_UPDATED_EVENT,
+      handleInstalledPluginsUpdated,
+    );
+    return () => {
+      window.removeEventListener(
+        INSTALLED_PLUGINS_UPDATED_EVENT,
+        handleInstalledPluginsUpdated,
+      );
+    };
+  }, [isConnected, refreshSkills, workspaceId]);
 
   const skillOptions = useMemo(
     () => skills.filter((skill) => skill.name),

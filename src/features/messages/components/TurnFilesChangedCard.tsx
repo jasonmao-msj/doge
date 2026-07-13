@@ -9,6 +9,11 @@ import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import { cn } from "@/lib/utils";
 import { getFileTreeIconSvg } from "../../files/utils/fileTreeIcons";
 import {
+  matchViewerPlugin,
+  useInstalledPlugins,
+} from "../../plugins/installedPluginsStore";
+import { requestPluginHtmlPreview } from "../../plugins/pluginPreviewBus";
+import {
   areTurnFileChangesSummariesEqual,
   type TurnFileChangesSummary,
 } from "../utils/turnFileChanges";
@@ -55,6 +60,8 @@ export const TurnFilesChangedCard = memo(
   function TurnFilesChangedCard({ summary }: TurnFilesChangedCardProps) {
     const { t } = useTranslation();
     const [showAll, setShowAll] = useState(false);
+    // 外部 store（useSyncExternalStore），零后端请求；未装插件时恒为 []。
+    const installedPlugins = useInstalledPlugins();
 
     const { files, totalAdditions, totalDeletions } = summary;
     if (files.length === 0) {
@@ -79,6 +86,7 @@ export const TurnFilesChangedCard = memo(
         <div className="pb-1">
           {visibleFiles.map((file) => {
             const fileName = getFileName(file.path) || file.path;
+            const viewerPlugin = matchViewerPlugin(installedPlugins, file.path);
             return (
               <div
                 key={file.path}
@@ -100,6 +108,25 @@ export const TurnFilesChangedCard = memo(
                   deletions={file.deletions}
                   className="ml-auto text-xs"
                 />
+                {viewerPlugin && (
+                  <button
+                    type="button"
+                    className="shrink-0 rounded border border-border px-1.5 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      requestPluginHtmlPreview({
+                        filePath: file.path,
+                        pluginId: viewerPlugin.manifest.id,
+                        pluginName: viewerPlugin.manifest.name,
+                        pattern:
+                          viewerPlugin.manifest.capabilities.viewer
+                            ?.filePattern ?? "",
+                      });
+                    }}
+                  >
+                    {t("pluginsPage.previewButton")}
+                  </button>
+                )}
               </div>
             );
           })}

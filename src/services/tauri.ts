@@ -33,6 +33,11 @@ export {
   setCuratedSkillEnabled,
 } from "./tauri/skills";
 export {
+  installPlugin,
+  listInstalledPlugins,
+  uninstallPlugin,
+} from "./tauri/plugins";
+export {
   connectOpenCodeProvider,
   exportOpenCodeSession,
   getCodeIntelDefinition,

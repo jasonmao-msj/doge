@@ -1728,6 +1728,7 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
               selectedManualMemoryIds={selectedManualMemoryIds}
               selectedNoteCardIds={selectedNoteCardIds}
               shortcutActions={settingsShortcutActions}
+              onSelectSkill={onSelectSkill}
               readinessSurface={readinessSurface}
               mainSurface={mainToolbarSurface}
               panelToggleSurface={panelToggleSurface}

@@ -42,6 +42,7 @@ function openMemoryReferenceMenu() {
 vi.mock("./selectors", () => ({
   ConfigSelect: () => <div data-testid="config-select" />,
   ModeSelect: () => <div data-testid="mode-select" />,
+  PluginsSelect: () => <div data-testid="plugins-select" />,
   ProviderSelect: () => <div data-testid="provider-select" />,
   ReasoningSelect: ({
     value,

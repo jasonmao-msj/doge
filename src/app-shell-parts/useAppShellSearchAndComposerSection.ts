@@ -34,7 +34,8 @@ type FilePanelMode =
   | "prompts"
   | "memory"
   | "activity"
-  | "radar";
+  | "radar"
+  | "pluginPreview";
 type GitPanelMode = "diff" | "log" | "issues" | "prs";
 
 function isNonEmptyString(value: unknown): value is string {

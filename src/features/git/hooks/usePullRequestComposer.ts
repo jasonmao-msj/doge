@@ -16,7 +16,7 @@ type UsePullRequestComposerOptions = {
   activeWorkspace: WorkspaceInfo | null;
   selectedPullRequest: GitHubPullRequest | null;
   gitPullRequestDiffs: GitHubPullRequestDiff[];
-  filePanelMode: "git" | "files" | "search" | "notes" | "prompts" | "memory" | "activity" | "radar";
+  filePanelMode: "git" | "files" | "search" | "notes" | "prompts" | "memory" | "activity" | "radar" | "pluginPreview";
   gitPanelMode: "diff" | "log" | "issues" | "prs";
   centerMode: CenterMode;
   isCompact: boolean;

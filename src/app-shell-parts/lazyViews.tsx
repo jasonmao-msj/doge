@@ -18,6 +18,12 @@ export const KanbanView = lazy(() =>
   })),
 );
 
+export const PluginsView = lazy(() =>
+  import("../features/plugins/components/PluginsView").then((module) => ({
+    default: module.PluginsView,
+  })),
+);
+
 export const GitHistoryPanel = lazy(() =>
   import("../features/git-history/components/GitHistoryPanel").then((module) => ({
     default: module.GitHistoryPanel,

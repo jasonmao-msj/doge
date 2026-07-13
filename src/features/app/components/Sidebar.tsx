@@ -1926,8 +1926,8 @@ function SidebarImpl({
             </button>
             <button
               type="button"
-              className="sidebar-primary-nav-item sidebar-primary-nav-subitem is-disabled"
-              onClick={handleOpenSkillsComingSoon}
+              className={`sidebar-primary-nav-item sidebar-primary-nav-subitem ${appMode === "plugins" ? "is-active" : ""}`}
+              onClick={() => onAppModeChange("plugins")}
               title={t("sidebar.plugins")}
               aria-label={t("sidebar.plugins")}
               data-tauri-drag-region="false"

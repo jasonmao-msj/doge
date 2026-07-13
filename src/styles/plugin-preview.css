@@ -1,0 +1,147 @@
+/* 插件 HTML 预览面板（右侧面板 filePanelMode="pluginPreview"） */
+
+.plugin-preview-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.plugin-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.plugin-preview-heading {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+
+.plugin-preview-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-preview-trigger {
+  font-size: 11px;
+  color: var(--muted-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.plugin-preview-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.plugin-preview-action:hover:not(:disabled) {
+  color: var(--foreground);
+  border-color: var(--muted-foreground);
+}
+
+.plugin-preview-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* 公众号 HTML 以白底设计，暗色主题下仍保持白色画布 */
+.plugin-preview-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: none;
+  background: #fff;
+}
+
+.plugin-preview-empty,
+.plugin-preview-error {
+  padding: 24px 16px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* --- ccgui-preview 围栏渲染的消息内预览入口卡 --- */
+.plugin-preview-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  max-width: 520px;
+}
+
+.plugin-preview-entry-icon {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.plugin-preview-entry-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.plugin-preview-entry-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plugin-preview-entry-plugin {
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+
+.plugin-preview-entry-button {
+  flex-shrink: 0;
+  padding: 4px 14px;
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.plugin-preview-entry-button:hover {
+  filter: brightness(1.08);
+}
