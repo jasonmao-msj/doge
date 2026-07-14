@@ -1,0 +1,14 @@
+{
+  "name": "@ccgui/plugin",
+  "version": "0.1.0",
+  "description": "CC GUI 插件开发 API —— 纯类型契约，运行时由宿主注入（分发模型参考 Obsidian obsidian.d.ts）",
+  "type": "module",
+  "types": "src/index.ts",
+  "main": "",
+  "files": ["src"],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["ccgui", "plugin", "api"],
+  "license": "MIT"
+}
