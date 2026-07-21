@@ -1,7 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useTranslation } from "react-i18next";
-import Download from "lucide-react/dist/esm/icons/download";
 import type Viewer from "viewerjs";
 import { isThemeMutationAttribute } from "../../theme/utils/themeAppearance";
 import { loadMermaidFullscreenStyles } from "../../../styles/featureStyleLoaders";
@@ -12,7 +10,6 @@ import {
 } from "./activeViewer";
 import { preloadViewerjs } from "./preloadViewerjs";
 import { svgToDataUrl } from "./svgToDataUrl";
-import { downloadMermaidPng } from "./downloadMermaidPng";
 
 type MermaidFullscreenViewerProps = {
   open: boolean;
@@ -52,11 +49,8 @@ export default function MermaidFullscreenViewer({
   svg,
   onClose,
 }: MermaidFullscreenViewerProps) {
-  const { t } = useTranslation();
   const imgRef = useRef<HTMLImageElement | null>(null);
   const onCloseRef = useRef(onClose);
-  const downloadInFlightRef = useRef(false);
-  const [downloadState, setDownloadState] = useState<"idle" | "pending" | "error">("idle");
   const imageSourceCacheRef = useRef<{
     svg: string;
     dataUrl: string;
@@ -110,7 +104,6 @@ export default function MermaidFullscreenViewer({
       viewer = new ViewerCtor(imageElement, {
         container: document.body,
         inline: false,
-        zIndex: 1300,
         navbar: false,
         title: false,
         transition: !reducedMotion,
@@ -198,66 +191,17 @@ export default function MermaidFullscreenViewer({
     };
   }, [open, svg]);
 
-  const handleDownload = async () => {
-    if (downloadInFlightRef.current) return;
-    downloadInFlightRef.current = true;
-    setDownloadState("pending");
-    try {
-      const cachedSource = imageSourceCacheRef.current;
-      const dataUrl = cachedSource?.svg === svg
-        ? cachedSource.dataUrl
-        : svgToDataUrl(svg);
-      if (cachedSource?.svg !== svg) {
-        imageSourceCacheRef.current = { svg, dataUrl };
-      }
-      await downloadMermaidPng({ svg, dataUrl });
-      setDownloadState("idle");
-    } catch (error) {
-      console.warn("[mermaid-fullscreen] png-download-failed", {
-        errorName: error instanceof Error ? error.name : typeof error,
-      });
-      setDownloadState("error");
-    } finally {
-      downloadInFlightRef.current = false;
-    }
-  };
-
   if (!open || !svg || typeof document === "undefined") {
     return null;
   }
 
   return createPortal(
-    <>
-      <img
-        ref={imgRef}
-        alt=""
-        aria-hidden="true"
-        data-testid="mermaid-fullscreen-img"
-      />
-      <div className="mermaid-fullscreen-download-control">
-        {downloadState === "error" ? (
-          <span className="mermaid-fullscreen-download-error" role="alert">
-            {t("common.markdownMermaidDownloadFailed")}
-          </span>
-        ) : null}
-        <button
-          type="button"
-          className="mermaid-fullscreen-download-button"
-          onClick={handleDownload}
-          disabled={downloadState === "pending"}
-          aria-label={t("common.markdownMermaidDownloadPng")}
-          title={t("common.markdownMermaidDownloadPng")}
-          data-testid="mermaid-fullscreen-download-button"
-        >
-          <Download size={16} aria-hidden />
-          <span>
-            {downloadState === "pending"
-              ? t("common.markdownMermaidDownloadingPng")
-              : t("common.markdownMermaidDownloadPng")}
-          </span>
-        </button>
-      </div>
-    </>,
+    <img
+      ref={imgRef}
+      alt=""
+      aria-hidden="true"
+      data-testid="mermaid-fullscreen-img"
+    />,
     document.body,
   );
 }

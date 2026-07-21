@@ -61,9 +61,6 @@ const common = {
     "showInHeader": "ツールバーに表示",
     "markdownMermaidFullscreen": "全画面表示",
     "markdownMermaidFullscreenHint": "図を全画面で開く",
-    "markdownMermaidDownloadPng": "PNGをダウンロード",
-    "markdownMermaidDownloadingPng": "PNGをダウンロード中…",
-    "markdownMermaidDownloadFailed": "PNGのダウンロードに失敗しました。",
     "markdownImageFullscreen": "全画面表示",
     "markdownImageFullscreenHint": "画像を全画面で開く"
   }

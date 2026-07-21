@@ -61,9 +61,6 @@ const common = {
     "showInHeader": "टूलबार में दिखाएँ",
     "markdownMermaidFullscreen": "पूर्ण स्क्रीन",
     "markdownMermaidFullscreenHint": "डायग्राम पूर्ण स्क्रीन में खोलें",
-    "markdownMermaidDownloadPng": "PNG डाउनलोड करें",
-    "markdownMermaidDownloadingPng": "PNG डाउनलोड हो रहा है…",
-    "markdownMermaidDownloadFailed": "PNG डाउनलोड विफल रहा।",
     "markdownImageFullscreen": "पूर्ण स्क्रीन",
     "markdownImageFullscreenHint": "छवि पूर्ण स्क्रीन में खोलें"
   }

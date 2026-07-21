@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-26.md`
-- **Total Sessions**: 1048
+- **Total Sessions**: 1047
 - **Last Active**: 2026-07-21
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-26.md` | ~795 | Active |
+| `journal-26.md` | ~762 | Active |
 | `journal-25.md` | ~1976 | Archived |
 | `journal-24.md` | ~1994 | Archived |
 | `journal-23.md` | ~1965 | Archived |
@@ -54,7 +54,6 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
-| 1048 | 2026-07-21 | Mermaid 全屏 PNG 下载 | `9eeb82a1e` | `feature/v-076` |
 | 1047 | 2026-07-21 | 内置 Caveman 精选技能 | `f3c8f8f9` | `feature/v-076` |
 | 1046 | 2026-07-20 | commit:feat(git)-增加PR标题与正文AI生成功能 | HEAD | `feature/v-0.7.4` |
 | 1045 | 2026-07-20 | 统一并收紧 Composer 发送按钮尺寸 | `ed921d22` | `feature/v-0.7.4` |

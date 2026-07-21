@@ -6,4 +6,4 @@ export {
   destroyActiveViewer,
 } from "./activeViewer";
 export { preloadViewerjs, _resetPreloadForTest } from "./preloadViewerjs";
-export { downloadMermaidPng } from "./downloadMermaidPng";
+export { downloadSvg } from "./downloadSvg";

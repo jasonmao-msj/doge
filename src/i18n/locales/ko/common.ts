@@ -61,9 +61,6 @@ const common = {
     "showInHeader": "도구 모음에 표시",
     "markdownMermaidFullscreen": "전체 화면",
     "markdownMermaidFullscreenHint": "다이어그램 전체 화면으로 열기",
-    "markdownMermaidDownloadPng": "PNG 다운로드",
-    "markdownMermaidDownloadingPng": "PNG 다운로드 중…",
-    "markdownMermaidDownloadFailed": "PNG 다운로드에 실패했습니다.",
     "markdownImageFullscreen": "전체 화면",
     "markdownImageFullscreenHint": "이미지 전체 화면으로 열기"
   }

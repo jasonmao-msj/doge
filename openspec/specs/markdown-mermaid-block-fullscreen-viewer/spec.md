@@ -3,7 +3,9 @@
 ## Purpose
 
 Defines the contract for entering a fullscreen viewer on Markdown Mermaid blocks across both messages and file-preview surfaces, reusing `viewerjs@^1.11.7` with a shared singleton lifecycle, theme-aware chrome, panel-lock teardown, and strict a11y/i18n entry semantics.
+
 ## Requirements
+
 ### Requirement: Markdown Mermaid Block MUST Expose Fullscreen Entry
 
 Markdown Mermaid 图块在 `MermaidBlock`（消息侧）与 `FileMarkdownMermaidBlock`（文件预览侧）两块实现里 MUST 在顶部 actions 区暴露一个 icon-only 全屏入口按钮，按钮 `title` 与 a11y 标签 MUST 使用 i18n。按钮 MUST 仅在 SVG 已成功渲染时启用，Source tab / 渲染中 / 错误状态下 MUST 处于 disabled。
@@ -304,111 +306,8 @@ viewerjs 自身 CSS MUST 在 `loadMermaidFullscreenStyles()` 中按需 dynamic i
 - **AND** viewer 内部的 `<img>` MUST 带 `aria-hidden="true"` 属性
 - **AND** 屏幕阅读器 MUST 跳过该 `<img>` 的内容朗读
 
-### Requirement: Mermaid Fullscreen Viewer MUST Provide PNG Download
-
-`MermaidFullscreenViewer` MUST 在 viewer 外层提供共享的 PNG 下载 control，使消息侧与文件预览侧无需各自实现导出逻辑。control MUST 位于 fullscreen 右下角、高于 viewer container，使用 i18n 文案与 accessible name，且 MUST NOT 改变 viewerjs 内置 8 个 toolbar actions。Tauri runtime MUST 通过 native Save Dialog 选择保存位置；非 Tauri runtime MUST 保留 browser download fallback。
-
-#### Scenario: 两个 Mermaid surface 共用下载入口
-
-- **WHEN** 消息侧或文件预览侧以非空 SVG 打开 `MermaidFullscreenViewer`
-- **THEN** fullscreen 右下角 MUST 显示“下载 PNG”control
-- **AND** control MUST 具有本地化 accessible name
-- **AND** `.viewer-toolbar > ul` 仍 MUST 仅包含既有 8 个 action
-
-#### Scenario: Tauri runtime 使用 native Save Dialog
-
-- **WHEN** 用户在 Tauri runtime 点击“下载 PNG”
-- **THEN** 系统 MUST 打开 native Save Dialog，并默认使用 `mermaid-diagram.png`
-- **AND** 用户确认路径后 MUST 将有效 PNG bytes 写入该路径
-- **AND** persistence MUST NOT 依赖 `<a download>` 或 `blob:` navigation
-
-#### Scenario: 非 Tauri runtime 使用 browser fallback
-
-- **WHEN** 用户在非 Tauri runtime 点击“下载 PNG”
-- **THEN** exporter MUST 使用临时 anchor 与 Object URL 触发 browser download
-- **AND** 临时 anchor 与 Object URL MUST 在完成或失败后清理
-
-#### Scenario: 用户取消 native Save Dialog
-
-- **WHEN** Save Dialog 返回取消结果
-- **THEN** exporter MUST NOT 写入文件
-- **AND** viewer MUST 保持打开
-- **AND** download control MUST 恢复可操作状态且 MUST NOT 显示失败反馈
-
-#### Scenario: 下载期间禁止重复触发
-
-- **WHEN** 用户点击下载且 PNG conversion 或 native save 尚未完成
-- **THEN** 下载 control MUST 处于 disabled 状态
-- **AND** MUST 显示本地化 downloading 状态
-- **AND** 再次点击 MUST NOT 启动第二个并发 conversion 或 save flow
-
-### Requirement: Mermaid PNG Export MUST Be Bounded And Resource-Safe
-
-PNG export MUST 复用 viewer lifecycle 中得到的 XML-safe SVG Data URL，经浏览器 `Image` 与 Canvas rasterization 输出 `image/png`。目标 scale MUST 为 2x，最终尺寸 MUST 保持 aspect ratio，并同时受 16384px 最大边长与 32M pixels 最大总像素约束。Tauri backend MUST 只写入具有有效 PNG signature 且不超过 128 MiB 的 encoded payload。browser fallback 的临时 Object URL MUST 在成功或失败路径释放。
-
-#### Scenario: 常规图以 2x 透明 PNG 保存
-
-- **WHEN** SVG 逻辑尺寸在 2x 后未触达任何预算上限
-- **THEN** Canvas width 与 height MUST 分别为逻辑尺寸的 2 倍
-- **AND** Canvas MUST NOT 主动填充背景色
-- **AND** 默认文件名 MUST 为 `mermaid-diagram.png`
-- **AND** Blob MIME MUST 为 `image/png`
-
-#### Scenario: 超大图按预算等比缩放
-
-- **WHEN** SVG 以 2x rasterize 会超过 16384px 单边或 32M pixels
-- **THEN** exporter MUST 选择满足两项预算的最大 scale
-- **AND** width/height ratio MUST 保持原图 aspect ratio
-- **AND** exporter MUST NOT 创建超过预算的 Canvas
-
-#### Scenario: Unicode 与 XHTML SVG 使用 viewer normalization path
-
-- **WHEN** Mermaid SVG 包含中文、日文、Emoji 或 `<foreignObject>` XHTML label
-- **THEN** exporter MUST 使用与当前 fullscreen image 相同的 XML-safe Data URL 作为 decoded image source
-- **AND** MUST NOT 在 React render path 执行 SVG normalization 或 Canvas rasterization
-
-#### Scenario: Tauri backend 拒绝无效 PNG payload
-
-- **WHEN** IPC payload 缺少 PNG signature、为空或超过 128 MiB
-- **THEN** backend MUST 拒绝写入并返回可诊断错误
-- **AND** target path MUST NOT 被创建或覆盖
-
-#### Scenario: Browser fallback 释放 Object URL
-
-- **WHEN** PNG Blob 已触发 anchor download 或 browser download 流程抛出异常
-- **THEN** exporter MUST 移除临时 anchor
-- **AND** Object URL MUST 被 revoke
-
-### Requirement: Mermaid PNG Download Failure MUST Remain Recoverable
-
-PNG decode、Canvas context、draw、Blob encoding、native payload validation 或 filesystem write 失败时，fullscreen viewer MUST 保持打开，下载 control MUST 恢复可用，并显示不包含 SVG source 或 local target path 的本地化错误反馈。
-
-#### Scenario: Canvas conversion 失败
-
-- **WHEN** image decode、Canvas context 或 `toBlob` 失败
-- **THEN** viewer MUST NOT 自动关闭
-- **AND** 下载 control MUST 从 downloading 恢复为可操作状态
-- **AND** fullscreen MUST 显示本地化失败信息
-- **AND** error feedback MUST NOT 包含原始 SVG source
-
-#### Scenario: Native persistence 失败
-
-- **WHEN** PNG payload validation 或 filesystem write 失败
-- **THEN** viewer MUST NOT 自动关闭
-- **AND** 下载 control MUST 恢复为可操作状态
-- **AND** fullscreen MUST 显示本地化失败信息
-- **AND** error feedback MUST NOT 暴露 target path 或 PNG bytes
 
 ## 变更日志
-
-### 2026-07-21 v4 (Tauri native PNG 保存)
-- Tauri runtime 改用 native Save Dialog + PNG-only IPC 完成真实文件保存。
-- 新增 PNG signature / 128 MiB backend validation、cancel no-op 与 Web fallback contract。
-
-### 2026-07-21 v3 (PNG 下载)
-- 新增共享 fullscreen PNG 下载 control，不改变 viewerjs 内置 8-action toolbar。
-- 新增 2x Canvas rasterization、16384px / 32M pixels 硬预算、失败恢复与 Object URL cleanup contract。
-- v2 → v3 增量：3 个 Requirement / 7 个 Scenario。
 
 ### 2026-06-22 v1 (初版)
 - 7 个 Requirement / 14 个 Scenario

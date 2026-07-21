@@ -145,7 +145,6 @@ mod input_history;
 mod linux_startup_guard;
 mod local_usage;
 mod menu;
-mod mermaid_export;
 mod note_cards;
 mod project_canvas;
 mod project_identity;

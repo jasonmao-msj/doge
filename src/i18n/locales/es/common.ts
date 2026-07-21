@@ -61,9 +61,6 @@ const common = {
     "showInHeader": "Mostrar en la barra de herramientas",
     "markdownMermaidFullscreen": "Pantalla completa",
     "markdownMermaidFullscreenHint": "Abrir el diagrama en pantalla completa",
-    "markdownMermaidDownloadPng": "Descargar PNG",
-    "markdownMermaidDownloadingPng": "Descargando PNG…",
-    "markdownMermaidDownloadFailed": "No se pudo descargar el PNG.",
     "markdownImageFullscreen": "Pantalla completa",
     "markdownImageFullscreenHint": "Abrir la imagen en pantalla completa"
   }

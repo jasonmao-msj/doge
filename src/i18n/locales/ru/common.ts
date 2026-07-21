@@ -61,9 +61,6 @@ const common = {
     "showInHeader": "Показать на панели инструментов",
     "markdownMermaidFullscreen": "Полный экран",
     "markdownMermaidFullscreenHint": "Открыть диаграмму на весь экран",
-    "markdownMermaidDownloadPng": "Скачать PNG",
-    "markdownMermaidDownloadingPng": "Скачивание PNG…",
-    "markdownMermaidDownloadFailed": "Не удалось скачать PNG.",
     "markdownImageFullscreen": "Полный экран",
     "markdownImageFullscreenHint": "Открыть изображение на весь экран"
   }

@@ -61,9 +61,6 @@ const common = {
     "showInHeader": "顯示於工具列",
     "markdownMermaidFullscreen": "全螢幕",
     "markdownMermaidFullscreenHint": "以全螢幕開啟圖表",
-    "markdownMermaidDownloadPng": "下載 PNG",
-    "markdownMermaidDownloadingPng": "正在下載 PNG…",
-    "markdownMermaidDownloadFailed": "PNG 下載失敗。",
     "markdownImageFullscreen": "全螢幕",
     "markdownImageFullscreenHint": "以全螢幕開啟圖片"
   }

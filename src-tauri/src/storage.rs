@@ -90,7 +90,7 @@ pub(crate) fn with_storage_lock<T>(
     op()
 }
 
-pub(crate) fn write_bytes_atomically(path: &Path, content: &[u8]) -> Result<(), String> {
+pub(crate) fn write_string_atomically(path: &Path, content: &str) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     }
@@ -108,7 +108,7 @@ pub(crate) fn write_bytes_atomically(path: &Path, content: &[u8]) -> Result<(), 
         .open(&temp_path)
         .map_err(|error| error.to_string())?;
     temp_file
-        .write_all(content)
+        .write_all(content.as_bytes())
         .map_err(|error| error.to_string())?;
     temp_file.sync_all().map_err(|error| error.to_string())?;
 
@@ -122,10 +122,6 @@ pub(crate) fn write_bytes_atomically(path: &Path, content: &[u8]) -> Result<(), 
         return Err(error.to_string());
     }
     Ok(())
-}
-
-pub(crate) fn write_string_atomically(path: &Path, content: &str) -> Result<(), String> {
-    write_bytes_atomically(path, content.as_bytes())
 }
 
 fn read_workspace_list(path: &Path) -> Result<Vec<WorkspaceEntry>, String> {
