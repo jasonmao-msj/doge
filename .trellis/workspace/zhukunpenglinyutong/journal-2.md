@@ -666,3 +666,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 65: 更新应用图标与品牌 logo 资源
+
+**Date**: 2026-07-29
+**Task**: 更新应用图标与品牌 logo 资源
+**Branch**: `chore/bump-version-0.7.11`
+
+### Summary
+
+替换全套应用图标资源（src-tauri/icons 全平台尺寸、public/app-icon.png、src/assets/icon.png、icon.png），共 53 个二进制文件；未入库根目录临时源图 logo.png。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a031ff97c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
