@@ -1,7 +1,7 @@
 # React #185 Maximum Update Depth Playbook
 
-> **文档性质**：可追加 living playbook（依据文档），不是一次性事故报告。  
-> **用途**：冷启动 / 渲染过程中再次出现 React `#185`（`Maximum update depth exceeded`）时，按本文件诊断、归类、修复与归档。  
+> **文档性质**：可追加 living playbook（依据文档），不是一次性事故报告。
+> **用途**：冷启动 / 渲染过程中再次出现 React `#185`（`Maximum update depth exceeded`）时，按本文件诊断、归类、修复与归档。
 > **事实边界**：行为以当前代码 + OpenSpec main specs 为准；本文件记录诊断协议与历史 case，不自动证明 `HEAD` 已全部收敛。
 
 ---
@@ -35,8 +35,8 @@
 
 ### 2.2 反查 minified stack
 
-1. 用 `function XXX(` 在对应 chunk 中定位 mangled 组件名  
-2. 用栈帧 `file:line:col` 截取附近代码，优先找 `useLayoutEffect` / `useEffect` + `setState`  
+1. 用 `function XXX(` 在对应 chunk 中定位 mangled 组件名
+2. 用栈帧 `file:line:col` 截取附近代码，优先找 `useLayoutEffect` / `useEffect` + `setState`
 3. componentStack 最内层通常是真正在循环写 state 的组件；外层多为 AppShell / router
 
 ### 2.3 复现门禁
@@ -92,6 +92,7 @@
 | 字段 | 内容 |
 |------|------|
 | **状态** | fixed（结构加固） |
+| **Fix commit** | `4c5e97c8e` — `fix(models): 结构性修复冷启动 React #185 effort 双写死循环` |
 | **现象** | 冷启动全局 Application Error；`errorClass: react-maximum-update-depth`；`appVersion` 可能为 `unknown` |
 | **Bundle / 栈** | `App-BhVHLEiP.js`；componentStack `GWt`=AppShell；栈帧落在 `useModels` 的 selection `useLayoutEffect` |
 | **Owner** | `src/features/models/hooks/useModels.ts` |
@@ -101,6 +102,7 @@
 | **结构加固** | 见下表 |
 | **回归** | `src/features/models/hooks/useModels.test.tsx`（#185 场景 + pure plan 稳定性 + 用户锁定 effort） |
 | **关联历史** | 仓库曾多次修冷启动 #185（Tooltip / ScrollArea / Quick Switcher / Agent selection / Composer cache）；**本 case 是独立 owner，不是 Quick Switcher 复发** |
+| **索引** | [`docs/analysis/README.md`](./README.md) |
 
 **结构加固要点（C-20260801-01）**
 
@@ -180,3 +182,4 @@ OpenSpec / 代码中已出现的 #185 类修复（便于对照，**不等于本 
 | 日期 | 说明 |
 |------|------|
 | 2026-08-01 | 初版：协议 + AP 目录 + C-20260801-01（useModels）+ backlog |
+| 2026-08-01 | 校准：C-20260801-01 补 fix commit `4c5e97c8e`；挂 analysis 索引 |

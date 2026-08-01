@@ -1,9 +1,9 @@
-# mossx v0.7.3 后续执行建议
+# mossx v0.7.3 后续执行建议（历史快照）
 
-> 校准时间：2026-07-16
-> 代码基线：`9389f3e3`（`feature/v-0.7.3` 当前 HEAD）
-> 目标：基于当前代码、Git 历史、Trellis session record 与 OpenSpec artifacts，确定后续执行顺序。
-> 结论性质：执行建议，不是当前线上故障清单。
+> **文档性质**：**2026-07-16 执行建议快照**，保留全文以便追溯当时判断。
+> **不是** 2026-08 现网 backlog 真相源。现网入口见 [`README.md`](./README.md) 与文末 **附录 A（2026-08-01 对照）**。
+> **原始校准**：2026-07-16 · 代码基线 `9389f3e3`（`feature/v-0.7.3`）
+> **结论性质（当时）**：执行建议，不是线上故障清单。
 
 ## 结论先行
 
@@ -209,8 +209,81 @@ Phase 4：取证后再立项
 - `openspec/project.md`（仅作为 2026-07-15 19:46 历史快照）
 - `src-tauri/src/engine/claude.rs`
 - `src-tauri/src/engine/claude/askuser_mcp.rs`
-- `src/features/messages/components/messagesTimelineHydration.ts`
+- `src/features/messages/timeline/virtualization/messagesTimelineHydration.ts`
 - `src/features/threads/hooks/useThreadItemEvents.ts`
 - `src/features/threads/hooks/useThreadActions.ts`
 - `src-tauri/src/lib.rs`
 - `src-tauri/src/menu.rs`
+
+---
+
+## 附录 A — 2026-08-01 对照现状（不改写上文）
+
+> 原则：上文 A–E 与 Phase 0–4 **保持原样**（过程证据）。本附录只回答「那些 change 现在怎样了、今天该看哪里」。
+
+### A.0 基线
+
+| 项 | 2026-07-16 快照 | 2026-08-01 校准 |
+|----|-----------------|-----------------|
+| 产品版本语境 | v0.7.3 分支 | **`0.7.14`** |
+| 本文角色 | 执行建议 | **历史快照 + 对照表** |
+| OpenSpec 数量（文内） | active 16 / archive 598 / specs 395 | **勿沿用**；以 `openspec/changes` 目录与 `openspec list` 为准（校准日约 active≈49 / archive≈782 / specs≈456，仍会漂移） |
+| `openspec/project.md` | 已注明可能落后 | 仍可能落后；**不以它单独当数量源** |
+
+### A.1 文中 change 归宿（抽样对照）
+
+| 文中 change | 2026-07-16 建议 | 2026-08-01 目录事实 |
+|-------------|-----------------|---------------------|
+| `fix-codex-subagent-sidebar-projection` | archive 评估 | **已 archive** |
+| `fallback-untracked-added-file-empty-inline-diff` | archive | **已 archive** |
+| `add-turn-file-summary-modal-diff-preview` | archive | **已 archive** |
+| `fix-codex-thread-start-continuity-and-recovery` | 回写 artifacts | **已 archive** |
+| `fix-workspace-drop-overlay-leave-settlement` | rebuilt-app 验收 | **已 archive** |
+| `optimize-conversation-streaming-render-perf` | runtime evidence | **已 archive** |
+| `add-claude-runtime-mcp-servers-panel` | 手工 QA | **已 archive** |
+| `fix-sidebar-session-catalog-progressive-loading` | contract | **已 archive** |
+| `redesign-workspace-sidebar-session-loading` | contract | **已 archive** |
+| `add-linux-native-menu-localization` | Linux smoke | **仍 active**（目录存在） |
+| `2026-06-24-retire-opencode-and-gemini-cli` 等 | staged migration | 以当前 active/archive 目录为准（OpenCode 后续有 restore 等轨） |
+
+### A.2 文中「风险已关闭」— 仍成立
+
+- Codex settled turn 不因迟到 progress 复活（B1）— 保持「勿重开」
+- Diff 新增/编辑入口链（B2）— 保持；细节见后续 archive
+- Codex 子代理侧栏投影（B3）— 已 archive
+
+### A.3 文中 C 类（性能/AskUser）— 读法更新
+
+| 当时条目 | 2026-08 读法 |
+|----------|--------------|
+| C1 AskUserQuestion 非 plan | 仍以代码 + 手测为准；勿用本附录代替 verification |
+| C2 大型会话渲染 | 尾窗 / 虚拟化 / live-text 仍是主护栏；**对话/行级轻量墙已下线**（`bf3b35bd6`），勿再按「lightweight 摘要墙」验收 |
+| C3 Claude lightweight streaming | 与 C2 合并验收轨道的建议仍合理；具体 change 是否仍 active 查目录 |
+
+### A.4 2026-07 之后已落地、本文未覆盖的轨道（补索引）
+
+| 主题 | commit / 文档 | 说明 |
+|------|---------------|------|
+| 统一幕布轻量下线 + Grok 桥 + 藏 bash | `bf3b35bd6` · structure · matrix · unify-review | 替代「再开一轮 renderer 摘要墙」 |
+| 滚动所有权状态机 | `b34fdaead` · structure §7.3 · scroll plan | A 飞顶 / F 离真底架构轨 |
+| Native/Shared 供应商与 freeform 模型 | `e2ac4a1a6` · `fb6083584` · `44fcf26a6` · native-session 文 | 不盖盘 + 点选勾选 |
+| React #185 useModels | `4c5e97c8e` · react-185 playbook | 冷启动 effort 双写 |
+
+### A.5 今日建议阅读顺序（替代文内 Phase 0–4 作为执行队列）
+
+```text
+1. docs/analysis/README.md          — 地图与 commit 锚点
+2. conversation-canvas-structure    — 现网幕布
+3. canvas-live-tool-projection-matrix + 手测
+4. scroll ownership plan/change     — A/F 实机
+5. close-native-session-provider…   — 是否 archive
+6. 仍 active 的平台/产品 change      — 如 Linux menu 等（openspec list）
+```
+
+**不要**再按本文 Phase 1 去 archive 已 archive 的 change；**不要**把 16/598/395 抄进新文档当现数。
+
+### A.6 附录修订
+
+| 日期 | 说明 |
+|------|------|
+| 2026-08-01 | 全文保留为历史快照；新增附录 A 对照归宿与新轨道索引 |

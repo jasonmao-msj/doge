@@ -1,6 +1,7 @@
 # Messages Presentation Architecture Design
 
-Canonical design: `openspec/changes/refactor-messages-presentation-architecture/design.md`.
+> **Lifecycle**：historical mirror；canonical change 已归档。
+> **Canonical design**：`openspec/changes/archive/2026-07-21-refactor-messages-presentation-architecture/design.md`。
 
 本设计已由用户确认，采用 behavior-preserving gradual domain decomposition：
 
@@ -10,4 +11,4 @@ Canonical design: `openspec/changes/refactor-messages-presentation-architecture/
 - Constraints：不改 UI/DOM/CSS/i18n/Markdown/toolBlocks/runtime contract，不新增 dependency/mega Context。
 - Verification：focused messages tests + full frontend gates + OpenSpec strict validation。
 
-完整 rationale、风险、依赖方向和验证命令以 canonical OpenSpec design 为准，避免双份设计事实源漂移。
+完整 rationale、风险、依赖方向和验证记录以 canonical OpenSpec archive 为准，避免双份设计事实源漂移。

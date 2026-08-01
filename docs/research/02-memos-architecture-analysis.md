@@ -2,7 +2,9 @@
 
 **文档类型**: 技术调研 - 外部参考系统分析
 **修订时间**: 2026-02-09
-**核验基线**: `/Users/chenxiangning/code/AI/github/MemOS` 本地仓库
+**核验基线**: `/Users/chenxiangning/code/AI/github/MemOS` @ `a1e23d54d2`（2026-02-09）
+
+> **Lifecycle**：External Research Snapshot。2026-08-01 仅确认本地 checkout 仍为上述 revision、`pyproject.toml` 仍为 `2.0.4`；未拉取 upstream，不能把本文当作 MemOS 最新行业状态。若用于新设计决策，先更新 checkout 并重验 license、API、storage/vector/graph dependencies 与部署边界。
 
 ---
 

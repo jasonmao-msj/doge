@@ -1,5 +1,7 @@
 # Composer 弹窗问题修复落盘（2026-02-10）
 
+> **Lifecycle**：Historical Fix Record。本文保留当时 root-cause 与两阶段修复证据；当前 Composer popover ownership、portal/CSS 与 regression coverage 须按现有 `src/features/composer/` 重验。
+
 ## 背景
 `Composer` 管理区的 `? / S+ / M+` 按钮弹窗在部分改动后出现“点击无可见反馈/弹窗不显示”的问题。
 

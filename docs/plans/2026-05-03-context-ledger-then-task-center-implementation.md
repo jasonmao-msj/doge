@@ -1,5 +1,6 @@
 # Context Ledger Then Task Center Implementation Plan
 
+> **Lifecycle**：Implemented / Historical Program Plan。Context Ledger 与 Task Center 的相关 changes 已归档；下文 Phase A/B、Trellis task 与 “current” 描述保留为实施过程，不是 2026-08 backlog。
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 先以最小跨层风险交付 `Context Ledger`，再在现有 Kanban / thread / runtime 基础上交付 `Task Center`，避免两条 change 同时进入重型 cross-layer 重构。
@@ -10,7 +11,7 @@
 
 **Execution Tasks:**
 - Completed dependency: Context Ledger changes are archived under `openspec/changes/archive/2026-05-03-*` and main specs now contain `context-ledger-*`.
-- Current execution target: [05-03-task-center-phase1 PRD](../../.trellis/tasks/05-03-task-center-phase1/prd.md).
+- Historical execution container: [05-03-task-center-phase1 PRD](../../.trellis/tasks/05-03-task-center-phase1/prd.md).
 
 ---
 

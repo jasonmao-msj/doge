@@ -2,7 +2,7 @@
 
 > 创建：2026-02-10
 > 来源：交叉扫描 `docs/research/` 全部文档 + `docs/plans/` 已有计划
-> 状态：持续更新中（已按代码现状同步）
+> 状态：**Historical Roadmap / Superseded**；不再持续更新。Project Memory 当前 delta 见 [`../research/00-project-memory-feature-overview.md`](../research/00-project-memory-feature-overview.md)，backlog 以 OpenSpec 为准。
 
 ---
 

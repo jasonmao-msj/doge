@@ -1,5 +1,6 @@
 # 当前工程工具链优化现状与影响范围
 
+> **2026-08-01 生命周期校准**：Historical Closure Evidence。本文只证明当时目标文件与 gate 状态；当前 large-file / OpenSpec / governance 结论必须重跑对应命令，不能继承 2026-07-26 的数量。
 > **复核日期**：2026-07-26（二次复核于 `713ef5f2c`：14 项 gate 失败及构成、全部行数、openspec 447/2 结果与本文一致，无事实变更）
 >
 > **代码基线**：分支 `feature/v-0710`，HEAD `713ef5f2c`（内容等价于首次复核基线 `f287e2374`，其间仅 trellis/docs 提交）

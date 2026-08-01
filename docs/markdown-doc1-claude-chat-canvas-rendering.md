@@ -1,7 +1,10 @@
 # 文档1：Claude 引擎对话幕布渲染链路（实时 + 历史）
 
-> 基于当前分支代码：`codex/2026-03-23-v0.3.3`（`b7e82ac`）  
-> 说明：这里的“幕布”对应 `Messages` 组件及其上游数据链路。
+> **文档性质**：**历史分支快照**（过程溯源），不是 0.7.x 现网说明。
+> **采样基线**：分支 `codex/2026-03-23-v0.3.3`（`b7e82ac`）
+> **现网请改读**：[`analysis/conversation-canvas-structure-2026-07-31.md`](analysis/conversation-canvas-structure-2026-07-31.md) · [`analysis/README.md`](analysis/README.md)
+> **说明**：文内行号/路径会漂移；「幕布」= Messages 时间线及其上游数据链路。
+> **保留原因**：单引擎逐步调用链的过程记录，便于对照重构前后。
 
 ## 0. 入口与关键开关
 

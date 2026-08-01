@@ -1,9 +1,11 @@
 # 统一对话幕布架构改善任务
 
-> **日期**：2026-08-01  
-> **状态**：PLAN（待 OpenSpec change / 立项确认）  
-> **依据**：`docs/analysis/conversation-canvas-structure-2026-07-31.md`  
-> **目标**：多 CLI + Shared 共用同一套可预期的幕布体验；砍掉「详情已延迟 / 渲染详情」轻量极简化；修好回合结束锚点。
+> **日期**：2026-08-01
+> **状态**：PLAN 正文保留 · **关键实现已入库** `bf3b35bd6`（轻量墙下线 + Grok/Kimi/OpenCode 过程投影 + 藏 bash）；OpenSpec change `unify-conversation-canvas`
+> **后验**：`docs/analysis/unify-conversation-canvas-review-2026-08-01.md` · 矩阵 `docs/analysis/canvas-live-tool-projection-matrix-2026-08-01.md`
+> **依据 / 现网结构**：`docs/analysis/conversation-canvas-structure-2026-07-31.md`
+> **滚动另轨**：`2026-08-01-conversation-canvas-scroll-ownership-architecture.md`（`b34fdaead`）
+> **目标（原文）**：多 CLI + Shared 共用同一套可预期的幕布体验；砍掉「详情已延迟 / 渲染详情」轻量极简化；修好回合结束锚点。
 
 ---
 
@@ -80,20 +82,20 @@
 
 **边界**
 
-- ✅ 可保留 fileEdit **场景折叠**（产品意图清晰，标题仍说明「文件修改 N 个」）  
-- ✅ 可保留用户主动折叠的代码块/注解  
-- ✅ **保留**块级「重型 Markdown / 工具详情已延迟 + 显示详情」  
-- ❌ 不保留对话级/行级「自动摘要冒充未加载」  
+- ✅ 可保留 fileEdit **场景折叠**（产品意图清晰，标题仍说明「文件修改 N 个」）
+- ✅ 可保留用户主动折叠的代码块/注解
+- ✅ **保留**块级「重型 Markdown / 工具详情已延迟 + 显示详情」
+- ❌ 不保留对话级/行级「自动摘要冒充未加载」
 - ❌ 不因砍轻量而默认打开 streaming 虚拟化（仍 false，防 attach 飞顶）
 
 **主文件**
 
-- `messagesConversationLightweightMode.ts`  
-- `messagesTimelineHydration.ts` / `useMessagesTimelineHydration.ts`  
-- `TimelineRowRenderer` lightweight 摘要条  
-- `ConversationLightweightPrompt.tsx`  
-- `messageMarkdownHeavyIslands` / `GenericToolBlock` 重型延迟  
-- 相关 i18n + Vitest  
+- `messagesConversationLightweightMode.ts`
+- `messagesTimelineHydration.ts` / `useMessagesTimelineHydration.ts`
+- `TimelineRowRenderer` lightweight 摘要条
+- `ConversationLightweightPrompt.tsx`
+- `messageMarkdownHeavyIslands` / `GenericToolBlock` 重型延迟
+- 相关 i18n + Vitest
 
 ---
 
@@ -111,17 +113,17 @@
 
 **主文件**
 
-- `useMessagesScrollController.ts`  
-- `messagesScrollEcho.ts`  
-- `messagesConstants.ts`（`SETTLE_REPIN_WINDOW_MS` 等）  
-- `useMessagesTimelineVirtualizer` / hydration remeasure（若仍保留占位）  
+- `useMessagesScrollController.ts`
+- `messagesScrollEcho.ts`
+- `messagesConstants.ts`（`SETTLE_REPIN_WINDOW_MS` 等）
+- `useMessagesTimelineVirtualizer` / hydration remeasure（若仍保留占位）
 
 **回归用例**
 
-- 流式结束贴底  
-- 流式中用户上滚，结束后保持阅读位  
-- Shared 目标=Grok/Claude 各一轮  
-- 长历史 idle 虚拟化开着时 settle  
+- 流式结束贴底
+- 流式中用户上滚，结束后保持阅读位
+- Shared 目标=Grok/Claude 各一轮
+- 长历史 idle 虚拟化开着时 settle
 
 ---
 
@@ -213,24 +215,24 @@ M4  P1-B（可选）Grok/Kimi live 工具补齐评估
 
 ### 必须（P0）
 
-1. **无**「详情已延迟 / 渲染详情 / 启用轻量模式 / 重型 Markdown 详情已延迟」主路径 UI。  
-2. 首屏助手正文、工具卡（**有 L1 数据时**）默认可读。  
-3. 回合结束：贴底阅读不丢最新；上滚阅读不被拽回。  
-4. 能力矩阵可查：Claude/Codex/Grok/Kimi/OpenCode/Shared 的 live/history tool 行为。  
-5. 回归：流式贴底、上滚不抢、fileEdit 折叠、Shared 切换目标引擎。  
+1. **无**「详情已延迟 / 渲染详情 / 启用轻量模式 / 重型 Markdown 详情已延迟」主路径 UI。
+2. 首屏助手正文、工具卡（**有 L1 数据时**）默认可读。
+3. 回合结束：贴底阅读不丢最新；上滚阅读不被拽回。
+4. 能力矩阵可查：Claude/Codex/Grok/Kimi/OpenCode/Shared 的 live/history tool 行为。
+5. 回归：流式贴底、上滚不抢、fileEdit 折叠、Shared 切换目标引擎。
 
 ### 应该（P1）
 
-6. 硬分支减少、策略表可单测。  
-7. Grok live 工具缺口有产品说明或 tail 回补方案。  
-8. 长历史（200+ 行）滚动可接受（虚拟化，无摘要墙）。  
+6. 硬分支减少、策略表可单测。
+7. Grok live 工具缺口有产品说明或 tail 回补方案。
+8. 长历史（200+ 行）滚动可接受（虚拟化，无摘要墙）。
 
 ### 不做
 
-- 不为每个 CLI 拆 Messages 树  
-- 不把 Diff/Status 逻辑搬进幕布当 tool 假投影（无真实 tool item 时）  
-- 不恢复 streaming 默认虚拟化  
-- 不批量清理无关 orphan session  
+- 不为每个 CLI 拆 Messages 树
+- 不把 Diff/Status 逻辑搬进幕布当 tool 假投影（无真实 tool item 时）
+- 不恢复 streaming 默认虚拟化
+- 不批量清理无关 orphan session
 
 ---
 
@@ -297,13 +299,18 @@ unify-conversation-canvas
 
 可拆 delta（若体量过大）：
 
-- `remove-conversation-lightweight-summary`（P0-D）  
-- `fix-turn-settle-scroll-anchor`（P0-C）  
-- `canvas-engine-capability-matrix`（P0-A）  
+- `remove-conversation-lightweight-summary`（P0-D）
+- `fix-turn-settle-scroll-anchor`（P0-C）
+- `canvas-engine-capability-matrix`（P0-A）
 
 ---
 
-## 实现状态快照（2026-08-01，工作树未 commit）
+## 实现状态快照（2026-08-01，已入库）
+
+> **内容类型**：Plan + implementation handoff
+> **生命周期**：implemented；OpenSpec change `unify-conversation-canvas` 为 `23/23`，仍 active，待 verify / sync / archive
+> **最后校准**：mossx `0.7.14`，HEAD `26f8065a0c`；核心实现 commit `bf3b35bd6`
+> **事实源**：当前源码、`openspec/changes/unify-conversation-canvas/`、后验 review 与 capability matrix
 
 | 包 | 状态 |
 |----|------|
@@ -314,4 +321,4 @@ unify-conversation-canvas
 | settle 行为改造 | ⏸ 维持 re-pin 契约 |
 | Review | `docs/analysis/unify-conversation-canvas-review-2026-08-01.md` |
 
-*本文件为架构改善任务 PLAN；实现以工作树 + OpenSpec change 为准。*
+*本文件保留实施前 PLAN 与决策过程；当前实现以 `bf3b35bd6` 后的源码 + OpenSpec change 为准。*

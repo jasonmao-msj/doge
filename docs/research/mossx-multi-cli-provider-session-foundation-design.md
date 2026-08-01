@@ -1,12 +1,29 @@
 # mossx 多 CLI × 多 Provider 会话基石设计
 
-> 状态：Architecture Decision Record（持续校准）
+> 内容类型：Architecture Decision Record
+> 生命周期：accepted / implemented in slices；原始 A–D 路线已归档，后续修复与收口 change 独立演进
 > 初始日期：2026-07-27
-> 最近校准：2026-07-29
+> 最近校准：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
 > 适用范围：Native Session、Shared Session、Provider Runtime、Session Catalog、Sidebar Projection、未来 Plugin / Orchestration
 > 核心决策：Native Session 保持原生身份；Shared Session 承担跨 CLI、跨 Provider 的逐 Turn 切换
 
 ---
+
+## 零、2026-08-01 当前实现校准
+
+本文继续作为多 CLI 会话的 ADR。原始 Change A1–A3、B、C、D 已归档；当前 active change 主要承担 Native/Shared 的修复、兼容和流程收口，不应回写成「原路线未实现」。
+
+| 契约面 | 当前代码事实 | 事实源 |
+|--------|--------------|--------|
+| Built-in engines | 6：Claude/Codex/Gemini/Grok/Kimi/OpenCode | `engineIds.json`、`EngineType` |
+| Native rendering projection | 六引擎各有 realtime adapter + history loader | `src/features/threads/{adapters,loaders}/` |
+| Shared target boundary | Claude/Codex/Kimi/Grok/OpenCode；Gemini 排除 | `sharedSessionEngines.ts`、`src-tauri/src/shared_sessions.rs` |
+| Gemini runtime | registry 中存在，但 runtime policy 默认 disabled | `src-tauri/src/engine_policy.rs` |
+| Provider selection | Native 原子选择；Shared 逐 Turn target | `close-native-session-provider-create-binding` 与 Shared target contracts |
+
+本文中的 `RuntimeDeliveryAdapter`、`Canonical Fact`、`ContextPackage` 等名称既包含实现合同，也包含 ADR 概念层语言。读者需要复制代码或接新 CLI 时，必须同时使用 [Engine Onboarding Guide](./mossx-new-cli-onboarding-guide.md) 的「当前注册面」清单，不能只按概念接口猜文件名。
+
+> **更新触发器**：engine registry、Shared 支持集合、provider binding、canonical fact schema、context compiler、terminal/ACK contract 变化。
 
 ## 一、Executive Summary
 

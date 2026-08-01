@@ -2,7 +2,9 @@
 
 **文档类型**: 架构设计
 **更新时间**: 2026-02-10
-**基准**: 基于当前分支代码生成，Phase 1 全部完成
+**基准**: Historical Phase 1 Snapshot；不是 2026-08 current architecture
+
+> **2026-08-01 校准**：下图保留 Phase 1 结构演进，但 `project_memory.rs (~1483 行)` 与“仅基础 CRUD/采集”已过期。Backend 当前拆为 `src-tauri/src/project_memory/` 下 `commands / store / search / projection / diagnostics / classification / settings / compat / model` 等 owner；发送侧加入显式 Memory Reference、Memory Scout 与 Retrieval Pack，完成侧按 turn merge/upsert；管理面加入 review/health/diagnostics/reconcile。现网请先读 [`00-project-memory-feature-overview.md`](./00-project-memory-feature-overview.md) 的 current delta 与 OpenSpec main specs。
 
 ---
 

@@ -1,7 +1,10 @@
 # 文档2：Codex 引擎对话幕布渲染链路（实时 + 历史）
 
-> 基于当前分支代码：`codex/2026-03-23-v0.3.3`（`b7e82ac`）  
-> 说明：这里的“幕布”对应 `Messages` 组件及其上游数据链路。
+> **文档性质**：**历史分支快照**（过程溯源），不是 0.7.x 现网说明。
+> **采样基线**：分支 `codex/2026-03-23-v0.3.3`（`b7e82ac`）
+> **现网请改读**：[`analysis/conversation-canvas-structure-2026-07-31.md`](analysis/conversation-canvas-structure-2026-07-31.md) · [`analysis/README.md`](analysis/README.md)
+> **注意**：文内「normalized realtime 默认 false」等开关结论**已过期**（现网默认 true，见 analysis §4）；行号会漂移。
+> **保留原因**：Codex 单引擎逐步调用链的过程记录。
 
 ## 0. 入口与关键开关（Codex）
 

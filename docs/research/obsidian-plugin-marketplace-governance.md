@@ -1,5 +1,6 @@
 # Obsidian 社区插件市场：治理与上架流程调研
 
+> **Lifecycle**：External Current-State Research（截至 2026-08-01）。市场、review 与政策会独立演进；用于立项时必须重新核对官方 Community dashboard、Developer Policies 与 release repository。
 > 调研日期：2026-07-25（以仓库 master 最新提交 2026-07-24 为准）
 > 用途：mossx（Tauri 2 + React + Rust）规划 Obsidian 式插件市场的竞品参考
 > 方法：web search + 抓取官方一手来源（github.com/obsidianmd 仓库实际文件与 git history、docs.obsidian.md 开发者文档源码 obsidianmd/obsidian-developer-docs、obsidian.md 官方博客、官方论坛）
@@ -8,7 +9,7 @@
 
 ## 0. 最重要的时效性结论（先说清楚）
 
-**Obsidian 的插件上架流程在 2026 年 5 月发生了一次根本性的架构切换**，调研时必须区分新旧两套体系：
+**Obsidian 的插件上架流程在 2026 年 5 月发生了一次根本性的架构切换**，2026-08-01 复核仍成立；调研时必须区分新旧两套体系：
 
 - **2026-05-12 前后**：官方上线 **Obsidian Community**（`community.obsidian.md`）——新的 directory + developer dashboard，引入**全自动 review 系统**，对**每个版本**（不只是首次提交）做安全与代码质量扫描。官方博客称借此在几天内处理完了积压的 **2,300+** 排队提交。
   - 来源：[The future of Obsidian plugins — Obsidian 官方博客](https://obsidian.md/blog/future-of-plugins/)

@@ -1,5 +1,11 @@
 # Chat Canvas Conversation Curtain Contracts
 
+> **文档性质**：curtain 契约的**早期说明草稿**（过程保留；2026-08-01 已校准枚举与字段）。
+> **实现事实源**：`src/features/threads/contracts/conversationCurtainContracts.ts`（以源码为准）。
+> **现网结构 / 多引擎**：[`analysis/conversation-canvas-structure-2026-07-31.md`](analysis/conversation-canvas-structure-2026-07-31.md) · [`analysis/README.md`](analysis/README.md)
+> **最后校准**：mossx `0.7.14` · HEAD `26f8065a0c`；冲突仍以 TypeScript 契约为准。
+> **上级导航**：[`README.md`](README.md)
+
 ## Scope
 
 This document defines the shared contracts used by the conversation curtain refactor:
@@ -22,6 +28,7 @@ Only these `ConversationItem.kind` values are valid in the normalized pipeline:
 - `diff`
 - `review`
 - `explore`
+- `generatedImage`
 - `tool`
 
 Renderer code should not introduce engine-specific kinds.
@@ -30,7 +37,7 @@ Renderer code should not introduce engine-specific kinds.
 
 Each realtime adapter maps engine-specific payloads into:
 
-- `engine`: `codex | claude | opencode`
+- `engine`: `codex | claude | gemini | grok | kimi | opencode`
 - `workspaceId`
 - `threadId`
 - `eventId`
@@ -38,6 +45,8 @@ Each realtime adapter maps engine-specific payloads into:
 - `timestampMs`
 - `item` (`ConversationItem`)
 - `operation` (`itemStarted/itemUpdated/itemCompleted` 或各类 `append*`/`complete*` 增量操作)
+- `sourceMethod`
+- optional `delta` / `rawItem` / `rawUsage`
 - optional `turnId`
 
 Positive example:
@@ -50,6 +59,7 @@ const event = {
   eventId: "evt-1",
   itemKind: "tool",
   timestampMs: Date.now(),
+  sourceMethod: "item/started",
   item: {
     id: "tool-1",
     kind: "tool",

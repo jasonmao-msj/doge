@@ -1,5 +1,7 @@
 # mossx 插件市场调研：Obsidian × Pi 双参照设计手册
 
+> **Lifecycle**：Exploratory Comparative Design。不是已批准的 mossx plugin runtime / marketplace architecture。
+> **最后复核**：2026-08-01；本地 pi evidence 锚定 `/Users/chenxiangning/code/AI/github/pi` @ `a9f5b1c123`，Obsidian 市场演进锚定 2026-05 Community launch。进入实现前必须重新确认外部 revision、license、distribution policy 与 sandbox/capability 边界。
 > 更新日期：2026-07-24（第二版，基于四份 Obsidian 一手调研重写）
 > 调研对象：Obsidian（插件市场标杆）与 pi（`/Users/chenxiangning/code/AI/github/pi`，agent 扩展架构标杆）
 > 目的：mossx（ccgui，Tauri 2 + React 19 + Rust）要做**插件市场 + 扩展体系**，本文回答三个问题：

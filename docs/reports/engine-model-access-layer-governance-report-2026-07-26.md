@@ -1,5 +1,6 @@
 # 引擎与模型接入层治理闭环报告
 
+> **2026-08-01 生命周期校准**：Historical Closure Evidence。当前 built-in registry 已为六引擎（含 Grok）；读取本文表格前先核对 `engineIds.json`、Rust `adapter_registry.rs` 与 capability matrix gate。
 > - 范围：`engine / codex / claude / gemini / kimi / opencode / models / vendors`
 > - 初始审计日期：2026-07-26
 > - 更新日期：2026-07-26
@@ -645,7 +646,7 @@ controller facade 最终 focused suite：
 - `scripts/check-engine-capability-matrix.mjs`
 - `scripts/check-engine-adapter-registry.mjs`
 - `scripts/check-model-provider-catalog.mjs`
-- `scripts/check-opencode-retirement.mjs`
+- `scripts/check-opencode-retirement.mjs`（历史 gate；2026-08-01 当前脚本已移除）
 - `scripts/check-engine-controller-facade.mjs`
 - `scripts/scan-engine-name-branches.mjs`
 

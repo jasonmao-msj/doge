@@ -1,10 +1,11 @@
 # 同 CLI 多供应商：Native / Shared 供应商与模型切换（最终契约）
 
-> **对照源码日期**：2026-08-01（含 freeform 模型名 + Native 点选勾选修复）  
-> **状态**：**人工验收通过**（Native + Shared；含 Codex 本地配置点选）  
-> **OpenSpec**：`openspec/changes/close-native-session-provider-create-binding/`（未 archive；以 change 内 delta 为准）  
-> **用途**：最终行为契约 + 实现锚点  
-> **姊妹文**：幕布渲染核见 `conversation-canvas-structure-2026-07-31.md`（本文不描述 Messages 树）
+> **对照源码日期**：2026-08-01 二次校准 · 产品 **`0.7.14`**
+> **状态**：**人工验收通过**（Native + Shared；含 Codex 本地配置点选）
+> **OpenSpec**：`close-native-session-provider-create-binding` 为 `27/27`，仍 active，待 sync / archive
+> **用途**：最终行为契约 + 实现锚点（**过程 commit 见 §3 / §8**）
+> **索引**：[`README.md`](./README.md)
+> **姊妹文**：幕布渲染核见 [`conversation-canvas-structure-2026-07-31.md`](./conversation-canvas-structure-2026-07-31.md)（本文不描述 Messages 树）
 
 ---
 
@@ -38,9 +39,9 @@
 
 ### Claude 不盖盘（实现要点）
 
-- `vendor_switch_claude_provider` / managed 启用路径：**只标记 active**，不调用 `apply_provider_to_claude_settings` 写盘。  
-- `apply_provider_to_claude_settings` 标为 **dead_code**，仅保留给显式 export/materialize 工具。  
-- 会话启动用 provider profile + turn-scoped `--settings` 注入 env，与磁盘 settings 隔离。  
+- `vendor_switch_claude_provider` / managed 启用路径：**只标记 active**，不调用 `apply_provider_to_claude_settings` 写盘。
+- `apply_provider_to_claude_settings` 标为 **dead_code**，仅保留给显式 export/materialize 工具。
+- 会话启动用 provider profile + turn-scoped `--settings` 注入 env，与磁盘 settings 隔离。
 - 前端 L1：`activateEngineProviderProfile` → `switchClaudeProvider` + `syncClaudeModelMappingForProfile`。
 
 ### Native 模型点选（2026-08-01 修复）
@@ -57,10 +58,10 @@
 
 **契约（修后）**：
 
-1. **同 profile 点选**：`Composer.handleNativeAtomicTargetChange` 先写 `nativeAtomicSelection`（`modelCatalogEntryId` + runtime `model`），再 `onSelectModel` 持久化。勾选/触发器**不依赖** parent catalog 是否已收录该 id。  
-2. **切会话 / 引擎 / 渠道**：清空 `nativeAtomicSelection`，避免串台。  
-3. **本地 sentinel 投影**：Codex `__disk__`、Claude `__local_settings_json__` 在 `nativeSessionTarget` 上投影为 `providerProfileId: null` + `providerProfileSource: "disk"`（与 Shared disk 语义一致；**不**把 `__disk__` 当成 managed）。  
-4. **effort**：仍跟 `selectedEffort` prop；`nativeAtomicSelection` **只覆盖 model 身份**。  
+1. **同 profile 点选**：`Composer.handleNativeAtomicTargetChange` 先写 `nativeAtomicSelection`（`modelCatalogEntryId` + runtime `model`），再 `onSelectModel` 持久化。勾选/触发器**不依赖** parent catalog 是否已收录该 id。
+2. **切会话 / 引擎 / 渠道**：清空 `nativeAtomicSelection`，避免串台。
+3. **本地 sentinel 投影**：Codex `__disk__`、Claude `__local_settings_json__` 在 `nativeSessionTarget` 上投影为 `providerProfileId: null` + `providerProfileSource: "disk"`（与 Shared disk 语义一致；**不**把 `__disk__` 当成 managed）。
+4. **effort**：仍跟 `selectedEffort` prop；`nativeAtomicSelection` **只覆盖 model 身份**。
 5. **freeform 持久化**：`handleSelectModel` 在 catalog 未命中时接受自由模型名；Codex/Claude 会话 `allowUnknownActiveThreadModel`，避免 repair 回默认。
 
 ---
@@ -88,7 +89,7 @@
 
 ### Shared 有意不做
 
-- 切渠道时**不强制**改配置页「使用中」（next-send only；与 Native 切会话不同）  
+- 切渠道时**不强制**改配置页「使用中」（next-send only；与 Native 切会话不同）
 - 不把 Shared 当成 Native 续接/切会话去 activate「使用中」（除非产品另定）
 
 ---
@@ -131,7 +132,7 @@
 |--------|------|
 | `e2ac4a1a6` | Native：收口供应商与模型切换（独立配置不盖盘） |
 | `fb6083584` | Shared：Claude 切换供应商后模型列表刷新 |
-| （本轮） | Native 点选勾选 + freeform；Shared catalog 外模型名 Allow |
+| `44fcf26a6` | freeform 模型名 + Native `nativeAtomicSelection` 点选勾选；Shared Allow 对齐 |
 
 ---
 
@@ -155,7 +156,7 @@
 | Shared 不刷「使用中」 | 有意 | follow-up 若产品要同步 |
 | Shared catalog 失败仅不写 target | 低 | 用户可重试 |
 | Kimi/Grok/OpenCode freeform allowUnknown | 低 | 点选 freeform 已接受；会话 repair 仍以引擎 catalog 为主（本次问题域为 Codex/Claude） |
-| E2E / openspec sync·archive | 流程 | change 仍在 active；主 specs 未强制 sync |
+| E2E / openspec sync·archive | 流程 | tasks `27/27`；change 仍 active，待 sync / archive |
 
 与 `openspec/changes/close-native-session-provider-create-binding/verification.md` 对齐。
 
@@ -165,17 +166,17 @@
 
 ### Native
 
-- [x] 菜单启用 + 创建绑定 + 不盖盘  
-- [x] 续接 / 切老会话 / 底栏渠道 / 发送 L2  
-- [x] **Codex 本地配置：列表点选模型勾选即时切换**（含 catalog 内外名）  
-- [x] **`__disk__` 投影为 disk/local，不误判 managed**  
+- [x] 菜单启用 + 创建绑定 + 不盖盘
+- [x] 续接 / 切老会话 / 底栏渠道 / 发送 L2
+- [x] **Codex 本地配置：列表点选模型勾选即时切换**（含 catalog 内外名）
+- [x] **`__disk__` 投影为 disk/local，不误判 managed**
 
 ### Shared
 
-- [x] Claude 切供应商 → 模型列表切换  
-- [x] 仅 selectedNextTarget；外观不变  
-- [x] catalog 为空时不沿用旧 model id  
-- [x] **catalog 外自定义名可保存，无 invalid-target-model toast**  
+- [x] Claude 切供应商 → 模型列表切换
+- [x] 仅 selectedNextTarget；外观不变
+- [x] catalog 为空时不沿用旧 model id
+- [x] **catalog 外自定义名可保存，无 invalid-target-model toast**
 
 ---
 
@@ -196,3 +197,4 @@
 | 2026-07-31 | 文档/Spec 补齐 Native+Shared 对照 + review |
 | 2026-08-01 | 对照当前源码复核：补 Claude 不盖盘实现要点、`handleChannelSwitch`/`syncClaudeModelMapping` 细节、commit 锚点；状态仍为验收通过 |
 | 2026-08-01 | **freeform 模型名**：Shared `Allow` + Native freeform 持久化；**Native 点选勾选**：`nativeAtomicSelection` 对齐 Shared「target 即 UI」；Codex 本地配置人工验收通过 |
+| 2026-08-01 | 二次校准：文头挂索引；commit 锚点补 `44fcf26a6`；实现路径抽检仍成立 |

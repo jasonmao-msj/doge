@@ -1,7 +1,13 @@
 # Browser Dock Phase 3 Cross-Platform Degraded-Capability Matrix
 
-Date: 2026-06-02
-Change: `advance-browser-dock-trusted-observation-and-code-bridge`
+> **文档性质**：Phase 3 **跨平台降级能力矩阵**（时间快照）。
+> **生命周期**：historical contract evidence；对应 change 已归档
+> **Date**：2026-06-02
+> **Change**：`advance-browser-dock-trusted-observation-and-code-bridge`
+> **Archive**：`openspec/changes/archive/2026-06-03-advance-browser-dock-trusted-observation-and-code-bridge/`
+> **最后校准**：2026-08-01 仅核对 change 归宿与当前代码入口；未重跑 macOS / Windows / Linux 实机矩阵
+> **索引**：[`README.md`](./README.md) · 计划快照 [`../plans/2026-06-01-browser-dock-phase3.md`](../plans/2026-06-01-browser-dock-phase3.md)
+> 现网能力以当前 Browser Dock 代码 / OpenSpec 为准；本表保留手测焦点与平台差异叙事。
 
 | Platform | WebView runtime | Capture transport | Visual evidence | Annotation evidence | Action preview |
 |---|---|---|---|---|---|

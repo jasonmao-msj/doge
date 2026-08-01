@@ -1,5 +1,6 @@
 # Browser Dock Phase 3 Implementation Plan
 
+> **Lifecycle**：Implemented / Historical Plan。对应 trusted observation / code bridge change 已归档于 `openspec/changes/archive/2026-06-03-advance-browser-dock-trusted-observation-and-code-bridge/`；跨平台实机 evidence 仍须重跑。
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Implement Browser Dock Phase 3 as a trusted observation and code-bridge substrate before enabling higher-risk browser automation.

@@ -1,10 +1,14 @@
 # 多 CLI × 多 Provider 会话基石：实施任务清单
 
 > 初始日期：2026-07-27
-> 最近校准：2026-07-29
+> 内容类型：Historical implementation checklist
+> 生命周期：A–D 已完成并归档；Wave/R.* 保留演进过程，不是当前 active backlog
+> 最近校准：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
 > 上游设计：[`docs/research/mossx-multi-cli-provider-session-foundation-design.md`](../research/mossx-multi-cli-provider-session-foundation-design.md)（Implementation-ready）
 > 用途：照着执行的 Checklist。完成一项勾一项；每个 Wave 收尾必须过对应的 Gate，不过 Gate 不进下一 Wave。
 > 状态说明：Wave 0–6 保留原始实施时间线；`R.*` 记录上线前后校准，不回写历史 Gate。
+
+> **当前读法**：A1/A2/A3/B/C/D 的 canonical changes 已归档；后续 Native/Shared 修复与 closure changes 走各自 OpenSpec 轨道。本文未勾项只有在当前 OpenSpec 仍有对应 contract 时才可转成工作项。
 
 ## Change A 当前结论（2026-07-27 校准）
 

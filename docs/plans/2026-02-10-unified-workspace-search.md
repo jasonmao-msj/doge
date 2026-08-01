@@ -1,5 +1,6 @@
 # Unified Workspace Search Implementation Plan
 
+> **Lifecycle**：Historical Implementation Plan。SearchPalette / provider aggregation 已实现并继续演进；当前行为以 `src/features/search/` 与 OpenSpec main specs 为准，本文 checkbox 不是 backlog。
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 在 MossX 中实现统一搜索面板（Cmd/Ctrl+P），仅搜索当前选中 workspace 的文件、Kanban 任务、线程标题、消息内容、输入历史。

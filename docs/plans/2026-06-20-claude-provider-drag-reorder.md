@@ -1,8 +1,9 @@
 # Claude 供应商列表：拖动排序 + 启用项置顶
 
+> **Lifecycle**：Implemented / Historical Plan。对应 provider order/model fetch change 已归档于 `openspec/changes/archive/2026-06-21-add-claude-provider-management-order-and-model-fetch/`；下文 `feature/v0.5.11` / “待提交”是原始交付窗口。
 > **Codex 执行指令**：请严格按本文档实施全部改动（数据模型、后端命令与排序、前端服务层、hook、ProviderList 拖拽 UI、i18n、CSS），不要偏离已确认的设计；完成后按"验证"小节自检。如遇文档与实际代码冲突，以代码现状为准并在 PR 描述中说明。
 
-> 状态：已实施（PR #705 已合入当前 `feature/v0.5.11`，待提交）
+> 原始状态：已实施（PR #705 已合入当时 `feature/v0.5.11`，待提交）
 > 日期：2026-06-20
 > 仓库：desktop-cc-gui（Tauri + React + TypeScript）
 > 范围：仅 Claude 供应商列表（`ProviderList`），不动 Codex/Gemini

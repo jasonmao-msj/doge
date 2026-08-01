@@ -1,5 +1,8 @@
 # mossx 插件市场 × 扩展体系 × CLI 基石与串线 —— 设计参考文档
 
+> 内容类型：Exploratory RFC / industry research
+> 生命周期：draft；**不是当前产品实现说明，也不是已批准 roadmap**
+> 最后校准：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
 > 版本：第三版（合并重写），2026-07；2026-07-25 修订：补充 pi 源码仓库链接、关键章节 Mermaid 流程图/时序图与概念白话注释。
 > 调研对象：
 > - **Obsidian**（插件市场标杆，web 一手调研：官方仓库 / docs.obsidian.md / help.obsidian.md / 官方博客 / 论坛）
@@ -11,11 +14,26 @@
 
 ---
 
+## 零、2026-08-01 现网边界与行业时效
+
+这是一份前瞻 RFC。mossx 当前已有 `ExtensionsView`、MCP inventory、curated skills、六引擎 registry 与 onboarding contracts，但**没有**本文设想的通用第三方 plugin runtime、权限沙箱、market registry、installer 或 review pipeline。
+
+| 主题 | 当前事实 | 不应误读为 |
+|------|----------|------------|
+| Engine registry | 六个 built-in engines；`registerExternalEngine()` 仅创建受校验的 registry entry | 动态插件已能接通 Rust runtime / history / Shared |
+| Extensions surface | 有 Extensions UI、MCP 与 curated-skill 管理面 | generic code plugin marketplace |
+| Plugin security | 有 Tauri/host 边界可复用 | 已实现 manifest permission sandbox |
+| Orchestration | 已有 Shared/collaboration/task 等相邻能力 | 本文 L1–L5 pipeline 全部落地 |
+
+正文的外部数量、产品流程、API 与源码行号是 2026-07 调研快照。2026-08-01 已复核 Obsidian 官方《The future of plugins》入口仍可访问；任何正式立项仍须重新验证源仓库版本、license、security model、维护活跃度与供应链风险。行业方案是 design input，不是 compliance evidence。
+
+当前 engine 集合为 Claude/Codex/Gemini/Grok/Kimi/OpenCode；正文 §mossx 现状中的「五引擎」保留为当时快照，以本节为准。
+
 ## 一、文档目的与一页结论
 
 ### 1.1 文档目的
 
-mossx（ccgui，Tauri 2 + React 19 + Rust 桌面 AI 客户端，统一 Claude Code / Codex CLI / Gemini CLI / OpenCode / Kimi 多个 CLI 引擎）确定了三个未来方向：
+mossx（Tauri 2 + React 19 + Rust 桌面 AI 客户端；当前 registry 含 Claude Code / Codex CLI / Gemini CLI / Grok / Kimi / OpenCode）在本文中探索三个未来方向：
 
 1. **Obsidian 式插件市场**（registry + 上架治理 + 分发）；
 2. **扩展体系**（第三方代码能安全地扩展 mossx 能力）；
@@ -38,7 +56,7 @@ mossx（ccgui，Tauri 2 + React 19 + Rust 桌面 AI 客户端，统一 Claude Co
 
 **为什么运行时学 pi 而不是 Obsidian**：Obsidian 的 API 是笔记编辑器专用（Vault / Workspace / MetadataCache），pi 的 API 是 agent 专用（registerTool / tool_call 事件 / provider 注册 / system prompt 改写）——与 mossx 的 domain 完全吻合。且 pi 的"虚拟模块注入"是运行期保证，比 Obsidian 的 esbuild external（构建期外挂）更彻底地解决宿主 API 版本漂移。
 
-**为什么治理学 Obsidian 而不是 pi**：pi 没有真市场（只是 npm keyword 聚合画廊，无 registry、无审核、无版本兼容承诺，0.x 频繁 breaking）；Obsidian 运营 6 年、6000+ 插件、1.2 亿+ 下载，且 2026-05 刚完成"全自动 review + scorecard"现代化改版——mossx 可以直接对标新版，跳过它的人工 review 时代。
+**为什么治理参考 Obsidian 而不是 pi**：2026-07 调研时，pi 的公开生态更接近 npm keyword 聚合；Obsidian 提供 registry、版本兼容与 review/scorecard 模式。文中的生态数量与下载量是带日期快照；mossx 应借鉴机制，不复制规模叙事或未经本项目验证的治理承诺。
 
 **为什么串线学 pi**：pi 是三家调研对象中唯一把"会话可编程"做成一等公民的：append-only session 树、运行中消息注入（steering）、会话级 fork/switch/replacement API、compaction 式摘要交接、以及官方生态里的编排实例（pi-chat）。mossx 的"A CLI → B CLI 交接"在 pi 里有逐条的同构机制。
 
@@ -976,7 +994,7 @@ Discord/Telegram ←→ Live Adapter ←→ Runtime (log, jobs, slices) ←→ p
 
 ### 5.1 引擎适配现状：薄统一抽象 + 三条进程路线
 
-**统一抽象层（存在，但很薄）**：`src-tauri/src/engine/mod.rs` 定义五个 `EngineType`（Claude/Codex/Gemini/OpenCode/Kimi，`mod.rs:52-63`）、`EngineFeatures` 七个 bool 能力位（`mod.rs:246-261`，预设值 `:265-327`）、统一 `SendMessageParams`（`mod.rs:333-360`）、统一 `EngineEvent` 枚举（`src-tauri/src/engine/events.rs:34-200`，16 个 variant：`session:started / turn:started / text:delta / reasoning:delta / tool:started / tool:completed / tool:inputUpdated / tool:outputDelta / approval:request / userInput:request / turn:completed / turn:error / session:ended / usage:update / processing:heartbeat / raw`）、`EngineManager`（`src-tauri/src/engine/manager.rs:22-44`）。
+**统一抽象层（2026-07 快照，现已扩展）**：当时 `src-tauri/src/engine/mod.rs` 定义五个 `EngineType`。2026-08-01 当前集合已加入 Grok，并由 `engineIds.json`、TS `EngineType`、Rust registry 与 capability matrix 共同约束；行号只作历史导航，按 symbol 重搜。
 
 但统一**止步于类型层**。"如何起进程、如何解析输出、如何发事件"是三条完全不同的路线：
 

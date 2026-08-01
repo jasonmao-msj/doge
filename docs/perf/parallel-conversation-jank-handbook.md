@@ -1,13 +1,17 @@
 # Parallel Conversation Jank Handbook
 
-> **读者**:接手「客户端并行对话卡顿」问题的工程师 / QA / on-call。
-> **目标**:照着这份手册,能复现 → 定位 → 修 → 回归,无需先理解整个项目。
-> **配套**:本手册与 `openspec/changes/investigate-parallel-conversation-jank-2026-06/`(OpenSpec 契约层) + `.trellis/spec/frontend/parallel-conversation-runtime-residuals.md`(code-level rule)互为引用。
+> **内容类型**：Troubleshooting + historical remediation playbook
+> **生命周期**：implemented / historical；七类风险模型仍可用于诊断，但路径、flags 和阈值必须按当前代码重验
+> **最后校准**：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
+> **读者**：接手「客户端并行对话卡顿」问题的工程师 / QA / on-call。
+> **事实源**：`openspec/specs/parallel-conversation-runtime-residuals/spec.md`、`.trellis/spec/frontend/parallel-conversation-runtime-residuals.md`、当前 runtime evidence
+
+原诊断与修复 change 已归档到 `openspec/changes/archive/2026-06-14-fix-parallel-conversation-runtime-residuals-2026-06/`。本手册不是 active backlog；执行任何修复前先用当前 evidence 重新证明根因。
 
 ## 0. TL;DR(给急着上工的人)
 
 1. **卡顿 = 7 个 runtime residual 风险叠加的候选模型**。不是单点问题,按 §3 顺序逐个排查,每条都要用数据确认。
-2. **第一步永远是 §2.1 清 localStorage + reload**。`ccgui.perf.*` 开关被关会显著放大卡顿,但不要在未采样前写成已确认根因。
+2. **第一步先记录，再重置**。先导出/抄录当前 performance flags 与复现证据；再通过 Settings 的性能开关 Reset 恢复默认并 reload。不要先清证据。
 3. **第二步 §2.2 查 child 进程数**。30 分钟 + 多 workspace + 卡顿时,优先确认 child 是否随已结束 turn 单调增长。
 4. **修的具体方案在 §4-§10**,每条根因独立成节,带验收口径和回归测试。
 5. **执行顺序看 §11**,P0 → P1 → P2,不要跳。
@@ -42,7 +46,13 @@
 
 ## 2. 第一轮排查:5 分钟定位
 
-### 2.1 清 localStorage + reload(最常见原因)
+### 2.1 记录 flags → Settings Reset → reload
+
+1. 先用 Settings 的 performance report copy/download 入口保存当前 flags 与诊断信息，并录制 Performance trace。
+2. 打开 **Settings → Other → Reset performance flags**。该入口调用 `resetRealtimePerfFlags()`，统一清理 9 个 boolean flags、streaming schedule tier 和 tool-output tail gate。
+3. reload 后复现同一场景，比较前后证据。
+
+下列 Console 片段只保留为旧版本 recovery 手段；它只覆盖当时 8 个 key，**不再是当前推荐入口**：
 
 DevTools Console 跑:
 
@@ -84,7 +94,7 @@ const keys = Object.keys(localStorage).filter(k => k.startsWith('ccgui.perf.')).
 const flags = {};
 keys.forEach(k => { flags[k] = localStorage.getItem(k); });
 console.table(flags);
-// 期望:空(全部走代码默认 true)或全部 '1' / 'true' / 'on'
+// boolean flags 为空时走代码默认；还要单独检查 streaming tier / tool-output gate
 ```
 
 如果发现某些 key 是 `'0'` / `'false'` / `'off'`,**那就是 §4 的根因**。
@@ -139,7 +149,9 @@ DevTools Memory → Heap snapshot,在 0/5/15/30 分钟各采一次。
 
 ---
 
-## 4. 根因 2(优化开关退化)修复
+## 4. 根因 2（优化开关退化）历史修复设计
+
+> §4–§10 保留当时的实施推导与示例，不保证示例 API 仍可直接编译。当前修复必须先核对文头事实源和现有 tests；本文已把主要文件路径校准到 2026-08-01。
 
 ### 4.1 症状
 
@@ -154,32 +166,21 @@ DevTools Memory → Heap snapshot,在 0/5/15/30 分钟各采一次。
 
 ### 4.3 修复步骤
 
-#### Step 1:文档化 default value
+#### Step 1:文档化 default value（历史实施步骤）
 
-`src/features/threads/utils/realtimePerfFlags.ts` 文件顶部加注释表格,8 个开关每个的 default + rationale。
+当前 `realtimePerfFlags.ts` 有 9 个 boolean flags；另有 streaming schedule tier 与 tool-output tail gate。数量必须从 registry 读取，禁止在 UI 重复维护列表。
 
-#### Step 2:导出 `getActiveFlags()` debug 入口
+#### Step 2：active flag introspection（已落地）
 
 ```ts
-// 在 realtimePerfFlags.ts 末尾加
-export function getActiveFlags(): Record<string, { value: boolean; source: 'localStorage' | 'default' }> {
-  return {
-    realtimeBatching: { value: isRealtimeBatchingEnabled(), source: readSource('realtimeBatching') },
-    appServerEventBatch: { value: isAppServerEventBatchConsumerEnabled(), source: readSource('appServerEventBatch') },
-    reducerNoopGuard: { value: isReducerNoopGuardEnabled(), source: readSource('reducerNoopGuard') },
-    incrementalDerivation: { value: isIncrementalDerivationEnabled(), source: readSource('incrementalDerivation') },
-    backgroundRenderGating: { value: isBackgroundRenderGatingEnabled(), source: readSource('backgroundRenderGating') },
-    backgroundBufferedFlush: { value: isBackgroundBufferedFlushEnabled(), source: readSource('backgroundBufferedFlush') },
-    stagedHydration: { value: isStagedHydrationEnabled(), source: readSource('stagedHydration') },
-    debugLightPath: { value: isDebugLightPathEnabled(), source: readSource('debugLightPath') },
-  };
-}
+const activeFlags = getActiveRealtimePerfFlags();
+// 每项包含 value/source/storageKey/defaultValue/testDefaultValue/metric。
 ```
 
-#### Step 3:Settings 面板加 "Reset" 按钮
+#### Step 3：Settings Reset（已落地）
 
-在 `src/features/settings/components/settings-view/` 下加一个按钮,点击:
-1. `localStorage.removeItem('ccgui.perf.realtimeBatching')` 等 8 个
+`OtherSection.tsx` 已提供 Reset。点击后：
+1. 调用 `resetRealtimePerfFlags()` 清理 registry 中 9 个 boolean flags、schedule tier 与 tool-output tail gate
 2. 弹 modal 提示 reload
 3. reload 后回到默认
 
@@ -201,11 +202,11 @@ reducer 内部所有用到这两个 flag 的地方改成调用 getter,而非读 
 
 ### 4.4 验收
 
-- 8 个开关的代码默认值为 `true`(生产),`false`(test),且在文件顶部有表格注释。
-- DevTools console `getActiveFlags()` 返回 8 项,每项含 `value` 和 `source`。
+- 9 个 boolean flags 的 default/testDefault 由 registry 定义；不得假设 test 全为 false。
+- `getActiveRealtimePerfFlags()` 返回 9 项,每项含 `value`、`source`、`storageKey` 与 metric metadata。
 - 任意关掉一个开关后,Performance 录制 30s 长 turn,reducer dispatch 次数 / Markdown 组件重渲染次数有可观测放大。
 - 重新打开 + reload 后,放大消失。
-- e2e 测试覆盖:点 Settings 的 Reset 按钮 → localStorage 8 个 key 全删 → 提示 reload。
+- 测试覆盖：Settings Reset → registry flags、schedule tier、tool-output gate 全部清理 → 显示结果。
 
 ### 4.5 回归测试
 
@@ -220,9 +221,9 @@ it('returns false when localStorage overrides to 0', () => {
   window.localStorage.removeItem('ccgui.perf.realtimeBatching');
 });
 
-it('getActiveFlags returns 8 flags with source', () => {
-  const flags = getActiveFlags();
-  expect(Object.keys(flags)).toHaveLength(8);
+it('getActiveRealtimePerfFlags returns registered flags with source', () => {
+  const flags = getActiveRealtimePerfFlags();
+  expect(Object.keys(flags)).toHaveLength(9);
   for (const key of Object.keys(flags)) {
     expect(flags[key]).toHaveProperty('value');
     expect(flags[key]).toHaveProperty('source');
@@ -357,10 +358,8 @@ async fn drop_kills_active_child() {
 
 ### 6.2 代码位置
 
-- `src/features/messages/components/LiveMarkdown.tsx:3` `PROGRESSIVE_REVEAL_STEP_MS = 28`
-- `src/features/messages/components/LiveMarkdown.tsx:341-380` `findProgressiveRevealBoundary`(6 正则顺序扫描)
-- `src/features/messages/components/Markdown.tsx:1442` `Markdown = memo(...)`
-- `src/features/messages/components/Markdown.tsx:1585` `setTimeout(..., adaptiveStepMs)`
+- `src/markdown/runtime/LiveMarkdown.tsx`：progressive reveal boundary / step contract
+- `src/markdown/components/Markdown.tsx`：Markdown presentation
 
 ### 6.3 修复步骤
 
@@ -410,7 +409,7 @@ function findProgressiveRevealBoundary(
 
 #### Step 2:`resolveProgressiveRevealValue` 加 useMemo
 
-`src/features/messages/components/Markdown.tsx` 内,在 `Markdown` 组件里:
+`src/markdown/components/Markdown.tsx` 内，在 `Markdown` 组件里：
 
 ```ts
 const progressiveValue = useMemo(() => {
@@ -425,7 +424,7 @@ const progressiveValue = useMemo(() => {
 
 #### Step 3:保留短 pending 短路
 
-当前 `src/features/messages/components/LiveMarkdown.tsx` `resolveProgressiveRevealValue` 已有该逻辑；后续修复只需要补 regression,不要重复实现:
+当前 `src/markdown/runtime/LiveMarkdown.tsx` 已有 `resolveProgressiveRevealValue`；后续修复只需要补 regression，不要重复实现：
 
 ```ts
 if (pendingText.length <= PROGRESSIVE_REVEAL_SMALL_PENDING_CHARS) {
@@ -451,7 +450,7 @@ const finalStepMs = visibleLength > PROGRESSIVE_REVEAL_LARGE_VISIBLE_CHARS
 
 ### 6.5 回归测试
 
-`src/features/messages/components/LiveMarkdown.test.tsx` 新增:
+测试入口：`src/markdown/runtime/LiveMarkdown.test.tsx`。
 
 ```ts
 it('short pending short-circuits', () => {
@@ -697,7 +696,7 @@ return nextThreadsByWorkspace;
 
 ### 8.5 回归测试
 
-`src/features/home/components/Home.perf.test.tsx` 新增:
+历史示例可迁移到当前 `src/features/home/components/Home.test.tsx` 或相关 virtualization suite：
 
 ```ts
 it('renders ≤ 20 DOM nodes for 200 sessions', () => {
@@ -809,7 +808,7 @@ const delayWithJitter = baseDelay * (1 + jitter);
 
 ### 9.5 回归测试
 
-`src/features/threads/hooks/useThreads.test.tsx` 新增:
+历史示例可迁移到当前 `src/features/threads/hooks/useThreads.integration.test.tsx` 或更窄的 timer owner suite：
 
 ```ts
 it('timer registry stays < 20 for 5 workspaces × 3 sessions', () => {
@@ -828,7 +827,7 @@ it('timer registry stays < 20 for 5 workspaces × 3 sessions', () => {
 
 ---
 
-## 10. 根因 6(图片资源)修复
+## 10. 根因 6（图片资源）历史修复设计
 
 ### 10.1 症状
 
@@ -837,8 +836,9 @@ it('timer registry stays < 20 for 5 workspaces × 3 sessions', () => {
 ### 10.2 代码位置
 
 - `src/services/mediaResourceOwners.ts`(只管 `URL.createObjectURL`)
-- `src/features/messages/components/LocalImage.tsx`(`convertFileSrc`)
-- `src/features/messages/components/Markdown.tsx:6` `import { convertFileSrc } from "@tauri-apps/api/core"`
+- `src/components/common/LocalImage.tsx`（真实实现）
+- `src/features/messages/components/media/LocalImage.tsx`（feature re-export）
+- `src/markdown/components/Markdown.tsx`
 
 ### 10.3 修复步骤
 
@@ -914,7 +914,7 @@ const url = convertFileSrc(filePath) + `?cacheBust=${turnId}`;
 
 ### 10.5 回归测试
 
-`src/features/messages/components/LocalImage.test.tsx` 新增:
+测试入口：`src/features/messages/components/media/LocalImage.test.tsx`。
 
 ```ts
 it('clears src when out of viewport', async () => {
@@ -978,16 +978,16 @@ it('clears src when out of viewport', async () => {
 
 ## 13. 配套文档索引
 
-- **OpenSpec 契约**:`openspec/changes/investigate-parallel-conversation-jank-2026-06/`(本 change 沉淀)
-  - `proposal.md` - 背景与变更范围
-  - `design.md` - 7 条根因的代码层分析 + 修复方案
-  - `tasks.md` - 可执行任务清单
-  - `specs/parallel-conversation-runtime-residuals/spec.md` - 行为契约
+- **历史修复 change**：`openspec/changes/archive/2026-06-14-fix-parallel-conversation-runtime-residuals-2026-06/`
+  - `proposal.md` — 背景与变更范围
+  - `design.md` — 根因分析与修复方案
+  - `tasks.md` — 当时任务清单
+  - `specs/parallel-conversation-runtime-residuals/spec.md` — 当时 delta contract
 - **主线 OpenSpec spec**:`openspec/specs/parallel-conversation-runtime-residuals/spec.md`
 - **Code-level rule**:`.trellis/spec/frontend/parallel-conversation-runtime-residuals.md`(沉淀)
 - **复现脚本**:`scripts/perf-reproduce-jank.sh`
 - **执行进度**:`docs/perf/jank-fix-progress.md`(边修边记)
-- **修复提案**(已发起并完成 P0 闭环):`openspec/changes/fix-parallel-conversation-runtime-residuals-2026-06/`
+- **修复提案归档**：`openspec/changes/archive/2026-06-14-fix-parallel-conversation-runtime-residuals-2026-06/`
 
 ---
 
@@ -995,7 +995,7 @@ it('clears src when out of viewport', async () => {
 
 ### Q:为什么不在本 change 直接改产品代码?
 
-A:`openspec/changes/investigate-parallel-conversation-jank-2026-06` 只产诊断手册 + 修复契约 + 验收口径。P0 实际修复由 `fix-parallel-conversation-runtime-residuals-2026-06` 承接;后续 P1/P2 仍按本手册 §6-§10 逐项实施。
+A：原调查只产诊断手册、修复契约与验收口径；P0 修复由已归档的 `fix-parallel-conversation-runtime-residuals-2026-06` 承接。后续问题必须重新立证，不能把 §6–§10 自动当未完成 backlog。
 
 ### Q:7 条根因都要修吗?
 

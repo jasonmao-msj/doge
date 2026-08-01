@@ -1,5 +1,8 @@
 # Shared CLI Creation And Runtime Contract Repair Design
 
+> **Lifecycle**：implemented，待 OpenSpec flow closure；`repair-shared-cli-creation-runtime-contracts` 为 `7/7`，仍 active。
+> **最后校准**：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
+
 ## Outcome
 
 `Shared CLI` 通过二级菜单显式选择本机 ready 的 Claude/Codex/Kimi/Grok/OpenCode；选择后使用该 CLI 的 canonical local Provider 与 runtime-authoritative 默认 Model 立即创建 Shared Session。进入会话后继续使用现有四级 Picker 切换 Provider/Model。

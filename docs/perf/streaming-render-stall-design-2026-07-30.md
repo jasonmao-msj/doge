@@ -1,12 +1,29 @@
 # 幕布对话流式渲染卡顿（stall-then-flush）设计文档
 
 > 日期：2026-07-30
-> 状态：已通过修正版评审，P0 实施中
+> 内容类型：Troubleshooting + implementation design
+> 生命周期：implemented；OpenSpec tasks `17/17`，change 仍 active，待 verify / sync / archive
+> 状态：核心修复已入库 `1537211a1`；idle timeline virtualization 后续由 `4e932e672` 恢复
+> 最后校准：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
 > 范围：Native Session / Shared Session 幕布对话的流式输出渲染链路（Rust 后端 → Tauri IPC → 前端事件 → React 渲染）
 > 关联文档：`docs/perf/parallel-conversation-jank-handbook.md`、`docs/perf/a4-live-text-externalization-plan.md`、`docs/perf/render-jank-knife-experiments-2026-07-08.md`
 > OpenSpec：`openspec/changes/fix-streaming-render-stall-then-flush/`
 
 ---
+
+## 0. 2026-08-01 当前代码校准
+
+本文 §1–§3 保留 2026-07-30 的诊断过程；以下是已落地后的现网合同。
+
+| 原问题 | 当前实现 | 证据 |
+|--------|----------|------|
+| per-delta notify | accumulated / published 分离；首段立即，后续每 thread **48ms throttle + trailing publish** | `LIVE_ASSISTANT_TEXT_PUBLISH_INTERVAL_MS` |
+| `useDeferredValue` starvation | channel-backed row 直接消费 published text；仅非 channel 路径保留 deferred 策略 | `MessageRow.tsx` |
+| Markdown 双重 transition | bounded timer 仍保留；scheduled commit 已移除 `startTransition` | `useMarkdownStreamingValue.ts` |
+| terminal overtaking content | backend sink + frontend backpressure 都有 settlement causal barrier | `1537211a1` 与 change tests |
+| timeline virtualization | **idle 开启**，阈值 48 rows；**streaming 关闭**，继续使用尾窗 + static rows | `messagesTimelineVirtualization.ts`、`4e932e672` |
+
+因此，旧 S0–S3 是已修复根因，不是当前待办；当前若再出现 stall，应先按 phase evidence 判断 source → publish → render → paint 卡在哪层，再决定是否复用本文机制。
 
 ## 1. 背景与现象
 
@@ -23,7 +40,7 @@
 
 ### 2.1 核心结论
 
-当前证据确认存在两个独立问题：
+2026-07-30 的证据确认存在两个独立问题：
 
 1. **render starvation 放大因素**：数据已到 frontend 时，per-delta channel notify、`useDeferredValue` 与 Markdown `startTransition` 叠加，使 background render 在持续输入下被反复重启。
 2. **terminal ordering root cause**：Codex `BatchedTauriEventSink` 与 unified frontend `appServerEventBackpressure` 都允许 settlement terminal 越过已接受的正文；frontend 先结算 turn 后会拒绝 late delta / item completion。
@@ -45,14 +62,13 @@ MiniMax-M3 的 sparse / bursty output 让 final content 与 terminal 更容易�
 [eventBackpressure]                 全 CLI 统一入口；terminal 必须先移交同 workspace predecessors
                                     rAF；isInputPending 时退 setTimeout(32ms)（仅 WebView2 走此分支）
   ↓
-[live text channel 逐 token notify] src/features/threads/.../liveAssistantTextChannel.ts:71
-                                    入口无合流，每 token 一次高优同步渲染
+[live text channel]                accumulated 无损累计；published 48ms + trailing
   ↓
-[MessageRow useDeferredValue]       src/features/messages/rows/components/MessageRow.tsx:291-298 ★饥饿点
+[MessageRow]                        channel-backed 行绕过重复 useDeferredValue
   ↓
-[useMarkdownStreamingValue]         48–220ms 节流 + 又一层 startTransition
+[useMarkdownStreamingValue]         48–220ms bounded timer；无 startTransition
   ↓
-[staged / full markdown]            row 内 Markdown 策略；conversation lightweight mode / virtualization 已硬禁用
+[staged / full markdown]            row 内 Markdown 策略；idle ≥48 rows 可虚拟化，streaming 禁用虚拟化
 ```
 
 ### 2.3 嫌疑点排序（置信度）
@@ -60,10 +76,10 @@ MiniMax-M3 的 sparse / bursty output 让 final content 与 terminal 更容易�
 | # | 嫌疑点 | 位置 | 置信度 |
 |---|--------|------|--------|
 | S0 | **terminal causal ordering defect（已确认）**：Rust / frontend 两层 critical bypass 让 settlement 越过正文，late content 被 terminal guard 丢弃 | `event_sink.rs`、`eventBackpressure.ts` | ★★★★★（代码与回归测试已确认） |
-| S1 | **`useDeferredValue` 饥饿假设**：per-token notify 持续重启 deferred background render，流停才提交最新值 | `src/features/messages/rows/components/MessageRow.tsx:291-298` | ★★★★★（待 A/B 归因） |
-| S2 | **双层 transition 叠加**：deferred 之下 markdown 更新又包 `startTransition`，持续输入下仍可被重启 | `src/markdown/hooks/useMarkdownStreamingValue.ts:33-122` | ★★★★☆ |
-| S3 | live channel 入口无合流，每 token 一次行级同步渲染挤占主线程 | `liveAssistantTextChannel.ts:71` | ★★★★ |
-| S4 | 滚动锚定（ResizeObserver→写 scrollTop）与 static timeline layout 成本；virtualizer 已硬禁用，不再作为本轮现行链路归因 | `MessagesCore.tsx` | ★★★ |
+| S1 | **`useDeferredValue` 饥饿**：per-token notify 持续重启 deferred background render | `MessageRow.tsx` | 已修：channel-backed 行绕过 deferred |
+| S2 | **双层 transition 叠加**：deferred 之下 Markdown 更新再包 `startTransition` | `useMarkdownStreamingValue.ts` | 已修：timer commit 不再 transition |
+| S3 | live channel 入口无合流，每 token 一次行级同步渲染挤占主线程 | `liveAssistantTextChannel.ts` | 已修：48ms publish cadence |
+| S4 | 滚动锚定与 static timeline layout 成本 | `MessagesCore.tsx`、virtualization contract | 另轨：idle virtualization 已恢复；scroll authority 已重构 |
 | S5 | mitigation 是反应式的：stall 700ms 后才降级纯文本，且激活瞬间伴随一次大提交 | `streamLatencyDiagnostics.ts:100` | ★★★ |
 | S6 | Windows 32ms coalesce + 40ms batch 攒出大 payload，WebView2 单次反序列化更贵 | `src-tauri/src/engine/claude.rs:1695`、`event_sink.rs:101` | ★★★（平台放大器） |
 
@@ -71,18 +87,18 @@ MiniMax-M3 的 sparse / bursty output 让 final content 与 terminal 更容易�
 
 - `liveTextExternalization` 默认开启：delta 不打根 reducer，订阅粒度到单行 `useSyncExternalStore`。
 - claude/codex 走 staged 增量 Markdown（Issue #721 修过 full re-parse 6FPS 问题）；它与 conversation lightweight mode 是两个独立概念。
-- timeline adaptive rendering 当前由 `TIMELINE_ADAPTIVE_RENDERING_ENABLED = false` 硬禁用，幕布固定 static full-detail DOM；流式期尾窗仍是独立的 projection 约束。
+- timeline adaptive rendering 当前已开启：idle ≥48 rows 可虚拟化；流式期 virtualizer 仍关闭，继续使用尾窗 + static projection。
 - 有背压队列（128KB / 200 events per flush）、复杂度自适应节流（增量 delta 分析避免 O(n²)）。
 - 有 stall 诊断与降级 mitigation 机制。
 
-### 2.5 缺陷度评估（结构性缺口）
+### 2.5 原结构性缺口与收口状态
 
-1. **无提交下限**：所有节流都是上限语义，缺 max-staleness 强制 flush——修复 S1/S2 的最小手术点。
-2. **优先级倒挂**：urgent 渲染复用旧文本（DOM 不变也渲染一次），等于每 token 白付一次渲染成本来推迟真正的更新。
+1. **无提交下限**：已由 48ms trailing publish 收口；它保证 publish opportunity，不保证 DOM hard SLA。
+2. **优先级倒挂**：channel-backed row 已绕过重复 deferred；非 channel 路径仍按原策略。
 3. **降级滞后**：700ms stall 阈值意味着用户必然先看到卡顿才被救；mitigation 切换瞬间有一次全量大提交。
-4. **平台成本仍需重新测量**：WebView2 单行 Markdown / IPC 成本可能更高，但 virtualization threshold 当前不生效，本轮不得用调阈值的方式恢复它。
+4. **平台成本仍需重新测量**：WebView2 单行 Markdown / IPC 成本可能更高；idle virtualization 已恢复，streaming virtualization 仍不作为调参式修复。
 5. **结束瞬间 DOM 暴涨**：流式期尾窗 60 条 → idle 全量 10000（`messagesRenderUtils.ts:32`），结尾那一下卡顿是设计出来的。
-6. **critical 与 settlement 混类**：approval/requestUserInput 的 urgent 语义与 turn terminal ordering barrier 共用同一分类，既不能表达因果约束，也容易用“zero-loss”掩盖重排。
+6. **critical 与 settlement 混类**：已拆为 interactive urgent bypass 与 settlement causal barrier。
 
 ### 2.6 Windows 更差的机制（按影响排序）
 
@@ -154,7 +170,7 @@ React 官方文档明确：
 - **首段立即 + throttle trailing**：第一段立即发布，后续按 thread 约 48ms 发布 latest snapshot；不按 byte threshold 绕过频率上限。
 - **scheduled commit 必须确定**：timer 已触发的 row / Markdown update 不再叠加可被连续输入重启的 transition。
 - **critical 不等于可重排**：settlement terminal 是 causal barrier；approval / requestUserInput 是 urgent bypass。
-- **改动最小化**：保留 live-text-externalization 与 staged Markdown；conversation lightweight mode / virtualization 继续硬禁用。
+- **改动最小化**：保留 live-text-externalization 与 staged Markdown；conversation lightweight mode 关闭；idle virtualization 可用，streaming virtualization 保持关闭。
 
 ---
 
@@ -256,7 +272,7 @@ channel-backed row 直接使用 published text，并移除 Markdown scheduled co
 | terminal barrier 搬运大量 predecessors | 只移交到既有 scheduled consumer，不同步执行 reducer；仅匹配同 workspace |
 | approval 被正文队列拖延 | interactive critical 不启用 terminal barrier，保持 urgent bypass |
 
-回滚：复用现有 `ccgui.perf.liveTextExternalization=0`，回到 reducer-backed live text；不新增第二个永久 flag。adaptive rendering 仍保持硬禁用。
+回滚：复用现有 `ccgui.perf.liveTextExternalization=0`，回到 reducer-backed live text；不新增第二个永久 flag。idle adaptive rendering 是后续独立恢复项，不随该 flag 回滚。
 
 ---
 
@@ -275,7 +291,7 @@ channel-backed row 直接使用 published text，并移除 Markdown scheduled co
 
 > 以下全部来自当前 HEAD 源码核实，不含推测。每家标注关键 `file:line`。
 
-### 9.1 总览矩阵
+### 9.1 总览矩阵（2026-07-30 诊断快照）
 
 | CLI | 启动形态 | stdout 协议 | 文本粒度 | 后端聚合 | 前端 markdown 路径 |
 |-----|---------|------------|---------|---------|------------------|
@@ -401,7 +417,7 @@ channel-backed row 直接使用 published text，并移除 Markdown scheduled co
 **本仓库诊断**
 
 - `src/features/messages/rows/components/MessageRow.tsx:291-298`（deferred 分支）
-- `src/markdown/hooks/useMarkdownStreamingValue.ts:33-122`（Markdown scheduled transition）
+- `src/markdown/hooks/useMarkdownStreamingValue.ts`（bounded timer；scheduled transition 已移除）
 - `src/services/eventBackpressure.ts:37-59`（flush 调度）
 - `src-tauri/src/engine/claude.rs:298,1695-1699`（Windows 32ms coalesce）
 - `src-tauri/src/event_sink.rs:99-102,385-391`（批量 sink / 逐事件 emit）

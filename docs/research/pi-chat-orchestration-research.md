@@ -1,6 +1,8 @@
 # pi 生态编排调研：earendil-works/pi-chat + pi 会话控制 API
 
-> 调研日期锚点：基于 GitHub main 分支当前源码与本地 pi 仓库文档。
+> **Lifecycle**：External Research Snapshot。不是 mossx orchestration contract。
+> **最后复核**：2026-08-01；本地 pi 仓库锚定 `a9f5b1c123`（2026-07-24），当前 package scope 为 `@earendil-works/pi-coding-agent`。pi-chat upstream 未固定 commit 的结论须在复用前重新核验。
+> 调研日期锚点：基于 GitHub main 分支当时源码与本地 pi 仓库文档。
 > 来源一：https://github.com/earendil-works/pi-chat（README / AGENTS.md / index.ts / src/runtime.ts）
 > 来源二：/Users/chenxiangning/code/AI/github/pi/packages/coding-agent/docs/{extensions.md, rpc.md, sdk.md}
 

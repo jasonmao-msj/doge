@@ -1,5 +1,7 @@
 # Project Map Relationship Dashboard 推进指导（修订版）
 
+> **Lifecycle**：Implemented / Historical Plan。Canonical change 已归档于 `openspec/changes/archive/2026-06-06-add-project-map-relationship-dashboard/`；后续 Project Map 已多轮演进，本文只保留原始 architecture/acceptance reasoning。
+
 ## 中文导读
 
 这份推进指导的目标是把 Project Map 从“能展示一些关系”升级为“可靠的关系事实底座”。

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-30.md`
-- **Total Sessions**: 1262
+- **Total Sessions**: 1263
 - **Last Active**: 2026-08-01
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-30.md` | ~383 | Active |
+| `journal-30.md` | ~416 | Active |
 | `journal-29.md` | ~1970 | Archived |
 | `journal-28.md` | ~1984 | Archived |
 | `journal-27.md` | ~1974 | Archived |
@@ -58,6 +58,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 1263 | 2026-08-01 | 校准 docs 全库文档与当前实现 | `f3c9da4db` | `bump-version-0.7.14` |
 | 1262 | 2026-08-01 | 修正 Codex 模型思考强度映射 | `ca48f5458` | `bump-version-0.7.14` |
 | 1261 | 2026-08-01 | 修复 Shared Session 切换后的实时投影 | `9d8a3048c` | `bump-version-0.7.14` |
 | 1260 | 2026-08-01 | 幕布滚动所有权重构与权威回底收口 | `b34fdaead` | `bump-version-0.7.14` |

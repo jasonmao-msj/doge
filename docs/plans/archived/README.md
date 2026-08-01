@@ -2,7 +2,8 @@
 
 本目录用于存放**已完成并归档**的计划文档，避免主 `docs/plans/` 被历史计划干扰。
 
-> 本索引记录文档归档状态，不是当前代码事实或 verification 证明。当前 backlog 与行为规范以 [`../../../openspec/project.md`](../../../openspec/project.md)、[`../../../openspec/changes/README.md`](../../../openspec/changes/README.md) 和 [`../../../openspec/specs/README.md`](../../../openspec/specs/README.md) 为准。
+> 本索引记录**文档**归档状态，不是当前代码事实或 verification 证明。当前 backlog 与行为规范以 [`../../../openspec/project.md`](../../../openspec/project.md)、[`../../../openspec/changes/README.md`](../../../openspec/changes/README.md) 和 [`../../../openspec/specs/README.md`](../../../openspec/specs/README.md) 为准。
+> 上级：[`../README.md`](../README.md) · 总图 [`../../README.md`](../../README.md)
 
 ## 归档规则
 

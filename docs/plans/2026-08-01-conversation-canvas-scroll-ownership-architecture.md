@@ -1,17 +1,21 @@
 # 共同幕布滚动所有权与编排架构（Scroll Ownership Architecture）
 
-> **日期**：2026-08-01（F 类 / 间歇性补记同日）  
-> **状态**：DESIGN（重构设计；未实现代码）  
-> **触发症状（已确认）**  
-> - **A**：发送后飞顶 / 跟丢最新  
-> - **F**：回合结束后滚动条/视口未达真底（实机截图；**间歇复现**）  
-> **产品立场**：不再对滚动问题做路径级止血；在 **共同幕布（Messages 核）** 做层级权限与编排重构  
-> **范围**：所有 native CLI + Shared Session 共用的 Messages 滚动/高度生命周期（**与引擎无关**）  
-> **关联**  
-> - 结构底稿：`docs/analysis/conversation-canvas-structure-2026-07-31.md`  
-> - 统一幕布任务：`docs/plans/2026-08-01-unified-conversation-canvas-architecture.md`  
-> - 既有止血 change：`openspec/changes/fix-messages-scroll-echo-follow-loss`（实现 + 单测闭环；**实机 5.x 未勾**）  
-> - 近期路径修：`b3cbfaa8` 快流 thrash / settle 吸底偏差  
+> **日期**：2026-08-01（F 类 / 间歇性补记同日）
+> **内容类型**：Strategic Architecture + Decision Record
+> **生命周期**：implemented，待 Human QA / verify / archive
+> **状态**：**代码已入库** `b34fdaead`（`scrollAuthorityMachine` + controller 接入）；OpenSpec `23/26`，仅余 3 项 Human QA
+> **最后校准**：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
+> **分析入口**：`docs/analysis/conversation-canvas-structure-2026-07-31.md` §7.3 · `docs/analysis/README.md`
+> **触发症状（已确认）**
+> - **A**：发送后飞顶 / 跟丢最新
+> - **F**：回合结束后滚动条/视口未达真底（实机截图；**间歇复现**）
+> **产品立场**：不再对滚动问题做路径级止血；在 **共同幕布（Messages 核）** 做层级权限与编排重构
+> **范围**：所有 native CLI + Shared Session 共用的 Messages 滚动/高度生命周期（**与引擎无关**）
+> **关联**
+> - 结构底稿：`docs/analysis/conversation-canvas-structure-2026-07-31.md`
+> - 统一幕布任务：`docs/plans/2026-08-01-unified-conversation-canvas-architecture.md`
+> - 既有止血 change：`openspec/changes/fix-messages-scroll-echo-follow-loss`（实现 + 单测闭环；**实机 5.x 未勾**）
+> - 近期路径修：`b3cbfaa8` 快流 thrash / settle 吸底偏差
 
 ---
 
@@ -72,20 +76,20 @@ isWorking false → turn-settle 钉「当时」maxScrollTop（底₁）
 | 焦点跟随 stick | `liveAutoFollow && autoScroll && !userIntent` | 开则可追迟到长高；**关则 F 更重** |
 | 虚拟化 | 流式关、idle 可开（≥约 48 行等） | **phase 翻转常落在 settle 之后** |
 
-**真底定义（To-Be）**：`distanceToBottom <= 1px`（设备像素对齐）。  
+**真底定义（To-Be）**：`distanceToBottom <= 1px`（设备像素对齐）。
 **禁止**用 120px nearBottom 当作回合结束完成态。
 
 #### 为何路径止血消不掉 F
 
-1. 把「贴底」做成 **时间窗**，而不是 **几何稳态 + Owner 模式**。  
-2. 第一次 pin 使用 **瞬时 max**，不订阅后续单调增长。  
-3. `nearBottom(120px)` 与「滚动条是否在轨底」产品语义不一致。  
-4. 虚拟化/估高/尾窗 常在 settle **之后** 才完成最大高度变化。  
+1. 把「贴底」做成 **时间窗**，而不是 **几何稳态 + Owner 模式**。
+2. 第一次 pin 使用 **瞬时 max**，不订阅后续单调增长。
+3. `nearBottom(120px)` 与「滚动条是否在轨底」产品语义不一致。
+4. 虚拟化/估高/尾窗 常在 settle **之后** 才完成最大高度变化。
 5. 单测多要求焦点跟随开启；实机关跟随或误杀 armed 时行为不同。
 
 ### 1.1.2 间歇性：长短不是本质（用户校准 2026-08-01）
 
-> **观察**：有时 F 不出现；短对话结束也能贴底，长对话有时也正常。  
+> **观察**：有时 F 不出现；短对话结束也能贴底，长对话有时也正常。
 > **结论**：会话长短 **不是** 充要根因；本质是 **竞态组合**。
 
 #### 决策公式（与 message count 无关）
@@ -105,9 +109,9 @@ isWorking false → turn-settle 钉「当时」maxScrollTop（底₁）
 
 **长短不出现在判定式里。** 出现的是：
 
-1. **PostSettleGeometryGrowth?** — 结束后是否还有长高、发生在何时  
-2. **OwnerAliveAtGrowth?** — forced/stick 是否仍有效  
-3. **ArmedKilledByNoise?** — echo / wheel / nearBottom 是否误杀 armed  
+1. **PostSettleGeometryGrowth?** — 结束后是否还有长高、发生在何时
+2. **OwnerAliveAtGrowth?** — forced/stick 是否仍有效
+3. **ArmedKilledByNoise?** — echo / wheel / nearBottom 是否误杀 armed
 
 #### 成败真值表
 
@@ -134,9 +138,9 @@ isWorking false → turn-settle 钉「当时」maxScrollTop（底₁）
 
 #### 禁止的错误归因
 
-- ❌ 「长会话 bug / 短会话没问题」作为根因分类  
-- ❌ 默认把 `SETTLE_REPIN_WINDOW_MS` 加长当修复  
-- ❌ 只按 `messageCount` 写回归而不打时间线  
+- ❌ 「长会话 bug / 短会话没问题」作为根因分类
+- ❌ 默认把 `SETTLE_REPIN_WINDOW_MS` 加长当修复
+- ❌ 只按 `messageCount` 写回归而不打时间线
 
 #### 探针时间线（Phase 0 必打，禁止只记条数）
 
@@ -190,30 +194,30 @@ live 尾窗 / presentation    // 高度塌缩 / 暴涨的主要几何源
 
 结果：同一 **A/F** 症状族，历史上可以来自
 
-1. 高度塌缩 → 浏览器钳位 → **异步 scroll 回声误杀 follow**（偏 A）  
-2. static↔virtual attach 默认 `initialOffset=0`（偏 A/D）  
-3. stick 资格绑 `isWorking` → settle 后离底（偏 F；`b3cbfaa8` 已改跟随语义，关跟随仍洞）  
-4. settle **时间窗**耗尽后仍 remeasure（偏 F；**间歇**）  
-5. 快流 cancel/restart thrash  
-6. wheel/echo 误杀 armed 后再长高（偏 F；**与长度无关**）  
-7. …以及下次新的几何源  
+1. 高度塌缩 → 浏览器钳位 → **异步 scroll 回声误杀 follow**（偏 A）
+2. static↔virtual attach 默认 `initialOffset=0`（偏 A/D）
+3. stick 资格绑 `isWorking` → settle 后离底（偏 F；`b3cbfaa8` 已改跟随语义，关跟随仍洞）
+4. settle **时间窗**耗尽后仍 remeasure（偏 F；**间歇**）
+5. 快流 cancel/restart thrash
+6. wheel/echo 误杀 armed 后再长高（偏 F；**与长度无关**）
+7. …以及下次新的几何源
 
 每条路径各修一次，**Owner 仍是碎片** → “多次解决仍不根治”。
 
 ### 1.3 设计原则（硬约束）
 
-1. **Single Writer**：任意时刻最多一个 **Scroll Owner** 可写 `scrollTop`（含 clamp 补偿）。  
-2. **Intent 优先于启发式**：产品意图（发送见最新 / 用户上滚 / 跳锚）显式进入状态机，不用“像不像用户滚动”猜到底。  
-3. **几何与滚动解耦**：尾窗、虚拟化、折叠只能发 `GeometryDelta`，**禁止**直接 `scrollTop = 0/max`。  
-4. **全 CLI 一核**：Claude/Codex/Grok/Kimi/OpenCode/Shared **同一 Arbiter**；引擎只影响 Geometry 事件频率，不分支 Owner 规则。  
-5. **可证明**：每个 Owner 转换有 reason code；测试断言 **状态转移**，不只断言最终 `scrollTop` 数字。  
+1. **Single Writer**：任意时刻最多一个 **Scroll Owner** 可写 `scrollTop`（含 clamp 补偿）。
+2. **Intent 优先于启发式**：产品意图（发送见最新 / 用户上滚 / 跳锚）显式进入状态机，不用“像不像用户滚动”猜到底。
+3. **几何与滚动解耦**：尾窗、虚拟化、折叠只能发 `GeometryDelta`，**禁止**直接 `scrollTop = 0/max`。
+4. **全 CLI 一核**：Claude/Codex/Grok/Kimi/OpenCode/Shared **同一 Arbiter**；引擎只影响 Geometry 事件频率，不分支 Owner 规则。
+5. **可证明**：每个 Owner 转换有 reason code；测试断言 **状态转移**，不只断言最终 `scrollTop` 数字。
 6. **禁止第 N 层 guard 默认**：新 bug 默认进状态机缺口，不进 `if (specialCase)`。
 
 ---
 
 ## 2. 行业专家怎么做（调研摘要）
 
-调研对象：AI 聊天主流库与虚拟列表合同（2026-08 公开文档/源码描述）。  
+调研对象：AI 聊天主流库与虚拟列表合同（2026-08 公开文档/源码描述）。
 **不直接整库替换**；吸收 **所有权模型** 与 **几何合同**。
 
 ### 2.1 对照表
@@ -289,8 +293,8 @@ live 尾窗 / presentation    // 高度塌缩 / 暴涨的主要几何源
 
 **铁律：**
 
-- L1 / L4 **永不**直接写 `scrollTop`  
-- L3 **仅**在 L2 签发的 `WriteTicket` 有效期内写入  
+- L1 / L4 **永不**直接写 `scrollTop`
+- L3 **仅**在 L2 签发的 `WriteTicket` 有效期内写入
 - `MessagesCore` **删除**散落 `container.scrollTop = …`（除迁移期兼容适配器）
 
 ### 3.2 ViewportMode（替代碎片 flags）
@@ -387,7 +391,7 @@ P6  Geometry only       // 无 Owner 时不写；仅更新观测
 
 #### 3.4.1 forced 期内 UserScroll 仲裁（P1 vs P4 / D2）
 
-**产品冲突原句：**  
+**产品冲突原句：**
 「settle 强制 re-pin（即使用户曾上滚）」vs「UserScroll 优先级高于 TurnSettle」。
 
 **冻结规则（可编码）：**
@@ -426,19 +430,19 @@ P6  Geometry only       // 无 Owner 时不写；仅更新观测
 | **开** | → `stick-bottom`（继续追后续 grow，直到明确上滚） |
 | **关** | → `free`，且 **必须已在真底**（distance≤1px）；之后 **不再** 自动追 late grow |
 
-**跟随关时的 F 合同：**  
-forced 必须覆盖「合理窗口内所有可预期 late grow」（稳态定义见 §4.4）。  
-退役后若再出现极端 late grow（如图片 10s 后 onload）：**不**自动 stick（尊重关跟随）；可选 UI「有新内容 · 回底」由 ExplicitControl。  
+**跟随关时的 F 合同：**
+forced 必须覆盖「合理窗口内所有可预期 late grow」（稳态定义见 §4.4）。
+退役后若再出现极端 late grow（如图片 10s 后 onload）：**不**自动 stick（尊重关跟随）；可选 UI「有新内容 · 回底」由 ExplicitControl。
 **禁止**退役后立刻 free 但 distance>0。
 
 #### 3.4.3 A / F 关键规则（汇总）
 
-1. **TurnSend → forced**（A）：取消 free；签发 ticket；shrink **不得**打回 free。  
-2. **TurnSettle → forced**（F）：退役 = §4.4 稳态 + 真底；期间 grow/measure/phase 追新 max。  
-3. **仅当** 已退役且 free 且明确上滚，才允许离底滞留。  
-4. shrink/grow 在 forced|stick 下对称贴新 max。  
-5. virtual phase：先 PreserveOffset，持票 attach；禁止无票 `initialOffset=0`。  
-6. **safetyTimeout** 仅安全阀（默认 8s）：最后 pin + `settle-timeout-short-of-bottom` 后按 §3.4.2 退役。  
+1. **TurnSend → forced**（A）：取消 free；签发 ticket；shrink **不得**打回 free。
+2. **TurnSettle → forced**（F）：退役 = §4.4 稳态 + 真底；期间 grow/measure/phase 追新 max。
+3. **仅当** 已退役且 free 且明确上滚，才允许离底滞留。
+4. shrink/grow 在 forced|stick 下对称贴新 max。
+5. virtual phase：先 PreserveOffset，持票 attach；禁止无票 `initialOffset=0`。
+6. **safetyTimeout** 仅安全阀（默认 8s）：最后 pin + `settle-timeout-short-of-bottom` 后按 §3.4.2 退役。
 7. **禁止**加长旧 `SETTLE_REPIN_WINDOW_MS` 当默认修复。
 
 ### 3.5 GeometryDelta 合同
@@ -506,7 +510,7 @@ Shared 投影 churn → 更多 grow/shrink
    同一 L4 → 同一 L2
 ```
 
-**禁止** `if (engine === "grok") scroll…`。  
+**禁止** `if (engine === "grok") scroll…`。
 若几何噪声过大：L1 水管节流；forced 期 RO 写频上限见 §4.4。
 
 ### 3.7 Single Writer：现网写点清单与归口（As-Is → To-Be）
@@ -702,8 +706,8 @@ function browserClampProven(prev, next):
 
 **性能不变量：**
 
-- Actuator 写 `scrollTop` **不**进入 React 根 render 链路（继续 ref + rAF；遵守 `docs/perf` 红线）。  
-- forced 期超过 `MAX_STICK_WRITE_HZ` 合并为每帧最多一次。  
+- Actuator 写 `scrollTop` **不**进入 React 根 render 链路（继续 ref + rAF；遵守 `docs/perf` 红线）。
+- forced 期超过 `MAX_STICK_WRITE_HZ` 合并为每帧最多一次。
 - 探针默认 dev；字段上限防爆。
 
 ---
@@ -739,45 +743,58 @@ function browserClampProven(prev, next):
 
 ---
 
-## 7. 实施分期（先设计后代码；本文件不授权开工实现）
+## 7. 实施分期（原始 PLAN，保留作演进证据）
 
-> 实现前须：OpenSpec change（建议 id：`refactor-conversation-canvas-scroll-ownership`）+ 用户确认分期。
+> 下列 checkbox 是设计评审时的原始计划，不再充当 active backlog。当前进度见 §7.1 与 OpenSpec change。
 
 ### Phase 0 — 合同与探针（文档 / 诊断，低风险）
 
-- [ ] 本 DESIGN 评审通过（A+F+间歇性+§3.4.1 仲裁+§4.4 常量）  
-- [ ] 产品确认 D1/D2/D11/D12；工程确认 D9–D14 字面量可接受  
-- [ ] 在 dev 打 `scroll.owner.transition` 探针（只读，`scrollerId=messages-canvas`）：  
-  - A：发送瞬间时间线  
-  - **F：working↓ 后 ≥3s**（开/关跟随 × 有/无迟到长高；含 chrome-resize 若可）  
-- [ ] 至少各抓 1 条「F 出现」与「同结构 F 不出现」对照时间线  
-- [ ] `rg 'scrollTop\s*=' src/features/messages` 与 §3.7 表对齐  
-- [ ] 冻结 Mode / §3.4.1 / §4.4 / 验收进 OpenSpec delta  
+- [ ] 本 DESIGN 评审通过（A+F+间歇性+§3.4.1 仲裁+§4.4 常量）
+- [ ] 产品确认 D1/D2/D11/D12；工程确认 D9–D14 字面量可接受
+- [ ] 在 dev 打 `scroll.owner.transition` 探针（只读，`scrollerId=messages-canvas`）：
+  - A：发送瞬间时间线
+  - **F：working↓ 后 ≥3s**（开/关跟随 × 有/无迟到长高；含 chrome-resize 若可）
+- [ ] 至少各抓 1 条「F 出现」与「同结构 F 不出现」对照时间线
+- [ ] `rg 'scrollTop\s*=' src/features/messages` 与 §3.7 表对齐
+- [ ] 冻结 Mode / §3.4.1 / §4.4 / 验收进 OpenSpec delta
 
 ### Phase 1 — 纯状态机 + 双跑
 
-- [ ] 实现 `scrollAuthorityMachine` 纯函数 + 穷举测试（含 forced 退役稳态规则）  
-- [ ] Controller 双跑：旧路径执行，新路径只断言「若按新机决策会怎样」打 log  
-- [ ] 对比复现：A 发送；**F 结束离底（跟随开/关 × 有/无迟到长高）**；Shared / 快流  
+- [ ] 实现 `scrollAuthorityMachine` 纯函数 + 穷举测试（含 forced 退役稳态规则）
+- [ ] Controller 双跑：旧路径执行，新路径只断言「若按新机决策会怎样」打 log
+- [ ] 对比复现：A 发送；**F 结束离底（跟随开/关 × 有/无迟到长高）**；Shared / 快流
 
 ### Phase 2 — Single Writer 切换
 
-- [ ] WriteTicket 成为唯一写入口  
-- [ ] 删除/隔离 MessagesCore 内直接 `scrollTop` 赋值  
-- [ ] GeometryDelta 总线接管 RO  
-- [ ] 回归：echo / thrash / settle / turn-send / **post-settle grow** 全套 + **实机 5.x + F 截图级**  
+- [ ] WriteTicket 成为唯一写入口
+- [ ] 删除/隔离 MessagesCore 内直接 `scrollTop` 赋值
+- [ ] GeometryDelta 总线接管 RO
+- [ ] 回归：echo / thrash / settle / turn-send / **post-settle grow** 全套 + **实机 5.x + F 截图级**
 
 ### Phase 3 — Geometry 生命周期
 
-- [ ] virtual phase handoff 合同测试  
-- [ ] live tail shrink **与 post-settle grow** 在 forced/stick 下的贴底证明  
-- [ ] 评估是否引入 virtuoso-style follow 或 stick-to-bottom 思路（**优先自研状态机 + 现有 convergence**，避免大换库）  
+- [ ] virtual phase handoff 合同测试
+- [ ] live tail shrink **与 post-settle grow** 在 forced/stick 下的贴底证明
+- [ ] 评估是否引入 virtuoso-style follow 或 stick-to-bottom 思路（**优先自研状态机 + 现有 convergence**，避免大换库）
 
 ### Phase 4 — 收口
 
-- [ ] 移除双跑与 echo 主路径依赖  
-- [ ] 更新 `conversation-canvas-structure` §滚动（A/F/间歇性）  
-- [ ] OpenSpec verify + archive  
+- [ ] 移除双跑与 echo 主路径依赖
+- [ ] 更新 `conversation-canvas-structure` §滚动（A/F/间歇性）
+- [ ] OpenSpec verify + archive
+
+### 7.1 2026-08-01 实现差异与剩余门禁
+
+| 轨道 | 当前状态 | 证据 |
+|------|----------|------|
+| 状态机与 controller | 已入库 | `b34fdaead`；`scrollAuthorityMachine` 与 controller 接线存在 |
+| 自动化任务 | 已完成 | change tasks 除 Human QA 外均已勾选 |
+| A 类：发送不飞顶 | 待实机 | Human QA：发送后保持最新内容可见 |
+| F 类：结束到真底 | 待实机 | Human QA：focus follow 开/关均验证真底 |
+| 用户上滚仲裁 | 待实机 | Human QA：上滚释放，回到底部重新武装 |
+| 流程收口 | 待上述证据 | verify → sync → archive |
+
+设计常量与行业模式仍是决策依据；若源码与本文原始 Phase checklist 冲突，以当前源码和 OpenSpec delta 为准。
 
 ---
 
@@ -832,26 +849,26 @@ function browserClampProven(prev, next):
 
 **门禁：**
 
-- 状态机单测：§4.4 纯函数 + §3.4.1 仲裁表  
-- forced 期间多次 measure-late / chrome-resize 仍 distance=0  
-- 禁止仅用 messageCount「长/短」冒充 F  
-- 组件回归：`Messages.live-behavior` 语义保留或迁移  
-- **实机**：5.x + A 录屏 + F 矩阵抽样（开/关跟随、有/无迟到长高、composer 变高）  
-- jsdom = 协议；WKWebView = 时序真相（分层门禁）  
+- 状态机单测：§4.4 纯函数 + §3.4.1 仲裁表
+- forced 期间多次 measure-late / chrome-resize 仍 distance=0
+- 禁止仅用 messageCount「长/短」冒充 F
+- 组件回归：`Messages.live-behavior` 语义保留或迁移
+- **实机**：5.x + A 录屏 + F 矩阵抽样（开/关跟随、有/无迟到长高、composer 变高）
+- jsdom = 协议；WKWebView = 时序真相（分层门禁）
 
 ---
 
 ## 9. 非目标
 
-- 不按 CLI 分叉滚动实现  
-- **不按会话长短**做滚动策略分叉或根因分类  
-- 不借机重做 presentation / tool 投影（那是统一幕布另一包）  
-- 不默认引入重型第三方聊天壳替换 Messages  
-- 不把 Status Panel **业务逻辑**并入状态机；仅 **chrome-resize 几何**  
-- 不把工具块 **内部** scroller 并入幕布 Owner  
-- 不在 Phase 0–1 改虚拟化阈值“调参碰运气”  
-- 不把单纯加长 `SETTLE_REPIN_WINDOW_MS` 当作 F 的默认修复  
-- 不宣称「零启发式」：clamp + ticket ring 仍保留，只废除无主的全局 grace  
+- 不按 CLI 分叉滚动实现
+- **不按会话长短**做滚动策略分叉或根因分类
+- 不借机重做 presentation / tool 投影（那是统一幕布另一包）
+- 不默认引入重型第三方聊天壳替换 Messages
+- 不把 Status Panel **业务逻辑**并入状态机；仅 **chrome-resize 几何**
+- 不把工具块 **内部** scroller 并入幕布 Owner
+- 不在 Phase 0–1 改虚拟化阈值“调参碰运气”
+- 不把单纯加长 `SETTLE_REPIN_WINDOW_MS` 当作 F 的默认修复
+- 不宣称「零启发式」：clamp + ticket ring 仍保留，只废除无主的全局 grace
 
 ---
 
@@ -878,34 +895,29 @@ function browserClampProven(prev, next):
 
 | # | 决策 | 默认建议 | 状态 |
 |---|------|----------|------|
-| D1 | 发送是否 **总是** forced-bottom | **是** | 待确认 |
-| D2 | settle 边沿是否 forced（清旧 lease 并 re-pin） | **是**（现网契约） | 待确认 |
-| D3 | 正确性主路径 | **Ticket 代际 ring > 全局 echo 指纹**；clamp 几何证明保留 | 待确认 |
-| D4 | 是否引入 `use-stick-to-bottom` 依赖 | **否** | 待确认 |
-| D5 | 是否换 react-virtuoso | **本阶段否** | 待确认 |
-| D6 | OpenSpec change 名 | `refactor-conversation-canvas-scroll-ownership` | 待确认 |
+| D1 | 发送是否 **总是** forced-bottom | **是** | **已采用并实现；待 A 类实机** |
+| D2 | settle 边沿是否 forced（清旧 lease 并 re-pin） | **是**（现网契约） | **已采用并实现；待 F 类实机** |
+| D3 | 正确性主路径 | **Ticket 代际 ring > 全局 echo 指纹**；clamp 几何证明保留 | **已实现，echo 兼容双跑** |
+| D4 | 是否引入 `use-stick-to-bottom` 依赖 | **否** | **已采用** |
+| D5 | 是否换 react-virtuoso | **本阶段否** | **已采用** |
+| D6 | OpenSpec change 名 | `refactor-conversation-canvas-scroll-ownership` | **已创建并实施** |
 | D7 | F 与 A 是否并列主攻 | **是** | **已确认** |
 | D8 | 根因是否按会话长短分类 | **否**（三维） | **已确认** |
-| D9 | forced 退役条件 | **§4.4 稳态 + 真底**；safetyTimeout 仅安全阀 | **设计默认已写入**（待产品点头） |
-| D10 | 真底验收 | **≤1px**；120px 仅 follow re-arm | **设计默认已写入** |
-| D11 | forced 期内明确上滚 | **打断 → free**（§3.4.1） | **设计默认已写入** |
-| D12 | 跟随关时退役落点 | **free@真底**，之后不自动追 | **设计默认已写入** |
-| D13 | safetyTimeout 默认 | **8000ms** | **设计默认已写入** |
-| D14 | 稳态窗默认 | **150ms + ≥3 采样** | **设计默认已写入** |
+| D9 | forced 退役条件 | **§4.4 稳态 + 真底**；safetyTimeout 仅安全阀 | **已实现；待 Human QA** |
+| D10 | 真底验收 | **≤1px**；120px 仅 follow re-arm | **已采用为 Human QA 口径** |
+| D11 | forced 期内明确上滚 | **打断 → free**（§3.4.1） | **已实现；待 Human QA** |
+| D12 | 跟随关时退役落点 | **free@真底**，之后不自动追 | **已实现；待 Human QA** |
+| D13 | safetyTimeout 默认 | **8000ms** | **已实现** |
+| D14 | 稳态窗默认 | **150ms + ≥3 采样** | **已实现** |
 
 ---
 
-## 12. 下一步（仅文档 / OpenSpec 流程）
+## 12. 下一步（当前收口路径）
 
-1. 产品确认 D1/D2/D11/D12；工程确认 D3/D9–D14 默认字面量  
-2. `openspec-new-change`：`refactor-conversation-canvas-scroll-ownership`  
-   - 写入 Mode、§3.4.1 仲裁、§4.4 常量、A/F 验收与 SLO  
-3. Phase 0 探针（只读）：  
-   - A 发送时间线  
-   - F：working↓ 后 ≥3s（开/关跟随 × 有/无迟到长高）  
-   - 对照「F 出现 vs 不出现」  
-4. 复核 `rg scrollTop` 写点与 §3.7 表一致  
-5. **再** Phase 1 纯状态机代码  
+1. 在实机完成 A 类发送、F 类结束真底、上滚释放/重新武装三组 Human QA。
+2. 用 `distanceToBottom <= 1px` 和 reason code 作为证据，不以滑块观感替代。
+3. 复核 `rg 'scrollTop\s*=' src/features/messages`，确认 Single Writer 未被后续代码绕过。
+4. 执行 OpenSpec verify；证据通过后 sync / archive。
 
 ---
 
@@ -927,10 +939,12 @@ function browserClampProven(prev, next):
 
 ## 附录 B — 行业参考链接
 
-- use-stick-to-bottom: https://github.com/stackblitz-labs/use-stick-to-bottom  
-- Vercel AI Elements Conversation: https://elements.ai-sdk.dev/components/conversation  
-- MDN overflow-anchor: https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-anchor  
-- react-virtuoso followOutput（文档关键词）：followOutput / atBottomStateChange  
+- [use-stick-to-bottom](https://github.com/stackblitz-labs/use-stick-to-bottom) — stick / resize / user intent 的参考实现
+- [AI Elements Conversation](https://elements.ai-sdk.dev/components/conversation) — auto-scroll 与 jump-to-bottom 的产品层参考
+- [MDN: overflow-anchor](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/overflow-anchor) — 浏览器 scroll anchoring 标准行为
+- [React Virtuoso Message List](https://virtuoso.dev/message-list/) — message list follow / location API 的库级参考
+
+> 参考链接于 2026-08-01 复核。它们用于验证问题域和可选模式，不是 mossx 可直接替换的实现合同；WebView 差异、现有 Ticket/Geometry contract 与实机证据仍是最终约束。
 
 ## 附录 C — 术语
 
@@ -969,7 +983,7 @@ function browserClampProven(prev, next):
 | 验收负例与 SLO | §8.2 F9–F16 + §8.3 |
 | overflow-anchor | §3.8 |
 
-**文档成熟度：** 战略 DESIGN + **可编码默认** 已具备；待 D1/D2/D11 产品点头后进 OpenSpec，**不宜**再靠加长 2.4s 开工。
+**文档成熟度（原评审 → 当前）**：原稿已具备战略 DESIGN + 可编码默认；D1/D2/D11 随 OpenSpec 实现被采用。当前只剩 A/F/上滚仲裁实机门禁，**不回退**到加长 2.4s 的路径止血。
 
 ---
 
@@ -980,7 +994,8 @@ function browserClampProven(prev, next):
 | 2026-08-01 | 初稿：Scroll Ownership / A 类 / 行业调研 |
 | 2026-08-01 | 补 **F 类**、**间歇性三维**、F1–F8、§4.2.1、D7–D10 |
 | 2026-08-01 | **红队补洞**：§3.4.1 仲裁、§3.4.2 退役落点、§3.7 写点、§3.5 几何源扩展、§3.8 anchor、§4.4 可编码不变量、F9–F16/SLO、D11–D14、附录 D |
+| 2026-08-01 | 对码校准：记录 `b34fdaead`、OpenSpec `23/26`；原始 Phase 保留，active backlog 收敛为 3 项 Human QA |
 
 ---
 
-*本文是重构设计，不是当前实现说明。落地以 OpenSpec change + 源码为准。*
+*本文同时保留原始重构设计与实现差异；当前行为以 OpenSpec change + 源码为准。*

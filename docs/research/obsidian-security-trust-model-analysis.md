@@ -1,5 +1,7 @@
 # Obsidian 安全与信任模型调研报告
 
+> **Lifecycle**：External Security Snapshot。安全结论具有时效性，不是 mossx threat model 或权限 contract。
+> **最后复核**：2026-08-01；官方仍说明 community plugins 可访问本机数据并建议敏感场景独立审计。2026-05 automated review / scorecard 已上线；Access Disclosure、Verified Developer 等公告中的 future work 不应写成已交付能力。
 > 调研时间：2026-07（基于当前可获取的公开资料）
 > 调研范围：官方 help 文档、Developer docs、obsidian-releases / obsidian-developer-docs / eslint-plugin 仓库、官方 blog、CEO 在 Hacker News 的发言、第三方安全研究（Elastic Security Labs）
 > 用途：mossx（Tauri 2 + React + Rust）插件市场安全模型竞品参考

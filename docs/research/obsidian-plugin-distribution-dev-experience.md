@@ -1,5 +1,7 @@
 # Obsidian 插件分发、安装与开发者体验调研
 
+> **Lifecycle**：Historical External Research，正文主体是 2026-02 旧分发模型。
+> **2026-08-01 校准**：2026-05-12 已上线 Obsidian Community directory + developer dashboard。新项目从 dashboard 提交并对每个版本做 automated review；GitHub Releases 仍承载版本产物，客户端仍要求用户手动更新。旧 `obsidian-releases` PR/registry 提交流程只保留为演进证据。详见 [官方公告](https://obsidian.md/blog/future-of-plugins/) 与 [marketplace governance 补充报告](./obsidian-plugin-marketplace-governance.md)。
 > 调研日期：2026-02（数据以文中标注的抓取时点为准）。面向 mossx（Tauri 2 + React + Rust）插件市场设计的竞品参考。
 > 一手来源优先级：docs.obsidian.md 开发者文档 > help.obsidian.md 官方帮助 > github.com/obsidianmd 官方仓库 > 社区/论坛。
 
@@ -7,12 +9,13 @@
 
 ## 0. TL;DR（对 mossx 的可迁移结论）
 
-- Obsidian **没有自建插件托管后端**：注册表是 GitHub 仓库 `obsidianmd/obsidian-releases` 里的 JSON 文件，插件二进制就是各作者 GitHub Release 的 **binary attachments**（`main.js` + `manifest.json` + 可选 `styles.css`）。客户端只做「读注册表 → 下载 release asset → 校验版本」三件事。
+- **当前模型（2026-05 起）**：Obsidian Community 提供 directory、developer dashboard 与 automated review；新项目经 dashboard 提交，每个版本都扫描。GitHub Releases 仍承载 `main.js`、`manifest.json` 与可选 `styles.css` 等版本产物。
+- **旧模型（本文 2026-02 原始窗口）**：`obsidian-releases` JSON registry + GitHub PR 是 submission/governance 中心。下文对这条链路的描述属于 historical evidence，不可直接复制为新市场方案。
 - 安全模型极简：**Restricted Mode**（原 Safe Mode，v0.15.0 改名）一个总开关，默认开启；插件无权限沙箱，官方明示「插件继承 Obsidian 的全部访问权限」。
 - 更新**不自动推送**：出于安全考虑需用户手动 `Check for updates` → `Update all`，更新直接从 GitHub 拉新版本 release。
 - 桌面/移动共用同一注册表与分发链路，靠 manifest 里的 **`isDesktopOnly`** 布尔字段隔离。
 - 开发者体验靠「template repo + esbuild（obsidian API 声明 external）+ `npm version` 触发 `version-bump.mjs` + GitHub Actions 自动发 release」四件套，外加社区插件 **Hot-Reload** 实现热重载。
-- 生态规模：注册表 **6,004 个社区插件**、官方统计文件覆盖 5,971 个插件的 GitHub release 下载量，榜首 Excalidraw 约 680 万次下载；官方还维护 **removed 列表**（175 个被下架插件，含原因）。
+- **2026-02 快照规模**：注册表 **6,004 个社区插件**、官方统计文件覆盖 5,971 个插件的 GitHub release 下载量，榜首 Excalidraw 约 680 万次下载；这些数字不可当作 2026-08 current metric。官方仍维护 removed/deprecation 数据，实时规模须重新抓取。
 
 ---
 

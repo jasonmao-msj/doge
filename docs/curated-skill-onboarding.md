@@ -1,6 +1,9 @@
 # Curated Skill Onboarding
 
-> 准入规则、回退路径、PR review checklist。给后续 PR 加新 curated skill 时对照执行。
+> **文档性质**：Curated skill **准入与 PR checklist**。
+> 准入规则、回退路径；给后续 PR 加新 curated skill 时对照执行。
+> 构建期白名单以 `build.rs` / 当前代码为准。
+> **导航**：[`README.md`](README.md)
 
 ## 准入规则 (Entry Rules)
 

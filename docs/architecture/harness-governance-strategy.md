@@ -1,37 +1,72 @@
 # Harness Governance Layer — mossx 战略架构文档
 
-> **状态**：v1.10（production review closure 版）
+> **状态**：v1.11（历史战略正文 + 2026-08-01 现网校准）
 > **作者**：陈湘宁 × AI Co-Architect
 > **日期**：2026-05-17
 > **类型**：架构战略文档（Strategic Architecture）
-> **关联文档**：`docs/architecture/`、`.trellis/workflow.md`、`openspec/project.md`、`openspec/changes/stabilize-core-runtime-and-realtime-contracts/`
+> **生命周期**：accepted；核心治理切片已实现并归档，百分比 readiness 为历史评估，不是当前 release KPI
+> **最后校准**：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
+> **关联文档**：`docs/architecture/`、`.trellis/workflow.md`、`openspec/project.md`、`openspec/changes/archive/2026-05-28-stabilize-core-runtime-and-realtime-contracts/`
 
 ---
 
-## TL;DR（结论先行）
+## 2026-08-01 当前代码校准（先读）
+
+本文 2026-05 的战略判断仍用于解释「为什么做 governance」，但引擎数量、文件规模、change 生命周期和 gate 结果已经变化。以下表格覆盖正文中的旧「当前」表述；正文保留原貌用于追溯决策演进。
+
+| 维度 | 2026-05 原始快照 | 2026-08-01 当前事实 | 事实源 / 判定 |
+|------|------------------|---------------------|---------------|
+| Built-in engines | 4 | **6**：`claude / codex / gemini / grok / kimi / opencode` | `src/features/engine/engineIds.json`、`src/types/engine.ts` |
+| Realtime / history projections | 4 + shared | **6 engine-specific + shared**，共 7 adapters、7 loaders | `src/features/threads/adapters/`、`loaders/` |
+| Shared engine boundary | 未定型 | 5：Claude/Codex/Kimi/Grok/OpenCode；Gemini 不支持 Shared | `sharedSessionEngines.ts` 与对应 Rust contract |
+| Governance changes | active implementation queue | 本文引用的 capability/domain-event/evidence/90% 等主干 change 均已归档 | `openspec/changes/archive/` |
+| Governance gates | 设计目标 | capability matrix、evidence bridge、domain-event schema **PASS**；domain-event adoption **FAIL** | 见下方 gate audit |
+| AppShell | 约 82KB 单体 | `src/app-shell.tsx` 为 **70,072 bytes**，已有 `app-shell-parts/` **92 files**；仍是需要持续减重的 orchestration root | 2026-08-01 文件扫描 |
+| `SpecHub` | 旧路径 | `src/features/spec/components/SpecHub.tsx` | 当前源码 |
+
+### Gate audit
+
+2026-08-01 在当前工作区重跑：
+
+| 命令 | 结果 | 解释 |
+|------|------|------|
+| `pnpm check:engine-adapter-registry` | PASS | 6 built-ins 的 frontend/Rust registry parity 成立 |
+| `pnpm check:engine-capability-matrix` | PASS | 15 capabilities 与生成物一致 |
+| `pnpm check:governance-evidence-bridge` | PASS | evidence bridge contract 完整 |
+| `pnpm check:agent-domain-event-schema` | PASS | schema gate 完整 |
+| `pnpm check:agent-domain-event-adoption` | **FAIL** | checker 仍在 `useThreadEventHandlers.ts` 查找已抽到 `threadEventHandlerTypes.ts` 的类型 token |
+| `pnpm check:capability-aware-policy-router` | inventory 生成成功 | 扫描 3,101 files，458 findings；exit 0 不表示零 branch debt，须审查 finding delta |
+
+`agent-domain-event-adoption` 是 **gate implementation drift**：producer / consumer / controller 接线仍在，当前失败不能直接推导为 runtime adoption 缺失；但 gate 为红也不能声明 governance evidence-complete。应修 checker 使其跟随类型拆分，再重跑并记录 artifact。
+
+`capability-aware-policy-router` 当前是 advisory inventory，不是 pass/fail policy proof；458 表示待分类 branch 数，不等于 458 个 bug。治理动作应比较新增/删除 finding 与 allowlist rationale，而不是把 exit code 或总数包装成绿色结论。
+
+> **更新触发器**：新增/删除 engine、Shared 支持矩阵变化、governance gate/schema 改动、AppShell orchestration 再拆分、外部框架能力发生重大变化。
+
+## TL;DR（2026-05 战略结论，历史）
 
 ### 战略结论
 
 1. **Harness engineering** 是包裹 LLM 的运行时框架；模型决定上限，harness 决定下限。
 2. **mossx 的战略空地是"Harness 治理层（Meta-Harness）"** —— 不与 Claude Code/Codex 竞争内核，而是做"agent 的 control plane"。
-3. **mossx 当前约 70%，下一目标是 95%-99% governance-layer readiness** —— 90% 只能算最低地基闭环；要到 95%-99%，还必须补齐 provenance/replay、safe recovery、operator handoff、三平台 evidence 与 sync/archive 闭环。
+3. **当时评估约 70%，目标 95%-99% governance-layer readiness**。该百分比是 v1.8 的 evidence rubric；当前 gate 有红项，禁止续用为 release 声明。
 
 ### 现状校准结论（v1.6）
 
-4. **引擎数量被低估**：实际已支持 **4 个引擎**（claude / codex / gemini / opencode），而非"双引擎"。EAL 雏形已落在 `src/features/threads/contracts/`、`src/features/threads/adapters/`、`src/features/engine/` 与 `src-tauri/src/engine/`，**不需要新建，需要显式化**。
+4. **引擎数量被低估（2026-05 快照）**：当时已支持 **4 个引擎**；现为六引擎，见文首校准。EAL 雏形已落在 `src/features/threads/contracts/`、`src/features/threads/adapters/`、`src/features/engine/` 与 `src-tauri/src/engine/`，**不需要新建，需要显式化**。
 5. **治理资产已经分散落地**：`context-ledger`（上下文/成本治理雏形）+ `session-activity`（审计投影）+ `Checkpoint`（SLA 判决）+ `SpecHub`（spec-as-policy）+ `engine-control-plane-isolation` spec —— **治理语言已经在用，只是没有统一旗帜**。
-6. **最大的拦路虎不是设计，是 `app-shell.tsx` 82KB 的超大型协调器** —— 治理层任何全局抽象都被它阻挡。团队已有 `.trellis/tasks/04-22-split-app-shell-orchestration` trellis 任务，**治理战略必须接续这条主线，而不是另开战场**。
+6. **当时最大的拦路虎是 `app-shell.tsx` 82KB 的超大型协调器**。当前已拆出 `app-shell-parts/`，但 root 仍约 70KB；治理战略继续接续拆分主线，不另建平行 orchestration 层。
 7. **下一步最高 ROI 的动作不是建 EventBus**，而是 ① 把现有 `RealtimeAdapter / HistoryLoader / NormalizedThreadEvent` 上升为治理契约 ② 建 `engine-capability-matrix` spec ③ 给 `context-ledger` 加入跨引擎成本视图 ④ 把 `Checkpoint` 升级为 Policy Chain 宿主。
 
 > 💡 **核心洞察**：mossx 不需要"启动一个治理层项目"，而是需要"给已有的治理资产一个统一的叙事和正式化的接口"。
 >
 > **v1.6 收口结论**：治理层设计已经完成第一轮闭环。下一步不再继续扩写战略，而是按 OpenSpec change 进入实施队列：先 contract/legal layer，再治理能力，再 substrate 风险切片。所有治理实现必须通过 heavy-test-noise、large-file governance 与 Win/macOS/Linux 三平台约束。
 >
-> **v1.7 校准结论**：核心治理与结构基座已有 first-slice implementation evidence，但不能把 first-slice 等同于 90% 完成。`advance-harness-governance-to-90` 是当前总控 change，专门承接 live snapshot injection、gate result evidence、domain-event adoption、browser scroll evidence、webview timing evidence 与后续 one-hub split。
+> **v1.7 历史校准结论**：核心治理与结构基座已有 first-slice implementation evidence，但不能把 first-slice 等同于 90% 完成。`advance-harness-governance-to-90` 当时是总控 change；该 change 后续已归档。
 >
-> **v1.8 校准结论**：90% 只是最低 floor，不是本轮目标。当前总控 change 已升级为 95%-99% release-grade readiness：95% 要求运行闭环 + provenance + replay + recovery + operator handoff；99% 额外要求 Win/macOS/Linux 三平台 evidence 完整。100% 不作为本地交付目标，因为缺长期生产运行数据时声称 100% 不可信。
+> **v1.8 历史校准结论**：90% 只是最低 floor，不是当时目标。总控 change 当时升级为 95%-99% release-grade readiness；这些百分比是该轮 evidence rubric，不是当前产品 KPI。
 >
-> **v1.9 加固结论**：95%-99% 不能只靠“任务写全”。总控 change 现在补了四个生产级门禁：① S1 明确 `StatusPanel` hook/useMemo 顺序，防止 evidence 只显示不进 policy ② S3 增加 `check:agent-domain-event-adoption`，防止只有 schema 没有真实 producer/consumer ③ S6 将 consumed evidence provenance 从 SHOULD 收紧为 MUST ④ S7 要求每个平台 evidence 逐行记录 `platform / command / runUrlOrArtifactPath / date / commit / result / qualifier`。
+> **v1.9 历史加固结论**：95%-99% 不能只靠“任务写全”。当时总控 change 补了四个生产级门禁：① S1 明确 `StatusPanel` hook/useMemo 顺序 ② S3 增加 `check:agent-domain-event-adoption` ③ S6 收紧 provenance MUST ④ S7 要求 per-platform evidence rows。
 >
 > **v1.10 Review 收口**：第二轮 production review 后，95/99 的边界进一步明确：95% 可接受 Windows/Linux 外部 CI qualifier，但 99% 必须有真实三平台 result evidence；S2 默认 large-file result evidence 走 structured JSON，S3 默认 first producer 走 turn completed/failed，避免开放问题拖慢执行。
 
@@ -39,7 +74,7 @@
 
 ## 目录
 
-- [零、现状校准 Review（v1.6 必读）](#零现状校准-reviewv16-必读)
+- [零、2026-05 现状校准 Review（历史）](#零现状校准-reviewv16-历史)
 
 - [一、Harness Engineering 基础原理](#一harness-engineering-基础原理)
 - [二、开源生态全景（2025-2026）](#二开源生态全景2025-2026)
@@ -54,19 +89,19 @@
 
 ---
 
-## 零、现状校准 Review（v1.6 必读）
+## 零、现状校准 Review（v1.6 历史）
 
-> 本章基于对 `src/` 全量代码、`openspec/changes`、`openspec/specs`、`docs/architecture` 的事实扫描。每个结论都附带文件证据。**这是"治理层在 mossx 当前阶段应该怎么做"的回答。**
+> 本章基于 2026-05 当时的 `src/`、OpenSpec 与 docs 扫描。它解释该阶段为何这样决策；当前执行入口已移到文首校准。
 
-### 0.0 2026-05-20 readiness 复核
+### 0.0 2026-05-20 readiness 复核（历史证据）
 
-当前代码事实显示 harness governance 不是文档态：
+当时代码事实显示 harness governance 不是文档态：
 
 - `src/features/governance/evidence/**` 已有 typed evidence、snapshot、reader 与 adapter。
 - `src/features/status-panel/utils/policies/**` 已有 policy chain 与 bridge policies。
 - `src/features/status-panel/components/audit/**` 已有 policy audit surface。
 - `src/features/threads/domain-events/**` 已有 schema、factory 与 subscribe-only runtime foundation。
-- `src/features/threads/contracts/realtimeEventBatcher.ts`、`src/features/messages/components/messagesTimelineVirtualization.ts`、`vite.config.ts` 已有结构基座第一切片。
+- `src/features/threads/contracts/realtimeEventBatcher.ts`、`src/features/messages/timeline/virtualization/messagesTimelineVirtualization.ts`、`vite.config.ts` 已有结构基座第一切片。
 
 但 release-grade readiness 仍缺九个闭环：
 
@@ -80,7 +115,7 @@
 8. recovery 行为需要可测试：missing/malformed/stale/duplicate evidence 不得击穿 checkpoint。
 9. Windows/macOS/Linux evidence 与 sync/archive handoff 需要闭环，缺 Windows/Linux 只能停在 95% 附近，不能声称 99%。
 
-因此当前进度判定为 **约 70% foundation-ready**；`advance-harness-governance-to-90` 保留原 change id，但下一阶段目标已从“90% floor”升级为“95%-99% governance-layer readiness”。
+因此**当时**进度判定为 **约 70% foundation-ready**；后续实现与归档已推进，当前不得沿用该百分比，须按文首 gate audit 重新判定。
 
 生产级执行加固要求：
 
@@ -98,13 +133,13 @@
 
 | # | 资产 | 文件证据 | 治理层身份 | 强化方向 |
 |---|------|---------|---------|--------|
-| 1 | `EngineType` 联合类型 | `src/types.ts`（claude/codex/gemini/opencode） | EAL 类型基础 | 与 Rust `EngineFeatures` 对齐为 capability matrix |
-| 2 | 4 个引擎 adapter + shared mapper | `src/features/threads/adapters/{claude,codex,gemini,opencode}RealtimeAdapter.ts` + `sharedRealtimeAdapter.ts` | 引擎隔离已实现，公共 mapper 已集中 | 将现有 `RealtimeAdapter` 从幕布 contract 上升为治理 contract |
-| 3 | 4 个引擎 loader + shared session loader | `src/features/threads/loaders/{claude,codex,gemini,opencode,shared}HistoryLoader.ts` | Session 抽象雏形 | 将现有 `HistoryLoader` 正式纳入 Context Bridge contract |
+| 1 | `EngineType` 联合类型 | `src/types/engine.ts` + `src/features/engine/engineIds.json` | EAL 类型基础 | 与 Rust capability matrix 保持生成校验 |
+| 2 | 六引擎 adapter + shared mapper | `src/features/threads/adapters/`（6 engine-specific + shared） | 引擎隔离已实现，公共 mapper 已集中 | 继续守住 `RealtimeAdapter` contract |
+| 3 | 六引擎 loader + shared session loader | `src/features/threads/loaders/`（6 engine-specific + shared） | Session 抽象雏形 | 继续守住 `HistoryLoader` contract |
 | 4 | Checkpoint 判决引擎 | `src/features/status-panel/utils/checkpoint.ts`（`buildCheckpointViewModel` / `resolveVerdict`） | Agent SLA 状态机 | 扩展为 Policy Chain 宿主 |
 | 5 | `context-ledger` | `src/features/context-ledger/` | **上下文账本已立；成本治理需要补 pricing / budget 层** | 升级为 Cost/Context Ledger + Token Budget Dashboard |
 | 6 | `session-activity` | `src/features/session-activity/` | Audit Trail 雏形 | 先补 `AgentDomainEvent` schema；消费迁移与导出能力留后续 change |
-| 7 | `SpecHub` + OpenSpec 集成 | `src/features/spec/SpecHub.tsx` | Spec-as-Policy 落地 | 治理策略可发布为 spec |
+| 7 | `SpecHub` + OpenSpec 集成 | `src/features/spec/components/SpecHub.tsx` | Spec-as-Policy 落地 | 治理策略可发布为 spec |
 | 8 | `engine-control-plane-isolation` spec | `openspec/specs/engine-control-plane-isolation/` | **"control plane" 语言已正式化** | 扩展为完整 capability matrix spec |
 | 9 | `architecture-ci-governance` spec | `openspec/specs/architecture-ci-governance/` | 质量门禁治理 | 增加治理层契约的 CI 验证 |
 | 10 | `engine-control-plane` 抽象层（Rust） | `src-tauri/src/engine/`（40+ `.rs`） | 后端引擎管理已分层 | 与前端 EAL 形成 IPC 契约 |
@@ -124,16 +159,16 @@
 
 ### 0.4 🔴 重点优化（必须重构 / 拉齐 —— 这是治理层落地的真正瓶颈）
 
-#### R1：`app-shell.tsx` 82KB 拆解 —— **治理层的最大前置依赖**
+#### R1：`app-shell.tsx` 拆解 —— **治理层的持续前置依赖**
 
-- **现状**：`src/app-shell.tsx` 约 82KB，集成 28+ hooks，承载启动 / 路由 / 全局事件 / lifecycle 编排
+- **2026-05 现状**：`src/app-shell.tsx` 约 82KB，集成 28+ hooks，承载启动 / 路由 / 全局事件 / lifecycle 编排。2026-08-01 已降至 70,072 bytes 并拆出 92 个 `app-shell-parts` 文件，但 root orchestration 仍需持续减重。
 - **影响**：任何全局治理切面（domain event schema、policy 注入、cost 聚合）都需要在 shell 层接入，但 shell 已无可读性
 - **现有抓手**：trellis 任务 `.trellis/tasks/04-22-split-app-shell-orchestration` 已立项
 - **治理战略动作**：**不另开战场**，而是把"治理切面注入点"作为 shell 拆分的设计目标之一，让 shell 拆完即治理基础设施
 
 #### R2：现有 Adapter / Loader contract 上升为治理契约 —— **EAL 立法**
 
-- **现状**：`RealtimeAdapter` / `HistoryLoader` / `NormalizedThreadEvent` 已存在于 `src/features/threads/contracts/conversationCurtainContracts.ts`，4 个引擎 adapter 很薄，复杂度主要集中在 `sharedRealtimeAdapter.ts` 和各引擎 history parser。
+- **现状**：`RealtimeAdapter` / `HistoryLoader` / `NormalizedThreadEvent` 已存在于 `src/features/threads/contracts/conversationCurtainContracts.ts`；当前有六引擎 adapter + shared，复杂度主要集中在 shared mapper 和各引擎 history parser。
 - **OpenSpec 关联**：`stabilize-core-runtime-and-realtime-contracts` 已完成主干稳定化，提供了 canonical realtime event matrix、frontend normalization tests、runtime lifecycle evidence。
 - **治理战略动作**：**不要重新抽接口**，而是发起后续 OpenSpec change，把现有幕布 contract 提升为 `engine-runtime-contract`：明确 event schema、history snapshot schema、legacy alias policy、adapter registration rule、cross-engine parity tests。
 
@@ -222,7 +257,7 @@ src-tauri/src/engine + codex/shared  ─→ MCP Governance IPC
 ─────────────────────────────────────────────────────────────
 ```
 
-### 0.8 本节结论 —— 当前客户端应该怎么做（执行版）
+### 0.8 本节结论 —— 2026-05 执行建议（历史）
 
 > 用三句话回答用户的核心问题"harness 治理层在当前项目应该怎么做"：
 
@@ -234,7 +269,7 @@ src-tauri/src/engine + codex/shared  ─→ MCP Governance IPC
 
 ### 0.9 v1.6 收口：OpenSpec 执行队列与依赖矩阵
 
-当前 OpenSpec workspace 已识别 11 个 active changes，其中 9 个属于 harness governance 设计闭环。它们不是同一层级的任务，必须按依赖分层推进。
+2026-05 的 OpenSpec workspace 当时识别 11 个 active changes，其中 9 个属于 harness governance 设计闭环。相关主干 change 现已归档；下表保留当时依赖关系，不再作为 active queue。
 
 | 执行层级 | Change | 角色 | 依赖判断 | 下一步 |
 |---|---|---|---|---|
@@ -258,7 +293,7 @@ src-tauri/src/engine + codex/shared  ─→ MCP Governance IPC
 5. **两条 GitHub sentry 是硬约束，不是建议**：涉及新增/修改 tests 的 change 必须满足 `.github/workflows/heavy-test-noise-sentry.yml` 等价约束；涉及 spec/fixture/source 体积增长的 change 必须满足 `.github/workflows/large-file-governance.yml` 等价约束。
 6. **跨平台是产品属性，不是 CI 附录**：mossx 是通用桌面客户端，治理层代码不得写入 POSIX-only 路径、shell quoting、newline、可执行名或平台条件语义；差异必须封装在 adapter/IPC 层，并在 ubuntu/macos/windows 三端验证。
 
-**收口判定**：截至 v1.9，harness governance 的核心与结构基座第一切片已经完成，但 90% 只能作为最低 floor。要达到 95%-99%，`advance-harness-governance-to-90` 必须闭合真实 policy path、gate result evidence、domain-event adoption、browser/runtime 证据、provenance/replay、safe recovery、operator handoff、三平台 evidence 与 sync/archive handoff。最新提案已经把 stale parallel plan 移除，并将 S1/S3/S6/S7 收紧为可执行门禁；剩余工作是按切片实施与验证，不是继续扩写新概念。
+**历史收口判定**：截至 v1.9，harness governance 的核心与结构基座第一切片已经完成。该轮 change 后续已归档；当前是否 evidence-complete 必须以文首 gate 重跑结果与三平台 evidence 判断，不能续用 95%-99% 文字声明。
 
 ---
 
@@ -789,6 +824,7 @@ steps:
 | v1.8 | 2026-05-20 | 陈湘宁 × AI Co-Architect | **95%-99% release-grade readiness 校准版**：把 90% 改为最低 floor，补齐 provenance/replay、safe recovery、operator handoff、Win/macOS/Linux evidence、sync/archive handoff 的总控要求；明确 95% 与 99% 的证据差异，避免把局部闭环误报为整体成熟。 |
 | v1.9 | 2026-05-20 | 陈湘宁 × AI Co-Architect | **生产级执行加固版**：移除总控 design 中的重复旧计划；补强 S1 `StatusPanel` hook/useMemo 顺序约束、S3 domain-event adoption checker、S6 consumed evidence provenance MUST、S7 per-platform evidence row schema。 |
 | v1.10 | 2026-05-20 | 陈湘宁 × AI Co-Architect | **二轮 review 收口版**：校准 95/99 平台证据边界；S2 默认 structured JSON gate result；S3 默认 turn completed/failed first producer；S3 design write set 补入 adoption checker 与 `package.json`。 |
+| v1.11 | 2026-08-01 | AI Co-Architect | 对齐六引擎、Shared 五引擎、AppShell 现状与 archive 生命周期；记录四项 governance gate 的可重跑结果及 adoption checker drift。 |
 
 ---
 

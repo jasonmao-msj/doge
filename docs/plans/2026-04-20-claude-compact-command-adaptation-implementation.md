@@ -1,5 +1,6 @@
 # Claude Compact Command Adaptation Implementation Plan
 
+> **Lifecycle**：Implemented / Historical Plan。Canonical change 已归档于 `openspec/changes/archive/2026-04-21-claude-code-compact-command-adaptation/`；当前 compact lifecycle 以代码与 main specs 为准。
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 让 `/compact` 在 Claude 线程中成为正式产品命令，同时保持 Codex 现有 compaction 行为不变。

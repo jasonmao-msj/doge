@@ -1,5 +1,7 @@
 # Obsidian 插件运行时架构与 API 面 —— 竞品调研报告
 
+> **Lifecycle**：External Research Snapshot。不是 mossx runtime contract，也不代表 Obsidian 私有实现。
+> **最后复核**：2026-08-01；公开 API 与官方 Developer docs 仍是事实源，进入产品设计前须重新检查 API revision、manifest schema 与安全政策。
 > 调研日期：2026-07-24。调研方式：抓取 obsidianmd/obsidian-api 的 `obsidian.d.ts`（master 分支，8498 行）逐段精读 + obsidianmd/obsidian-sample-plugin 仓库源码 + docs.obsidian.md 官方 Developer docs。
 > 一手来源：
 > - API 类型定义（含 TSDoc）：https://github.com/obsidianmd/obsidian-api/blob/master/obsidian.d.ts

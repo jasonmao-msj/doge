@@ -1,12 +1,37 @@
 # 新 CLI 接入指南（Engine Onboarding Guide）
 
 > 初始日期：2026-07-27
-> 最近校准：2026-07-29
+> 内容类型：How-to + conceptual integration contract
+> 生命周期：accepted；流程有效，注册点已按 2026-08-01 代码校准
+> 最近校准：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
 > 上游契约：[`mossx-multi-cli-provider-session-foundation-design.md`](./mossx-multi-cli-provider-session-foundation-design.md)（下称**基石设计**）
 > 适用读者：要为 mossx 接入新 Agent CLI（如 Grok CLI、Auggie、未来任意 CLI）的工程师
 > 核心结论：接入一个新 CLI = **一次 Capability Spike + 一个 RuntimeDeliveryAdapter + terminal/event normalizer + 注册点**，不是复制一套 Shared lifecycle。接入目标是保持存量 CLI、Native Session 与 Shared Session 的既有语义不变。
 
 ---
+
+## 零、先区分概念角色与真实代码注册面
+
+本文中的 `RuntimeDeliveryAdapter`、`RuntimeCapabilities`、`NativeEventNormalizer`、`NativeHistoryReader` 是**架构角色名**，不保证在仓库中存在同名 export。它们不能当作可复制粘贴的 symbol。
+
+当前接入一个 built-in engine 至少要核对这些真实注册面：
+
+| 层 | 当前注册面 | 为什么不能漏 |
+|----|------------|--------------|
+| Frontend identity | `src/features/engine/engineIds.json`、`engineRegistry.ts`、`src/types/engine.ts` | engine id、metadata、TS exhaustiveness |
+| Rust identity / dispatch | `src-tauri/src/engine/mod.rs`、`adapter_registry.rs` | EngineType、protocol/adapter routing |
+| Registry governance | `scripts/check-engine-adapter-registry.mjs`、`scan-engine-name-branches.mjs` | built-in parity 与散落 engine-name branch 不得漂移 |
+| Capability contract | `src-tauri/src/engine/capability_matrix.rs` + generated matrix gate | UI/runtime 不能按名字猜能力 |
+| Live projection | `src/features/threads/adapters/<engine>RealtimeAdapter.ts` | runtime event → canonical item |
+| History projection | `src/features/threads/loaders/<engine>HistoryLoader.ts` | reload 与 live parity |
+| Shared eligibility | `sharedSessionEngines.ts` + `src-tauri/src/shared_sessions.rs` | frontend/backend 必须同集合 |
+| Runtime policy | `src-tauri/src/engine_policy.rs` | 注册存在不等于 runtime 可用；Gemini 当前就是反例 |
+
+`registerExternalEngine()` 当前只验证并返回 registry entry；它**不是**完整的 dynamic plugin runtime，也不会自动生成 Rust adapter、capability、history、Shared 或 security wiring。外部 engine 要进入产品路径，仍需明确宿主授权和上述 contracts。
+
+当前 built-in 集合为六引擎；Shared 支持五引擎并排除 Gemini。新增引擎后至少重跑 `pnpm check:engine-adapter-registry`、`pnpm check:engine-capability-matrix`、`pnpm check:capability-aware-policy-router`，并执行 live/history parity 与 Shared negative-path tests。
+
+其中 `check:capability-aware-policy-router` 当前调用 `scan-engine-name-branches.mjs` 生成 branch inventory：exit code 0 只表示扫描成功，不表示 finding 为零。Review 必须检查 finding count 与本次 diff，确认新增 engine-name branch 已进入 capability policy 或附有明确 allowlist 理由；不要把它当作普通的 pass/fail gate。
 
 ## 一、这份文档解决什么问题
 
@@ -120,18 +145,20 @@
 
 以下步骤按依赖排序。每一步都标注了"不做什么"——接入新 CLI 的常见错误大多是做了不该做的事。
 
-### Step 1：注册 EngineType（TS + Rust 双侧）
+### Step 1：注册 Engine identity（registry + TS + Rust）
 
 触碰点：
 
+- `src/features/engine/engineIds.json`：新增 built-in id 与 registry metadata
+- `src/features/engine/engineRegistry.ts`：确认 registry 解析与 collision contract
 - `src/types/engine.ts`：新增 Engine variant
-- `src-tauri/src/engine/mod.rs`：新增对应枚举 variant
+- `src-tauri/src/engine/mod.rs`、`adapter_registry.rs`：新增枚举与 adapter/protocol routing
 
 注意事项：
 
 - Rust 的 exhaustive match 会强制编译器列出所有集成点——**这是免费的接入点清单**，逐个过一遍，每一处决定"新 CLI 在此处的行为"，不要随手 `_ => unreachable!()`。
 - 序列化兼容：Engine 在 DB/JSONL 中以字符串存储。新增 variant 后，用存量 fixture 跑一次反序列化回归（老数据不含新值，但必须确认 forward compatibility：旧版本 mossx 读到新 engine 字符串时的行为是 typed unknown，不是 panic）。
-- **不做**：不为新 CLI 修改任何存量 variant 的行为。
+- **不做**：不为新 CLI 修改任何存量 variant 的行为；不把 `registerExternalEngine()` 当成全链路完成信号。
 
 ### Step 2：Provider Profile 与 Runtime 隔离
 

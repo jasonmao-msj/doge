@@ -2,13 +2,30 @@
 
 > 日期：2026-07-08
 > 前置：`docs/perf/render-jank-knife-experiments-2026-07-08.md`（四层病因诊断，本方案治层 2）
-> 状态：**已实施 + 人工验收通过（2026-07-08）「性能非常明显好转，大幅优化卡顿」；flag `liveTextExternalization` 已翻默认开启（PR3 完成）**
+> 内容类型：Implementation Plan + historical evidence
+> 生命周期：implemented；2026-07-30 由 `1537211a1` 继续演进
+> 状态：**已实施 + 人工验收通过；flag `liveTextExternalization` 默认开启**
+> 最后校准：2026-08-01 · mossx `0.7.14` · HEAD `26f8065a0c`
 > 侦察方式：2 个并行 Explore agent + 人工核验，所有事实均带 文件:行号
 >
-> **实施落点**：通道 `utils/liveAssistantTextChannel.ts`（+测试 6 个）、hook `hooks/useLiveAssistantText.ts`（+测试 2 个）、flag `liveTextExternalization`、写入改道与 settle 挂钩 `useThreadItemEvents.ts`、中断 drain 灌回 `useThreadMessaging.ts`（interruptTurn 内）、rename 随迁 `useThreadTurnEvents.ts` + `useThreadMessagingThreadResolution.ts`、删除/驱逐清理 `useThreadActions.ts`/`useThreadActions.localState.ts`/`useThreads.ts`、渲染换源 `MessagesRows.tsx`（displayText 单点）。
+> **实施落点**：通道 `utils/liveAssistantTextChannel.ts`、hook `hooks/useLiveAssistantText.ts`、flag `liveTextExternalization`、写入/settle/drain/rename/evict 生命周期，以及 `rows/components/MessageRow.tsx` 渲染换源。
 > **回退方式**：devtools console 执行 `localStorage.setItem("ccgui.perf.liveTextExternalization", "0")` 后**刷新**；删除该 key 恢复默认（开）。
 
 ---
+
+## 0. 2026-08-01 演进增量
+
+原方案的「delta 不进根 reducer」合同未变；`1537211a1` 在 store → React 边界补上单一发布节奏：
+
+| 原设计 | 当前实现 |
+|--------|----------|
+| accumulated entry 同时作为 React snapshot | `entriesByThread` 与 `publishedEntriesByThread` 分离 |
+| 每次 append 同步 notify | 首段立即；后续每 thread 48ms throttle + 单个 trailing timer |
+| entry 只有 item/text/version | 增加 `shellTextLength`，terminal/interruption 只 drain 未落 reducer 的尾段 |
+| channel 文本继续经过 deferred | channel-backed `MessageRow` 直接消费 published text；非 channel 路径保留 `useDeferredValue` |
+| Markdown scheduled update 使用 transition | bounded timer 保留，`startTransition` 已移除 |
+
+这一增量同时守住两个边界：accumulated text 无损，React publish 有界。48ms 是 publish cadence，不是浏览器 paint SLA。
 
 ## 一、目标与量化预期
 
@@ -43,7 +60,7 @@
 |---|---|---|---|
 | 1 | 气泡壳由首条 delta 在 reducer 建（`index < 0` 分支） | `useThreadsReducer.ts:1201-1330` | 首 delta 照旧 dispatch = 建壳，一次合法根渲染 |
 | 2 | completed 事件自带**完整终稿文本**，`flushAgentCompletedBatch(text)` 全量落地；`mergeCompletedAgentText(existing, completed)` 在 existing 为空/前缀时正确合并 | `useThreadItemEvents.ts:1529-1538`、`threadReducerTextMerge.ts:976-987`、`useThreadsReducer.ts:2713-2717` | settle 不依赖流式期间 reducer 累计文本 |
-| 3 | MessageRow 取文本**单点**：`item.text → displayText → useDeferredValue → streamingDisplayText` | `MessagesRows.tsx:829,838-840` | 渲染侧改动收敛为一处换源 |
+| 3 | MessageRow 取文本仍收敛在 displayText 分支；channel-backed 行绕过重复 deferred | `rows/components/MessageRow.tsx` | 渲染侧改动保持单点 |
 | 4 | 流式判定 = `renderItem.id === liveAssistantMessageId`（+ `meta.isThinking`），**不依赖文本增长** | `MessagesTimeline.tsx:1563-1570`、`Messages.tsx:1099-1103` | 壳文本冻结不影响「哪行在流式」的判定 |
 | 5 | MessageRow memo 比较器逐字段比 `item.text` | `MessagesRows.tsx:302-322,328-371` | 壳文本不变 → props 永不放行 → 渲染完全由新订阅驱动，天然隔离 |
 | 6 | 每线程同时只有**一个**活跃流式正文（`liveAssistantMessageId` 是单值） | `Messages.tsx:1082-1103` | 通道可按 threadId 建模（规避 id canonicalize 风险，见 §2.3） |
@@ -55,9 +72,15 @@
 `src/features/threads/utils/liveAssistantTextChannel.ts`（纯内存，无持久化——持久化由影子转录负责）：
 
 ```ts
-type LiveAssistantTextEntry = { itemId: string; text: string; version: number };
-// 每线程单活跃流（事实 #6），Map<threadId, entry>
-const channel = new Map<string, LiveAssistantTextEntry>();
+type LiveAssistantTextEntry = {
+  itemId: string;
+  text: string;
+  version: number;
+  shellTextLength: number;
+};
+// authoritative accumulated state 与 React-visible published snapshot 分离
+const entriesByThread = new Map<string, LiveAssistantTextEntry>();
+const publishedEntriesByThread = new Map<string, LiveAssistantTextEntry>();
 const listenersByThread = new Map<string, Set<() => void>>();
 
 export function appendLiveAssistantText(
@@ -77,7 +100,7 @@ export function useLiveAssistantText(threadId: string | null, enabled: boolean):
 设计要点：
 - **按 threadId 订阅而非 itemId**：reducer 建壳时会把 id canonicalize/分段（`resolveLiveAssistantMessageId`，`useThreadsReducer.ts:1202-1222`），事件层 itemId 与壳 item.id 可能不一致——按线程订阅 + 「是否用它」交给已有的 `isStreaming` prop 判定，彻底绕开 id 映射问题；
 - `version` 单调递增作为 `useSyncExternalStore` 的 snapshot 比较基础（text 引用即可，version 供调试）；
-- notify 同步调用（delta 已被上游 32ms 批处理合并，无需再节流；如实测行渲染过密，可在通道内加 16ms 合帧——**先不加，保持最简**）。
+- publish 采用 `LIVE_ASSISTANT_TEXT_PUBLISH_INTERVAL_MS = 48`：首段立即，后续 throttle + trailing；terminal/drain 始终读取 accumulated entry。
 
 ### 2.3 写入改道（`useThreadItemEvents.onAgentMessageDelta`，`useThreadItemEvents.ts:1428-1487`）
 
@@ -95,7 +118,7 @@ if (isFirst || !isLiveTextExternalizationEnabled()) {
 - `isFirst` 判定 = 通道内该线程无条目或 itemId 变化（覆盖新回合、分段切换、text-alias 合成 id 等场景，每次 id 变化都会建一次壳，语义与现状一致）；
 - reasoning delta / toolOutput delta **一期不动**（照旧 dispatch）：它们写不同字段（`summary/content/output`，消费点分散在多个 tool block），且频率低于正文——二期再评估。
 
-### 2.4 渲染接入（`MessagesRows.tsx` 单点）
+### 2.4 渲染接入（`MessageRow.tsx` 单点）
 
 ```ts
 // MessageRow 内（约 :819 displayText 计算之前）
@@ -109,7 +132,7 @@ const liveEntry = useLiveAssistantText(
 ```
 
 - `mergeShellWithLive`：壳文本（首段）与通道累计文本的拼接语义——**通道从首条 delta 起全量累计**（首条也写通道），所以直接用 `liveEntry.text` 即可，无需拼接（壳文本是通道文本的前缀）。保留函数名位仅为测试锚点；
-- 下游（`useDeferredValue`、streamingComplexity `:1066-1110`、长文折叠 `:1135-1155`、大纲 `Markdown.tsx:911-914`）**全部自动跟随换源**——它们的输入就是 streamingDisplayText；
+- channel-backed 行直接使用 published text，避免高频输入反复重启 `useDeferredValue`；非 channel 行保留 deferred 策略；
 - MessageRow 若缺 `threadId` prop 则补传（Messages/MessagesTimeline 作用域内现成）。
 
 ### 2.5 settle 与清理

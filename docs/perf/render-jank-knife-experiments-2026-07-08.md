@@ -4,6 +4,7 @@
 > 分支：`feat/ui-refactoring`
 > 方法：逐层「删除法」二分（8 把刀）+ 6 类归因探针（数据直接渲染到界面面板）
 > 状态：**四层病因实锤；A1~A4 修复全部落地 + 人工验收通过（2026-07-08「性能非常明显好转，大幅优化卡顿」）**；层 4 单价手术留待 B 阶段
+> 最后校准：2026-08-01；A4 后续增加 48ms publish cadence、row deferred bypass 与 terminal causal ordering（`1537211a1`）
 
 ## 交付结果（2026-07-08 验收）
 
@@ -25,7 +26,7 @@
 | 层 | 病因 | 证据 | 状态 |
 |---|---|---|---|
 | 1 | **Debug 日志系统**：`useDebugLog.addDebugEntry` 的 `setDebugEntries([...prev, entry])` 挂在 AppShell 根，每条引擎日志（`thread/session:`、`turn/start`、`reasoning/raw:`、stderr、warn）= 一次根渲染。数组 append 型 setState 结构上不可能有 same-value 守卫。前后台线程通吃 → 解释「对话关了也在渲」 | 面板 `client-store-write: diagnostics.threadSessionLog` 1Hz 与写它的同一函数内的 setState 对上 | 刀 7 验证 → **A1 已根治 ✅** |
-| 2 | **引擎事件 → threads reducer 高频换引用**：流式 delta / upsertItem / 心跳 / token / 时间戳等 37 种 action 每秒多次换 state 引用 → app-shell 根（2500 行 hook 链）全树重渲染。最初 ×8~×22、FPS 39 的主力 | 刀 1+2 后渲染 ×8~×22 → ×1~×3，FPS 39→57 | 刀 1/2/4 验证 → **待 A4 外部化（刀已还原，此层复活）** |
+| 2 | **引擎事件 → threads reducer 高频换引用**：流式 delta / upsertItem / 心跳 / token / 时间戳等 action 曾每秒多次换 state 引用 → AppShell 全树重渲染 | 刀 1+2 后渲染 ×8~×22 → ×1~×3，FPS 39→57 | 刀 1/2/4 验证；**A4 已外部化正文，后续补 48ms publish cadence** |
 | 3 | **轮询双胞胎 + git 链**：`useTaskRunStore` 与 `useOrchestrationTaskStore`（同构，各 2s 轮询 localStorage + stringify 比较）挂在根链，Agent 任务运行中数据必变 → 每 2s 打根；`queueGitStatusRefresh`（消息活动 500ms 防抖）+ `useGitStatus` 15s 轮询，Agent 改文件时 git status 必变 → 打根 | timer 归因榜 + 触发者归因 | 刀 3/5/6 验证 → **A2/A3 已根治 ✅** |
 | 4 | **单次根渲染端到端成本 100~350ms**（结构病）：react-commit 仅占 ~15%（10~40ms），**其余 85% 在 passive effects + 样式重算 + 布局绘制**。残余合法触发（`setActiveTurnId`/`markProcessing`/`renameThreadId` 等回合生命周期）× 高单价 = 剩余卡滞 | 「根渲染端到端成本」探针 vs `react-commit` hotspot 对照；更新发起者榜 `AppShell×45/67s` ≈ reducer 合法变化数 | 待 B 阶段手术 |
 
@@ -136,7 +137,7 @@ reducer换引用榜: setActiveTurnId×8  renameThreadId×6  markProcessing×4  .
 1. **A1 ✅（2026-07-08 已落地）**：`useDebugLog.addDebugEntry` —— 面板关闭时条目进内存缓冲（有界 `MAX_DEBUG_ENTRIES`）不写 state；打开面板时缓冲一次性灌入；`setHasDebugAlerts(true)` 保留（boolean same-value bailout 天然守卫，红点功能不丢）；`clearDebugEntries` 同步清缓冲防回灌。磁盘持久化（threadSessionLog/clientErrorLog）零改动。守护测试 2 个。
 2. **A2 ✅（2026-07-08 已落地）**：`saveTaskRunStore` / `saveOrchestrationTaskStore` **写入即广播** CustomEvent（`ccgui:task-run-store-updated` / `ccgui:orchestration-task-store-updated`）；两个 hook 监听事件即时刷新（同 webview 零延迟），轮询从 2s 降为 **30s 兜底**（跨窗口/异常路径，且有内容比较守卫）。守护测试 1 个。
 3. **A3 ✅（2026-07-08 已落地）**：移除 `onMessageActivity: queueGitStatusRefresh`（高频消息活动链拆除）；app-shell 观察 `threadStatusById` 的 **isProcessing 下降沿**（任一线程回合结束）→ `queueGitStatusRefresh()`（仍有 500ms 防抖合并）；外部 git 变化由 `useGitStatus` 15s 轮询兜底（有内容守卫）。
-4. **A4（未做，下一阶段，大工程）**：对话高频 state（items/status 脉冲）从根 `useReducer` 拆到外部 store + 精细订阅（`useSyncExternalStore`），让引擎事件不再经过 AppShell fiber。⚠️ 刀 1/2/4 还原后**层 2 已复活**：流式期间 delta 批处理（32ms 窗口，最高 ~30 flush/s）仍打根——这是 A1~A3 落地后**前台流式场景**残余卡顿的主要来源。
+4. **A4 ✅（2026-07-08 已落地，2026-07-30 加固）**：流式正文 delta 进入 `liveAssistantTextChannel` + `useSyncExternalStore` 细粒度订阅，不再持续经过 AppShell 根 reducer。后续实现把 accumulated / published 分离，以 48ms cadence 通知 React，并让 channel-backed row 绕过重复 deferred。
 
 ### B. 治单价（层 4 结构手术，未做）
 
@@ -154,13 +155,13 @@ reducer换引用榜: setActiveTurnId×8  renameThreadId×6  markProcessing×4  .
 
 | 指标 | 排查前（原始） | 全刀实验极限（功能残缺） | A1~A3 落地后（本次交付） |
 |---|---|---|---|
-| react-scan FPS（对话+后台 Agent） | **39** | 57~58 | 后台场景预期 55+；前台流式介于两者（层 2 复活） |
+| react-scan FPS（对话+后台 Agent） | **39** | 57~58 | 2026-07-08 验收显著改善；当前数值须重新测量 |
 | 全树渲染次数（react-scan 观察窗口） | ×8~×22 | ×1~×3 | 后台场景预期 ×1 级 |
-| AppShell 根渲染频率 | 多源叠加 ≈4~8 次/s | 0.7 次/s（合法下限） | 后台：~回合级；前台流式：delta 批处理节奏（层 2） |
+| AppShell 根渲染频率 | 多源叠加 ≈4~8 次/s | 0.7 次/s（合法下限） | 正文 A4 已外置；当前频率须重新测量 |
 | 主线程卡滞（10s 窗口） | 未测（推算 40%+） | 6~11%（≈600~1100ms） | 待统一测试实测 |
 | 后台 Agent 打根源 | 日志 1~3Hz + 轮询 2s×2 + git 链 + 事件 | 全静默 | **全部根治**（日志缓冲/事件驱动/回合级 git） |
 
-**如何统一测试**（无探针状态下）：开 react-scan 看 FPS 与渲染计数，分三个场景对比：①空闲 ②后台 Agent 运行+对话关闭 ③前台对话流式中。场景②应接近全刀极限；场景③的残余顿挫属层 2+层 4，归 A4/B 阶段。
+**如何统一测试**（无探针状态下）：先关闭 react-scan 做正式测量；需要归因时再开，并记录其 2–3x 放大效应。分三个场景对比：①空闲 ②后台 Agent 运行+对话关闭 ③前台对话流式中。场景③若仍顿挫，先按 source/publish/render/paint 分层，不再默认归因于未完成的 A4。
 
 ---
 

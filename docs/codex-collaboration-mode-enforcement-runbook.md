@@ -1,5 +1,8 @@
 # Codex Collaboration Mode Enforcement Runbook
 
+> **文档性质**：操作 runbook。默认 flag 与 IPC 名以**当前代码**为准；若与下文冲突，以源码/settings 为准。
+> **导航**：[`README.md`](README.md)
+
 ## Scope
 
 This runbook describes rollout, verification, and rollback for runtime

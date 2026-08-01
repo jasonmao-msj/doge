@@ -1,5 +1,6 @@
 # 输入与提示词体系优化项 · 逐项影响明细
 
+> **2026-08-01 生命周期校准**：Historical Closure Evidence。四批 commit 仍用于追溯；当前 Composer 行为须从 `ComposerContextMenuPopover.tsx`、相关 hooks 与 OpenSpec 重扫。
 > **日期**：2026-07-25（**2026-07-26 复核更新**：四个批次全部落地，逐项状态见下；**同日二次复核** @ `713ef5f2c`：9 项状态定性不变，`296fad4a5` 并发边界加固与 hash 漂移已同步）
 > **基线**：分支 `feature/v-799` @ `c75922dec` → **当前复核**：分支 `feature/v-0710` @ `713ef5f2c`
 > **来源**：从 `client-aux-modules-governance-report-2026-07-25.md` 摘出你选定的 9 项，逐项展开"现状 → 影响 → 处理后影响 → UI 变化"

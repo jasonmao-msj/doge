@@ -1,5 +1,6 @@
 # Budget Decision Table — 2026-06-24-harden-realtime-interaction-jank-during-tool-call
 
+> **Lifecycle**：Historical Budget Decision。表内 v0.5.11/v0.5.13 proxy 值不是 0.7.x current budget evidence；设计方法可复用，数值必须重测。
 > 锚定 proposal `2026-06-24-harden-realtime-interaction-jank-during-tool-call` §验收 + design §6 + tasks 0.2 的相对阈值；本表为**预算决策**（不是预算数值），数值为 v0.5.11 实数作临时基线（待 v0.5.13 release run 回填）。
 
 ## 1. 三档能力预算

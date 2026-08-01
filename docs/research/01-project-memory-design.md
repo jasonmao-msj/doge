@@ -2,7 +2,32 @@
 
 **文档类型**: 技术设计方案
 **更新时间**: 2026-02-10
-**状态**: Phase 1 全部落地，Phase 2/3 待推进
+**状态**: Historical Design Baseline；2026-02 Phase 1 已落地，后续设计已由 OpenSpec 与当前代码演进
+
+> **2026-08-01 校准**：本文不再是“活文档”的 current truth。现行 contract 以 `openspec/specs/project-memory-*/spec.md` 为准；实现已从单文件/8 commands 演进为模块化 Rust backend、10 commands、14 个 facade 操作、显式 Memory Reference、Retrieval Pack、health/reconcile 与 local semantic retrieval contract。下文 Phase 2/3 待办只用于解释原始设计顺序。
+
+## 0. Current architecture delta
+
+```text
+Composer manual selection / Memory Reference(single|always)
+  -> useThreadMessaging
+  -> memoryScout (lexical; real local provider available 时才 semantic/hybrid)
+  -> retrieval pack + cleaner + token budget
+  -> engine send
+
+conversation turn
+  -> captureTurnInput
+  -> assistant settlement
+  -> completeTurnMemory / turn-key upsert
+
+ProjectMemoryPanel
+  -> useProjectMemory
+  -> projectMemoryFacade
+  -> src/services/tauri/projectMemory.ts
+  -> src-tauri/src/project_memory/{commands,store,search,projection,diagnostics,...}.rs
+```
+
+设计读取规则：消费行为先读 `project-memory-consumption`；semantic 能力再叠加 `project-memory-local-semantic-retrieval`，且必须遵守 “no real provider = lexical fallback”。不要从下文旧 Phase 标题推断当前 capability。
 
 ---
 

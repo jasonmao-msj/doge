@@ -2,7 +2,23 @@
 
 **文档类型**: 功能全景（合并自原 00-调研总结 / 01-现状分析 / 04-适配方案）
 **更新时间**: 2026-02-10
-**状态**: Phase 1 全部完成（ABCD + Phase 1.5 + UI 简化），Phase 2/3 待推进
+**状态**: Historical Foundation + 2026-08 Current Delta；“Phase 2/3 待推进”仅代表 2026-02 原始窗口
+
+> **2026-08-01 校准**：当前产品名为 mossx / ccgui。Project Memory 已越过本文的 Phase 1 边界：消费链、显式 Memory Reference、Retrieval Pack、health/reconcile、Phase 3 usability/reliability 与 local semantic retrieval contracts 均已有后续实现或归档 change。正文保留 Phase 1 演进证据，不能再当 current feature inventory。
+
+## 0. 当前实现增量（先读）
+
+| 维度 | 2026-02 本文基线 | 2026-08-01 代码事实 |
+|---|---|---|
+| Backend | 单文件 `project_memory.rs`、8 commands | `src-tauri/src/project_memory/` 八模块；10 个 Rust commands |
+| Frontend API | 基础 CRUD facade | `projectMemoryFacade` 暴露 list summary/detail、diagnostics、reconcile 与 turn capture/complete wrappers 等 14 个操作 |
+| 数据模型 | 基础 item + settings | schema/record kind、turn/user/assistant fields、review state、health diagnostics 已进入模型 |
+| 采集 | Claude + Codex 双引擎 | messaging 统一链路按 resolved engine 采集 input，并在 assistant 完成后融合 turn memory |
+| 消费 | Phase 2/3 待推进 | 手动选择 + Composer `Memory Reference` single/always；默认不做隐式自动注入 |
+| 检索与注入 | 未实现 | Memory Scout、lexical fallback、Retrieval Pack、cleaner、预算与可观测性已落地；semantic 只有真实 local provider 可用时才可宣称可用 |
+| 治理 UI | 基础管理弹窗 | review/health filters、diagnostics、dry-run/reconcile 已进入 panel/hook |
+
+当前行为规范：`openspec/specs/project-memory-*/spec.md`。源码入口：`src/features/project-memory/`、`src/services/tauri/projectMemory.ts`、`src-tauri/src/project_memory/`、`src/features/threads/hooks/useThreadMessaging.ts`、`src/features/threads/hooks/useThreads.ts`。
 
 ---
 

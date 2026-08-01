@@ -1,5 +1,6 @@
 # Project Session Management Center Implementation Plan
 
+> **Lifecycle**：Implemented / Historical Plan。Canonical change 已归档于 `openspec/changes/archive/2026-04-19-project-session-management-center/`；后续 scope/truth-boundary 演进另有归档 changes。本文不作为当前执行清单。
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 将当前设置页中的项目会话管理 section 升级为独立的 Session Management capability，提供真实分页读取、archive/unarchive/delete 治理，以及 archived session 默认不出现在主界面。

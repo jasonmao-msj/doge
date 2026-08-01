@@ -1,6 +1,7 @@
 # Parallel Conversation Jank — Fix Progress
 
-> 边修边填。每完成一个根因,记录数据。
+> **Lifecycle**：Historical Unfilled Worksheet。空白 metric 不是 current measurement，也不是待办承诺；新采样应生成带 timestamp/version/commit 的 evidence artifact，不回填本表伪造连续性。
+> 原始用法：边修边填。每完成一个根因,记录数据。
 
 ## 阶段 0:基线(修复前)
 

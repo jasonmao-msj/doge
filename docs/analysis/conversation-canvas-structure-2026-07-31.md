@@ -1,15 +1,17 @@
 # 对话幕布结构（多 CLI + 共享会话）
 
-> **对照源码日期**：2026-08-01（基于当前工作树；含历史展开 + **详情延迟/渲染详情** 专节）  
-> **范围**：中心对话区（幕布 / Messages 时间线）  
-> **用途**：后续 **统一幕布** 与 **幕布功能修复/优化** 的工作底稿  
-> **任务 PLAN**：`docs/plans/2026-08-01-unified-conversation-canvas-architecture.md`（砍轻量 / 锚点 / 多 CLI 统一）  
-> **滚动重构 DESIGN**：`docs/plans/2026-08-01-conversation-canvas-scroll-ownership-architecture.md`（层级权限 / Single Writer / **A 飞顶 + F 结束离真底** / 间歇性非长短；非止血）  
-> **实现 Review**：`docs/analysis/unify-conversation-canvas-review-2026-08-01.md`  
-> **过程投影矩阵**：`docs/analysis/canvas-live-tool-projection-matrix-2026-08-01.md`  
-> **不在本文**：Intent 画板、底部 Status Panel 内部实现、Composer 输入框细节、完整 realtime 事件字典、perf 绝对数字（见 `docs/perf/**`）  
-> **事实源**：`src/features/messages/**`、`layout/hooks/**`、`threads/**`、`shared-session/**`、`conversation-presentation/**`、`live-canvas/**`  
-> **契约旁路**：`docs/chat-canvas-conversation-curtain-contracts.md` + `threads/contracts/conversationCurtainContracts.ts`（契约文若落后，以源码为准）
+> **对照源码日期**：2026-08-01（二次校准；产品 **`0.7.14`**）
+> **实现状态**：统一幕布 Phase A–E 已入库（`bf3b35bd6`）；滚动所有权状态机已入库（`b34fdaead`）
+> **范围**：中心对话区（幕布 / Messages 时间线）
+> **用途**：**现网结构**底稿 + 排障入口；过程后验见 unify-review，能力登记见 matrix
+> **目录索引**：[`README.md`](./README.md)
+> **任务 PLAN**：`docs/plans/2026-08-01-unified-conversation-canvas-architecture.md`
+> **滚动 DESIGN / 代码**：`docs/plans/2026-08-01-conversation-canvas-scroll-ownership-architecture.md` · `orchestration/scrolling/scrollAuthorityMachine.ts`（§7.3）
+> **实现后验**：[`unify-conversation-canvas-review-2026-08-01.md`](./unify-conversation-canvas-review-2026-08-01.md)
+> **过程投影矩阵**：[`canvas-live-tool-projection-matrix-2026-08-01.md`](./canvas-live-tool-projection-matrix-2026-08-01.md)
+> **不在本文**：Intent 画板、Status Panel 内部、Composer 细节、完整 realtime 字典、perf 绝对数字（见 `docs/perf/**`）
+> **事实源**：`src/features/messages/**`、`layout/hooks/**`、`threads/**`、`shared-session/**`、`conversation-presentation/**`、`live-canvas/**`
+> **契约旁路**：`docs/chat-canvas-conversation-curtain-contracts.md` + `threads/contracts/conversationCurtainContracts.ts`（落后则以源码为准）
 
 ---
 
@@ -23,7 +25,8 @@
 | 修滚动/流式卡顿 | §3A、§7、§7.1、§7.2、§9 |
 | **「显示更早 / 历史展开」与锚点** | **§7.1** |
 | **「详情已延迟 / 渲染详情」**（对话/行级已下线；块级显示详情保留） | **§7.2** |
-| **Grok 实时看不到读/写文件卡** | **§5.1** |
+| **滚动所有权 / 飞顶 / 结束离真底** | **§7.3** |
+| **Grok 实时读/写过程卡（jsonl 桥）** | **§5.1** · matrix |
 | 改 Shared 历史/发送观感 | §6、§9 |
 | 改代码从哪进 | §11 源码索引 |
 
@@ -39,11 +42,12 @@
 | **差异三层** | **L1 数据入口**最大；**L2 引擎硬分支**常驻；**L3 presentationProfile 默认关** | 真差别在「数据从哪来 + 写死的 if」；配置表大多在休眠 |
 | **Shared 不是第七套 Row** | `threadKind=shared`，`threadId` 前缀 `shared:`；多的是历史投影 + 发送条 | 同一张画布，多了「换引擎跑」和发送状态条 |
 | **Shared 引擎白名单** | `claude / codex / kimi / grok / opencode`（**无 gemini**） | Gemini 进不了共享会话 |
+| **Gemini runtime policy** | registry / adapter / loader 仍存在，但 `GEMINI_RUNTIME_ENABLED=false` | 代码能力存在不等于产品 runtime 可用 |
 | **Settings 三开关** | normalized realtime=`true`；unified history=`true`；presentationProfile=`false` | 新实时/新历史默认开；「引擎皮肤表」默认关 |
 | **Claude/Codex 幕布更「干净」** | bash/command 卡默认藏；活动多在 **Status Panel**（同屏兄弟，不在 Messages 树） | 命令跑了，幕布可能没卡——去底下状态面板找 |
 | **文件修改场景** | 连续 edit + fileChange → `editGroup`（单条也成组）；**默认折叠**；展开才解析 diff | 一堆改文件合成「文件修改（N 个）」，先收着 |
 | **流式 vs 闲时性能** | 流式：尾窗 60 + live-text 外置 + staged MD；**不**虚拟化。闲时：≥约 48 行可虚拟化 | 打字中只画尾巴；聊完了长历史才开虚拟列表 |
-| **Grok 实时工具进幕布** | stdout 仍无 tool 事件；**live 桥接**：轮询 `chat_history.jsonl` 把 `tool_calls`/`tool_result` emit 为 Tool*（unify-conversation-canvas Phase D） | Kimi/OpenCode 本就有 live Tool*；Grok 用 history 桥补齐过程 |
+| **Grok 实时工具进幕布** | stdout 仍无 tool 事件；**已落地 jsonl 增量 tail 桥**（`GrokToolHistoryTailState`，~200ms + 结束 drain；resume baseline=EOF）`bf3b35bd6` | Kimi/OpenCode 原生 stream Tool*；Grok 桥补可见性，时序弱于协议事件 |
 | **历史呈现展开（Presentation Expansion）** | 把「只渲一部分 items」切到「全量 history」；`showAllHistoryItems` + `presentationMode=*-expanded-history-*` | 点「显示更早」/ 跳旧消息；**不是**截图里的「详情已延迟」 |
 | **闲时数量折叠几乎关着** | `VISIBLE_MESSAGE_WINDOW=10000`（A2 有意）；**流式尾窗仍开** `STREAMING_VISIBLE_WINDOW=60` | 日常闲时很少看到「显示更早」；**流式中**更易看到折叠指示器 |
 | **对话/行级轻量摘要墙** | **已下线（unify-conversation-canvas）**：policy/mode 恒 inactive；行级「详情已延迟」条不再渲染 | 见 §7.2；**块级「显示详情」仍保留** |
@@ -135,7 +139,7 @@ ConversationItem[]
 | 契约 kinds | `threads/contracts/conversationCurtainContracts.ts` |
 | 流式尾窗 | `orchestration/presentation/messagesLiveWindow.ts` + `STREAMING_VISIBLE_WINDOW` |
 
-**editGroup 投影 identity**：`getGroupedEntryProjectionKey` 对 `editGroup` **只用 firstId**。  
+**editGroup 投影 identity**：`getGroupedEntryProjectionKey` 对 `editGroup` **只用 firstId**。
 streaming 时文件数增长若写入 lastId/length，会 remount 并丢掉用户展开态——修「折叠莫名重置」先看这里。
 
 ### 3C. kind → 组件 · 分组 · chrome 边界
@@ -147,7 +151,7 @@ streaming 时文件数增长若写入 lastId/length，会 remount 并丢掉用�
 | `tool` | `ToolBlockRenderer` 或 Group | 可被引擎策略隐藏 |
 | `review` / `diff` / `explore` / `generatedImage` | `PresentationRows` 等 | 评审 / diff / 探索 / 图 |
 
-**工具分发（单卡）**：`ToolBlockRenderer` — userInput 结果 → ExitPlan → bash → read → edit → search → MCP → Generic。  
+**工具分发（单卡）**：`ToolBlockRenderer` — userInput 结果 → ExitPlan → bash → read → edit → search → MCP → Generic。
 **常态改文件**：多进 `EditToolGroupBlock`（默认折叠），不常落单卡 `EditToolBlock`。
 
 **分组卡**
@@ -156,7 +160,7 @@ streaming 时文件数增长若写入 lastId/length，会 remount 并丢掉用�
 |----|------|------|
 | `readGroup` | `ReadToolGroupBlock` | ≥2 连续 |
 | `editGroup` | `EditToolGroupBlock` | fileEdit 桶；≥1；**默认折叠**；同 path 留最后一次；展开再算 diff |
-| `bashGroup` | `BashToolGroupBlock` | codex 全藏；claude 非 transcript-fallback 时藏 |
+| `bashGroup` | `BashToolGroupBlock` | 五引擎藏（与单卡一致）；Claude 仅 transcript-fallback 极重历史时可露 |
 | `searchGroup` | `SearchToolGroupBlock` | ≥2；MCP `search_query` 故意不组 |
 
 另：`TodoWrite` / `todo_write` 在分组前剔除（`shouldHideToolItemForRender`）。
@@ -177,7 +181,7 @@ streaming 时文件数增长若写入 lastId/length，会 remount 并丢掉用�
 | `SharedSendStatusBar` | **仅 Shared**，Composer 上方 |
 | `ProviderContinuationContextCard` | 续聊来源（`timelineLeadingNode`） |
 
-**信息架构一句话**：幕布 = 叙事；Status Panel = 操作痕迹；Composer = 输入。  
+**信息架构一句话**：幕布 = 叙事；Status Panel = 操作痕迹；Composer = 输入。
 藏 bash 不等于没跑命令——用户去 Status Panel 找。
 
 ---
@@ -242,25 +246,27 @@ legacyClaudeReasoningDockEnabled =
 | SharedSendStatusBar | — | — | — | — | ✅ 独有 |
 | Realtime 消息模式 | delta 别名 | **快照** | delta 别名 | delta 别名 | 跟目标 adapter |
 
-\* Claude 在 history transcript fallback（极重历史且折叠后几乎没东西可画）时，bashGroup 可露出。  
+\* Claude 在 history transcript fallback（极重历史且折叠后几乎没东西可画）时，bashGroup 可露出。
 \* Grok 的「幕布无读/写卡」**不是** `shouldHideCodexCanvasCommandCard` 式隐藏，见 **§5.1**。
 
-### 5.1 Grok 实时对话：幕布上看不到「读文件 / 编辑文件」
+### 5.1 Grok 实时对话：读/写过程卡（演进：缺口 → jsonl 桥）
 
-> **产品现象（与截图对齐）**  
-> 实时 Grok 回合中：幕布只有思考 + 助手正文（甚至一句 “I have enough context…”）；右侧 **Diff** 已出现文档改动（+250/-105）；底部/状态区可能有「正在写入…」。  
-> 用户疑问：文件明明在改，为什么幕布没有 Read / Edit 工具卡？
+> **演进（勿删）**
+> - **改前（~2026-08-01 上午）**：实时 Grok 幕布常只有思考 + 短助手句；右侧 **Diff** 已有 +N/-N，幕布**无** Read/Edit 卡——根因是 **stdout 无 tool 事件**，不是「详情已延迟」。
+> - **改后（`bf3b35bd6`）**：并行 **poll `chat_history.jsonl`** 把 `tool_calls`/`tool_result` 桥成 ToolStarted/Completed；读/写类应可见；bash/command **藏**（与 Claude 对齐）。
+> - **仍弱于 Claude**：时钟跟磁盘 poll（~200ms + 写盘），payload 常偏 raw；详见 matrix。
 
-#### 结论（先对齐文档）
+#### 现网结论
 
 | 问题 | 答案 |
 |------|------|
-| 和 §5「其他引擎 bash 原貌」矛盾吗？ | **不矛盾**。「原貌」= **有 tool item 就不藏**；Grok **live 根本没有 tool item 进 reducer**。 |
-| 是「详情已延迟」吗？ | **否**。延迟前提是行已存在；截图是 **工具行从未挂上时间线**。 |
-| 是 Status Panel 分流吗？ | **部分相关**：活动痕迹可在 Status/Diff 出现，但 Claude/Codex 仍会在幕布投 tool/fileEdit；Grok live **两者都不投 tool 行**。 |
-| 历史里会有吗？ | **会**。`chat_history.jsonl` 的 `assistant.tool_calls` / `tool_result` 经 history loader 可变成 tool 行。 |
+| 现在 live 有 tool 进 reducer 吗？ | **有（桥）**；非 stdout 原生 |
+| 和「藏 bash」是一回事吗？ | **否**。藏的是 command/bash；read/write/search 应显示 |
+| 是「详情已延迟」吗？ | **否**。那是呈现层；Grok 历史问题是 L1 信号源 |
+| 历史 loader 有 tool 吗？ | **有**。jsonl `tool_calls` / `tool_result` 本就可投影 |
+| 续聊闪旧 tool？ | **应否**：`for_turn(true)` 首开 baseline=EOF；新会话 `for_turn(false)` / saw_missing → offset=0 |
 
-#### 因果链（L1 水管）— **2026-08-01 已接 jsonl 桥**
+#### 因果链（L1 水管）— **已落地**
 
 ```text
 Grok CLI headless streaming-json
@@ -268,7 +274,7 @@ Grok CLI headless streaming-json
         │
         ├──► TextDelta / ReasoningDelta / TurnCompleted
         │
-        └── 并行 poll chat_history.jsonl（每 ~200ms + 结束再 drain）
+        └── 并行 poll chat_history.jsonl（~200ms + 结束 final drain）
               tool_calls  → ToolStarted
               tool_result → ToolCompleted
                     │
@@ -276,43 +282,33 @@ Grok CLI headless streaming-json
               forwarder → item/started|completed
                     │
                     ▼
-              幕布 kind=tool（read/fileChange 归场景）
+              幕布 kind=tool（read/fileChange 归场景；bash 可藏）
 ```
 
 | 层 | 路径 | 事实 |
 |----|------|------|
 | CLI stdout | `grok.rs` parse | 仍无 tool 行类型 |
-| **Live 桥** | `grok.rs` tool poll + `grok_history::drain_new_tool_signals_*` | **补** ToolStarted/Completed |
-| Kimi | `kimi.rs` stream 本就有 tool_calls | 已 emit；Completed 现带 tool_name |
-| OpenCode | `opencode.rs` 本就有 Tool* | 不改协议 |
-| FE | `buildConversationItem` mcpToolCall title 优先工具名 | 便于 read/edit 分组 |
-| Diff 面板 | 工作区 git | 仍独立；与幕布 tool 可并存 |
+| **Live 桥** | `grok.rs` + `grok_history::GrokToolHistoryTailState` | 增量 seek + carry；resume/new 分轨 |
+| Kimi | `kimi.rs` stream | 原生 tool_calls；Completed 带 tool_name |
+| OpenCode | `opencode.rs` | 原生 Tool* |
+| FE | `toolSemantics` · `ToolBlockRenderer` · `shouldHideCodexCanvasCommandCard` | 五引擎藏 bash |
+| Diff 面板 | 工作区 git | 仍独立；可与幕布 tool 并存 |
 
-#### 和 UI 三件套的分工（截图怎么读）
+#### UI 三件套（改后怎么读）
 
-| 表面 | 实时 Grok 写文档时通常看到 | 含义 |
+| 表面 | 实时 Grok 写文档时（期望） | 含义 |
 |------|---------------------------|------|
-| **幕布** | 思考 + 短助手句；**无** readGroup/fileEdit 卡 | 无 live tool 投影 |
-| **Diff 面板** | `docs/analysis/*.md` 等 +N/-N | **工作区文件变更**（git），不依赖幕布 tool item |
-| **Status / 工作指示** | 「正在写入两篇文档」类文案 | 回合/任务态提示，**≠** 工具卡时间线 |
-
-#### 与「能对上的文档」对照
-
-| 文档已有表述 | 是否覆盖本现象 | 补丁 |
-|--------------|----------------|------|
-| §5 藏 bash 仅 Claude/Codex | ✅ 说明 **不是** 藏卡 | 已写清 |
-| §5 Realtime 模式 Grok=delta 别名 | ⚠️ 只说文模式，**未写 tool 缺口** | **本 §5.1** |
-| §3C tool 分发 / fileEdit 成组 | 前提是 **已有 tool item** | Grok live 到不了这一层 |
-| §7.2 详情已延迟 | ❌ 不同问题 | 勿混用 |
-| §9「命令跑了幕布没卡」 | 原先偏向 Claude/Codex→Status Panel | **补 Grok 行** |
+| **幕布** | 思考 + 助手句 + **读/写类 tool 卡**（可略滞后） | jsonl 桥投影 |
+| **Diff 面板** | 文件 +N/-N | 工作区 git，不依赖幕布 tool |
+| **Status** | 活动/任务态 | bash 类痕迹可在此；≠ 幕布叙事 |
 
 #### 后续能力债（桥接之后）
 
 | 优先级 | 项 | 说明 |
 |--------|-----|------|
-| **P2** | 延迟/抖动 | jsonl 轮询 200ms，工具卡略滞后于真实执行；可考虑 inotify |
-| **P2** | stdout 原生 tool 类型 | 若 Grok CLI 日后 stdout 直接发 tool 事件，可双通道去重 |
-| **P2** | 能力矩阵 codegen | `canvas.liveToolProjection`：grok=bridged-jsonl；kimi/opencode=stream |
+| **P2** | 延迟/抖动 | ~200ms poll + 写盘；仅在实测证明收益后评估跨平台 filesystem notifications，必须覆盖 partial write、atomic replace、rename 与 macOS/Windows/Linux 语义；polling 保持可靠基线 |
+| **P2** | stdout 原生 tool | CLI 若日后直发 tool，需双通道去重 |
+| **P2** | 能力矩阵 codegen | 见 matrix；勿只写文档 |
 
 **History 前缀路由**（`useThreadActions.historyLoaderFactory.ts`）：
 
@@ -377,16 +373,16 @@ shared:id → createSharedHistoryLoader
 | 历史呈现展开 | 见 **§7.1** | 「显示更早」/ 跳旧消息打开全量 items |
 | **⚠️ 详情已延迟** | 见 **§7.2** | heavy 行摘要条 +「渲染详情」；**重点重做** |
 
-**改门槛前必回归**：`Messages.virtualized-jump`、scroll-echo、turn-settle 贴底、历史展开跳锚、**详情 hydrate 后锚点**。  
-**perf 深读**：`docs/perf/render-jank-knife-experiments-2026-07-08.md`、`docs/perf/streaming-render-stall-design-2026-07-30.md`。  
+**改门槛前必回归**：`Messages.virtualized-jump`、scroll-echo、turn-settle 贴底、历史展开跳锚、**详情 hydrate 后锚点**。
+**perf 深读**：`docs/perf/render-jank-knife-experiments-2026-07-08.md`、`docs/perf/streaming-render-stall-design-2026-07-30.md`。
 **硬红线（AGENTS）**：高频 setState 禁挂根 hook 链；流式正文禁恢复逐 delta dispatch 进 reducer。
 
 ---
 
 ## 7.1 历史呈现展开（Presentation Expansion）与锚点
 
-> **注意**：产品/用户口语里的「渲染展开」常指截图里的 **「详情已延迟 / 渲染详情」**，那是 **§7.2**。  
-> 本节专指 **History Presentation Expansion**：从「只渲染一部分 ConversationItem」切到「全量 history」，`presentationMode` 含 `expanded-history`。  
+> **注意**：产品/用户口语里的「渲染展开」常指截图里的 **「详情已延迟 / 渲染详情」**，那是 **§7.2**。
+> 本节专指 **History Presentation Expansion**：从「只渲染一部分 ConversationItem」切到「全量 history」，`presentationMode` 含 `expanded-history`。
 > 也不等于单卡 fileEdit/explore 的 **行内展开**（§7.1.5）。
 
 ### 7.1.1 是什么
@@ -413,8 +409,8 @@ shared:id → createSharedHistoryLoader
 
 `showAllHistoryItems=true` 时，无论 realtime/static，mode 都会落到 `*-expanded-history-{manual|jump}`。
 
-**presentationScopeKey**（`buildMessagesPresentationScopeKey`）把  
-`scopeKey + mode + collapsedCount + itemCount + firstId + lastId` 拼成字符串。  
+**presentationScopeKey**（`buildMessagesPresentationScopeKey`）把
+`scopeKey + mode + collapsedCount + itemCount + firstId + lastId` 拼成字符串。
 scope 一变 = 可见集换了一套；deferred presentation / virtualizer / 诊断都会按新 scope 处理。
 
 ### 7.1.2 为什么要这样
@@ -426,7 +422,7 @@ scope 一变 = 可见集换了一套；deferred presentation / virtualizer / 诊
 | **按需看旧文** | 需要旧上下文时再展开，而不是永远全量 |
 | **与虚拟化分工** | 流式 **故意** 不开 `TIMELINE_VIRTUALIZATION_DURING_STREAMING`；展开后若闲时达标，再走 idle 虚拟化 |
 
-A2 把 `VISIBLE_MESSAGE_WINDOW` 提到 10000，是**有意**弱化闲时「数量折叠」，避免和虚拟化/贴底抢策略（见 `Messages.virtualized-jump.test.tsx` skip 注释）。  
+A2 把 `VISIBLE_MESSAGE_WINDOW` 提到 10000，是**有意**弱化闲时「数量折叠」，避免和虚拟化/贴底抢策略（见 `Messages.virtualized-jump.test.tsx` skip 注释）。
 **结果**：现网「显示更早」更多出现在 **流式尾窗** 场景，而不是闲时 30 条就折叠。
 
 ### 7.1.3 怎么触发
@@ -531,14 +527,14 @@ showAllHistoryItems ↑
 
 ## 7.2 重型行「详情已延迟 / 渲染详情」— 对话/行级 **已下线**；块级 **保留**
 
-> **产品决策（2026-08-01 / unify-conversation-canvas）**  
-> - **砍掉**：对话级轻量模式 UI、行级「详情已延迟 … 渲染权重」摘要条、「渲染详情」主路径  
-> - **保留**：块级「重型 Markdown 详情已延迟 / 工具详情已延迟 + **显示详情**」  
-> - 性能靠尾窗 + 闲时虚拟化 + live-text + 块级延迟  
->  
-> **历史截图（已移除主路径）**  
-> - ~~灰条：详情已延迟 · readGroup/助手消息 + 渲染详情~~  
-> - ~~顶部：检测到重型对话 / 启用轻量模式~~  
+> **产品决策（2026-08-01 / unify-conversation-canvas）**
+> - **砍掉**：对话级轻量模式 UI、行级「详情已延迟 … 渲染权重」摘要条、「渲染详情」主路径
+> - **保留**：块级「重型 Markdown 详情已延迟 / 工具详情已延迟 + **显示详情**」
+> - 性能靠尾窗 + 闲时虚拟化 + live-text + 块级延迟
+>
+> **历史截图（已移除主路径）**
+> - ~~灰条：详情已延迟 · readGroup/助手消息 + 渲染详情~~
+> - ~~顶部：检测到重型对话 / 启用轻量模式~~
 > - **仍可能见到**：块级 `重型 Markdown 详情已延迟 · 表格 · N 行` + **显示详情**
 
 ### 7.2.1 是什么（三层，别混）
@@ -551,129 +547,134 @@ showAllHistoryItems ↑
 
 **不是**：§7.1 历史「显示更早」、也不是 fileEdit 默认折叠。
 
-### 7.2.2 为什么会这样
+### 7.2.2 为什么会这样（动机 + 代码层残留）
 
 | 动机 | 机制 |
 |------|------|
 | 长对话 / 大 Markdown / 大 tool 输出 | 全量 hydrated DOM 会卡滚动与输入 |
-| 用 **renderWeight** 估成本 | `estimateTimelineProjectionRenderWeight`；`≥16` = heavy（`TIMELINE_VIRTUALIZATION_HEAVY_ROW_WEIGHT`） |
-| 虚拟化开启时 | 非可见 heavy 行可 `mode=summary` 延迟详情（`deriveTimelineRowHydrationStates`） |
-| 对话 oversized / 用户点「启用轻量模式」 | 更多行强制走 lightweight 摘要 UI（`resolveConversationLightweightModeState`） |
+| 用 **renderWeight** 估成本 | `estimateTimelineProjectionRenderWeight`；`≥16` = heavy |
+| **现网性能主路径** | 流式尾窗 + 闲时虚拟化 + live-text + **块级**「显示详情」 |
+| **已下线的 UI 层** | 对话轻量 mode 恒 inactive；`shouldRenderLightweightProjectionRow` **恒 false**（`bf3b35bd6`） |
 
-阈值（默认，`TIMELINE_ADAPTIVE_RENDERING_ENABLED=true`）：
+阈值常量仍导出（诊断/历史测试引用；**不再驱动对话级摘要墙**）：
 
-| 常量 | 值 | 作用 |
-|------|-----|------|
-| `TIMELINE_VIRTUALIZATION_HEAVY_ROW_WEIGHT` | **16** | 单行 weight≥16 → heavy |
-| `CONVERSATION_LIGHTWEIGHT_SUGGEST_RENDER_WEIGHT` | 180 | 建议开轻量 |
-| `CONVERSATION_LIGHTWEIGHT_SUGGEST_HEAVY_ROWS` | 4 | heavy 行数≥4 也建议 |
-| `CONVERSATION_OVERSIZED_HISTORY_RENDER_WEIGHT` | 520 | 超大 → **自动**轻量，直到用户请求详情 |
-| `CONVERSATION_OVERSIZED_HISTORY_ROWS` | 260 | 行数超大同上 |
+| 常量 | 值 | 现网作用 |
+|------|-----|----------|
+| `TIMELINE_VIRTUALIZATION_HEAVY_ROW_WEIGHT` | **16** | heavy 估算；虚拟化 weight 门槛 |
+| `CONVERSATION_LIGHTWEIGHT_SUGGEST_*` / `OVERSIZED_*` | 180/4/520/260 | **policy 恒不建议**；保留数值供测试与回潮审计 |
+| `TIMELINE_ADAPTIVE_RENDERING_ENABLED` | true | 闲时虚拟化总闸（**不是**摘要墙总闸） |
 
-Hydration 决策摘要（`messagesTimelineHydration.ts`）：
+**历史路径（改前，可追溯）**：`deriveTimelineRowHydrationStates` 曾对屏外 heavy 给 `mode=summary`，再叠加对话 lightweight 把行画成灰条「详情已延迟 / 渲染详情」。
+**现网**：行级摘要条 UI 永久关闭；块级 i18n 仍可能出现：
 
-```text
-weight < 16          → static（正常画）
-!virtualize          → hydrated（虚拟化关则不延迟行）
-detailHydrationRequested → 全部 hydrated
-active / anchor / visible / retained → hydrated
-否则 heavy           → summary + deferred（详情已延迟）
-```
+| key | 中文 | 现网 |
+|-----|------|------|
+| `conversationLightweightRow*` / `HydrateVisible` | 详情已延迟 / 渲染详情 | **UI 主路径不渲染**（旧构建除外） |
+| `markdownHeavyBlockDeferred` / `Show` | 重型 Markdown… / **显示详情** | **保留** |
+| `toolHeavyDetailDeferred` / `Show` | 工具详情已延迟 / **显示详情** | **保留** |
 
-轻量模式下 `shouldRenderLightweightSummary` 还会把 summary/active 等压成 **统一摘要条**（`renderLightweightProjectionRow`），文案走 i18n：
+### 7.2.3 怎么触发（现网 vs 历史）
 
-| key | 中文 |
-|-----|------|
-| `conversationLightweightRowEyebrow` | 详情已延迟 |
-| `conversationLightweightRowTitle` | `{{kind}} 摘要` |
-| `conversationLightweightRowMeta` | 渲染权重 {{weight}} |
-| `conversationLightweightHydrateVisible` | **渲染详情** |
-| `markdownHeavyBlockDeferred` / `Show` | 重型 Markdown 详情已延迟 / **显示详情** |
-| `toolHeavyDetailDeferred` / `Show` | 工具详情已延迟 / **显示详情** |
-
-### 7.2.3 怎么触发（现网）
-
-```text
-投影行 → estimate renderWeight
-       → virtualize? + lightweight mode?
-       → heavy 且非 visible/active/anchor
-            → mode=summary（灰条「详情已延迟」）
-用户点「渲染详情」
-       → onConversationDetailHydrationRequest
-       → detailHydrationRequested=true
-       → 该会话 heavy 行转 hydrated（完整工具卡/Markdown）
-```
+**现网用户路径**
 
 | 触发 | 结果 |
 |------|------|
-| 闲时虚拟化 + 滚出视口的 heavy 行 | 可变为 summary 占位 |
-| 总 weight/行数 oversized | **自动**轻量；详情保持延迟直到用户请求 |
-| 用户点「启用轻量模式」 | 手动轻量；同样摘要条 |
-| 用户点「渲染详情 / 显示详情」 | 请求 detail hydration，完整渲染 |
-| 行进入视口 / active / 跳锚目标 | 自动 hydrated（reason=visible/active/anchor） |
-| Fork/回溯/复制 | **仍读原始 items**（轻量只影响呈现，不改事实） |
+| 大 Markdown 表 / 重 tool output | 块内「显示详情」 |
+| 流式长输出 | 尾窗 + live-text；**无**行级灰条 |
+| 闲时长历史 | 虚拟化（≥约 48 行等） |
+| Fork/回溯/复制 | 仍读原始 items |
+
+**历史用户路径（已下线，勿当现网）**
+
+```text
+oversized / 手动轻量 → 灰条「详情已延迟」→ 点「渲染详情」→ detailHydrationRequested
+```
 
 主入口：
 
-| 职责 | 路径 |
-|------|------|
-| weight / heavy 门槛 | `timeline/virtualization/messagesTimelineVirtualization.ts` |
-| 行 hydration 状态机 | `timeline/virtualization/messagesTimelineHydration.ts` |
-| hydration hook + remeasure | `timeline/hooks/useMessagesTimelineHydration.ts` |
-| 对话轻量策略 | `presentation/messagesConversationLightweightMode.ts` |
-| 摘要条 UI | `TimelineRowRenderer.renderLightweightProjectionRow` |
-| 顶部轻量条 | `ConversationLightweightPrompt.tsx` |
-| 块级 MD/工具延迟 | `messageMarkdownHeavyIslands` / `GenericToolBlock` 等 |
-| i18n | `i18n/locales/zh/messages.ts` 上表 keys |
+| 职责 | 路径 | 现网备注 |
+|------|------|----------|
+| weight / 虚拟化 | `messagesTimelineVirtualization.ts` | 活跃 |
+| 行 hydration 状态机 | `messagesTimelineHydration.ts` | 状态可算；**摘要条不画** |
+| hydration hook | `useMessagesTimelineHydration.ts` | `shouldRenderLightweightProjectionRow` ≡ false |
+| 对话轻量策略 | `messagesConversationLightweightMode.ts` | 恒 inactive |
+| 摘要条 / 顶部轻量 UI | `TimelineRowRenderer` · `ConversationLightweightPrompt` | Prompt 短路；行级不渲 |
+| 块级 MD/工具延迟 | heavy islands / GenericToolBlock 等 | **保留** |
 
 ### 7.2.4 对锚点 / 滚动的影响
 
-| 现象 | 原因 |
-|------|------|
-| 点「渲染详情」后视口「跳一下」 | summary 行高固定约 44px（`TIMELINE_LIGHTWEIGHT_ROW_PLACEHOLDER_HEIGHT`）→ hydrate 后真实高度远更大，virtualizer remeasure |
-| 侧锚对准的消息突然下移/上移 | 上方某行从摘要变全文，插入高度 |
-| 连点多行「渲染详情」卡顿 | 多行同时 heavy Markdown 全量解析 |
-| remeasure 超预算 | hydration remeasure cooldown/count 上限 → 短暂空白或重叠 |
-| 与 §7.1 叠加 | 先历史 expand 再 hydrate 详情 = 两次 scrollHeight 阶跃 |
+| 现象 | 现网相关性 |
+|------|------------|
+| 点行级「渲染详情」后视口跳 | **主路径已无**；若仍见 → 旧构建 |
+| 块级「显示详情」后行高变 | **仍有**；局部增高，可能顶视口 |
+| 历史 expand + settle + 虚拟化 | 见 §7.1 / **§7.3** scroll authority |
+| remeasure 超预算 | 虚拟化/媒体加载路径仍在 |
 
 ### 7.2.5 与 §7.1 / 行内展开对照
 
-| | §7.1 历史展开 | **§7.2 详情延迟（截图）** | 行内折叠 |
-|--|---------------|---------------------------|----------|
-| UI | 「显示更早」 | **详情已延迟 / 渲染详情** | fileEdit 标题折叠 |
-| 数据 | items 窗口 | items 仍在，**呈现**换成 summary | 同 item，展开 body |
-| 典型场景 | 流式尾窗 / 超长数量窗 | 轻量模式 / heavy 行 / 大表格 | 改文件场景 |
-| 重点优化 | 中 | **高（重做）** | 中（已默认折叠） |
+| | §7.1 历史展开 | §7.2 行级详情延迟（**已下线**） | 块级显示详情 | 行内折叠 |
+|--|---------------|----------------------------------|--------------|----------|
+| UI | 「显示更早」 | ~~详情已延迟 / 渲染详情~~ | **显示详情** | fileEdit 折叠 |
+| 数据 | items 窗口 | items 在，呈现换 summary | 同 item 岛 | 同 item body |
+| 现网 | 活跃 | **不渲染** | 活跃 | 活跃 |
 
 ### 7.2.6 产品决策落地状态
 
-> **已拍板并实施（unify-conversation-canvas Phase A）**：对话级 + 行级摘要墙 **下线**；块级「显示详情」**保留**。  
-> 下列为历史「重做」清单中仍可跟进的残差（非摘要墙回潮）：
+> **已拍板并入库（`bf3b35bd6` / unify Phase A）**：对话级 + 行级摘要墙 **下线**；块级「显示详情」**保留**。
+> 下列保留为**历史优化清单**（摘要墙回潮前的设计债；块级/虚拟化仍可部分适用）：
 
-| 优先级 | 优化点 | 现状问题 | 期望方向（设计，非本期实现） |
-|--------|--------|----------|------------------------------|
-| **P0** | **触发可解释性** | 同一会话里 readGroup/助手消息突然变灰条，用户以为 bug | 统一文案与入口：何时自动延迟、何时仅滚动延迟；避免 silently 吞正文 |
-| **P0** | **hydrate 粒度** | 「渲染详情」偏会话/批量，点一行却像全局放开 | 支持 **单行 hydrate** vs 「hydrate 可见区」vs 「全部详情」三级，行为可预期 |
-| **P0** | **锚点稳定** | 摘要→全文高度突变导致跳视口 | hydrate 时 pin 视口（锚点行 top 补偿 / scrollHeight delta 修正）；与 settle-repin 同级做 **hydrate-repin** |
-| **P1** | **weight 校准** | heavy=16 偏敏感，短 readGroup 也 17 就延迟 | 按 kind 分层：流式尾部 live 行永不 summary；历史 tool 组可延迟；校准表可测 |
-| **P1** | **自动 oversized 策略** | 超大对话一打开就是摘要墙 | 默认只延迟 **屏外** heavy；屏内首屏仍 hydrated；或首屏 N 条强制 hydrated |
-| **P1** | **块级 vs 行级双轨** | 行级「渲染详情」+ 块级「显示详情」两套 UI | 合并交互语言（统一「展开详情」），减少两套状态机 |
-| **P2** | **流式中轻量** | 流式尾窗 + 轻量摘要叠加难懂 | 流式期禁 lightweight summary（只靠尾窗）；闲时再延迟 |
-| **P2** | **可观测性** | 用户/排障不知为何延迟 | 诊断面板：mode / reason / weight / detailHydrationRequested；perf 埋点 |
+| 优先级 | 优化点 | 备注（2026-08-01 校准） |
+|--------|--------|-------------------------|
+| ~~P0 灰条可解释性~~ | 行级 UI 已下线 | 关闭 |
+| ~~P0 行级 hydrate 粒度~~ | 同上 | 关闭 |
+| P1 块级与 weight 校准 | 块级仍在 | 可跟进 |
+| P1 虚拟化 remeasure / 锚点 | 与 §7.3 交叉 | scroll change |
+| P2 死代码清理 | lightweight i18n / 恒 false 钩子 | 可选 |
 
-**验收建议（重做后）**
+**非目标**
 
-1. 首屏可见助手正文与工具卡默认可读，不靠用户点「渲染详情」。  
-2. 屏外 heavy 可延迟；滚入视口自动 hydrate 或明确一次「加载可见详情」。  
-3. 点详情后视口锚点偏移 ≤ 固定阈值（需测），无整页飞跳。  
-4. Fork/回溯/复制在 summary 态仍正确。  
-5. 与 §7.1 历史展开、settle-repin 回归互不破坏。
+- 不要用「永远全量 hydrated」换性能倒退。
+- 不要把 Status Panel 痕迹塞回幕布「为了对称」。
+- 不要把 fileEdit 折叠与块级延迟混成一套 state。
 
-**非目标（重做时也别做）**
+---
 
-- 不要用「永远全量 hydrated」换性能倒退。  
-- 不要把 Status Panel 工具痕迹塞回幕布「为了显得全」。  
-- 不要与 fileEdit 默认折叠混成同一套 state。
+## 7.3 滚动所有权（Scroll Authority）— 现网入口
+
+> **演进**
+> - 长期路径级止血（echo / settle 2.4s / nearBottom 120px）仍难消 **A 飞顶** 与 **F 结束离真底**。
+> - DESIGN：`docs/plans/2026-08-01-conversation-canvas-scroll-ownership-architecture.md`
+> - **已入库**：`b34fdaead` — 纯状态机 + write ticket；`useMessagesScrollController` 接入。
+> - OpenSpec：`refactor-conversation-canvas-scroll-ownership`（实现验证/手测以 change 为准）。
+
+### 7.3.1 一句话
+
+**单一 Owner 授权写 `scrollTop`；高度生命周期发几何事件，不直接抢滚动权。**
+真底：`distanceToBottom <= TRUE_BOTTOM_EPSILON_PX`（1px），**禁止**用 120px nearBottom 当结束完成态。
+
+### 7.3.2 代码入口
+
+| 职责 | 路径 |
+|------|------|
+| 纯状态机（无 DOM） | `orchestration/scrolling/scrollAuthorityMachine.ts` |
+| Mode / Intent / Ticket 类型 | `scrollAuthorityTypes.ts` · `scrollWriteTicket.ts` |
+| 常数（真底 / rearm / 用户上滚累计） | `scrollAuthorityConstants.ts` |
+| DOM 控制器接入 | `hooks/useMessagesScrollController.ts` · `ScrollControl.tsx` |
+| 边沿收敛辅助 | `messagesScrollConvergence.ts` · `messagesScrollEcho.ts` |
+| settle 时间窗（仍存在） | `SETTLE_REPIN_WINDOW_MS`（`messagesConstants.ts`）— 与几何稳态并存，勿当唯一真理 |
+
+### 7.3.3 与 §7.1 / settle 的关系
+
+| 场景 | 意图 | Owner 侧 |
+|------|------|----------|
+| 发送见最新 | stick / forced-bottom | turn-send Intent |
+| 流式 follow | stick-bottom | 连续 pin |
+| 用户明确上滚 | free | 释放 stick |
+| 显示更早 manual | history-head | scrollTop=0 |
+| 跳旧锚 | jump-anchor | 目标 DOM ready 后滚 |
+| 回合结束 | forced/stick 直至几何稳或安全超时 | 消 F |
+
+排障：先确认探针在 **Messages 容器**（勿侧栏文件树 scroller），再查 ticket reason / mode 转移测试。
 
 ---
 
@@ -684,7 +685,7 @@ active / anchor / visible / retained → hydrated
 | 文件修改场景 | 成组 + **默认折叠**；同 path 留最后一次 | `groupToolItems` · `EditToolGroupBlock` · `fileEditSceneUtils` | 展开才懒解析 diff |
 | **对话/行级详情已延迟** | **已下线** | §7.2 · lightweight 恒 inactive · 摘要条不渲染 | — |
 | **重型 Markdown / 工具块延迟** | 行内 table/output 延迟 + **显示详情**（**保留**） | `markdownHeavyBlock*` · `toolHeavyDetail*` | 块级 |
-| bash / command 卡 | Claude/Codex 幕布藏 | `shouldHideCodexCanvasCommandCard` | ExitPlan 例外不藏 |
+| bash / command 卡 | **五引擎**藏（claude/codex/grok/kimi/opencode）；gemini 未强制 | `shouldHideCodexCanvasCommandCard` | ExitPlan 例外不藏 |
 | read / search 组 | ≥2 连续成组 | `ReadToolGroupBlock` / `SearchToolGroupBlock` | MCP `search_query` 不组 |
 | TodoWrite | 渲染前剔除 | `shouldHideToolItemForRender` | 不当工具卡 |
 | 思考 / reasoning | Claude 默认可见；dock 死 | `ReasoningRow` · thinking section | 别启用 dock 当产品能力 |
@@ -704,12 +705,12 @@ active / anchor / visible / retained → hydrated
 
 | 症状 | 先看 |
 |------|------|
-| 命令跑了幕布没卡 | **先分引擎**：Claude/Codex → 可能藏 bash，去 Status Panel；**Grok 实时** → **无 live tool 事件**，Diff 有改动也正常，见 **§5.1**；勿用「详情已延迟」解释 |
-| Grok 实时写文件幕布空白、Diff 有 +N/-N | **预期缺口**：`grok.rs` streaming 无 tool 事件；history 回放才有 tool 行 |
+| 命令跑了幕布没卡 | **先分引擎**：五引擎 bash/command **常藏** → 去 Status Panel；读/写应在幕布。Grok 若仍无读/写卡 → 查 jsonl 桥/path/resume baseline（§5.1），勿用「详情已延迟」解释 |
+| Grok 实时写文件幕布空白、Diff 有 +N/-N | **改前**为 stdout 无 tool 的预期缺口；**改后**应有桥接卡（可滞后）。仍空：查 `GrokToolHistoryTailState` / history 路径 / 旧构建 |
 | 文件修改一堆碎卡 / 不折叠 | `groupToolItems` fileEdit 桶；`EditToolGroupBlock` `defaultCollapsed` |
 | 展开改文件后 streaming 又收起 | `getGroupedEntryProjectionKey` editGroup 只用 firstId |
 | 流式越聊越卡 | 尾窗 / live-text flag / staged MD 是否被关掉；是否误开 streaming 虚拟化 |
-| 流式结束跳顶 / 不跟底 | `messagesScrollEcho` · settle-repin · `useMessagesScrollController` |
+| 流式结束跳顶 / 不跟底 | **§7.3** `scrollAuthorityMachine` · `useMessagesScrollController` · settle-repin · echo |
 | **点「显示更早」后飞到顶部 / 不再贴底** | **预期**（历史展开）：manual → `scrollTop=0` + 关 autoScroll；§7.1.4 |
 | **侧锚点旧消息半晌才跳 / 先空白** | 目标在折叠前缀外 → jump expand 等 DOM；§7.1 |
 | **流式中上滚、回合结束又贴底** | **预期契约**（settle re-pin）：`beginTurnBoundaryBottomConvergence("turn-settle")` 清 user intent 并贴最新；见 live-behavior 测试 |
@@ -749,30 +750,32 @@ active / anchor / visible / retained → hydrated
 | **详情延迟 / 渲染详情** | | | | | | | |
 | staged MD | | | | | | | |
 | live-text | | | | | | | |
-| **live tool 投影** | | | | Grok❌ | | | |
+| **live tool 投影** | | | | Grok 桥 | | | |
 | 虚拟化 idle/stream | | | | | | | |
 | fork / footer | | | | | | | |
 | history 入口 | | | | | | | |
 | realtime 模式 | | | | | | | |
 
-### 10.3 建议优先级
+### 10.3 建议优先级（2026-08-01 校准）
 
-1. **对话/行级轻量下线**（§7.2 / unify-conversation-canvas）— **进行中/工作树已改**。  
-2. **钉死默认运行态矩阵**（§4–§5）+ Grok live tool 诚实（§5.1）。  
-3. settle 贴底契约保持（流式上滚后结束 re-pin）并防回归。  
-4. presentationProfile go/no-go；dock 死路径清理。  
-5. 性能护栏：尾窗 + 虚拟化；**块级显示详情**可保留。  
-6. Shared 信任与多 CLI 策略表。  
+| # | 项 | 状态 |
+|---|----|------|
+| 1 | 对话/行级轻量下线 + 块级保留 | **已落地** `bf3b35bd6` |
+| 2 | Grok/Kimi/OpenCode live tool + 藏 bash | **已落地**；手测/残差见 matrix |
+| 3 | 滚动所有权状态机 | **代码已落地** `b34fdaead`；实机 A/F 验收跟 scroll change |
+| 4 | presentationProfile go/no-go；dock 死路径 | 未决 |
+| 5 | 性能护栏：尾窗 + 虚拟化 + 块级显示详情 | 持续 |
+| 6 | Shared 信任与多 CLI 策略表 | 持续 |
 
-**最小启动包**：轻量下线 + settle 回归 + §5.1 矩阵 + 症状表 §9。
+**最小启动包（历史）**：轻量下线 + settle + §5.1 矩阵 — 已完成主实现；后续以手测与 scroll 验收为主。
 
 ### 10.4 高风险文件（合并勿整文件 ours/theirs）
 
-- `MessagesCore.tsx` / `MessagesTimeline.tsx` / `TimelineRowRenderer.tsx`  
-- `messagesTimelineProjection.ts` / `groupToolItems.ts` / `messagesTimelineVirtualization.ts`  
-- **`messagesTimelineHydration.ts` / `useMessagesTimelineHydration.ts` / `messagesConversationLightweightMode.ts`**（§7.2 重做核心）  
-- `conversationCanvasNode.tsx` / `activeCanvasStore.ts`  
-- `sharedHistoryLoader.ts` / `sharedProjection/dataSource.ts`  
+- `MessagesCore.tsx` / `MessagesTimeline.tsx` / `TimelineRowRenderer.tsx`
+- `messagesTimelineProjection.ts` / `groupToolItems.ts` / `messagesTimelineVirtualization.ts`
+- **`messagesTimelineHydration.ts` / `useMessagesTimelineHydration.ts` / `messagesConversationLightweightMode.ts`**（§7.2 重做核心）
+- `conversationCanvasNode.tsx` / `activeCanvasStore.ts`
+- `sharedHistoryLoader.ts` / `sharedProjection/dataSource.ts`
 
 ---
 
@@ -786,10 +789,10 @@ active / anchor / visible / retained → hydrated
 | 工具 / 文件修改场景 | `toolBlocks/ToolBlockRenderer.tsx` · `EditToolGroupBlock.tsx` · `fileEditSceneUtils.ts` · `groupToolItems.ts` |
 | final boundary meta | `messagesRenderUtils.ts` `buildAssistantFinalBoundaryMetaText` · TimelineRowRenderer footer |
 | 轻量模式 | `presentation/messagesConversationLightweightMode.ts` |
-| 滚动 echo / settle | `orchestration/scrolling/messagesScrollEcho.ts` · `hooks/useMessagesScrollController.ts` · `constants/messagesConstants.ts` |
-| **Grok live 无 tool 行** | `engine/grok.rs`（streaming 无 tool）· `grokRealtimeAdapter.ts` · `engine/grok_history.rs`（jsonl 有 tool）· Diff=工作区 git，非幕布 tool |
+| 滚动权威 / echo / settle | `orchestration/scrolling/scrollAuthorityMachine.ts` · `scrollAuthorityConstants.ts` · `messagesScrollEcho.ts` · `hooks/useMessagesScrollController.ts` · `constants/messagesConstants.ts` |
+| **Grok live tool 桥** | `engine/grok.rs`（stdout 无 tool）+ `engine/grok_history.rs`（`GrokToolHistoryTailState` 增量 tail）· Diff=工作区 git |
 | 历史呈现展开 / presentationMode | `orchestration/presentation/messagesLiveWindow.ts` · `hooks/useMessagesHistoryWindow.ts` · `hooks/useMessagesAnchorNavigation.ts` · `MessagesCore` expand layoutEffect · collapsed-indicator |
-| **⚠️ 详情已延迟 / 渲染详情** | `messagesTimelineHydration.ts` · `useMessagesTimelineHydration.ts` · `messagesConversationLightweightMode.ts` · `TimelineRowRenderer` lightweight 摘要条 · `ConversationLightweightPrompt` · `messagesTimelineVirtualization` weight · i18n `conversationLightweight*` / `markdownHeavyBlock*` |
+| **详情延迟（行级已下线 / 块级保留）** | lightweight 恒 inactive · `shouldRenderLightweightProjectionRow`≡false · 块级 `markdownHeavyBlock*` / `toolHeavyDetail*` · weight 见 virtualization |
 | Live 控件 / live-text | `live-canvas/liveCanvasControls.ts` · `threads/utils/liveAssistantTextChannel.ts` · `realtimePerfFlags.ts` |
 | Canvas 挂载 / 高频 store | `layout/hooks/conversationCanvasNode.tsx` · `activeCanvasStore.ts` · `useLayoutNodes.tsx` |
 | Settings / Claude thinking | `settings/hooks/useAppSettings.ts` · `app-shell-parts/useAppShellClaudeThinkingSection.ts` |
@@ -811,18 +814,21 @@ active / anchor / visible / retained → hydrated
 | 藏工具 vs 找工具 | Claude/Codex 幕布干净，用户可能以为「命令丢了」——其实在 Status Panel |
 | Profile 休眠 | 代码还在养，默认关，用户无感 |
 | dock 死路径 | 投影/渲染还在，条件到不了 |
-| 引擎观感分裂 | claude/codex「产品化」；gemini 等更「原貌」 |
+| 引擎观感分裂 | claude/codex/kimi/opencode/grok 过程策略向 Claude 收敛；**gemini** 仍未强制藏 bash；Grok 信号源为桥 |
 | Shared 信任 | 切引擎后要能看懂「哪轮谁跑的」 |
 
 ### 12.2 Review 清单
 
-- [ ] 认同「一核 + L1/L2 为主 + L3 默认休眠」？  
-- [ ] bash 藏幕布、活动在 Status Panel，仍是产品预期？  
-- [ ] Gemini 排除 Shared：产品决策还是债？  
-- [ ] profile / dock 死路径：养着还是砍？  
-- [ ] 文件修改默认折叠、idle@48 虚拟化、finalMeta footer，文档与体感是否一致？  
-- [x] **对话/行级轻量下线、块级显示详情保留**（unify-conversation-canvas）  
-- [ ] settle re-pin 与「上滚读历史」产品预期是否仍接受（当前：**流式中上滚、结束仍贴底**）？  
+- [ ] 认同「一核 + L1/L2 为主 + L3 默认休眠」？
+- [ ] bash 藏幕布、活动在 Status Panel，仍是产品预期？
+- [ ] Gemini 排除 Shared：产品决策还是债？
+- [ ] profile / dock 死路径：养着还是砍？
+- [ ] 文件修改默认折叠、idle@48 虚拟化、finalMeta footer，文档与体感是否一致？
+- [x] **对话/行级轻量下线、块级显示详情保留**（`bf3b35bd6`）
+- [x] **Grok jsonl 桥 + 多引擎藏 bash**（同上）
+- [x] **滚动所有权状态机入库**（`b34fdaead`；实机 A/F 仍可跟）
+- [ ] settle / forced-bottom 与「上滚读历史」产品预期是否仍接受？
+- [ ] presentationProfile / dock 死路径：养还是砍？
 
 ---
 
@@ -831,15 +837,14 @@ active / anchor / visible / retained → hydrated
 | 日期 | 说明 |
 |------|------|
 | 2026-07-31 | 初版：多 CLI + Shared 幕布结构与默认运行态 |
-| 2026-08-01 | 对照当前源码多角度重写：补 final boundary / settle-repin / editGroup identity / 功能面清单 / 症状入口 / 统一幕布工作包；核验开关与硬分支仍成立 |
-| 2026-08-01 | 增补 **§7.1 历史呈现展开**（显示更早 / jump expand 与锚点） |
-| 2026-08-01 | 增补 **§7.2 详情已延迟 / 渲染详情**（截图对应 deferred hydration + lightweight）；与 §7.1 划界；**标重点重做优化清单**（P0/P1/P2）；结论/症状/工作包/源码索引同步 |
-| 2026-08-01 | 增补 **§5.1 Grok 实时幕布无读/写文件卡**：协议无 live tool 事件 vs history jsonl 有 tool；Diff/Status 与幕布分工；对齐 §5 矩阵与 §9 症状 |
-| 2026-08-01 | 挂接统一幕布任务 PLAN：`docs/plans/2026-08-01-unified-conversation-canvas-architecture.md`（砍详情延迟、settle 锚点、多 CLI 矩阵） |
-| 2026-08-01 | **unify-conversation-canvas 实施中**：对话/行级轻量下线（块级显示详情保留）；§7.2 状态更新；settle re-pin 契约注明（流式上滚后结束仍贴底） |
-| 2026-08-01 | Phase E：Grok tool tail baseline+offset；三引擎 bash 藏幕布对齐 Claude；矩阵 `canvas-live-tool-projection-matrix-2026-08-01.md` |
-| 2026-08-01 | 多角度 Review 落盘 `unify-conversation-canvas-review-2026-08-01.md`；新会话 baseline 竞态修复（missing→offset 0）；矩阵同步 |
+| 2026-08-01 | 对照源码多角度重写：final boundary / settle-repin / editGroup / 功能面 / 症状 / 工作包 |
+| 2026-08-01 | 增补 **§7.1 历史呈现展开** |
+| 2026-08-01 | 增补 **§7.2 详情已延迟**（当时仍为现网问题 + 重做清单） |
+| 2026-08-01 | 增补 **§5.1 Grok 实时无 live tool**（当时缺口诊断） |
+| 2026-08-01 | 挂接统一幕布 PLAN；Phase A–E 实施（轻量下线、Grok 桥、藏 bash） |
+| 2026-08-01 | Phase E + Review + matrix 落盘 |
+| 2026-08-01 | **二次校准（不丢过程）**：文头对齐 `0.7.14` 与 commit 锚点；§5.1 改为「缺口→桥」演进；§7.2 拆现网/历史触发；新增 **§7.3 scroll authority**；§8–§11/§10 优先级与症状表同步；矛盾「Grok 永远无 tool」清除 |
 
 ---
 
-*结构与默认运行态说明；无实现变更。perf 以 `docs/perf/**` 为准。供应商 L1/L2 见姊妹文 `native-session-provider-select-vs-disk-overwrite-2026-07-31.md`。*
+*结构与默认运行态说明。perf 以 `docs/perf/**` 为准。供应商 L1/L2 见 `native-session-provider-select-vs-disk-overwrite-2026-07-31.md`。索引见 [`README.md`](./README.md)。*

@@ -1,5 +1,7 @@
 # 多 CLI 图片输入能力对齐（以代码为准，2026-07-30）
 
+> **2026-08-01 生命周期校准**：implemented；OpenSpec `grok-cli-image-input-capability-gap` 为 `25/25`，仍 active，待 verify / sync / archive。当前 capability 以 generated matrix 与 `pnpm check:engine-capability-matrix` 为准。
+
 ## 一、结论
 
 用户侧 `image content omitted because you do not support image input` **不是**「附件字段没带过去」的简单 bug，也**不是**「Grok/Kimi 模型天生不能看图」。

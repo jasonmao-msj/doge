@@ -381,3 +381,36 @@ VendorModelManagerDialogHost 在 AppShell 打开时未加载 settings.css，导�
 ### Next Steps
 
 - None - task complete
+
+
+## Session 1263: 校准 docs 全库文档与当前实现
+
+**Date**: 2026-08-01
+**Task**: 校准 docs 全库文档与当前实现
+**Branch**: `bump-version-0.7.14`
+
+### Summary
+
+完成 docs 全库索引、lifecycle 与事实边界校准；对齐 conversation canvas、scroll、streaming、provider、Project Memory 和 harness governance 当前代码/OpenSpec；补齐 Obsidian、Pi、MemOS 外部研究时效锚点并保留历史演进。验证：lint/typecheck/docs links/diff 通过；全量测试存在与文档无关的 app-shell.startup composer selection repair 既有失败，经用户授权提交。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f3c9da4db` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

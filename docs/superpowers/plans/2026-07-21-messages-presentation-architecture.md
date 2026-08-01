@@ -1,5 +1,7 @@
 # Messages Presentation Architecture Implementation Plan
 
+> **Lifecycle**：historical implementation plan；对应 OpenSpec change 已归档于 `openspec/changes/archive/2026-07-21-refactor-messages-presentation-architecture/`。下列 checkbox 保留原始执行过程，不是当前 backlog。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在完全保持现有行为的前提下，将 messages 核心三件套重构为高内聚、低耦合、目录合理的 presentation architecture。

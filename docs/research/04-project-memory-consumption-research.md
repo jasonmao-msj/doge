@@ -2,7 +2,23 @@
 
 **文档类型**: 技术调研
 **更新时间**: 2026-02-10
-**状态**: 调研完成，方案已确认（待实施）
+**状态**: Historical Proposal + Implemented/Evolved；“待实施”只代表 2026-02 原始窗口
+
+> **2026-08-01 校准**：消费链已实现且已多轮演进。现行入口是“手动选择优先 + 用户显式开启 Memory Reference”，默认不做静默自动相关性注入；single 在一次发送后关闭，always 保持；Memory Scout 失败/超时/空结果时不阻塞发送。注入格式已从本文早期 summary 设想演进为带 provenance 的 Retrieval Pack，并在 timeline 以独立关联资源展示。
+
+## 0. Current behavior delta
+
+| 主题 | 当前合同 |
+|---|---|
+| 触发 | manual selection，或 Composer `Memory Reference = single / always` |
+| 默认 | off；历史 localStorage 自动注入值不恢复 silent injection |
+| 查询 | `scoutProjectMemory()`；当前 production send path 未传 local embedding provider，因此诚实报告 lexical fallback，不伪装 semantic/hybrid |
+| Payload | `manual-selection` 与 `memory-scout` 可并存；Retrieval Pack 保留 source records、预算/裁剪标记与 provenance |
+| UI | 用户输入 bubble 不混入 wrapper；memory reference 独立成关联资源卡片 |
+| 降级 | query failure / timeout / empty result 都直接发送原始用户请求 |
+| 边界 | workspace-local；不读项目文件、不执行工具命令、不把向量/内部 score 注入主会话 |
+
+当前事实源：`openspec/specs/project-memory-consumption/spec.md`、`project-memory-local-semantic-retrieval/spec.md`、`project-memory-retrieval-pack-cleaner/spec.md`，以及 `useThreadMessaging.ts` / `memoryScout.ts` / `memoryContextInjection.ts`。下文“尚未实现”与旧行号均为 historical diagnosis。
 
 ---
 

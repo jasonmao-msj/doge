@@ -1,5 +1,6 @@
 # Refine Project Map API Contract Detail View Implementation Plan
 
+> **Lifecycle**：Implemented / Historical Plan。Canonical change 已归档于 `openspec/changes/archive/2026-06-10-refine-project-map-api-contract-detail-view/`；当前 API explorer 以 `src/features/project-map/` 与 main specs 为准。
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Rebuild the unreleased Project Map `接口 API` module into a Swagger-like three-pane API explorer with richer scanner-backed endpoint details.

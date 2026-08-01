@@ -1,5 +1,6 @@
 # 多 CLI × 多 Provider 会话基石 A–D：代码梳理、客户端影响与人工测试计划
 
+> **2026-08-01 生命周期校准**：A–D canonical changes 已归档；本文作为影响与 release smoke 证据保留。后续 Native/Shared repair changes 不回填为 A–D 未完成项。
 > - 初始分析日期：2026-07-28
 > - 最近校准：2026-07-29
 > - 分析窗口：2026-07-27～2026-07-29
