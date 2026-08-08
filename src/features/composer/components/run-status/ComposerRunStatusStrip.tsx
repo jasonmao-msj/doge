@@ -14,6 +14,7 @@ import { TodoList } from "../../../status-panel/components/TodoList";
 import { PlanList } from "../../../status-panel/components/PlanList";
 import { TurnFilesChangedCard } from "../../../messages/components/conversation/TurnFilesChangedCard";
 import { RunStatusSubagentRows } from "./RunStatusSubagentRows";
+import { RollingStat } from "./RollingStat";
 import {
   useComposerRunStatus,
   type ComposerRunStatusInput,
@@ -85,7 +86,7 @@ function buildPills(
       Icon: Pencil,
       // pill 展示行级 diff 汇总，文件数放在 title / 展开面板
       countLabel: `+${model.totalAdditions} -${model.totalDeletions}`,
-      running: false,
+      running: model.editRunning,
       hint: t("messages.turnFilesChanged.title", {
         count: model.editFileCount,
       }),
@@ -143,27 +144,46 @@ export const ComposerRunStatusStrip = memo(function ComposerRunStatusStrip(
   const stripRef = useRef<HTMLDivElement>(null);
   const [chromeOpen, setChromeOpen] = useState(readChromeOpenPreference);
 
+  const { markFilesReverted, collapse, expandedSection } = model;
+
   const toggleChrome = useCallback(() => {
     setChromeOpen((prev) => {
       const next = !prev;
       writeChromeOpenPreference(next);
       if (!next) {
-        model.collapse();
+        collapse();
       }
       return next;
     });
-  }, [model]);
+  }, [collapse]);
+
+  // 撤销成功后写入 hook 级签名隐藏，pill 与列表共用过滤后的 summary
+  const handleRevertFile = useCallback(
+    async (path: string) => {
+      await onRevertFile?.(path);
+      markFilesReverted([path]);
+    },
+    [markFilesReverted, onRevertFile],
+  );
+
+  const handleRevertAllFiles = useCallback(
+    async (paths: string[]) => {
+      await onRevertAllFiles?.(paths);
+      markFilesReverted(paths);
+    },
+    [markFilesReverted, onRevertAllFiles],
+  );
 
   useEffect(() => {
-    if (!model.expandedSection || !chromeOpen) return;
+    if (!expandedSection || !chromeOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        model.collapse();
+        collapse();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [chromeOpen, model.expandedSection, model.collapse]);
+  }, [chromeOpen, collapse, expandedSection]);
 
   if (!model.visible) {
     return null;
@@ -171,7 +191,8 @@ export const ComposerRunStatusStrip = memo(function ComposerRunStatusStrip(
 
   const pills = buildPills(model, t, isCodexEngine);
   const sectionExpanded = chromeOpen ? model.expandedSection : null;
-  const hasLive = model.todoRunning || model.subagentRunning;
+  const hasLive =
+    model.todoRunning || model.subagentRunning || model.editRunning;
   const ToggleIcon = chromeOpen ? PanelTopClose : PanelTop;
 
   return (
@@ -212,8 +233,10 @@ export const ComposerRunStatusStrip = memo(function ComposerRunStatusStrip(
                   sessionFileChanges={model.sessionFileChanges}
                   onOpenDiffPath={onOpenDiffPath}
                   onInspectSubagent={onInspectSubagent}
-                  onRevertFile={onRevertFile}
-                  onRevertAllFiles={onRevertAllFiles}
+                  onRevertFile={onRevertFile ? handleRevertFile : undefined}
+                  onRevertAllFiles={
+                    onRevertAllFiles ? handleRevertAllFiles : undefined
+                  }
                 />
               </div>
             ) : null}
@@ -269,8 +292,18 @@ export const ComposerRunStatusStrip = memo(function ComposerRunStatusStrip(
                   </span>
                   {pill.id === "edit" ? (
                     <span className="composer-run-status-pill-count composer-run-status-pill-count--edit">
-                      <span className="is-add">+{model.totalAdditions}</span>
-                      <span className="is-del">-{model.totalDeletions}</span>
+                      <RollingStat
+                        className="is-add"
+                        prefix="+"
+                        value={model.totalAdditions}
+                        data-testid="composer-run-status-edit-additions"
+                      />
+                      <RollingStat
+                        className="is-del"
+                        prefix="-"
+                        value={model.totalDeletions}
+                        data-testid="composer-run-status-edit-deletions"
+                      />
                     </span>
                   ) : (
                     <span className="composer-run-status-pill-count">

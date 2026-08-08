@@ -197,6 +197,28 @@ html.dark .crs-subagent-row.is-error .crs-subagent-status {
   box-shadow: none;
 }
 
+/* 新文件行入场：实时编辑汇总新增行时的轻反馈 */
+.turn-files-changed-card__row {
+  animation: turn-files-changed-row-in 320ms ease-out;
+}
+
+@keyframes turn-files-changed-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn-files-changed-card__row {
+    animation: none;
+  }
+}
+
 /* 复用 status-panel 列表时收紧间距 */
 .composer-run-status-body .sp-todo-list,
 .composer-run-status-body .sp-plan-list,
@@ -372,6 +394,31 @@ html.dark .crs-subagent-row.is-error .crs-subagent-status {
   gap: 4px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+
+/* RollingStat（@number-flow/react）：位滚动需要一定上下留白，mask 过小会「看起来没动画」 */
+.composer-run-status-pill-count--edit .is-add,
+.composer-run-status-pill-count--edit .is-del {
+  display: inline-flex;
+  align-items: center;
+  min-width: 1.5ch;
+  min-height: 1.15em;
+  text-align: right;
+  line-height: 1;
+  /* 允许 digit 上下滑出一点，再由 NumberFlow 自身 mask 裁切 */
+  overflow: visible;
+}
+
+.composer-run-status-pill-count--edit .composer-run-status-rolling-stat {
+  font-variant-numeric: tabular-nums;
+  line-height: 0.85;
+  --number-flow-mask-height: 0.25em;
+  --number-flow-mask-width: 0.35em;
+}
+
+/* 父级 pill 若 overflow:hidden 会裁掉滚动；编辑计数允许露出 */
+.composer-run-status-pill .composer-run-status-pill-count--edit {
+  overflow: visible;
 }
 
 /* pill 上 +/- 与 diff 语义一致：增绿删红 */

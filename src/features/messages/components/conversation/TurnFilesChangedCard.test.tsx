@@ -149,11 +149,8 @@ describe("TurnFilesChangedCard", () => {
       expect(onRevertFile).toHaveBeenCalledOnce();
     });
     expect(onRevertFile).toHaveBeenCalledWith("src/file-0.ts");
-
-    await waitFor(() => {
-      expect(screen.queryByText("file-0.ts")).toBeNull();
-    });
-    expect(screen.getByText("file-1.ts")).toBeTruthy();
+    // 列表隐藏由上层 summary 过滤；本卡只负责触发 onRevertFile
+    expect(screen.getByText("file-0.ts")).toBeTruthy();
   });
 
   it("cancels single-file revert without calling onRevertFile", () => {

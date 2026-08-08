@@ -108,6 +108,7 @@
     "@floating-ui/react-dom": "2.1.7",
     "@hello-pangea/dnd": "^18.0.1",
     "@lobehub/icons-static-svg": "^1.93.0",
+    "@number-flow/react": "^0.6.2",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-virtual": "^3.13.18",
     "@tauri-apps/api": "~2.9.0",

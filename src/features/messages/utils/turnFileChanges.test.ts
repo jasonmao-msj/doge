@@ -3,7 +3,11 @@ import type { ConversationItem } from "../../../types";
 import {
   areTurnFileChangesSummariesEqual,
   buildTurnFileChangesByBoundaryId,
+  fileChangeSignature,
+  filterTurnFileChangesSummary,
+  LIVE_TURN_FILE_CHANGES_BOUNDARY_ID,
   mergeTurnFileChangesSummaries,
+  overlaySessionFileChangesWithGitStats,
   type TurnFileChange,
 } from "./turnFileChanges";
 
@@ -92,7 +96,7 @@ describe("buildTurnFileChangesByBoundaryId", () => {
     expect(summary?.totalDeletions).toBe(1);
   });
 
-  it("accumulates repeated edits to the same file", () => {
+  it("uses the latest tool stats for repeated edits to the same file", () => {
     const items: ConversationItem[] = [
       userMessage("u1"),
       editTool("t1", "src/a.ts", "old", "new"),
@@ -101,10 +105,11 @@ describe("buildTurnFileChangesByBoundaryId", () => {
     ];
     const summary = buildTurnFileChangesByBoundaryId(items).get("a1");
     expect(summary?.files).toHaveLength(1);
+    // 末次 edit: foo → bar\nbaz → +2 -1，不累加第一轮
     expect(summary?.files[0]).toEqual({
       path: "src/a.ts",
-      additions: 3,
-      deletions: 2,
+      additions: 2,
+      deletions: 1,
       status: "completed",
     });
   });
@@ -151,7 +156,21 @@ describe("buildTurnFileChangesByBoundaryId", () => {
     expect(result.get("a2")?.files).toHaveLength(1);
   });
 
-  it("produces no entry for turns without a final assistant or without edits", () => {
+  it("exposes a live segment when the open turn has edits but no final assistant", () => {
+    const items: ConversationItem[] = [
+      userMessage("u1"),
+      editTool("t1", "src/a.ts", "a", "b"),
+      // 回合进行中：还没有 final assistant
+    ];
+    const result = buildTurnFileChangesByBoundaryId(items);
+    expect(result.size).toBe(1);
+    const live = result.get(LIVE_TURN_FILE_CHANGES_BOUNDARY_ID);
+    expect(live?.files).toEqual([
+      { path: "src/a.ts", additions: 1, deletions: 1, status: "completed" },
+    ]);
+  });
+
+  it("drops unfinished mid-session segments when a later user message arrives", () => {
     const items: ConversationItem[] = [
       userMessage("u1"),
       editTool("t1", "src/a.ts", "a", "b"),
@@ -161,6 +180,17 @@ describe("buildTurnFileChangesByBoundaryId", () => {
     ];
     const result = buildTurnFileChangesByBoundaryId(items);
     expect(result.size).toBe(0);
+  });
+
+  it("prefers the final assistant boundary over the live key once the turn ends", () => {
+    const items: ConversationItem[] = [
+      userMessage("u1"),
+      editTool("t1", "src/a.ts", "a", "b"),
+      finalAssistant("a1"),
+    ];
+    const result = buildTurnFileChangesByBoundaryId(items);
+    expect(result.has(LIVE_TURN_FILE_CHANGES_BOUNDARY_ID)).toBe(false);
+    expect(result.get("a1")?.files).toHaveLength(1);
   });
 
   it("ignores non-edit tools", () => {
@@ -189,7 +219,7 @@ describe("buildTurnFileChangesByBoundaryId", () => {
     expect(buildTurnFileChangesByBoundaryId(items).size).toBe(0);
   });
 
-  it("merges turn summaries into a session total, accumulating same paths", () => {
+  it("merges turn summaries into a session total, keeping latest stats per path", () => {
     const items: ConversationItem[] = [
       userMessage("u1"),
       editTool("t1", "src/a.ts", "a", "b"),
@@ -201,12 +231,13 @@ describe("buildTurnFileChangesByBoundaryId", () => {
     ];
     const map = buildTurnFileChangesByBoundaryId(items);
     const session = mergeTurnFileChangesSummaries(map.values());
+    // a.ts: 后回合 t2 覆盖前回合；b.ts: +1
     expect(session?.files).toEqual([
-      { path: "src/a.ts", additions: 3, deletions: 2, status: "completed" },
+      { path: "src/a.ts", additions: 2, deletions: 1, status: "completed" },
       { path: "src/b.ts", additions: 1, deletions: 0, status: "completed" },
     ]);
-    expect(session?.totalAdditions).toBe(4);
-    expect(session?.totalDeletions).toBe(2);
+    expect(session?.totalAdditions).toBe(3);
+    expect(session?.totalDeletions).toBe(1);
   });
 
   it("returns null when merging empty summaries", () => {
@@ -260,6 +291,140 @@ describe("buildTurnFileChangesByBoundaryId", () => {
     ];
     const summary = buildTurnFileChangesByBoundaryId(items).get("a1");
     expect(summary?.files[0]?.status).toBe("failed");
+  });
+});
+
+describe("overlaySessionFileChangesWithGitStats", () => {
+  const session = {
+    files: [
+      {
+        path: "src/a.ts",
+        additions: 60,
+        deletions: 0,
+        status: "completed" as const,
+      },
+      {
+        path: "src/b.ts",
+        additions: 3,
+        deletions: 1,
+        status: "completed" as const,
+      },
+    ],
+    totalAdditions: 63,
+    totalDeletions: 1,
+  };
+
+  it("replaces tool stats with git line stats for matched paths", () => {
+    const overlaid = overlaySessionFileChangesWithGitStats(session, [
+      { path: "src/a.ts", additions: 87, deletions: 0 },
+      { path: "src/b.ts", additions: 2, deletions: 1 },
+    ]);
+    expect(overlaid).toEqual({
+      files: [
+        {
+          path: "src/a.ts",
+          additions: 87,
+          deletions: 0,
+          status: "completed",
+        },
+        {
+          path: "src/b.ts",
+          additions: 2,
+          deletions: 1,
+          status: "completed",
+        },
+      ],
+      totalAdditions: 89,
+      totalDeletions: 1,
+    });
+  });
+
+  it("drops paths that are no longer dirty when provisional is disabled", () => {
+    const overlaid = overlaySessionFileChangesWithGitStats(
+      session,
+      [{ path: "src/a.ts", additions: 87, deletions: 0 }],
+      { allowToolProvisional: false },
+    );
+    expect(overlaid?.files.map((file) => file.path)).toEqual(["src/a.ts"]);
+    expect(overlaid?.totalAdditions).toBe(87);
+  });
+
+  it("keeps tool provisional stats while processing if git has not caught up", () => {
+    const overlaid = overlaySessionFileChangesWithGitStats(
+      session,
+      [{ path: "src/a.ts", additions: 10, deletions: 0 }],
+      { allowToolProvisional: true },
+    );
+    expect(overlaid?.files).toEqual([
+      {
+        path: "src/a.ts",
+        additions: 10,
+        deletions: 0,
+        status: "completed",
+      },
+      session.files[1],
+    ]);
+  });
+
+  it("returns null when the working tree is clean", () => {
+    expect(
+      overlaySessionFileChangesWithGitStats(session, [], {
+        allowToolProvisional: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("falls back to tool stats when git is unavailable", () => {
+    expect(overlaySessionFileChangesWithGitStats(session, null)).toEqual(
+      session,
+    );
+  });
+});
+
+describe("filterTurnFileChangesSummary", () => {
+  const summary = {
+    files: [
+      { path: "a.ts", additions: 2, deletions: 1, status: "completed" as const },
+      { path: "b.ts", additions: 1, deletions: 0, status: "completed" as const },
+    ],
+    totalAdditions: 3,
+    totalDeletions: 1,
+  };
+
+  it("returns null when every file is hidden at the same signature", () => {
+    const hidden = new Map([
+      ["a.ts", fileChangeSignature(summary.files[0]!)],
+      ["b.ts", fileChangeSignature(summary.files[1]!)],
+    ]);
+    expect(filterTurnFileChangesSummary(summary, hidden)).toBeNull();
+  });
+
+  it("re-shows a path when additions/deletions change after revert", () => {
+    const hidden = new Map([["a.ts", "2:1"]]);
+    const reEdited = {
+      files: [
+        {
+          path: "a.ts",
+          additions: 5,
+          deletions: 2,
+          status: "completed" as const,
+        },
+      ],
+      totalAdditions: 5,
+      totalDeletions: 2,
+    };
+    const filtered = filterTurnFileChangesSummary(reEdited, hidden);
+    expect(filtered?.files).toEqual(reEdited.files);
+  });
+
+  it("keeps unhidden files and recalculates totals", () => {
+    const hidden = new Map([["a.ts", "2:1"]]);
+    const filtered = filterTurnFileChangesSummary(summary, hidden);
+    expect(filtered).toEqual({
+      files: [summary.files[1]],
+      totalAdditions: 1,
+      totalDeletions: 0,
+    });
   });
 });
 

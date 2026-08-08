@@ -2,8 +2,11 @@
  * 回合/会话文件变更汇总卡 - 头部「已编辑 N 个文件 + 总增删」，
  * 列表复用文件树彩色图标 + 文件名 + 每文件增删统计。
  * 可选：顶部「撤销全部」与行 hover 单文件「撤销」（均为文字按钮 + 二次确认）。
+ *
+ * 可见文件列表由上层 summary 决定（Composer run-status 在撤销后按签名过滤）；
+ * 本卡不再维护本地 hide state，避免 collapse/remount 后「撤销了还显示」。
  */
-import { memo, useMemo, useState } from "react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import { cn } from "@/lib/utils";
@@ -16,7 +19,6 @@ import {
 import { getFileName } from "../toolBlocks/toolConstants";
 
 const COLLAPSED_FILE_COUNT = 4;
-const EMPTY_REVERTED = new Set<string>();
 
 interface TurnFilesChangedCardProps {
   summary: TurnFileChangesSummary;
@@ -67,8 +69,6 @@ export const TurnFilesChangedCard = memo(
   }: TurnFilesChangedCardProps) {
     const { t } = useTranslation();
     const [showAll, setShowAll] = useState(false);
-    const [revertedPaths, setRevertedPaths] =
-      useState<ReadonlySet<string>>(EMPTY_REVERTED);
     const [confirmRevertAllOpen, setConfirmRevertAllOpen] = useState(false);
     /** 待二次确认的单文件路径；null 表示未打开确认框 */
     const [pendingRevertFilePath, setPendingRevertFilePath] = useState<
@@ -76,76 +76,16 @@ export const TurnFilesChangedCard = memo(
     >(null);
     const [isReverting, setIsReverting] = useState(false);
 
-    const canRevert = Boolean(onRevertFile || onRevertAll);
-
-    // 会话派生列表不会随 git restore 自动消失；成功撤销后本地隐藏，
-    // 若同 path 的增删统计变化（代理再次编辑）则重新展示。
-    const fileSignatureByPath = useMemo(() => {
-      const map = new Map<string, string>();
-      for (const file of summary.files) {
-        map.set(file.path, `${file.additions}:${file.deletions}`);
-      }
-      return map;
-    }, [summary.files]);
-
-    const [hiddenSignatures, setHiddenSignatures] = useState<
-      ReadonlyMap<string, string>
-    >(() => new Map());
-
-    const visibleFiles = useMemo(() => {
-      return summary.files.filter((file) => {
-        if (!revertedPaths.has(file.path)) return true;
-        const hiddenSig = hiddenSignatures.get(file.path);
-        const currentSig = fileSignatureByPath.get(file.path);
-        // 同 path 统计变化 → 视为新编辑，重新显示
-        return hiddenSig != null && currentSig !== hiddenSig;
-      });
-    }, [
-      fileSignatureByPath,
-      hiddenSignatures,
-      revertedPaths,
-      summary.files,
-    ]);
-
-    const visibleTotals = useMemo(() => {
-      let totalAdditions = 0;
-      let totalDeletions = 0;
-      for (const file of visibleFiles) {
-        totalAdditions += file.additions;
-        totalDeletions += file.deletions;
-      }
-      return { totalAdditions, totalDeletions };
-    }, [visibleFiles]);
-
-    if (visibleFiles.length === 0 && summary.files.length > 0 && canRevert) {
-      // 全部已撤销：不渲染空壳
-      return null;
-    }
     if (summary.files.length === 0) {
       return null;
     }
 
+    const visibleFiles = summary.files;
     const displayedFiles = showAll
       ? visibleFiles
       : visibleFiles.slice(0, COLLAPSED_FILE_COUNT);
     const hiddenCount = visibleFiles.length - displayedFiles.length;
     const showRevertAll = Boolean(onRevertAll) && visibleFiles.length > 0;
-
-    const markReverted = (paths: string[]) => {
-      setRevertedPaths((prev) => {
-        const next = new Set(prev);
-        for (const path of paths) next.add(path);
-        return next;
-      });
-      setHiddenSignatures((prev) => {
-        const next = new Map(prev);
-        for (const path of paths) {
-          const sig = fileSignatureByPath.get(path);
-          if (sig != null) next.set(path, sig);
-        }
-        return next;
-      });
-    };
 
     const handleConfirmRevertFile = async () => {
       if (!onRevertFile || isReverting || !pendingRevertFilePath) return;
@@ -153,7 +93,6 @@ export const TurnFilesChangedCard = memo(
       setIsReverting(true);
       try {
         await onRevertFile(path);
-        markReverted([path]);
         setPendingRevertFilePath(null);
       } finally {
         setIsReverting(false);
@@ -170,7 +109,6 @@ export const TurnFilesChangedCard = memo(
       setIsReverting(true);
       try {
         await onRevertAll(paths);
-        markReverted(paths);
         setConfirmRevertAllOpen(false);
       } finally {
         setIsReverting(false);
@@ -192,8 +130,8 @@ export const TurnFilesChangedCard = memo(
               })}
             </span>
             <DiffStat
-              additions={visibleTotals.totalAdditions}
-              deletions={visibleTotals.totalDeletions}
+              additions={summary.totalAdditions}
+              deletions={summary.totalDeletions}
               className="text-xs leading-none"
             />
           </div>
@@ -227,7 +165,7 @@ export const TurnFilesChangedCard = memo(
             // 紧凑行：左侧 icon+文件名；右侧固定槽位默认 stats，hover 时槽位内切换为「撤销」
             // （不 absolute 浮动，直接占红框对应的 stats 列）
             const rowClass = cn(
-              "group/file flex h-7 w-full items-center gap-2 px-2.5 text-left transition-colors",
+              "group/file turn-files-changed-card__row flex h-7 w-full items-center gap-2 px-2.5 text-left transition-colors",
               "hover:bg-accent/50 focus-visible:bg-accent/50 focus-visible:outline-none",
             );
 

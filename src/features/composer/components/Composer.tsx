@@ -96,6 +96,7 @@ import { isEngineCapabilityAvailable } from "../../engine/engineCapabilityMatrix
 import {
   buildTurnFileChangesByBoundaryId,
   mergeTurnFileChangesSummaries,
+  overlaySessionFileChangesWithGitStats,
 } from "../../messages/utils/turnFileChanges";
 import {
   assembleSinglePrompt,
@@ -403,6 +404,19 @@ type ComposerProps = {
   plan?: TurnPlan | null;
   isPlanMode?: boolean;
   onOpenDiffPath?: (path: string) => void;
+  /**
+   * 工作区 git 脏文件（含行统计）。会话「已编辑」pill 的 +/− 以此为准，
+   * path 集合仍来自本会话 AI 工具调用。
+   */
+  gitChangedFiles?: Array<{
+    path: string;
+    additions: number;
+    deletions: number;
+  }> | null;
+  /** 非 git 仓库时传 false，退回 tool 统计 */
+  isGitRepository?: boolean;
+  /** AI 改文件后请求刷新 git status（防抖由 Composer 侧触发） */
+  onRequestGitStatusRefresh?: () => void;
   /** 撤销会话已编辑列表中的单个文件（git restore） */
   onRevertFile?: (path: string) => void | Promise<void>;
   /** 撤销会话已编辑列表中的多个文件 */
@@ -667,6 +681,9 @@ function ComposerImpl({
   plan = null,
   isPlanMode = false,
   onOpenDiffPath,
+  gitChangedFiles = null,
+  isGitRepository = true,
+  onRequestGitStatusRefresh,
   onRevertFile,
   onRevertAllFiles,
   onRewind,
@@ -1362,10 +1379,64 @@ function ComposerImpl({
     threadStatusById,
     deferSummary: shouldDeferStatusSummary,
   });
-  const sessionFileChanges = useMemo(() => {
-    const byBoundary = buildTurnFileChangesByBoundaryId(performanceScopedItems);
+  // 文件编辑汇总用未 deferred 的 items，保证 AI 改文件时 path 实时出现
+  const sessionToolFileChanges = useMemo(() => {
+    const byBoundary = buildTurnFileChangesByBoundaryId(items);
     return mergeTurnFileChangesSummaries(byBoundary.values());
-  }, [performanceScopedItems]);
+  }, [items]);
+
+  // 回合结束后 git 刷新有延迟：短 grace 内仍允许 tool 临时数，避免 pill 闪空
+  const [gitOverlayGrace, setGitOverlayGrace] = useState(false);
+  useEffect(() => {
+    if (isProcessing) {
+      setGitOverlayGrace(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setGitOverlayGrace(false), 1600);
+    return () => window.clearTimeout(timer);
+  }, [isProcessing]);
+
+  // 行统计对齐 git status；进行中/grace 内允许 tool 临时数，稳定后只保留仍 dirty 的 path
+  const sessionFileChanges = useMemo(
+    () =>
+      overlaySessionFileChangesWithGitStats(
+        sessionToolFileChanges,
+        isGitRepository ? gitChangedFiles : null,
+        {
+          workspacePath: activeWorkspacePath ?? null,
+          allowToolProvisional: Boolean(isProcessing) || gitOverlayGrace,
+        },
+      ),
+    [
+      activeWorkspacePath,
+      gitChangedFiles,
+      gitOverlayGrace,
+      isGitRepository,
+      isProcessing,
+      sessionToolFileChanges,
+    ],
+  );
+
+  // AI 改文件后尽快刷 git，避免 pill 长期停在 tool 临时数或虚高累加
+  const sessionToolFileSignature = useMemo(() => {
+    if (!sessionToolFileChanges) return "";
+    return sessionToolFileChanges.files
+      .map((file) => `${file.path}:${file.additions}:${file.deletions}`)
+      .join("|");
+  }, [sessionToolFileChanges]);
+
+  useEffect(() => {
+    if (!onRequestGitStatusRefresh || !isGitRepository) return;
+    if (!sessionToolFileSignature) return;
+    const timer = window.setTimeout(() => {
+      onRequestGitStatusRefresh();
+    }, 450);
+    return () => window.clearTimeout(timer);
+  }, [
+    isGitRepository,
+    onRequestGitStatusRefresh,
+    sessionToolFileSignature,
+  ]);
   const mergePlanIntoTodos =
     isCodexEngine &&
     selectedEngine != null &&
@@ -3150,6 +3221,7 @@ function ComposerImpl({
               isProcessing={Boolean(isProcessing)}
               mergePlanIntoTodos={mergePlanIntoTodos}
               sessionFileChanges={sessionFileChanges}
+              sessionScopeKey={activeThreadId ?? null}
               isCodexEngine={isCodexEngine}
               onOpenDiffPath={onOpenDiffPath}
               onRevertFile={onRevertFile}

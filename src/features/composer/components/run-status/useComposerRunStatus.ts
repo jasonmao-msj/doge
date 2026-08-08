@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TurnPlan } from "../../../../types";
 import type { SubagentInfo, TodoItem } from "../../../status-panel/types";
-import type { TurnFileChangesSummary } from "../../../messages/utils/turnFileChanges";
+import {
+  fileChangeSignature,
+  filterTurnFileChangesSummary,
+  type FileChangeSignatureMap,
+  type TurnFileChangesSummary,
+} from "../../../messages/utils/turnFileChanges";
 import { resolvePlanStepStatusForDisplay } from "../../../threads/utils/threadNormalize";
 import type { RunStatusSection } from "./types";
 
@@ -13,8 +18,13 @@ export type ComposerRunStatusInput = {
   isProcessing: boolean;
   /** Codex + collaboration：plan 步骤并入任务 pill，不单独显示 Plan */
   mergePlanIntoTodos: boolean;
-  /** 全会话文件变更汇总（与消息层 turnFileChanges 同口径） */
+  /**
+   * 全会话文件变更汇总（含 live 段）。
+   * 撤销隐藏由本 hook 维护，不直接改会话 tool 历史。
+   */
   sessionFileChanges: TurnFileChangesSummary | null;
+  /** 切换会话时清空撤销隐藏态 */
+  sessionScopeKey?: string | null;
 };
 
 export function useComposerRunStatus(input: ComposerRunStatusInput) {
@@ -26,6 +36,7 @@ export function useComposerRunStatus(input: ComposerRunStatusInput) {
     isProcessing,
     mergePlanIntoTodos,
     sessionFileChanges,
+    sessionScopeKey = null,
   } = input;
 
   const displayTodos = useMemo(() => {
@@ -65,10 +76,53 @@ export function useComposerRunStatus(input: ComposerRunStatusInput) {
   const showPlanSection =
     !mergePlanIntoTodos && (isPlanMode || planTotal > 0);
 
-  const editFileCount = sessionFileChanges?.files.length ?? 0;
-  const totalAdditions = sessionFileChanges?.totalAdditions ?? 0;
-  const totalDeletions = sessionFileChanges?.totalDeletions ?? 0;
+  // 撤销成功后按 path+增删签名隐藏；同 path 统计变化视为再编辑并自动恢复展示。
+  const [revertedSignatures, setRevertedSignatures] = useState<FileChangeSignatureMap>(
+    () => new Map(),
+  );
+
+  useEffect(() => {
+    setRevertedSignatures(new Map());
+  }, [sessionScopeKey]);
+
+  const rawSessionFileChanges = sessionFileChanges;
+  const visibleSessionFileChanges = useMemo(
+    () => filterTurnFileChangesSummary(rawSessionFileChanges, revertedSignatures),
+    [rawSessionFileChanges, revertedSignatures],
+  );
+
+  const markFilesReverted = useCallback(
+    (paths: string[]) => {
+      if (paths.length === 0) return;
+      const source = rawSessionFileChanges;
+      if (!source) return;
+      const sigByPath = new Map<string, string>();
+      for (const file of source.files) {
+        sigByPath.set(file.path, fileChangeSignature(file));
+      }
+      setRevertedSignatures((prev) => {
+        const next = new Map(prev);
+        for (const path of paths) {
+          const sig = sigByPath.get(path);
+          if (sig != null) {
+            next.set(path, sig);
+          }
+        }
+        return next;
+      });
+    },
+    [rawSessionFileChanges],
+  );
+
+  const editFileCount = visibleSessionFileChanges?.files.length ?? 0;
+  const totalAdditions = visibleSessionFileChanges?.totalAdditions ?? 0;
+  const totalDeletions = visibleSessionFileChanges?.totalDeletions ?? 0;
   const showEditSection = editFileCount > 0;
+  const editRunning =
+    isProcessing &&
+    Boolean(
+      visibleSessionFileChanges?.files.some((file) => file.status === "processing"),
+    );
 
   const showTodoSection = todoTotal > 0;
   const showSubagentSection = subagentTotal > 0;
@@ -148,10 +202,12 @@ export function useComposerRunStatus(input: ComposerRunStatusInput) {
     plan,
     planCompleted,
     planTotal,
-    sessionFileChanges,
+    sessionFileChanges: visibleSessionFileChanges,
     editFileCount,
     totalAdditions,
     totalDeletions,
+    editRunning,
+    markFilesReverted,
   };
 }
 

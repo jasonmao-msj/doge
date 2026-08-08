@@ -1641,6 +1641,14 @@ export function useLayoutNodes(input: LayoutNodesOptions): LayoutNodesResult {
           plan={options.plan}
           isPlanMode={options.isPlanMode}
           onOpenDiffPath={handleComposerOpenDiffPath}
+          gitChangedFiles={
+            // 非 git 仓库时传 null，退回 tool 统计；空数组表示 clean working tree
+            options.gitStatus.error === "not a git repository"
+              ? null
+              : options.gitStatus.files
+          }
+          isGitRepository={options.gitStatus.error !== "not a git repository"}
+          onRequestGitStatusRefresh={options.queueGitStatusRefresh}
           onRevertFile={options.onRevertGitFile}
           onRevertAllFiles={options.onRevertGitPaths}
           showStatusPanelToggleOverride={false}
