@@ -185,16 +185,16 @@ pub(crate) async fn list_global_mcp_servers() -> Result<Vec<GlobalMcpServerEntry
         }
     }
 
-    let ccgui_config_path = app_paths::config_file_path()?;
-    if ccgui_config_path.exists() {
-        match read_json_file(&ccgui_config_path)
-            .and_then(|root| parse_mcp_entries_from_json_value(&root, "ccgui_config"))
+    let doge_config_path = app_paths::config_file_path()?;
+    if doge_config_path.exists() {
+        match read_json_file(&doge_config_path)
+            .and_then(|root| parse_mcp_entries_from_json_value(&root, "doge_config"))
         {
-            Ok(mut ccgui_entries) => entries.append(&mut ccgui_entries),
+            Ok(mut doge_entries) => entries.append(&mut doge_entries),
             Err(error) => {
                 log::warn!(
                     "[list_global_mcp_servers] Failed to parse {}: {}",
-                    ccgui_config_path.display(),
+                    doge_config_path.display(),
                     error
                 );
             }
@@ -318,7 +318,7 @@ pub(crate) async fn set_global_mcp_server_enabled(
                 dirs::home_dir().ok_or_else(|| "Cannot determine home directory".to_string())?;
             home.join(".claude.json")
         }
-        "ccgui_config" => app_paths::config_file_path()?,
+        "doge_config" | "ccgui_config" => app_paths::config_file_path()?,
         other => return Err(format!("未知的 MCP 配置来源：{}", other)),
     };
     if !path.exists() {

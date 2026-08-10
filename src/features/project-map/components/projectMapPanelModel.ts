@@ -54,7 +54,7 @@ export const PROJECT_MAP_QUICK_FILTERS: ProjectMapQuickFilterId[] = [
 
 const DETAIL_PANEL_FOCUS_OFFSET_MIN = 160;
 const DETAIL_PANEL_FOCUS_OFFSET_MAX = 240;
-const CANVAS_CONTROLS_COLLAPSED_STORAGE_KEY = "ccgui.projectMap.canvasControlsCollapsed";
+const CANVAS_CONTROLS_COLLAPSED_STORAGE_KEY = "doge.projectMap.canvasControlsCollapsed";
 const PROJECT_MAP_LOCAL_HISTORY_LIMIT = 6;
 
 export function normalizeLocalHistoryLabel(value: string): string {

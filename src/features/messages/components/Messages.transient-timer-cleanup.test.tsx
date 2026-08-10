@@ -66,8 +66,8 @@ describe("Messages transient timer cleanup on threadId change", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     appendRendererDiagnosticMock.mockClear();
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
   });
   afterEach(() => {
     vi.useRealTimers();

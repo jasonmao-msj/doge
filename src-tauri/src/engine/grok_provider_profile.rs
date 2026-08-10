@@ -13,7 +13,7 @@ use crate::storage::with_storage_lock;
 use crate::types::GrokProviderConfig;
 
 pub(crate) const GROK_LOCAL_PROVIDER_PROFILE_ID: &str = "__local_config_toml__";
-pub(crate) const GROK_MODEL_TOML_PREFIX: &str = "ccgui/";
+pub(crate) const GROK_MODEL_TOML_PREFIX: &str = "doge/";
 
 #[derive(Debug, Clone)]
 pub(crate) struct GrokProviderLaunchProfile {
@@ -23,7 +23,7 @@ pub(crate) struct GrokProviderLaunchProfile {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
-struct CodemossConfig {
+struct DogeConfig {
     #[serde(default)]
     grok: GrokSection,
     #[serde(flatten)]
@@ -74,15 +74,15 @@ fn sanitize_provider_path_segment(provider_id: &str) -> Result<&str, String> {
     Ok(trimmed)
 }
 
-fn read_config() -> Result<CodemossConfig, String> {
+fn read_config() -> Result<DogeConfig, String> {
     let path = app_paths::config_file_path()?;
     if !path.exists() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     let content = fs::read_to_string(&path)
         .map_err(|error| format!("failed to read provider config {}: {error}", path.display()))?;
     if content.trim().is_empty() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     serde_json::from_str(&content).map_err(|error| {
         format!(
@@ -146,8 +146,8 @@ pub(crate) fn grok_runtime_key(workspace_id: &str, provider_profile_id: &str) ->
 }
 
 /// Render `$GROK_HOME/config.toml` with the provider upserted under the
-/// `ccgui/` namespace: `[model."ccgui/<model>"]` carrying the provider fields
-/// and `[models] default = "ccgui/<model>"`. All user-managed content is
+/// `doge/` namespace: `[model."doge/<model>"]` carrying the provider fields
+/// and `[models] default = "doge/<model>"`. All user-managed content is
 /// preserved.
 pub(crate) fn render_grok_provider_config(
     original: &str,
@@ -444,7 +444,7 @@ name = "Official"
                 .get("models")
                 .and_then(|models| models.get("default"))
                 .and_then(toml::Value::as_str),
-            Some("ccgui/grok-build")
+            Some("doge/grok-build")
         );
         assert_eq!(
             parsed
@@ -463,7 +463,7 @@ name = "Official"
         );
         let managed = parsed
             .get("model")
-            .and_then(|models| models.get("ccgui/grok-build"))
+            .and_then(|models| models.get("doge/grok-build"))
             .expect("managed model entry");
         assert_eq!(
             managed.get("model").and_then(toml::Value::as_str),
@@ -507,7 +507,7 @@ name = "Official"
         let parsed: toml::Table = toml::from_str(&rendered).expect("parse");
         let managed = parsed
             .get("model")
-            .and_then(|models| models.get("ccgui/grok-build"))
+            .and_then(|models| models.get("doge/grok-build"))
             .expect("managed model entry");
         assert!(managed.get("base_url").is_none());
         assert!(managed.get("api_key").is_none());
@@ -518,11 +518,11 @@ name = "Official"
 
     #[test]
     fn materialized_config_is_scoped_and_owner_only() {
-        let root = std::env::temp_dir().join(format!("ccgui-grok-{}", Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("doge-grok-{}", Uuid::new_v4()));
         let path = root.join("provider-a").join("config.toml");
         materialize_grok_provider_at(&sample_provider(), &path, false).expect("materialize");
         let rendered = fs::read_to_string(&path).expect("read");
-        assert!(rendered.contains("ccgui/grok-build"));
+        assert!(rendered.contains("doge/grok-build"));
         assert!(rendered.contains("api_key = \"secret\""));
         #[cfg(unix)]
         {
@@ -540,7 +540,7 @@ name = "Official"
     fn provider_temp_file_is_owner_only_from_creation() {
         use std::os::unix::fs::PermissionsExt;
 
-        let root = std::env::temp_dir().join(format!("ccgui-grok-temp-{}", Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("doge-grok-temp-{}", Uuid::new_v4()));
         fs::create_dir_all(&root).expect("create temp root");
         let path = root.join("provider.tmp");
 
@@ -555,7 +555,7 @@ name = "Official"
 
     #[test]
     fn concurrent_materialization_keeps_valid_provider_config() {
-        let root = std::env::temp_dir().join(format!("ccgui-grok-concurrent-{}", Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("doge-grok-concurrent-{}", Uuid::new_v4()));
         let path = root.join("provider-a").join("config.toml");
         let provider = sample_provider();
         let workers = (0..4)
@@ -580,7 +580,7 @@ name = "Official"
                 .get("models")
                 .and_then(|models| models.get("default"))
                 .and_then(toml::Value::as_str),
-            Some("ccgui/grok-build")
+            Some("doge/grok-build")
         );
         let _ = fs::remove_dir_all(root);
     }
@@ -590,7 +590,7 @@ name = "Official"
     fn unchanged_materialization_keeps_existing_inode() {
         use std::os::unix::fs::MetadataExt;
 
-        let root = std::env::temp_dir().join(format!("ccgui-grok-idempotent-{}", Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("doge-grok-idempotent-{}", Uuid::new_v4()));
         let path = root.join("provider-a").join("config.toml");
         let provider = sample_provider();
         materialize_grok_provider_at(&provider, &path, false).expect("first materialization");
@@ -607,7 +607,7 @@ name = "Official"
 
     #[test]
     fn backup_materialization_preserves_previous_config() {
-        let root = std::env::temp_dir().join(format!("ccgui-grok-backup-{}", Uuid::new_v4()));
+        let root = std::env::temp_dir().join(format!("doge-grok-backup-{}", Uuid::new_v4()));
         let path = root.join("config.toml");
         fs::create_dir_all(&root).expect("create root");
         fs::write(&path, "[models]\ndefault = \"grok-build\"\n").expect("seed config");

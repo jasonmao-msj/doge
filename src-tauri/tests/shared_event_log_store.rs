@@ -11,12 +11,12 @@
 
 mod common;
 
-use cc_gui_lib::shared_event_log::{
+use common::TempStoreDir;
+use doge_lib::shared_event_log::{
     open, AppendOutcome, BindingStateUpdate, Fidelity, LedgerOutcome, NewCanonicalEvent,
     OpenOutcome, ProviderUsageRecord, SessionTargetUpdate, SharedEventWriter, StoreError,
     USAGE_FACT_TYPE,
 };
-use common::TempStoreDir;
 
 const SESSION: &str = "session-a";
 
@@ -86,7 +86,10 @@ fn repeated_open_is_stable_and_idempotent() {
     let first_version = {
         let store = open_writer(&temp.db_path).expect("first open");
         let version = store.user_version().expect("user_version");
-        assert!(version > 0, "migrated schema must have a positive user_version");
+        assert!(
+            version > 0,
+            "migrated schema must have a positive user_version"
+        );
         version
     };
     // 重复 open 不报错、user_version 保持在首次迁移后的 current version。

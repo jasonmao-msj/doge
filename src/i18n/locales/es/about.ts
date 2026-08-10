@@ -5,7 +5,8 @@
 const about = {
   "about": {
     "version": "Versión",
-    "tagline": "Editor VibeCoding de nueva generación",
+    "tagline": "Trae de vuelta lo complicado y hazlo realidad.",
+    "story": "Un pequeño Shiba de IA que vive en tu ordenador y reúne archivos, tareas e ideas dispersas.",
     "checkForUpdates": "Buscar actualizaciones",
     "releaseNotes": "Notas de la versión",
     "reportIssue": "Informar de un problema",

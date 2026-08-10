@@ -22,7 +22,7 @@ export default {
         "Collab is running — input unlocks when it finishes",
     },
     card: {
-      who: "Collab · mossx",
+      who: "Collab · doge",
       runTitle: "Multi-agent collab",
       roundTitle: "⚡ Collab · Round {{n}}",
       orchestrationHint:

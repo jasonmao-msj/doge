@@ -133,7 +133,7 @@ async function pruneAppImageWaylandLibraries({
   const absoluteAppImagePath = path.resolve(appImagePath);
   await chmod(absoluteAppImagePath, 0o755).catch(() => undefined);
 
-  const tempRoot = workingRoot ?? (await mkdtemp(path.join(os.tmpdir(), "ccgui-appimage-prune-")));
+  const tempRoot = workingRoot ?? (await mkdtemp(path.join(os.tmpdir(), "doge-appimage-prune-")));
   const backupPath = path.join(tempRoot, `${path.basename(absoluteAppImagePath)}.backup`);
   const extractedAppDir = path.join(tempRoot, "squashfs-root");
   let shouldCleanupTempRoot = workingRoot === null;

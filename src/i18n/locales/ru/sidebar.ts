@@ -202,7 +202,7 @@ const sidebar = {
         "sectionTitle": "Сведения о сервере",
         "source": "Источник",
         "sourceClaude": "~/.claude.json",
-        "sourceCcgui": "~/.ccgui/config.json",
+        "sourceDoge": "~/.doge/config.json",
         "transport": "Транспорт",
         "transportUnknown": "Неизвестный транспорт",
         "command": "Команда",

@@ -188,7 +188,7 @@ export function createToolOutputTailGate(
   const submit = (key: ToolOutputKey, delta: string): boolean => {
     if (!isToolOutputTailGateEnabled()) {
       // Bypass: handler still called synchronously with the raw delta so
-      // `ccgui.perf.toolOutputTailGate = "off"` keeps existing UX parity.
+      // `doge.perf.toolOutputTailGate = "off"` keeps existing UX parity.
       options.flushHandler(key, delta);
       return true;
     }

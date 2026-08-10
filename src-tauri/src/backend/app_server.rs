@@ -416,7 +416,8 @@ pub(crate) fn now_millis() -> u64 {
 }
 
 fn resolve_initial_turn_start_timeout_ms() -> u64 {
-    let configured = env::var("MOSSX_INITIAL_TURN_START_TIMEOUT_MS")
+    let configured = env::var("DOGE_INITIAL_TURN_START_TIMEOUT_MS")
+        .or_else(|_| env::var("MOSSX_INITIAL_TURN_START_TIMEOUT_MS"))
         .ok()
         .and_then(|value| value.trim().parse::<u64>().ok())
         .unwrap_or(DEFAULT_INITIAL_TURN_START_TIMEOUT_MS);
@@ -427,7 +428,8 @@ fn resolve_initial_turn_start_timeout_ms() -> u64 {
 }
 
 fn resolve_resume_after_user_input_timeout_ms() -> u64 {
-    let configured = env::var("MOSSX_RESUME_AFTER_USER_INPUT_TIMEOUT_MS")
+    let configured = env::var("DOGE_RESUME_AFTER_USER_INPUT_TIMEOUT_MS")
+        .or_else(|_| env::var("MOSSX_RESUME_AFTER_USER_INPUT_TIMEOUT_MS"))
         .ok()
         .and_then(|value| value.trim().parse::<u64>().ok())
         .unwrap_or(DEFAULT_RESUME_AFTER_USER_INPUT_TIMEOUT_MS);
@@ -1220,7 +1222,7 @@ async fn spawn_workspace_session_with_wrapper_fallback<E: EventSink>(
         Err(primary_error) => {
             primary_sink.discard();
             log::warn!(
-                "[codex-wrapper-fallback] retrying workspace={} bin={} wrapper={} without ccgui-generated instructions argv after primary failure: {}",
+            "[codex-wrapper-fallback] retrying workspace={} bin={} wrapper={} without doge-generated instructions argv after primary failure: {}",
                 entry.id,
                 launch_context.resolved_bin,
                 launch_context.wrapper_kind,

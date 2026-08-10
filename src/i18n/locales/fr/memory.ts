@@ -159,7 +159,7 @@ const memory = {
     "offlineStep1": "/plugin marketplace add thedotmack/claude-mem",
     "offlineStep2": "/plugin install claude-mem",
     "offlineStep3": "Redémarrez Claude Code dans le terminal",
-    "offlineStep4": "Redémarrez ccgui"
+    "offlineStep4": "Redémarrez doge"
   }
 };
 

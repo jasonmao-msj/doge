@@ -519,7 +519,7 @@ const settings = {
     terminalShellPathSave: "保存终端 Shell 路径",
     terminalShellPathClear: "清除终端 Shell 路径",
     behaviorProxyTitle: "网络代理",
-    behaviorProxyDesc: "启用后，ccgui 及其启动的联网子进程将优先使用该代理。",
+    behaviorProxyDesc: "启用后，doge 及其启动的联网子进程将优先使用该代理。",
     behaviorProxyEnabled: "启用网络代理",
     behaviorProxyEnabledDesc: "用于 Codex、OpenCode、Git 远程操作等联网链路。",
     behaviorProxyAddress: "代理地址",
@@ -583,7 +583,7 @@ const settings = {
     },
     performanceFlagsResetTitle: "重置性能开关",
     performanceFlagsResetDescription:
-      "清除本机已知的 ccgui.perf.* localStorage 覆盖项，包括实时批处理、后台渲染门控、流调度档位和工具输出门控。模块级读取缓存需要重载窗口后刷新。",
+      "清除本机已知的 doge.perf.* localStorage 覆盖项，包括实时批处理、后台渲染门控、流调度档位和工具输出门控。模块级读取缓存需要重载窗口后刷新。",
     performanceFlagsResetButton: "重置",
     performanceFlagsResetDone:
       "已重置 {{count}} 个性能开关覆盖项。请重载窗口以刷新模块级缓存。",
@@ -782,7 +782,7 @@ const settings = {
         bottomActivityCheckpointDetails:
           "在概览 Tab 显示总结、验证、文件变化与提交等详情，关闭后只保留会话基础信息。",
         bottomActivityGovernanceEvidence:
-          "在概览 Tab 顶部显示仓库治理证据（面向 mossx 自身开发），默认关闭。",
+          "在概览 Tab 顶部显示仓库治理证据（面向 doge 自身开发），默认关闭。",
         curtainContextLedger:
           "隐藏 Composer 上方的本轮上下文来源卡片，但不影响账本计算和来源治理能力。",
         cornerStatusMessageAnchors: "隐藏对话幕布中的消息锚点。",
@@ -1305,9 +1305,9 @@ const settings = {
         addTitle: "添加 Claude 供应商",
         editTitle: "编辑供应商: {{name}}",
         addDescription:
-          "供应商配置将独立存储在 desktop-cc-gui 中，仅供绑定该供应商的会话使用，不会修改 ~/.claude/settings.json。",
+          "供应商配置将独立存储在 doge 中，仅供绑定该供应商的会话使用，不会修改 ~/.claude/settings.json。",
         editDescription:
-          "更新后仍独立存储在 desktop-cc-gui 中，并应用于绑定该供应商的会话；不会修改 ~/.claude/settings.json。",
+          "更新后仍独立存储在 doge 中，并应用于绑定该供应商的会话；不会修改 ~/.claude/settings.json。",
         securityNotice:
           "声明：当前设置全部在您电脑本地，本项目100%开源，请放心使用",
         providerName: "供应商名称",
@@ -1338,7 +1338,7 @@ const settings = {
         fetchModelsError: "拉取模型失败",
         jsonConfig: "JSON 配置",
         jsonConfigDescription:
-          "此处可配置完整的 settings.json 内容，支持所有字段（如 model、alwaysThinkingEnabled、ccSwitchProviderId、codemossProviderId 等）",
+          "此处可配置完整的 settings.json 内容，支持所有字段（如 model、alwaysThinkingEnabled、ccSwitchProviderId、provider options 等）",
         formatJson: "格式化",
         openContainingFolder: "打开文件",
         jsonError: "JSON 格式无效",
@@ -1533,7 +1533,7 @@ const settings = {
     },
     cliValidationTitle: "CLI 验证",
     cliValidationDescription:
-      "统一验证 ccgui 使用的 CLI，并先选择共享执行后端，再在 Codex 与 Claude Code 之间切换诊断。",
+      "统一验证 doge 使用的 CLI，并先选择共享执行后端，再在 Codex 与 Claude Code 之间切换诊断。",
     cliExecutionBackendTitle: "执行后端",
     cliExecutionBackendDescription:
       "这组 transport 配置会同时影响 Codex 与 Claude Code 的运行链路。",
@@ -1549,17 +1549,17 @@ const settings = {
     openCodeCliDisableDescription:
       "彻底禁用 OpenCode CLI。禁用后，启动探测、provider 检查和相关入口会立刻停止。",
     codexTitle: "Codex",
-    claudeDescription: "配置 ccgui 使用的 Claude Code CLI 供应商与本地设置。",
-    codexDescription: "配置 ccgui 使用的 Codex CLI 并验证安装。",
+    claudeDescription: "配置 doge 使用的 Claude Code CLI 供应商与本地设置。",
+    codexDescription: "配置 doge 使用的 Codex CLI 并验证安装。",
     defaultClaudePath: "默认 Claude Code 路径",
     claudePlaceholder: "claude",
-    kimiDescription: "配置 ccgui 使用的 Kimi CLI 供应商与本地设置。",
+    kimiDescription: "配置 doge 使用的 Kimi CLI 供应商与本地设置。",
     defaultKimiPath: "默认 Kimi CLI 路径",
     kimiPlaceholder: "kimi",
-    grokDescription: "配置 ccgui 使用的 Grok CLI 供应商与本地设置。",
+    grokDescription: "配置 doge 使用的 Grok CLI 供应商与本地设置。",
     defaultGrokPath: "默认 Grok CLI 路径",
     grokPlaceholder: "grok",
-    opencodeDescription: "配置 ccgui 使用的 OpenCode CLI 供应商与本地设置。",
+    opencodeDescription: "配置 doge 使用的 OpenCode CLI 供应商与本地设置。",
     defaultOpenCodePath: "默认 OpenCode CLI 路径",
     openCodePlaceholder: "opencode",
     defaultCodexPath: "默认 Codex 路径",
@@ -1575,7 +1575,7 @@ const settings = {
     codexArgsDescSuffix: "之前传递的额外标志。使用引号表示带空格的值。",
     codexLaunchConfigurationTitle: "启动配置",
     codexLaunchConfigurationDescription:
-      "预览 ccgui 下次启动 Codex runtime 时实际使用的可执行文件和参数。",
+      "预览 doge 下次启动 Codex runtime 时实际使用的可执行文件和参数。",
     previewLaunch: "预览启动",
     previewingLaunch: "正在预览启动...",
     codexLaunchPreviewTitle: "启动预览",
@@ -1672,7 +1672,7 @@ const settings = {
     runtimeEngineObservationDescription:
       "按引擎拆分观测受管 runtime 与进程树，单独展示 Codex / Claude，便于定位后台进程来源。",
     runtimeEngineObservationScopeNote:
-      "这里统计 ccgui 托管的 runtime 实例和进程树，不等同于当前聊天 tab 选择的引擎。Claude 会话里的 /status 与 /mcp 会交给 Claude CLI 执行；Codex 计数通常代表 GUI 后台 app-server/runtime。",
+      "这里统计 doge 托管的 runtime 实例和进程树，不等同于当前聊天 tab 选择的引擎。Claude 会话里的 /status 与 /mcp 会交给 Claude CLI 执行；Codex 计数通常代表 GUI 后台 app-server/runtime。",
     runtimeEngineCodex: "Codex",
     runtimeEngineClaude: "Claude",
     runtimeEngineGemini: "Gemini",
@@ -1828,7 +1828,7 @@ const settings = {
     remoteBackendHostAriaLabel: "远程后端主机",
     remoteBackendTokenAriaLabel: "远程后端令牌",
     remoteBackendDesc:
-      "单独启动守护进程并将 ccgui 指向它（host:port + token）。",
+      "单独启动守护进程并将 doge 指向它（host:port + token）。",
     webServiceTitle: "Web 服务",
     webServiceDescription: "管理由 daemon 暴露的可浏览器访问 Web 服务。",
     webServiceConfigGroup: "服务配置",
@@ -2139,7 +2139,7 @@ const settings = {
     agent: {
       title: "智能体",
       description:
-        "管理自定义智能体配置，数据与 Claude Code GUI 兼容（~/.ccgui/agent.json）。",
+        "管理自定义智能体配置，数据与 doge 兼容（~/.doge/agent.json）。",
       create: "创建",
       export: "导出",
       import: "导入",

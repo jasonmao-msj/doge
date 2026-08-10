@@ -8,12 +8,12 @@ use super::{
     build_provider_engine_dispatch_receipt, build_provider_prefill_query,
     collect_stale_child_candidates, delete_opencode_session_files,
     delete_opencode_session_from_datastore, ensure_engine_enabled, extract_turn_result_text,
-    filter_opencode_sessions_for_workspace, is_likely_foreign_model_for_gemini,
-    is_likely_legacy_claude_model_id, is_valid_claude_model_for_passthrough, merge_opencode_agents,
-    gemini_agent_completion_item_id, next_gemini_routed_item_id, normalize_provider_key,
-    opencode_data_candidate_roots,
-    opencode_session_candidate_paths, parse_imported_session_id, parse_json_value,
-    parse_opencode_agent_list, parse_opencode_auth_providers, parse_opencode_debug_config_agents,
+    filter_opencode_sessions_for_workspace, gemini_agent_completion_item_id,
+    is_likely_foreign_model_for_gemini, is_likely_legacy_claude_model_id,
+    is_valid_claude_model_for_passthrough, merge_opencode_agents, next_gemini_routed_item_id,
+    normalize_provider_key, opencode_data_candidate_roots, opencode_session_candidate_paths,
+    parse_imported_session_id, parse_json_value, parse_opencode_agent_list,
+    parse_opencode_auth_providers, parse_opencode_debug_config_agents,
     parse_opencode_help_commands, parse_opencode_mcp_servers, parse_opencode_session_list,
     parse_opencode_updated_at, provider_keys_match,
     record_claude_auto_session_metadata_for_sync_result,
@@ -676,7 +676,7 @@ async fn claude_forwarder_attaches_redacted_stream_timing_to_realtime_delta() {
 
     let timing = emitted
         .first()
-        .and_then(|event| event.message.pointer("/params/ccguiTiming"))
+        .and_then(|event| event.message.pointer("/params/dogeTiming"))
         .expect("stream timing metadata");
     assert_eq!(timing["source"], "claude-stream");
     assert_eq!(timing["stdoutReceivedAtMs"], 1_000);

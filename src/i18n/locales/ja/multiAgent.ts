@@ -20,7 +20,7 @@ export default {
       "collabRunningLock": "コラボ実行中 — 終了後に入力できます"
     },
     "card": {
-      "who": "コラボ編排 · mossx",
+      "who": "コラボ編排 · doge",
       "runTitle": "マルチエージェントコラボ",
       "roundTitle": "⚡ コラボ · 第{{n}}ラウンド",
       "orchestrationHint": "計画承認後、各段階が順次実行されます。段階または右カルーセルで全文を確認。",

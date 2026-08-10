@@ -202,7 +202,7 @@ const sidebar = {
         "sectionTitle": "サーバーの詳細",
         "source": "ソース",
         "sourceClaude": "~/.claude.json",
-        "sourceCcgui": "~/.ccgui/config.json",
+        "sourceDoge": "~/.doge/config.json",
         "transport": "トランスポート",
         "transportUnknown": "不明なトランスポート",
         "command": "コマンド",

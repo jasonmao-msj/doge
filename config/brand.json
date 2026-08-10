@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "name": "doge",
+  "developmentName": "doge-dev",
+  "tagline": "把复杂的事，叼回来做好。",
+  "story": "doge 是一只住在电脑里的拟人化 AI 小柴犬。它会把散落在文件、终端、任务和灵感里的事情一件件叼回来，陪你处理工作，也逐步学会照看生活里的计划与琐事。",
+  "version": "0.1.0",
+  "repository": {
+    "owner": "jasonmao-msj",
+    "name": "doge",
+    "url": "https://github.com/jasonmao-msj/doge",
+    "issuesUrl": "https://github.com/jasonmao-msj/doge/issues"
+  },
+  "bundle": {
+    "productionIdentifier": "io.github.jasonmao-msj.doge",
+    "developmentIdentifier": "io.github.jasonmao-msj.doge.dev"
+  },
+  "runtime": {
+    "appHomeDirectory": ".doge",
+    "mainBinary": "doge",
+    "daemonBinary": "doge_daemon",
+    "cargoPackage": "doge",
+    "cargoLibrary": "doge_lib",
+    "npmPackage": "doge"
+  },
+  "visual": {
+    "mascot": "anthropomorphic-ai-shiba",
+    "iconConcept": "A",
+    "masterIcon": "src-tauri/icons/doge-icon-master.png",
+    "appIconSource": "src-tauri/icons/app-icon-source.png",
+    "colors": {
+      "shibaOrange": "#F4A62A",
+      "cream": "#FFF4DC",
+      "midnightNavy": "#0A1F34",
+      "aiTeal": "#2B9A92"
+    }
+  },
+  "updater": {
+    "endpoint": "https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json",
+    "enabled": false
+  }
+}

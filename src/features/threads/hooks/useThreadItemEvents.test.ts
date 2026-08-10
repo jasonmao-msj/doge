@@ -127,7 +127,7 @@ describe("useThreadItemEvents", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    window.localStorage.removeItem("ccgui.perf.realtimeBatching");
+    window.localStorage.removeItem("doge.perf.realtimeBatching");
     vi.mocked(buildConversationItem).mockReturnValue(convertedItem);
     resetLiveAssistantShadowTranscriptsForTests();
   });
@@ -423,7 +423,7 @@ describe("useThreadItemEvents", () => {
 
   it("dispatches cadence-flushed live assistant deltas without transition lag", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const queuedTransitions: Array<() => void> = [];
     const { result, dispatch, markProcessing, safeMessageActivity } = makeOptions({
       scheduleRealtimeDispatch: (callback) => {
@@ -505,7 +505,7 @@ describe("useThreadItemEvents", () => {
 
   it("batches codex assistant snapshots and flushes only the latest realtime frame", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const { result, dispatch, markProcessing, safeMessageActivity } = makeOptions();
 
     act(() => {
@@ -580,7 +580,7 @@ describe("useThreadItemEvents", () => {
 
   it("batches gemini normalized assistant snapshots by item identity", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const { result, dispatch, markProcessing, safeMessageActivity } = makeOptions();
 
     act(() => {
@@ -658,7 +658,7 @@ describe("useThreadItemEvents", () => {
 
   it("flushes pending codex assistant snapshots before final completed payloads", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const nowSpy = vi.spyOn(Date, "now").mockReturnValue(4567);
     const externalCallback = vi.fn();
     const { result, dispatch, safeMessageActivity } = makeOptions({
@@ -889,7 +889,7 @@ describe("useThreadItemEvents", () => {
 
   it("drops batched agent deltas after the turn is marked terminal", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const { result, dispatch, markProcessing, safeMessageActivity } = makeOptions();
 
     act(() => {
@@ -1340,7 +1340,7 @@ describe("useThreadItemEvents", () => {
 
   it("batches gemini agent deltas in the realtime flush window", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const { result, dispatch, markProcessing, safeMessageActivity } = makeOptions();
 
     act(() => {
@@ -1383,7 +1383,7 @@ describe("useThreadItemEvents", () => {
 
   it("routes a buffered Kimi pending delta through the canonical alias after rename", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     let canonicalThreadId = "kimi-pending-1";
     const { result, dispatch, markProcessing } = makeOptions({
       resolveCanonicalThreadId: () => canonicalThreadId,
@@ -1421,7 +1421,7 @@ describe("useThreadItemEvents", () => {
 
   it("dispatches gemini agent deltas immediately when realtime batching is disabled", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "0");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "0");
     const { result, dispatch, markProcessing, safeMessageActivity } = makeOptions();
 
     act(() => {
@@ -1603,7 +1603,7 @@ describe("useThreadItemEvents", () => {
 
   it("batches realtime deltas in one flush window while preserving operation order", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const { result, dispatch, markProcessing, safeMessageActivity } = makeOptions();
 
     act(() => {
@@ -1672,7 +1672,7 @@ describe("useThreadItemEvents", () => {
 
   it("flushes buffered realtime deltas on unmount so the last batch is not dropped", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const { result, dispatch, markProcessing, safeMessageActivity, unmount } = makeOptions();
 
     act(() => {

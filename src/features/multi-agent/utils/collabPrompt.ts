@@ -11,7 +11,7 @@
  *
  * 1. `filterMultiAgentCanvasItems` → `stripCollabInternalPrompt` 对 summary marker
  *    返回空字符串 → 整条 user 消息从 canvas 丢弃。
- * 2. 同函数对 `isCollabInternalPromptText` + `[[mossx.collab.summary` 的 assistant 消息
+ * 2. 同函数对 `isCollabInternalPromptText` + doge/legacy summary marker 的 assistant 消息
  *    整段隐藏。
  * 3. 其他客户端连接同一 Shared Session 时会走同样的 filter → UI 一致。
  *
@@ -30,12 +30,15 @@ export const COLLAB_SUMMARY_MARKER = "【协作调度 · 完成汇总】";
 
 /** 出现即整段隐藏的汇总请求特征（summary 提示词可能内嵌用户任务原文） */
 const SUMMARY_HIDE_HINTS = [
+  "[[doge.collab.summary",
   "[[mossx.collab.summary",
   COLLAB_SUMMARY_MARKER,
 ];
 
 /** 出现即从该处截断的调度指令特征（兼容流式半截 marker，无闭合 `】` 也能命中） */
 const STRIP_FROM_HINTS = [
+  "[[doge.collab.briefing",
+  "[[doge.collab.",
   "[[mossx.collab.briefing",
   "[[mossx.collab.",
   "【协作调度",
@@ -60,6 +63,12 @@ export function isCollabInternalPromptText(
     earliestIndexOf(raw, SUMMARY_HIDE_HINTS) >= 0 ||
     earliestIndexOf(raw, STRIP_FROM_HINTS) >= 0
   );
+}
+
+export function isCollabSummaryPromptText(
+  text: string | null | undefined,
+): boolean {
+  return earliestIndexOf((text ?? "").trim(), SUMMARY_HIDE_HINTS) >= 0;
 }
 
 /**
@@ -102,7 +111,7 @@ export function buildCollabBriefingSendText(input: {
     "   第一行：一句话复述任务理解。",
     "   第二行：一句话说明将按上述流程依次调度哪些环节，并告知即将启动。",
     "4) 仅当任务完全无法理解时，才改用一行提出 1 个澄清问题。",
-    "[[mossx.collab.briefing]]",
+    "[[doge.collab.briefing]]",
   ].join("\n");
 }
 
@@ -112,7 +121,7 @@ export function buildCollabSummarySendText(input: {
   stageSections: string;
 }): string {
   return [
-    "[[mossx.collab.summary]]",
+    "[[doge.collab.summary]]",
     COLLAB_SUMMARY_MARKER,
     "本轮多引擎协作已结束。请仅根据下方摘录写一份中文交付汇总（Markdown）。",
     "要求：完整成文、勿用省略号截断关键改动；勿整段粘贴摘录；勿调用工具。",

@@ -1,6 +1,6 @@
 # Claude Context Usage Backend Contract
 
-本规范固化 Claude Code 上下文用量链路，适用于 `src-tauri/src/claude_home.rs`、`src-tauri/src/engine/claude*`、`src-tauri/src/engine/events.rs`、`src-tauri/src/engine/commands.rs`、`src-tauri/src/bin/cc_gui_daemon/**`。
+本规范固化 Claude Code 上下文用量链路，适用于 `src-tauri/src/claude_home.rs`、`src-tauri/src/engine/claude*`、`src-tauri/src/engine/events.rs`、`src-tauri/src/engine/commands.rs`、`src-tauri/src/bin/doge_daemon/**`。
 
 ## Scenario: Claude Home Resolution For History And Runtime
 

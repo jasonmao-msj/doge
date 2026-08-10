@@ -9,7 +9,7 @@ const homeChat = {
     "announcementTag": "Nuevo",
     "announcementText": "Explora plantillas de landing, tarjetas de flujo de trabajo y prompts iniciales",
     "announcementAction": "Descubrir",
-    "title": "Agente de ccgui, facilita el trabajo",
+    "title": "Agente de doge, facilita el trabajo",
     "titleLineOne": "Pulsa Intro",
     "titleLineTwo": "Crea apps más rápido",
     "subtitle": "Conserva el editor que ya conoces, añade a su alrededor un ritmo de landing más potente y pasa a la ejecución real con menos fricción de configuración.",

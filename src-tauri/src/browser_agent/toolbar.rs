@@ -12,7 +12,7 @@ use super::{
 };
 
 const BROWSER_TOOLBAR_BRIDGE_HOST: &str = "browser-agent-toolbar.invalid";
-const BROWSER_TOOLBAR_BRIDGE_PATH: &str = "/__ccgui_toolbar__";
+const BROWSER_TOOLBAR_BRIDGE_PATH: &str = "/__doge_toolbar__";
 const BROWSER_CONTEXT_ATTACHMENT_REQUEST_EVENT: &str = "browser-agent://attach-current-context";
 
 struct BrowserToolbarLabels {
@@ -131,8 +131,8 @@ fn browser_agent_toolbar_script(
     script.push_str(
         r#";
   const toolbarHeight = 126;
-  const hostId = "ccgui-browser-agent-toolbar";
-  const bridgeBase = "https://browser-agent-toolbar.invalid/__ccgui_toolbar__";
+  const hostId = "doge-browser-agent-toolbar";
+  const bridgeBase = "https://browser-agent-toolbar.invalid/__doge_toolbar__";
   const escapeHtml = (value) => String(value || "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -169,10 +169,10 @@ fn browser_agent_toolbar_script(
   }
   const body = document.body;
   if (body) {
-    if (body.dataset.mossxBrowserToolbarPaddingTop === undefined) {
-      body.dataset.mossxBrowserToolbarPaddingTop = body.style.paddingTop || "";
+    if (body.dataset.dogeBrowserToolbarPaddingTop === undefined) {
+      body.dataset.dogeBrowserToolbarPaddingTop = body.style.paddingTop || "";
     }
-    const originalPaddingTop = body.dataset.mossxBrowserToolbarPaddingTop || "";
+    const originalPaddingTop = body.dataset.dogeBrowserToolbarPaddingTop || "";
     body.style.paddingTop = originalPaddingTop.trim()
       ? `calc(${originalPaddingTop} + ${toolbarHeight}px)`
       : `${toolbarHeight}px`;
@@ -451,9 +451,9 @@ fn browser_element_selector_script(browser_session_id: &str, workspace_id: &str)
     script.push_str(&escape_js_string(workspace_id));
     script.push_str(
         r##";
-  const bridgeBase = "https://browser-agent-toolbar.invalid/__ccgui_toolbar__";
-  const cleanupKey = "__ccguiBrowserElementSelectorCleanup";
-  const selectorRootAttribute = "data-ccgui-browser-selector-root";
+  const bridgeBase = "https://browser-agent-toolbar.invalid/__doge_toolbar__";
+  const cleanupKey = "__dogeBrowserElementSelectorCleanup";
+  const selectorRootAttribute = "data-doge-browser-selector-root";
   if (typeof window[cleanupKey] === "function") {
     window[cleanupKey]();
   }
@@ -519,12 +519,12 @@ fn browser_element_selector_script(browser_session_id: &str, workspace_id: &str)
   };
   const isSelectorChrome = (element) => Boolean(
     element.closest(`[${selectorRootAttribute}]`) ||
-    element.closest("#ccgui-browser-agent-toolbar")
+    element.closest("#doge-browser-agent-toolbar")
   );
   const eventTouchesToolbarChrome = (event) => {
     const path = typeof event.composedPath === "function" ? event.composedPath() : [];
     return path.some((entry) =>
-      entry instanceof Element && Boolean(entry.closest("#ccgui-browser-agent-toolbar"))
+      entry instanceof Element && Boolean(entry.closest("#doge-browser-agent-toolbar"))
     );
   };
   const visibleRect = (element) => {

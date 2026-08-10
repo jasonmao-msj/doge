@@ -97,8 +97,8 @@ export type TurnTraceSummarySink = (summary: TurnTraceSummary) => void;
 
 const DEFAULT_MAX_TURNS = 64;
 const DEFAULT_TTL_MS = 30 * 60 * 1000;
-const STREAM_LATENCY_TRACE_FLAG_KEY = "ccgui.debug.streamLatencyTrace";
-const TURN_TRACE_GATE_KEY = "ccgui.debug.turnTrace.enabled";
+const STREAM_LATENCY_TRACE_FLAG_KEY = "doge.debug.streamLatencyTrace";
+const TURN_TRACE_GATE_KEY = "doge.debug.turnTrace.enabled";
 const FIRST_OBSERVED_MILESTONES = new Set<TurnTraceMilestoneName>([
   "first-engine-delta-ingress",
   "first-visible-row-render",

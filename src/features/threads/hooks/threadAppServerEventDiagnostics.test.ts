@@ -21,7 +21,7 @@ function emitDiagnostics(event: AppServerEvent): DebugEntry[] {
 
 describe("threadAppServerEventDiagnostics stderr privacy", () => {
   beforeEach(() => {
-    window.localStorage.setItem("ccgui.debug.reasoning.raw", "1");
+    window.localStorage.setItem("doge.debug.reasoning.raw", "1");
   });
 
   it("classifies the known model refresh timeout in the durable semantic entry", () => {

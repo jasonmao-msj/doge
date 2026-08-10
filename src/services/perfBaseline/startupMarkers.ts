@@ -17,11 +17,11 @@ export type StartupPerfSnapshot = {
 
 declare global {
   interface Window {
-    __CCGUI_STARTUP_PERF__?: StartupPerfSnapshot;
+    __DOGE_STARTUP_PERF__?: StartupPerfSnapshot;
   }
 }
 
-const PERFORMANCE_MARK_PREFIX = "ccgui";
+const PERFORMANCE_MARK_PREFIX = "doge";
 const startupPerfMarkers: StartupPerfMarker[] = [];
 
 function nowMs() {
@@ -49,7 +49,7 @@ function writeWindowSnapshot() {
     markers: startupPerfMarkers.slice(),
     platform: getPlatformLabel(),
   };
-  window.__CCGUI_STARTUP_PERF__ = snapshot;
+  window.__DOGE_STARTUP_PERF__ = snapshot;
   appendRendererDiagnostic("perf.startup.markers", snapshot);
 }
 
@@ -88,6 +88,6 @@ export function getStartupPerfSnapshotForTests() {
 export function resetStartupPerfMarkersForTests() {
   startupPerfMarkers.length = 0;
   if (typeof window !== "undefined") {
-    delete window.__CCGUI_STARTUP_PERF__;
+    delete window.__DOGE_STARTUP_PERF__;
   }
 }

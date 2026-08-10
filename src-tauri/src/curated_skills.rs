@@ -700,10 +700,10 @@ pub(crate) async fn set_curated_skill_enabled(
 ) -> Result<crate::types::AppSettings, String> {
     // Optional soft-kill-switch for emergency rollback (see docs/curated-skill-onboarding.md
     // Rollback (c)).
-    if std::env::var("CCGUI_CURATED_SKILLS_DISABLED").is_ok() {
-        log::warn!(
-            "curated skills disabled by CCGUI_CURATED_SKILLS_DISABLED; returning current settings"
-        );
+    if std::env::var("DOGE_CURATED_SKILLS_DISABLED").is_ok()
+        || std::env::var("CCGUI_CURATED_SKILLS_DISABLED").is_ok()
+    {
+        log::warn!("curated skills disabled by doge kill switch; returning current settings");
         let current =
             crate::shared::settings_core::get_app_settings_core(&state.app_settings).await;
         return Ok(current);

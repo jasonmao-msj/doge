@@ -1,6 +1,6 @@
 ---
 type: plan
-status: implemented-pending-review
+status: implemented
 ---
 
 <!-- DOC-LIFECYCLE: implemented-pending-user-review -->

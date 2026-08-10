@@ -15,7 +15,7 @@
 | [Native WebView API Risk Gate](./native-webview-api-risk-gate.md) | 原生接口三问（替代方案 / startup guard / 验收矩阵），防 uiScale 卡死类 P0 复发 | 调 native / WebView / Tauri command；新增启动时生效的持久化设置；处理平台卡死反馈 |
 | [新 CLI 接入指南](../../../docs/research/mossx-new-cli-onboarding-guide.md) | 新 CLI engine 全量接入点核对矩阵（含静默失败点标注）；上游契约为[基石设计](../../../docs/research/mossx-multi-cli-provider-session-foundation-design.md) | 接入新 CLI engine，或恢复/变更既有 engine 的接入面（registry、capability、渲染白名单、Shared 集合、i18n） |
 
-## 项目级触发信号（mossx）
+## 项目级触发信号（doge）
 
 - 修改 `src/services/tauri.ts` 或 command payload mapping。
 - 修改 polling/listener 型 hook。

@@ -11,8 +11,8 @@ pub(super) const MODE_BLOCKED_PLAN_REASON: &str =
     "This operation is blocked while effective_mode=plan.";
 pub(super) const MODE_BLOCKED_PLAN_SUGGESTION: &str =
     "Switch to Default mode and retry the write operation.";
-pub(super) const LOCAL_PLAN_BLOCKER_REQUEST_PREFIX: &str = "ccgui-plan-blocker:";
-pub(super) const LOCAL_PLAN_APPLY_REQUEST_PREFIX: &str = "ccgui-plan-apply:";
+pub(super) const LOCAL_PLAN_BLOCKER_REQUEST_PREFIX: &str = "doge-plan-blocker:";
+pub(super) const LOCAL_PLAN_APPLY_REQUEST_PREFIX: &str = "doge-plan-apply:";
 pub(super) const PLAN_APPLY_ACTION_QUESTION_ID: &str = "plan_apply_action";
 pub(super) const PLAN_BLOCKER_GENERIC_REASON: &str =
     "Plan 模式检测到阻断条件，需要你先确认下一步后再继续。";

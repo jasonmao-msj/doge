@@ -26,9 +26,9 @@ describe("Messages static timeline (virtualization removed)", () => {
   });
 
   beforeEach(() => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
   });
 
   afterEach(() => {
@@ -152,7 +152,7 @@ describe("Messages static timeline (virtualization removed)", () => {
 
     act(() => {
       document.dispatchEvent(
-        new CustomEvent<string>("ccgui:jump-to-message", {
+        new CustomEvent<string>("doge:jump-to-message", {
           detail: "jump-u30",
         }),
       );

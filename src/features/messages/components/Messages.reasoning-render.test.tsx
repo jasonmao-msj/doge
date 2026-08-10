@@ -64,9 +64,9 @@ describe("Messages reasoning render", () => {
   });
 
   beforeEach(() => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
   });
 
   beforeAll(() => {
@@ -832,7 +832,7 @@ describe("Messages reasoning render", () => {
   });
 
   it("renders claude live reasoning at the bottom when dock mode is enabled", () => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "1");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "1");
     try {
       const items: ConversationItem[] = [
         {
@@ -866,12 +866,12 @@ describe("Messages reasoning render", () => {
       expect(thinkingBlock?.textContent ?? "").toContain("先读取目录，再检查关键文件");
       expect(thinkingBlock?.nextElementSibling?.className ?? "").toContain("working");
     } finally {
-      window.localStorage.removeItem("ccgui.claude.hideReasoningModule");
+      window.localStorage.removeItem("doge.claude.hideReasoningModule");
     }
   });
 
   it("keeps docked claude reasoning after turn completes and collapses it by default", () => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "1");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "1");
     try {
       const items: ConversationItem[] = [
         {
@@ -940,7 +940,7 @@ describe("Messages reasoning render", () => {
         "定位线程事件顺序，核对状态同步",
       );
     } finally {
-      window.localStorage.removeItem("ccgui.claude.hideReasoningModule");
+      window.localStorage.removeItem("doge.claude.hideReasoningModule");
     }
   });
 

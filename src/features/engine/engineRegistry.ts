@@ -9,7 +9,7 @@ export type EngineRegistrySource =
       kind: "builtin";
       registrationId: string;
       version: "host";
-      trustOrigin: "mossx-host";
+      trustOrigin: "doge-host";
     }>
   | Readonly<{
       kind: "plugin";
@@ -58,7 +58,7 @@ function createBuiltinEntry(
       kind: "builtin" as const,
       registrationId: input.adapterId,
       version: "host" as const,
-      trustOrigin: "mossx-host" as const,
+      trustOrigin: "doge-host" as const,
     }),
   });
 }

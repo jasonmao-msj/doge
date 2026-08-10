@@ -291,7 +291,7 @@ async function main() {
     await writeUnsupported("No supported Chrome/Chromium/Edge browser binary found. Set CHROME_BIN or BROWSER_BIN to enable browser scroll evidence.");
     return;
   }
-  const tempDir = await mkdtemp(resolve(tmpdir(), "ccgui-long-list-scroll-"));
+  const tempDir = await mkdtemp(resolve(tmpdir(), "doge-long-list-scroll-"));
   try {
     const htmlPath = resolve(tempDir, "long-list-scroll.html");
     const userDataDir = resolve(tempDir, "profile");

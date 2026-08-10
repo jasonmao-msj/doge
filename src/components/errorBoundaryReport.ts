@@ -1,3 +1,5 @@
+import { DOGE_ISSUES_URL, DOGE_NAME } from "../config/brand";
+
 /**
  * Content-safe crash report for the global ErrorBoundary.
  * Users copy this blob into GitHub Issues so maintainers can triage without a
@@ -5,7 +7,7 @@
  */
 
 export const ERROR_BOUNDARY_FEEDBACK_URL =
-  "https://github.com/zhukunpenglinyutong/desktop-cc-gui/issues/new";
+  `${DOGE_ISSUES_URL}/new`;
 
 /** Known production React minified codes we can expand for triage. */
 const REACT_MINIFIED_MESSAGES: Readonly<Record<string, string>> = {
@@ -111,7 +113,7 @@ export function buildErrorBoundaryReportText(
   const jsStack = (error?.stack ?? "").trim() || "(empty)";
 
   const lines = [
-    "=== CC GUI Application Error Report ===",
+    `=== ${DOGE_NAME} Application Error Report ===`,
     `generatedAt: ${generatedAt}`,
     `appVersion: ${appVersion}`,
     `platform: ${platform}`,

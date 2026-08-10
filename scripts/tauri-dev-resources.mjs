@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const DEV_INDEX_HTML = "<!doctype html><meta charset=\"utf-8\"><title>ccgui dev placeholder</title>\n";
+const DEV_INDEX_HTML = "<!doctype html><meta charset=\"utf-8\"><title>doge dev placeholder</title>\n";
 
 async function writeFileIfMissing(filePath, contents) {
   try {

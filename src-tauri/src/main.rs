@@ -5,5 +5,5 @@ fn main() {
     if let Err(err) = fix_path_env::fix() {
         eprintln!("Failed to sync PATH from shell: {err}");
     }
-    cc_gui_lib::run()
+    doge_lib::run()
 }

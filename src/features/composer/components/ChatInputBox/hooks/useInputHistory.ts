@@ -36,7 +36,7 @@ export interface UseInputHistoryReturn {
  *
  * This hook is a thin navigation shell over `useInputHistoryStore` — the
  * single source of truth for input history (backed by
- * ~/.ccgui/inputHistory.json with localStorage interop). Recording,
+ * ~/.doge/inputHistory.json with localStorage interop). Recording,
  * fragmentation, and persistence all live in the store; this hook only
  * maintains the navigation cursor and re-reads the store on
  * `inputHistoryChanged` so in-session entries are visible without remount.

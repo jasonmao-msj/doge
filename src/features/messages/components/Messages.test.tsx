@@ -48,9 +48,9 @@ describe("Messages", () => {
   });
 
   beforeEach(() => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
   });
 
   beforeAll(() => {
@@ -226,7 +226,7 @@ describe("Messages", () => {
   });
 
   it("keeps Claude reasoning title stable while streaming", () => {
-    window.localStorage.removeItem("ccgui.claude.hideReasoningModule");
+    window.localStorage.removeItem("doge.claude.hideReasoningModule");
 
     const items: ConversationItem[] = [
       {
@@ -367,7 +367,7 @@ describe("Messages", () => {
   });
 
   it("keeps legacy Claude docked reasoning mode when the flag is explicitly enabled", () => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "1");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "1");
 
     const items: ConversationItem[] = [
       {

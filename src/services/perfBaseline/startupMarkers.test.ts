@@ -12,7 +12,7 @@ describe("startup perf markers", () => {
     const markers = await import("./startupMarkers");
 
     expect(markers.recordStartupPerfMarker("first-paint")).toBeNull();
-    expect(window.__CCGUI_STARTUP_PERF__).toBeUndefined();
+    expect(window.__DOGE_STARTUP_PERF__).toBeUndefined();
   });
 
   it("records bounded content-safe startup markers once", async () => {
@@ -28,7 +28,7 @@ describe("startup perf markers", () => {
     expect(firstPaint).toEqual(expect.objectContaining({ name: "first-paint" }));
     expect(duplicate).toBe(firstPaint);
     expect(firstInteractive).toEqual(expect.objectContaining({ name: "first-interactive" }));
-    expect(window.__CCGUI_STARTUP_PERF__).toEqual({
+    expect(window.__DOGE_STARTUP_PERF__).toEqual({
       schemaVersion: "1.0",
       source: "startup-perf-markers",
       platform: expect.any(String),
@@ -37,8 +37,8 @@ describe("startup perf markers", () => {
         expect.objectContaining({ name: "first-interactive", atMs: expect.any(Number) }),
       ],
     });
-    expect(markSpy).toHaveBeenCalledWith("ccgui:first-paint");
-    expect(markSpy).toHaveBeenCalledWith("ccgui:first-interactive");
+    expect(markSpy).toHaveBeenCalledWith("doge:first-paint");
+    expect(markSpy).toHaveBeenCalledWith("doge:first-interactive");
 
     markSpy.mockRestore();
   });

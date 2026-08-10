@@ -123,7 +123,7 @@ export function buildStartupGateDiagnosticDump(input: {
       ? input.fullCatalogAutoRetryBlocked
       : getFullCatalogAutoRetryBlockedSnapshot();
 
-  lines.push("=== mossx cold-start diagnostic dump ===");
+  lines.push("=== doge cold-start diagnostic dump ===");
   lines.push(`capturedAt: ${new Date().toISOString()}`);
   lines.push(`elapsedMs: ${Math.round(input.elapsedMs)} (${elapsedSec}s)`);
   lines.push(`events: ${input.events.length}`);

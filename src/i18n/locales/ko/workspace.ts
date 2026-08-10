@@ -245,13 +245,13 @@ const workspace = {
     "threads": "스레드",
     "deleteWorkspaceTitle": "워크스페이스 제거",
     "deleteWorkspaceConfirm": "\"{{name}}\"을(를) 제거하시겠습니까?",
-    "deleteWorkspaceMessage": "ccgui에서 워크스페이스가 제거됩니다.",
+    "deleteWorkspaceMessage": "doge에서 워크스페이스가 제거됩니다.",
     "deleteWorkspaceWorktreeWarning": "디스크의 worktree {{count}}개도 삭제됩니다.",
     "deleteWorkspaceWorktreeWarning_other": "디스크의 worktree {{count}}개도 삭제됩니다.",
     "deleteWorkspaceBeforeYouConfirm": "계속하기 전에:",
     "deleteWorkspaceWillHappenTitle": "발생할 작업:",
     "deleteWorkspaceWillNotHappenTitle": "발생하지 않을 작업:",
-    "deleteWorkspaceEffectListOnly": "워크스페이스는 ccgui 목록에서만 제거됩니다.",
+    "deleteWorkspaceEffectListOnly": "워크스페이스는 doge 목록에서만 제거됩니다.",
     "deleteWorkspaceEffectSessions": "이 워크스페이스 아래의 활성 세션(및 연결된 worktree)이 닫힙니다.",
     "deleteWorkspaceEffectDeleteWorktrees": "디스크의 연결된 worktree 폴더 {{count}}개가 삭제됩니다.",
     "deleteWorkspaceEffectDeleteWorktrees_other": "디스크의 연결된 worktree 폴더 {{count}}개가 삭제됩니다.",
@@ -267,7 +267,7 @@ const workspace = {
     "reloadWorkspaceThreadsEffectNoGitWrite": "checkout/merge/rebase 또는 기타 Git 쓰기 작업을 실행하지 않습니다.",
     "deleteWorktreeTitle": "Worktree 삭제",
     "deleteWorktreeConfirm": "\"{{name}}\"을(를) 삭제하시겠습니까?",
-    "deleteWorktreeMessage": "Agent를 닫고 해당 worktree를 제거하며 ccgui에서 삭제합니다.",
+    "deleteWorktreeMessage": "Agent를 닫고 해당 worktree를 제거하며 doge에서 삭제합니다.",
     "deleteWorktreeFailed": "worktree 삭제 실패"
   }
 };

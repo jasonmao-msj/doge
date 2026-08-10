@@ -534,7 +534,7 @@ const settings = {
     terminalShellPathClear: "Clear terminal shell path",
     behaviorProxyTitle: "Network Proxy",
     behaviorProxyDesc:
-      "When enabled, ccgui and its networked child processes prefer this proxy.",
+      "When enabled, doge and its networked child processes prefer this proxy.",
     behaviorProxyEnabled: "Enable network proxy",
     behaviorProxyEnabledDesc:
       "Used by Codex, OpenCode, Git remote operations, and other network flows.",
@@ -604,7 +604,7 @@ const settings = {
     },
     performanceFlagsResetTitle: "Reset performance flags",
     performanceFlagsResetDescription:
-      "Clears known local ccgui.perf.* localStorage overrides, including realtime batching, background render gating, streaming schedule tier, and tool-output gating. Reload the window to refresh module-level readers.",
+      "Clears known local doge.perf.* localStorage overrides, including realtime batching, background render gating, streaming schedule tier, and tool-output gating. Reload the window to refresh module-level readers.",
     performanceFlagsResetButton: "Reset",
     performanceFlagsResetDone:
       "Reset {{count}} performance flag override(s). Reload the window to refresh module-level caches.",
@@ -826,7 +826,7 @@ const settings = {
         bottomActivityCheckpointDetails:
           "Shows summary, validations, file changes, and commit actions in the Overview tab. When off, only basic session info remains.",
         bottomActivityGovernanceEvidence:
-          "Shows repository governance evidence at the top of the Overview tab (aimed at mossx development). Off by default.",
+          "Shows repository governance evidence at the top of the Overview tab (aimed at doge development). Off by default.",
         curtainContextLedger:
           "Hides the context sources card above the composer without disabling ledger calculations.",
         cornerStatusMessageAnchors:
@@ -1383,9 +1383,9 @@ const settings = {
         addTitle: "Add Claude Provider",
         editTitle: "Edit Provider: {{name}}",
         addDescription:
-          "The provider is stored separately in desktop-cc-gui and used only by conversations bound to it. ~/.claude/settings.json is not modified.",
+          "The provider is stored separately in doge and used only by conversations bound to it. ~/.claude/settings.json is not modified.",
         editDescription:
-          "Updates remain isolated in desktop-cc-gui and apply to conversations bound to this provider. ~/.claude/settings.json is not modified.",
+          "Updates remain isolated in doge and apply to conversations bound to this provider. ~/.claude/settings.json is not modified.",
         securityNotice:
           "Notice: all settings stay local on your machine. This project is 100% open source.",
         providerName: "Provider Name",
@@ -1417,7 +1417,7 @@ const settings = {
         fetchModelsError: "Failed to fetch models",
         jsonConfig: "JSON Config",
         jsonConfigDescription:
-          "Configure full settings.json content here, including fields like model, alwaysThinkingEnabled, ccSwitchProviderId, codemossProviderId, etc.",
+          "Configure full settings.json content here, including fields like model, alwaysThinkingEnabled, ccSwitchProviderId, provider options, etc.",
         formatJson: "Format",
         openContainingFolder: "Open file",
         jsonError: "Invalid JSON format",
@@ -1617,7 +1617,7 @@ const settings = {
     },
     cliValidationTitle: "CLI Validation",
     cliValidationDescription:
-      "Validate the CLIs used by ccgui, choose the shared execution backend once, and switch diagnostics between Codex and Claude Code.",
+      "Validate the CLIs used by doge, choose the shared execution backend once, and switch diagnostics between Codex and Claude Code.",
     cliExecutionBackendTitle: "Execution backend",
     cliExecutionBackendDescription:
       "These transport settings are shared by Codex and Claude Code runtime requests.",
@@ -1634,21 +1634,21 @@ const settings = {
       "Disable OpenCode CLI entirely. Once disabled, startup probing, provider checks, and engine entry points stop immediately.",
     codexTitle: "Codex",
     claudeDescription:
-      "Configure Claude Code CLI providers and local settings used by ccgui.",
+      "Configure Claude Code CLI providers and local settings used by doge.",
     codexDescription:
-      "Configure the Codex CLI used by ccgui and validate the install.",
+      "Configure the Codex CLI used by doge and validate the install.",
     defaultClaudePath: "Default Claude Code path",
     claudePlaceholder: "claude",
     kimiDescription:
-      "Configure Kimi CLI providers and local settings used by ccgui.",
+      "Configure Kimi CLI providers and local settings used by doge.",
     defaultKimiPath: "Default Kimi CLI path",
     kimiPlaceholder: "kimi",
     grokDescription:
-      "Configure Grok CLI providers and local settings used by ccgui.",
+      "Configure Grok CLI providers and local settings used by doge.",
     defaultGrokPath: "Default Grok CLI path",
     grokPlaceholder: "grok",
     opencodeDescription:
-      "Configure OpenCode CLI providers and local settings used by ccgui.",
+      "Configure OpenCode CLI providers and local settings used by doge.",
     defaultOpenCodePath: "Default OpenCode CLI path",
     openCodePlaceholder: "opencode",
     defaultCodexPath: "Default Codex path",
@@ -1664,7 +1664,7 @@ const settings = {
     codexArgsDescSuffix: ". Use quotes for values with spaces.",
     codexLaunchConfigurationTitle: "Launch Configuration",
     codexLaunchConfigurationDescription:
-      "Preview the exact Codex executable and arguments ccgui will use on the next launch.",
+      "Preview the exact Codex executable and arguments doge will use on the next launch.",
     previewLaunch: "Preview launch",
     previewingLaunch: "Previewing launch...",
     codexLaunchPreviewTitle: "Launch preview",
@@ -1763,7 +1763,7 @@ const settings = {
     runtimeEngineObservationDescription:
       "Split managed runtimes and process trees by engine to pinpoint where background processes come from.",
     runtimeEngineObservationScopeNote:
-      "These metrics count ccgui-managed runtime instances and process trees, not the engine selected in the current chat tab. Claude /status and /mcp commands are passed to the Claude CLI; Codex counts usually represent the GUI background app-server/runtime.",
+      "These metrics count doge-managed runtime instances and process trees, not the engine selected in the current chat tab. Claude /status and /mcp commands are passed to the Claude CLI; Codex counts usually represent the GUI background app-server/runtime.",
     runtimeEngineCodex: "Codex",
     runtimeEngineClaude: "Claude",
     runtimeEngineGemini: "Gemini",
@@ -1942,7 +1942,7 @@ const settings = {
     remoteBackendHostAriaLabel: "Remote backend host",
     remoteBackendTokenAriaLabel: "Remote backend token",
     remoteBackendDesc:
-      "Start the daemon separately and point ccgui to it (host:port + token).",
+      "Start the daemon separately and point doge to it (host:port + token).",
     webServiceTitle: "Web service",
     webServiceDescription:
       "Manage the browser-accessible Web service exposed by the daemon.",
@@ -2281,7 +2281,7 @@ const settings = {
     agent: {
       title: "Agents",
       description:
-        "Manage custom agents. Data stays compatible with Claude Code GUI (~/.ccgui/agent.json).",
+        "Manage custom agents. Data stays compatible with doge (~/.doge/agent.json).",
       create: "Create",
       export: "Export",
       import: "Import",

@@ -26,7 +26,7 @@ function createDatasetControllerMock(
   return {
     dataset: mockProjectMapData,
     status: "persisted",
-    storageDir: "/repo/mossx/.ccgui/project-map/mossx-test",
+    storageDir: "/repo/mossx/.doge/project-map/mossx-test",
     activeReadLocation: "global",
     relationshipContextPack: null,
     relationshipStaleSummary: null,
@@ -823,7 +823,7 @@ describe("ProjectMapPanel", () => {
     const view = renderMockProjectMapPanel();
 
     expandCanvasControls();
-    expect(window.localStorage.getItem("ccgui.projectMap.canvasControlsCollapsed")).toBe("false");
+    expect(window.localStorage.getItem("doge.projectMap.canvasControlsCollapsed")).toBe("false");
     fireEvent.click(screen.getByRole("button", { name: "projectMap.resetView" }));
     fireEvent.click(screen.getByRole("button", { name: "projectMap.autoLayout" }));
     fireEvent.click(screen.getByRole("button", { name: "projectMap.resetLayout" }));
@@ -831,14 +831,14 @@ describe("ProjectMapPanel", () => {
       target: { value: "tree" },
     });
     expect(screen.getByRole("button", { name: "projectMap.collapseCanvasControls" })).toBeTruthy();
-    expect(window.localStorage.getItem("ccgui.projectMap.canvasControlsCollapsed")).toBe("false");
+    expect(window.localStorage.getItem("doge.projectMap.canvasControlsCollapsed")).toBe("false");
 
     view.unmount();
     renderMockProjectMapPanel();
     expect(screen.getByRole("button", { name: "projectMap.collapseCanvasControls" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "projectMap.collapseCanvasControls" }));
-    expect(window.localStorage.getItem("ccgui.projectMap.canvasControlsCollapsed")).toBe("true");
+    expect(window.localStorage.getItem("doge.projectMap.canvasControlsCollapsed")).toBe("true");
   });
 
   it("fits the initial graph left of the open detail panel", () => {
@@ -1271,7 +1271,7 @@ describe("ProjectMapPanel", () => {
                   {
                     id: "auth-service-flow",
                     label: "AuthService Token Flow",
-                    path: ".ccgui/project-map/mossx-abcd/diagrams/auth-service-flow.md",
+                    path: ".doge/project-map/mossx-abcd/diagrams/auth-service-flow.md",
                     kind: "sequence",
                     summary: "Login and refresh token flow.",
                     sourceRefs: ["src/AuthService.ts"],
@@ -1309,7 +1309,7 @@ describe("ProjectMapPanel", () => {
     fireEvent.click(within(detailPanel).getByText("projectMap.detail.evidenceAndContext"));
     fireEvent.click(within(detailPanel).getByRole("button", { name: /auth-service-flow\.md/i }));
     expect(openEvidenceFile).toHaveBeenCalledWith(
-      ".ccgui/project-map/mossx-abcd/diagrams/auth-service-flow.md",
+      ".doge/project-map/mossx-abcd/diagrams/auth-service-flow.md",
       undefined,
     );
     fireEvent.click(within(detailPanel).getByRole("button", { name: /ProjectMapPanel\.tsx:42/i }));
@@ -1539,7 +1539,7 @@ describe("ProjectMapPanel", () => {
           startedAt: "2026-05-26T01:40:00.000Z",
           completedAt: null,
           scope: "global",
-          writePath: ".ccgui/project-map/springboot-demo-8e13fe53",
+          writePath: ".doge/project-map/springboot-demo-8e13fe53",
         },
         {
           id: "global_run_2",
@@ -1552,7 +1552,7 @@ describe("ProjectMapPanel", () => {
           scope: "node",
           requestScope: { kind: "node" as const, nodeId: "project-core", includeDescendants: true },
           generationIntent: "completeNode" as const,
-          writePath: ".ccgui/project-map/springboot-demo-8e13fe53",
+          writePath: ".doge/project-map/springboot-demo-8e13fe53",
         },
         {
           id: "global_run_done",
@@ -1563,7 +1563,7 @@ describe("ProjectMapPanel", () => {
           startedAt: "2026-05-26T01:20:00.000Z",
           completedAt: "2026-05-26T01:22:00.000Z",
           scope: "global",
-          writePath: ".ccgui/project-map/springboot-demo-8e13fe53",
+          writePath: ".doge/project-map/springboot-demo-8e13fe53",
         },
         ...mockProjectMapData.runs,
       ],

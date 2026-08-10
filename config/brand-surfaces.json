@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "locales": ["zh", "zh-TW", "en", "hi", "es", "fr", "ja", "ru", "ko", "pt-BR"],
+  "surfaces": [
+    {
+      "id": "application-title",
+      "surface": "window-and-document-title",
+      "namespace": "app",
+      "localeKey": "app.title",
+      "requiredTokens": ["doge"]
+    },
+    {
+      "id": "about-tagline",
+      "surface": "about",
+      "namespace": "about",
+      "localeKey": "about.tagline",
+      "requiredTokens": []
+    },
+    {
+      "id": "about-brand-story",
+      "surface": "about",
+      "namespace": "about",
+      "localeKey": "about.story",
+      "requiredTokens": []
+    },
+    {
+      "id": "about-report-issue",
+      "surface": "about",
+      "namespace": "about",
+      "localeKey": "about.reportIssue",
+      "requiredTokens": []
+    },
+    {
+      "id": "lock-screen-title",
+      "surface": "lock-screen",
+      "namespace": "lockScreen",
+      "localeKey": "lockScreen.title",
+      "requiredTokens": ["doge"]
+    },
+    {
+      "id": "lock-screen-description",
+      "surface": "lock-screen",
+      "namespace": "lockScreen",
+      "localeKey": "lockScreen.description",
+      "requiredTokens": ["doge"]
+    },
+    {
+      "id": "lock-screen-capability-description",
+      "surface": "lock-screen",
+      "namespace": "lockScreen",
+      "localeKey": "lockScreen.capabilityDesc",
+      "requiredTokens": []
+    },
+    {
+      "id": "lock-screen-storage-path",
+      "surface": "storage-path-copy",
+      "namespace": "lockScreen",
+      "localeKey": "lockScreen.unlockDesc",
+      "requiredTokens": [".doge"]
+    },
+    {
+      "id": "settings-network-proxy",
+      "surface": "settings",
+      "namespace": "settings",
+      "localeKey": "settings.behaviorProxyDesc",
+      "requiredTokens": ["doge"]
+    },
+    {
+      "id": "settings-performance-storage",
+      "surface": "settings",
+      "namespace": "settings",
+      "localeKey": "settings.performanceFlagsResetDescription",
+      "requiredTokens": ["doge.perf"]
+    },
+    {
+      "id": "project-map-default-path",
+      "surface": "storage-path-copy",
+      "namespace": "projectMap",
+      "localeKey": "projectMap.emptyDescription",
+      "requiredTokens": [".doge/project-map"]
+    },
+    {
+      "id": "project-map-global-location",
+      "surface": "storage-path-copy",
+      "namespace": "projectMap",
+      "localeKey": "projectMap.confirmation.storageLocationGlobal",
+      "requiredTokens": [".doge"]
+    },
+    {
+      "id": "project-map-local-location",
+      "surface": "storage-path-copy",
+      "namespace": "projectMap",
+      "localeKey": "projectMap.confirmation.storageLocationProject",
+      "requiredTokens": [".doge/project-map"]
+    },
+    {
+      "id": "workspace-membership-copy",
+      "surface": "workspace",
+      "namespace": "workspace",
+      "localeKey": "workspace.deleteWorkspaceMessage",
+      "requiredTokens": ["doge"]
+    },
+    {
+      "id": "update-available-copy",
+      "surface": "update",
+      "namespace": "update",
+      "localeKey": "update.updateAvailable",
+      "requiredTokens": []
+    },
+    {
+      "id": "update-release-notes-link",
+      "surface": "update",
+      "namespace": "update",
+      "localeKey": "update.releaseNotesOpenInGitHub",
+      "requiredTokens": []
+    }
+  ]
+}

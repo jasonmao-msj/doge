@@ -10,9 +10,9 @@ import {
   type QuickSwitcherRecentFileSource,
 } from "./types";
 
-const STORAGE_KEY = "ccgui.quickSwitcher.recentFilesByWorkspace";
+const STORAGE_KEY = "doge.quickSwitcher.recentFilesByWorkspace";
 export const QUICK_SWITCHER_RECENT_FILES_CHANGED =
-  "ccgui:quick-switcher-recent-files-changed";
+  "doge:quick-switcher-recent-files-changed";
 
 export type RecentFilesByWorkspace = Record<string, QuickSwitcherRecentFile[]>;
 

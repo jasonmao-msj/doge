@@ -70,7 +70,7 @@ describe("reactScanController persisted-pause recovery", () => {
 
   it("disables a persisted production overlay and reloads once after React #185", () => {
     const reload = vi.fn();
-    window.localStorage.setItem("ccgui.perf.reactScan", "1");
+    window.localStorage.setItem("doge.perf.reactScan", "1");
     window.localStorage.setItem(
       "react-scan-options",
       JSON.stringify({ enabled: true, showToolbar: true }),
@@ -83,10 +83,10 @@ describe("reactScanController persisted-pause recovery", () => {
       ),
     ).toBe("recovered");
     expect(reload).toHaveBeenCalledOnce();
-    expect(window.localStorage.getItem("ccgui.perf.reactScan")).toBeNull();
+    expect(window.localStorage.getItem("doge.perf.reactScan")).toBeNull();
     expect(window.localStorage.getItem("react-scan-options")).toBeNull();
 
-    window.localStorage.setItem("ccgui.perf.reactScan", "1");
+    window.localStorage.setItem("doge.perf.reactScan", "1");
     expect(
       recoverFromReactScanUpdateDepthError(
         new Error("Maximum update depth exceeded"),
@@ -98,18 +98,18 @@ describe("reactScanController persisted-pause recovery", () => {
 
   it("does not recover unrelated renderer failures", () => {
     const reload = vi.fn();
-    window.localStorage.setItem("ccgui.perf.reactScan", "1");
+    window.localStorage.setItem("doge.perf.reactScan", "1");
 
     expect(
       recoverFromReactScanUpdateDepthError(new Error("render failed"), reload),
     ).toBe("not-applicable");
     expect(reload).not.toHaveBeenCalled();
-    expect(window.localStorage.getItem("ccgui.perf.reactScan")).toBe("1");
+    expect(window.localStorage.getItem("doge.perf.reactScan")).toBe("1");
   });
 
   it("allows a new recovery attempt after the user explicitly re-enables react-scan", async () => {
     const reload = vi.fn();
-    window.localStorage.setItem("ccgui.perf.reactScan", "1");
+    window.localStorage.setItem("doge.perf.reactScan", "1");
     expect(
       recoverFromReactScanUpdateDepthError(
         new Error("Maximum update depth exceeded"),
@@ -138,7 +138,7 @@ describe("reactScanController persisted-pause recovery", () => {
       }
       return originalRemoveItem(key);
     });
-    window.localStorage.setItem("ccgui.perf.reactScan", "1");
+    window.localStorage.setItem("doge.perf.reactScan", "1");
     window.localStorage.setItem(
       "react-scan-options",
       JSON.stringify({ enabled: true, showToolbar: true }),
@@ -151,11 +151,11 @@ describe("reactScanController persisted-pause recovery", () => {
       ),
     ).toBe("failed");
     expect(reload).not.toHaveBeenCalled();
-    expect(window.localStorage.getItem("ccgui.perf.reactScan")).toBe("1");
+    expect(window.localStorage.getItem("doge.perf.reactScan")).toBe("1");
     expect(window.localStorage.getItem("react-scan-options")).not.toBeNull();
     expect(
       window.sessionStorage.getItem(
-        "ccgui.perf.reactScan.updateDepthRecoveryAttempted",
+        "doge.perf.reactScan.updateDepthRecoveryAttempted",
       ),
     ).toBeNull();
 

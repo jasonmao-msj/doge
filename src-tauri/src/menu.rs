@@ -610,7 +610,7 @@ pub(crate) fn handle_menu_event<R: tauri::Runtime>(
                 let _ = window.set_focus();
                 return;
             }
-            let about_title = format!("{} ccgui", saved_menu_labels().about_prefix);
+            let about_title = format!("{} doge", saved_menu_labels().about_prefix);
             let _ = WebviewWindowBuilder::new(app, "about", WebviewUrl::App("index.html".into()))
                 .title(about_title)
                 .resizable(false)

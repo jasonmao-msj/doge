@@ -156,10 +156,10 @@ describe("ErrorBoundary crash UI", () => {
       expect(writeText).toHaveBeenCalled();
     });
     const copied = String(writeText.mock.calls[0]?.[0] ?? "");
-    expect(copied).toContain("=== CC GUI Application Error Report ===");
+    expect(copied).toContain("=== doge Application Error Report ===");
     expect(copied).toContain("react-maximum-update-depth");
     expect(copied).toContain("Maximum update depth exceeded");
-    expect(copied).toContain("github.com/zhukunpenglinyutong/desktop-cc-gui/issues");
+    expect(copied).toContain("github.com/jasonmao-msj/doge/issues");
 
     expect(screen.getByTestId("application-error-feedback")).toBeTruthy();
     expect(screen.getByTestId("application-error-reload")).toBeTruthy();

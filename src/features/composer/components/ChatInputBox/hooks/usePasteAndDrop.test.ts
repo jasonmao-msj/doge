@@ -138,7 +138,7 @@ describe("usePasteAndDrop path insertion", () => {
         dataTransfer: {
           files: [] as File[],
           getData: (type: string) =>
-            type === "application/x-ccgui-file-paths"
+            type === "application/x-doge-file-paths"
               ? JSON.stringify(["/tmp/a.ts", "/tmp/b.ts"])
               : "",
         },

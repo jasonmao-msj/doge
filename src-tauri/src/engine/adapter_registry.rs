@@ -223,7 +223,7 @@ impl EngineAdapterRegistry {
                     source: EngineSourceInfo::Builtin {
                         registration_id: format!("builtin.{}", engine_id(engine)),
                         version: "host".to_string(),
-                        trust_origin: "mossx-host".to_string(),
+                        trust_origin: "doge-host".to_string(),
                     },
                 },
             );

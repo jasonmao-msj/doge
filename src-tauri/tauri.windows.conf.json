@@ -3,7 +3,7 @@
     "windows": []
   },
   "bundle": {
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "windows": {
       "webviewInstallMode": {
         "type": "embedBootstrapper"

@@ -165,13 +165,13 @@ pub(crate) fn build_grok_prompt_json(
 
 /// Write ACP content-block JSON to workspace staging and return its path.
 ///
-/// Path is under `{workspace}/.mossx/image-staging/grok-prompt-<uuid>.json` so
+/// Path is under `{workspace}/.doge/image-staging/grok-prompt-<uuid>.json` so
 /// argv only carries a short path (Grok CLI `--prompt-file`).
 pub(crate) fn write_grok_prompt_file(
     workspace_path: &Path,
     prompt_json: &str,
 ) -> Result<PathBuf, String> {
-    let dir = workspace_path.join(".mossx").join("image-staging");
+    let dir = workspace_path.join(".doge").join("image-staging");
     std::fs::create_dir_all(&dir)
         .map_err(|error| format!("Failed to create Grok prompt staging dir: {error}"))?;
     let path = dir.join(format!("grok-prompt-{}.json", uuid::Uuid::new_v4()));
@@ -1345,7 +1345,7 @@ mod tests {
 
         let staging = write_grok_prompt_file(&dir, &encoded).unwrap();
         assert!(staging.exists());
-        assert!(staging.starts_with(dir.join(".mossx").join("image-staging")));
+        assert!(staging.starts_with(dir.join(".doge").join("image-staging")));
         let on_disk = std::fs::read_to_string(&staging).unwrap();
         assert_eq!(on_disk, encoded);
         let _ = std::fs::remove_dir_all(dir);

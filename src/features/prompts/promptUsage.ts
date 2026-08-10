@@ -1,5 +1,8 @@
-const PROMPT_USAGE_STORAGE_KEY = "ccgui.promptUsage.v1";
-const LEGACY_PROMPT_USAGE_STORAGE_KEYS = ["mossx.promptUsage.v1"];
+const PROMPT_USAGE_STORAGE_KEY = "doge.promptUsage.v1";
+const LEGACY_PROMPT_USAGE_STORAGE_KEYS = [
+  "ccgui.promptUsage.v1",
+  "mossx.promptUsage.v1",
+];
 const MAX_PROMPT_USAGE_RECORDS = 500;
 
 export type PromptUsageEntry = {

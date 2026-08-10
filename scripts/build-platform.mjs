@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Multi-platform build script for ccgui
+ * Multi-platform build script for doge
  *
  * Usage:
  *   node scripts/build-platform.mjs <platform>
@@ -36,10 +36,8 @@ const LEGACY_NPM_CONFIG_ENV_KEYS = [
 
 // Configuration
 const CONFIG = {
-  codesignIdentity:
-    process.env.CODESIGN_IDENTITY ||
-    "Developer ID Application: kunpeng zhu (RLHBM56QRH)",
-  notaryProfile: process.env.NOTARY_PROFILE || "ccgui-Notarize",
+  codesignIdentity: process.env.CODESIGN_IDENTITY || "",
+  notaryProfile: process.env.NOTARY_PROFILE || "doge-Notarize",
   entitlements: join(TAURI_DIR, "Entitlements.plist"),
   openssl: {
     arm64: "/opt/homebrew/opt/openssl@3",
@@ -77,17 +75,6 @@ function exec(cmd, options = {}) {
     });
     return true;
   } catch (error) {
-    // Ignore TAURI_SIGNING_PRIVATE_KEY error - it's just for auto-updates
-    // This error has exit code 1 but the build actually succeeded
-    const errorStr = String(error.stderr || error.stdout || error.message || "");
-    if (
-      errorStr.includes("TAURI_SIGNING_PRIVATE_KEY") ||
-      (error.status === 1 && cmd.includes("tauri") && cmd.includes("build"))
-    ) {
-      // Check if the build actually produced output
-      console.log("\n(Build completed - TAURI_SIGNING_PRIVATE_KEY warning only affects auto-updates)\n");
-      return true;
-    }
     if (ignoreError) {
       return false;
     }
@@ -126,6 +113,12 @@ async function buildMacOS(arch, options = {}) {
   const { skipSign = false, skipNotarize = false } = options;
   const version = getVersion();
 
+  if (!skipSign && !CONFIG.codesignIdentity) {
+    throw new Error(
+      "CODESIGN_IDENTITY is required for signed macOS builds; use --skip-sign for a local unsigned build.",
+    );
+  }
+
   console.log(`\n========================================`);
   console.log(`Building macOS ${arch}...`);
   console.log(`========================================\n`);
@@ -147,16 +140,16 @@ async function buildMacOS(arch, options = {}) {
     target = "aarch64-apple-darwin";
     bundlePath = join(
       TAURI_DIR,
-      "target/aarch64-apple-darwin/release/bundle/macos/ccgui.app",
+      "target/aarch64-apple-darwin/release/bundle/macos/doge.app",
     );
-    dmgName = `ccgui_${version}_aarch64.dmg`;
+    dmgName = `doge_${version}_aarch64.dmg`;
   } else if (arch === "x64") {
     target = "x86_64-apple-darwin";
     bundlePath = join(
       TAURI_DIR,
-      "target/x86_64-apple-darwin/release/bundle/macos/ccgui.app",
+      "target/x86_64-apple-darwin/release/bundle/macos/doge.app",
     );
-    dmgName = `ccgui_${version}_x86_64.dmg`;
+    dmgName = `doge_${version}_x86_64.dmg`;
 
     // Check x86_64 OpenSSL
     if (!existsSync(CONFIG.openssl.x64)) {
@@ -174,9 +167,9 @@ async function buildMacOS(arch, options = {}) {
     target = "universal-apple-darwin";
     bundlePath = join(
       TAURI_DIR,
-      "target/universal-apple-darwin/release/bundle/macos/ccgui.app",
+      "target/universal-apple-darwin/release/bundle/macos/doge.app",
     );
-    dmgName = `ccgui_${version}_universal.dmg`;
+    dmgName = `doge_${version}_universal.dmg`;
 
     // Check x86_64 OpenSSL for universal builds
     if (!existsSync(CONFIG.openssl.x64)) {
@@ -205,7 +198,7 @@ async function buildMacOS(arch, options = {}) {
   // Tauri embeds frontend resources in the binary, so we need to force recompilation
   console.log("\nCleaning Rust build cache to embed latest frontend...");
   exec(`rm -rf ${TAURI_DIR}/target/${target}/release/.fingerprint`, { ignoreError: true });
-  exec(`rm -f ${TAURI_DIR}/target/${target}/release/cc-gui`, { ignoreError: true });
+  exec(`rm -f ${TAURI_DIR}/target/${target}/release/doge`, { ignoreError: true });
   exec(`rm -rf ${TAURI_DIR}/target/${target}/release/bundle`, { ignoreError: true });
 
   // Build the app
@@ -216,19 +209,19 @@ async function buildMacOS(arch, options = {}) {
   if (arch === "universal") {
     console.log("\nMerging daemon binary for universal build...");
     exec(`lipo -create \\
-      ${TAURI_DIR}/target/aarch64-apple-darwin/release/cc_gui_daemon \\
-      ${TAURI_DIR}/target/x86_64-apple-darwin/release/cc_gui_daemon \\
-      -output ${TAURI_DIR}/target/universal-apple-darwin/release/cc_gui_daemon`);
+      ${TAURI_DIR}/target/aarch64-apple-darwin/release/doge_daemon \\
+      ${TAURI_DIR}/target/x86_64-apple-darwin/release/doge_daemon \\
+      -output ${TAURI_DIR}/target/universal-apple-darwin/release/doge_daemon`);
 
     // Rebuild bundle
     exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app`);
   }
 
-  // Sign and bundle OpenSSL
-  if (!skipSign) {
-    console.log("\nBundling OpenSSL and signing...");
+  // Bundle OpenSSL for both signed and unsigned artifacts. `--skip-sign`
+  // must not leave host-local Homebrew paths in an otherwise valid app.
+  console.log(skipSign ? "\nBundling OpenSSL without signing..." : "\nBundling OpenSSL and signing...");
 
-    if (arch === "universal") {
+  if (arch === "universal") {
       // Create universal OpenSSL dylibs
       const frameworksPath = join(bundlePath, "Contents/Frameworks");
       mkdirSync(frameworksPath, { recursive: true });
@@ -249,31 +242,35 @@ async function buildMacOS(arch, options = {}) {
       exec(`install_name_tool -change ${CONFIG.openssl.arm64}/lib/libcrypto.3.dylib @rpath/libcrypto.3.dylib "${frameworksPath}/libssl.3.dylib"`, { ignoreError: true });
 
       // Fix binary paths
-      for (const bin of ["cc-gui", "cc_gui_daemon"]) {
+      for (const bin of ["doge", "doge_daemon"]) {
         const binPath = join(bundlePath, "Contents/MacOS", bin);
         exec(`install_name_tool -add_rpath "@executable_path/../Frameworks" "${binPath}"`, { ignoreError: true });
         exec(`install_name_tool -change ${CONFIG.openssl.arm64}/lib/libssl.3.dylib @rpath/libssl.3.dylib "${binPath}"`, { ignoreError: true });
         exec(`install_name_tool -change ${CONFIG.openssl.arm64}/lib/libcrypto.3.dylib @rpath/libcrypto.3.dylib "${binPath}"`, { ignoreError: true });
       }
 
+    if (!skipSign) {
       // Sign all components
       const identity = CONFIG.codesignIdentity;
       const entitlements = CONFIG.entitlements;
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${frameworksPath}/libcrypto.3.dylib"`);
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${frameworksPath}/libssl.3.dylib"`);
-      exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/cc-gui"`);
-      exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/cc_gui_daemon"`);
+      exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/doge"`);
+      exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/doge_daemon"`);
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}"`);
-    } else {
-      // Use existing script for single-arch builds
-      exec(`CODESIGN_IDENTITY="${CONFIG.codesignIdentity}" scripts/macos-fix-openssl.sh "${bundlePath}"`);
     }
+  } else {
+    // Use the shared single-arch fixup; signing remains an explicit second phase.
+    const signingEnv = skipSign
+      ? "SKIP_CODESIGN=1"
+      : `CODESIGN_IDENTITY="${CONFIG.codesignIdentity}"`;
+    exec(`${signingEnv} scripts/macos-fix-openssl.sh "${bundlePath}"`);
   }
 
   // Create DMG with drag-to-install panel
   ensureReleaseDir();
   const createDmgScript = join(ROOT_DIR, "scripts", "create-dmg.sh");
-  exec(`bash "${createDmgScript}" "${bundlePath}" "${RELEASE_DIR}/${dmgName}" "ccgui"`);
+  exec(`bash "${createDmgScript}" "${bundlePath}" "${RELEASE_DIR}/${dmgName}" "doge"`);
 
   // Notarize
   if (!skipNotarize && !skipSign) {
@@ -318,7 +315,7 @@ async function buildWindows(arch, options = {}) {
 
   const installerPath = join(
     TAURI_DIR,
-    `target/release/bundle/nsis/ccgui_${version}_x64-setup.exe`,
+    `target/release/bundle/nsis/doge_${version}_x64-setup.exe`,
   );
 
   console.log(`\n========================================`);
@@ -366,7 +363,7 @@ async function buildLinux(arch, options = {}) {
 
   const appImagePath = join(
     TAURI_DIR,
-    `target/release/bundle/appimage/ccgui_${version}_${arch === "arm64" ? "aarch64" : "amd64"}.AppImage`,
+    `target/release/bundle/appimage/doge_${version}_${arch === "arm64" ? "aarch64" : "amd64"}.AppImage`,
   );
   pruneLinuxAppImageWaylandLibraries(appImagePath);
 
@@ -417,7 +414,7 @@ const options = {
 
 if (!platform) {
   console.log(`
-ccgui Multi-Platform Build Script
+doge Multi-Platform Build Script
 
 Usage:
   node scripts/build-platform.mjs <platform> [options]

@@ -210,9 +210,9 @@ fn relationship_root_for_mode(
 ) -> Result<(String, PathBuf), String> {
     let key = relationship_storage_key(entry);
     let root = match storage_mode {
-        Some(mode) if mode.eq_ignore_ascii_case("project") => PathBuf::from(&entry.path)
-            .join(".ccgui")
-            .join("project-map-relations"),
+        Some(mode) if mode.eq_ignore_ascii_case("project") => {
+            app_paths::project_local_data_dir(Path::new(&entry.path), "project-map-relations")?
+        }
         Some(mode) if mode.eq_ignore_ascii_case("global") => {
             app_paths::app_home_dir()?.join("project-map-relations")
         }

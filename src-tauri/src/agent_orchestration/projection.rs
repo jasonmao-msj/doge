@@ -6,8 +6,8 @@ use crate::shared_session_v2::target_input_from_snapshot;
 
 use super::types::{
     apply_stage_bindings, cap_text, default_stage_specs, short_text, AgentPlanDraftV1,
-    AgentProjectionV1, FINAL_SUMMARY_CHARS, STAGE_SHORT_OUTCOME_CHARS,
-    AgentRunStatus, AgentStageBindingInput, AgentStageId, AgentStageStatus, AGENT_SCHEMA_VERSION,
+    AgentProjectionV1, AgentRunStatus, AgentStageBindingInput, AgentStageId, AgentStageStatus,
+    AGENT_SCHEMA_VERSION, FINAL_SUMMARY_CHARS, STAGE_SHORT_OUTCOME_CHARS,
 };
 
 fn decode_fact(event: &StoredEvent) -> Result<CanonicalFact, String> {

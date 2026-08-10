@@ -5,7 +5,8 @@ import {
 } from "./defaultWorkspace";
 
 describe("defaultWorkspace", () => {
-  it("matches ccgui default workspace path", () => {
+  it("matches doge and legacy ccgui default workspace paths", () => {
+    expect(isDefaultWorkspacePath("/Users/chen/.doge/workspace")).toBe(true);
     expect(isDefaultWorkspacePath("/Users/chen/.ccgui/workspace")).toBe(true);
     expect(isDefaultWorkspacePath("/Users/chen/com.zhukunpenglinyutong.ccgui/workspace")).toBe(
       true,
@@ -39,6 +40,7 @@ describe("defaultWorkspace", () => {
 
   it("builds default workspace candidate paths from a normalized home path", () => {
     expect(getDefaultWorkspaceCandidatePaths("/Users/chen/")).toEqual([
+      "/Users/chen/.doge/workspace",
       "/Users/chen/.ccgui/workspace",
       "/Users/chen/.mossx/workspace",
       "/Users/chen/.codemoss/workspace",

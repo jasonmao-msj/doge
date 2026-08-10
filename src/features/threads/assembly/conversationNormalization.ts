@@ -38,7 +38,7 @@ const NOTE_CARD_CONTEXT_SUFFIX_REGEX =
   /(?:\r?\n){1,2}(<note-card-context>[\s\S]*<\/note-card-context>)\s*$/i;
 const NOTE_CARD_ATTACHMENT_LINE_REGEX = /^\s*-\s*(.+?)\s*\|\s*(.+?)\s*$/;
 const ASSISTANT_APPROVAL_RESUME_BLOCK_REGEX =
-  /<ccgui-approval-resume>[\s\S]*?<\/ccgui-approval-resume>/gi;
+  /<(?:doge|ccgui)-approval-resume>[\s\S]*?<\/(?:doge|ccgui)-approval-resume>/gi;
 const ASSISTANT_HIDDEN_CONTROL_LINE_REGEX =
   /^\s*(?:No response requested\.|request_user_input_result\b.*|queue bookkeeping\b.*)\s*$/gim;
 

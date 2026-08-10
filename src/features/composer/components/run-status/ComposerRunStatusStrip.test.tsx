@@ -208,7 +208,7 @@ describe("ComposerRunStatusStrip", () => {
   });
 
   it("collapses pills via chrome toggle and restores them", () => {
-    window.localStorage.setItem("ccgui.composer.runStatusChromeOpen", "1");
+    window.localStorage.setItem("doge.composer.runStatusChromeOpen", "1");
     render(
       <ComposerRunStatusStrip
         todos={[{ content: "任务 A", status: "pending" }]}

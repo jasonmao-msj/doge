@@ -20,7 +20,7 @@ export default {
       "collabRunningLock": "協作編排進行中，結束後可繼續輸入"
     },
     "card": {
-      "who": "協作編排 · mossx",
+      "who": "協作編排 · doge",
       "runTitle": "多 Agent 協作",
       "roundTitle": "⚡ 協作編排 · 第{{n}}輪",
       "orchestrationHint": "規劃已批准後各環節自動串行；點環節或右側輪播看該節點全文。主畫布保持對話可讀。",

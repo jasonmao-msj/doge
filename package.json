@@ -1,7 +1,7 @@
 {
-  "name": "ccgui",
+  "name": "doge",
   "private": true,
-  "version": "0.8.7",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "preinstall": "node scripts/enforce-package-manager.mjs npm",
@@ -26,7 +26,11 @@
     "check:git-history:static-imports": "node scripts/check-refactor-imports.mjs src/features/git-history/components/git-history-panel/components",
     "check:messages-boundaries": "node scripts/check-messages-boundaries.mjs",
     "check:branding": "node scripts/check-branding.mjs",
+    "check:branding:test": "node --test scripts/lib/brandingChecker.test.mjs",
     "check:docs": "node scripts/check-docs.mjs",
+    "check:icon-assets": "node --test scripts/icon-assets.contract.test.mjs",
+    "check:upstream-sync": "node scripts/upstream-sync-audit.mjs",
+    "check:upstream-sync:test": "node --test scripts/upstream-sync-audit.test.mjs",
     "check:runtime-contracts": "npm run check:app-shell:runtime-contract && npm run check:git-history:runtime-contract",
     "check:engine-capability-matrix": "node scripts/check-engine-capability-matrix.mjs",
     "check:engine-adapter-registry": "node scripts/check-engine-adapter-registry.mjs",

@@ -37,17 +37,17 @@ function resolveGenerationWritePath(
   if (storageLocation === "project" && workspacePath) {
     const pathSeparator = workspacePath.includes("\\") ? "\\" : "/";
     const trimmedWorkspacePath = workspacePath.replace(/[\\/]+$/g, "");
-    return `${trimmedWorkspacePath}${pathSeparator}.ccgui${pathSeparator}project-map${pathSeparator}${storageKey}`;
+    return `${trimmedWorkspacePath}${pathSeparator}.doge${pathSeparator}project-map${pathSeparator}${storageKey}`;
   }
 
   if (storageLocation === "global" && workspacePath) {
     const expected = normalizePathForComparing(
-      `${workspacePath.replace(/[\\/]+$/g, "")}/.ccgui/project-map/${storageKey}`,
+      `${workspacePath.replace(/[\\/]+$/g, "")}/.doge/project-map/${storageKey}`,
     );
     const normalized = normalizePathForComparing(writePath);
     const isCaseInsensitive = typeof process !== "undefined" && process.platform === "win32";
     if (isCaseInsensitive ? normalized.toLowerCase() === expected.toLowerCase() : normalized === expected) {
-      return `.ccgui/project-map/${storageKey}`;
+      return `.doge/project-map/${storageKey}`;
     }
   }
 

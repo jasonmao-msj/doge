@@ -299,7 +299,7 @@ const workspace = {
     threads: "threads",
     deleteWorkspaceTitle: "Remove Workspace",
     deleteWorkspaceConfirm: 'Are you sure you want to remove "{{name}}"?',
-    deleteWorkspaceMessage: "This will remove the workspace from ccgui.",
+    deleteWorkspaceMessage: "This will remove the workspace from doge.",
     deleteWorkspaceWorktreeWarning:
       "This will also delete {{count}} worktree on disk.",
     deleteWorkspaceWorktreeWarning_other:
@@ -308,7 +308,7 @@ const workspace = {
     deleteWorkspaceWillHappenTitle: "What will happen:",
     deleteWorkspaceWillNotHappenTitle: "What will not happen:",
     deleteWorkspaceEffectListOnly:
-      "The workspace will be removed from the ccgui list only.",
+      "The workspace will be removed from the doge list only.",
     deleteWorkspaceEffectSessions:
       "Active sessions under this workspace (and linked worktrees) will be closed.",
     deleteWorkspaceEffectDeleteWorktrees:
@@ -335,7 +335,7 @@ const workspace = {
     deleteWorktreeTitle: "Delete Worktree",
     deleteWorktreeConfirm: 'Are you sure you want to delete "{{name}}"?',
     deleteWorktreeMessage:
-      "This will close the agent, remove its worktree, and delete it from ccgui.",
+      "This will close the agent, remove its worktree, and delete it from doge.",
     deleteWorktreeFailed: "Delete worktree failed",
   },
 };

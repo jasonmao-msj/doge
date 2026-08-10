@@ -210,10 +210,27 @@ fn native_provider_source(source: Option<CanonicalProviderProfileSource>) -> &'s
 }
 
 fn context_acceptance_marker(package: &ContextPackage) -> String {
+    let namespace = context_protocol_namespace(package);
     format!(
-        "MOSSX_CONTEXT_ACCEPTED:{}:{}",
+        "{namespace}_CONTEXT_ACCEPTED:{}:{}",
         package.package_id, package.manifest.source_checksum
     )
+}
+
+fn context_package_marker(package: &ContextPackage) -> String {
+    let namespace = context_protocol_namespace(package);
+    format!(
+        "{namespace}_CONTEXT_PACKAGE:{}:{}",
+        package.package_id, package.manifest.source_checksum
+    )
+}
+
+fn context_protocol_namespace(package: &ContextPackage) -> &'static str {
+    if package.prompt_prefix.contains("MOSSX_CONTEXT_PACKAGE:") {
+        "MOSSX"
+    } else {
+        "DOGE"
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -450,7 +467,7 @@ async fn prepare(
         root,
         workspace_id,
         &source.session_id,
-        "application/vnd.mossx.native-history-entries+json",
+        "application/vnd.doge.native-history-entries+json",
         &serde_json::to_value(&history.entries).map_err(|error| error.to_string())?,
         prepared_at,
     )?;
@@ -616,10 +633,7 @@ async fn execute_codex(
                 target_session_id.to_string(),
             )
             .await?;
-            let marker = format!(
-                "MOSSX_CONTEXT_PACKAGE:{}:{}",
-                package.package_id, package.manifest.source_checksum
-            );
+            let marker = context_package_marker(package);
             if response.to_string().contains(&marker) {
                 emit_progress(
                     app,
@@ -948,7 +962,8 @@ fn claude_bootstrap_evidence_in_jsonl(
                             .and_then(Value::as_str)
                             .is_some_and(|text| {
                                 text.contains(package_marker)
-                                    && text.contains("MOSSX_NATIVE_CONTEXT_V1")
+                                    && (text.contains("DOGE_NATIVE_CONTEXT_V1")
+                                        || text.contains("MOSSX_NATIVE_CONTEXT_V1"))
                             })
                     })
                 });
@@ -1048,10 +1063,7 @@ async fn execute_claude(
     }
 
     let marker = context_acceptance_marker(package);
-    let package_marker = format!(
-        "MOSSX_CONTEXT_PACKAGE:{}:{}",
-        package.package_id, package.manifest.source_checksum
-    );
+    let package_marker = context_package_marker(package);
     if let Some(target_session_id) = operation.result_session_id.as_deref() {
         if operation.error_code.as_deref() == Some("catalog-commit-failed") {
             emit_progress(
@@ -1182,7 +1194,7 @@ async fn execute_claude(
     .map_err(|error| error.to_string())?;
     let prompt = format!(
         "{}\n\n\
-         The context above was prepared by MossX from an existing native session. \
+         The context above was prepared by doge from an existing native session. \
          Treat it as prior conversation context. Reply with exactly this acceptance marker \
          and no other text:\n{}",
         package.prompt_prefix, marker

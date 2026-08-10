@@ -9,7 +9,7 @@ const clientStorageMocks = vi.hoisted(() => ({
 vi.mock("./clientStorage", () => clientStorageMocks);
 
 const EARLY_RENDERER_DIAGNOSTICS_STORAGE_KEY =
-  "ccgui.bootstrapRendererDiagnostics";
+  "doge.bootstrapRendererDiagnostics";
 const testLocalStorage = globalThis.localStorage;
 
 function installLifecycleEventTargets(visibilityState = "visible") {

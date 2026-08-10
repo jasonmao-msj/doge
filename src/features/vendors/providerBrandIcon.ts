@@ -1,6 +1,6 @@
 /**
  * 供应商品牌图标解析:baseUrl host → 品牌 SVG,model id 兜底,都不命中返回 null(调用方用 Globe 兜底)。
- * 映射与 jetbrains-cc-gui webview/src/utils/modelIconMapping.ts 对齐,仅保留本项目预设涉及的品牌。
+ * 映射与 reference desktop client webview/src/utils/modelIconMapping.ts 对齐,仅保留本项目预设涉及的品牌。
  */
 import anthropicIcon from "@lobehub/icons-static-svg/icons/anthropic.svg";
 import bailianIcon from "@lobehub/icons-static-svg/icons/bailian-color.svg";

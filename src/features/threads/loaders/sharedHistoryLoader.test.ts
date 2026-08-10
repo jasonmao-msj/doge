@@ -220,7 +220,7 @@ describe("sharedHistoryLoader", () => {
   });
 
   it("keeps Legacy-only reading behind an explicit negative rollback", async () => {
-    window.localStorage.setItem("mossx.sharedProjection", "0");
+    window.localStorage.setItem("doge.sharedProjection", "0");
     const loadSharedProjection = vi.fn();
     const loader = createSharedHistoryLoader({
       workspaceId: "ws-1",

@@ -28,7 +28,7 @@ vi.mock("../../git/components/WorkspaceEditableDiffReviewSurface", () => ({
 }));
 
 const SOLO_FOLLOW_COACH_DISMISSED_BY_WORKSPACE_STORAGE_KEY =
-  "ccgui.sessionActivity.soloFollowCoachDismissedByWorkspace";
+  "doge.sessionActivity.soloFollowCoachDismissedByWorkspace";
 
 function dismissSoloFollowCoachForWorkspace(workspaceId: string) {
   window.localStorage.setItem(

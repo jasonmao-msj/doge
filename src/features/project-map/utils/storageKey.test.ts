@@ -44,8 +44,8 @@ describe("project map storage key", () => {
   it("builds project-map relative paths with platform-neutral separators", () => {
     const path = buildProjectMapRelativePath("mossx-abcd1234", ["lenses", "api", "nodes.json"]);
 
-    expect(path).toBe(".ccgui/project-map/mossx-abcd1234/lenses/api/nodes.json");
+    expect(path).toBe(".doge/project-map/mossx-abcd1234/lenses/api/nodes.json");
     expect(isProjectMapRelativePath(path, "mossx-abcd1234")).toBe(true);
-    expect(isProjectMapRelativePath(".ccgui/project-map/other/lenses/api/nodes.json", "mossx-abcd1234")).toBe(false);
+    expect(isProjectMapRelativePath(".doge/project-map/other/lenses/api/nodes.json", "mossx-abcd1234")).toBe(false);
   });
 });

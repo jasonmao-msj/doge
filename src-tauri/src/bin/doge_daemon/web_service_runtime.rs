@@ -22,8 +22,10 @@ use uuid::Uuid;
 
 const DEFAULT_WEB_PORT: u16 = 3080;
 const STOP_TIMEOUT_SECS: u64 = 3;
-const WEB_TOKEN_STORAGE_KEY: &str = "ccgui_web_token";
-const WEB_ASSETS_ENV_KEY: &str = "MOSSX_WEB_ASSETS_DIR";
+const WEB_TOKEN_STORAGE_KEY: &str = "doge_web_token";
+const LEGACY_WEB_TOKEN_STORAGE_KEY: &str = "ccgui_web_token";
+const WEB_ASSETS_ENV_KEY: &str = "DOGE_WEB_ASSETS_DIR";
+const LEGACY_WEB_ASSETS_ENV_KEY: &str = "MOSSX_WEB_ASSETS_DIR";
 const ERROR_ALREADY_RUNNING: &str = "WEB_SERVICE_ALREADY_RUNNING";
 const ERROR_INVALID_PORT: &str = "WEB_SERVICE_PORT_INVALID";
 const ERROR_PORT_IN_USE: &str = "WEB_SERVICE_PORT_IN_USE";
@@ -259,7 +261,7 @@ async fn api_health(
     if !is_authorized(&state.token, &headers, &query) {
         return unauthorized_response();
     }
-    Json(json!({ "ok": true, "service": "ccgui-web" })).into_response()
+    Json(json!({ "ok": true, "service": "doge-web" })).into_response()
 }
 
 async fn web_root() -> Html<String> {
@@ -269,7 +271,7 @@ async fn web_root() -> Html<String> {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ccgui Web Service</title>
+    <title>doge Web Service</title>
   </head>
   <body>
     <div style="padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Helvetica Neue',Arial,sans-serif;">
@@ -279,11 +281,14 @@ async fn web_root() -> Html<String> {
       (function () {
         const tokenFromQuery = new URLSearchParams(location.search).get("token");
         if (tokenFromQuery) {
-          localStorage.setItem("mossx_web_token", tokenFromQuery);
+          localStorage.setItem("doge_web_token", tokenFromQuery);
           location.replace("/app");
           return;
         }
-        const token = localStorage.getItem("mossx_web_token");
+        const token = localStorage.getItem("doge_web_token") || localStorage.getItem("ccgui_web_token");
+        if (!localStorage.getItem("doge_web_token") && token) {
+          localStorage.setItem("doge_web_token", token);
+        }
         if (token) {
           location.replace("/app");
         } else {
@@ -305,7 +310,7 @@ async fn web_login() -> Html<String> {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ccgui Web Service Login</title>
+    <title>doge Web Service Login</title>
     <style>
       * {{ box-sizing: border-box; }}
       body {{
@@ -352,7 +357,7 @@ async fn web_login() -> Html<String> {
   </head>
   <body>
     <main class="card">
-      <h1>ccgui</h1>
+      <h1>doge</h1>
       <p>输入访问 Token 以连接桌面端 / Enter access token to connect.</p>
       <div class="row">
         <input id="tokenInput" type="password" placeholder="Access Token" autocomplete="off" />
@@ -364,12 +369,16 @@ async fn web_login() -> Html<String> {
     <script>
       (function () {{
         const storageKey = {storage_key};
+        const legacyStorageKey = {legacy_storage_key};
         const input = document.getElementById("tokenInput");
         const button = document.getElementById("connectBtn");
         const error = document.getElementById("error");
         const tokenFromQuery = new URLSearchParams(location.search).get("token");
-        const tokenFromStorage = localStorage.getItem(storageKey);
+        const tokenFromStorage = localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey);
         const initialToken = tokenFromQuery || tokenFromStorage || "";
+        if (!localStorage.getItem(storageKey) && tokenFromStorage) {{
+          localStorage.setItem(storageKey, tokenFromStorage);
+        }}
         if (initialToken) {{
           input.value = initialToken;
         }}
@@ -422,7 +431,9 @@ async fn web_login() -> Html<String> {
 </html>
 "#,
         storage_key = serde_json::to_string(WEB_TOKEN_STORAGE_KEY)
-            .unwrap_or_else(|_| "\"mossx_web_token\"".to_string()),
+            .unwrap_or_else(|_| "\"doge_web_token\"".to_string()),
+        legacy_storage_key = serde_json::to_string(LEGACY_WEB_TOKEN_STORAGE_KEY)
+            .unwrap_or_else(|_| "\"ccgui_web_token\"".to_string()),
     ))
 }
 
@@ -433,7 +444,7 @@ async fn web_welcome() -> Html<String> {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ccgui Web Service</title>
+    <title>doge Web Service</title>
   </head>
   <body>
     <div style="padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Helvetica Neue',Arial,sans-serif;">
@@ -442,11 +453,16 @@ async fn web_welcome() -> Html<String> {
     <script>
       (function () {{
         const storageKey = {storage_key};
+        const legacyStorageKey = {legacy_storage_key};
         const tokenFromQuery = new URLSearchParams(location.search).get("token");
         if (tokenFromQuery) {{
           localStorage.setItem(storageKey, tokenFromQuery);
         }}
-        if (!localStorage.getItem(storageKey)) {{
+        const storedToken = localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey);
+        if (!localStorage.getItem(storageKey) && storedToken) {{
+          localStorage.setItem(storageKey, storedToken);
+        }}
+        if (!storedToken) {{
           location.replace("/login");
           return;
         }}
@@ -457,7 +473,9 @@ async fn web_welcome() -> Html<String> {
 </html>
 "#,
         storage_key = serde_json::to_string(WEB_TOKEN_STORAGE_KEY)
-            .unwrap_or_else(|_| "\"mossx_web_token\"".to_string()),
+            .unwrap_or_else(|_| "\"doge_web_token\"".to_string()),
+        legacy_storage_key = serde_json::to_string(LEGACY_WEB_TOKEN_STORAGE_KEY)
+            .unwrap_or_else(|_| "\"ccgui_web_token\"".to_string()),
     ))
 }
 
@@ -501,11 +519,11 @@ async fn serve_web_app_index(state: &WebApiState) -> Response {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>ccgui Web Service</title>
+    <title>doge Web Service</title>
   </head>
   <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Helvetica Neue',Arial,sans-serif;padding:24px;">
-    <h2 style="margin:0 0 8px;">ccgui Web Service</h2>
-    <p style="margin:0;color:#6b7280;">Web 前端资源不存在，请先构建前端或设置 MOSSX_WEB_ASSETS_DIR 指向 dist 目录。</p>
+    <h2 style="margin:0 0 8px;">doge Web Service</h2>
+    <p style="margin:0;color:#6b7280;">Web 前端资源不存在，请先构建前端或设置 DOGE_WEB_ASSETS_DIR 指向 dist 目录。</p>
   </body>
 </html>"#
                 .to_string(),
@@ -907,17 +925,22 @@ fn build_web_tauri_shim_script() -> String {
   if (typeof window === "undefined") {{
     return;
   }}
-  if (window.__MOSSX_WEB_TAURI_SHIM__) {{
+  if (window.__DOGE_WEB_TAURI_SHIM__) {{
     return;
   }}
-  window.__MOSSX_WEB_TAURI_SHIM__ = true;
+  window.__DOGE_WEB_TAURI_SHIM__ = true;
 
   const storageKey = {storage_key};
+  const legacyStorageKey = {legacy_storage_key};
   const queryToken = new URLSearchParams(location.search).get("token");
   if (queryToken) {{
     localStorage.setItem(storageKey, queryToken);
   }}
-  if (!(localStorage.getItem(storageKey) || "").trim() && location.pathname.startsWith("/app")) {{
+  const storedToken = (localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey) || "").trim();
+  if (!localStorage.getItem(storageKey) && storedToken) {{
+    localStorage.setItem(storageKey, storedToken);
+  }}
+  if (!storedToken && location.pathname.startsWith("/app")) {{
     location.replace("/login");
     return;
   }}
@@ -932,7 +955,7 @@ fn build_web_tauri_shim_script() -> String {
   let socketOpenedBefore = false;
 
   function readToken() {{
-    return (localStorage.getItem(storageKey) || "").trim();
+    return (localStorage.getItem(storageKey) || localStorage.getItem(legacyStorageKey) || "").trim();
   }}
 
   function goLogin() {{
@@ -969,7 +992,7 @@ fn build_web_tauri_shim_script() -> String {
     try {{
       entry.callback(payload);
     }} catch (error) {{
-      console.error("[ccgui-web] callback failed", error);
+      console.error("[doge-web] callback failed", error);
     }} finally {{
       if (entry.once) {{
         callbackStore.delete(Number(callbackId));
@@ -1012,7 +1035,7 @@ fn build_web_tauri_shim_script() -> String {
     ws = new WebSocket(protocol + "://" + location.host + "/ws?token=" + encodeURIComponent(token));
     ws.onopen = function () {{
       if (socketOpenedBefore) {{
-        window.dispatchEvent(new CustomEvent("ccgui:web-service-reconnected"));
+        window.dispatchEvent(new CustomEvent("doge:web-service-reconnected"));
         return;
       }}
       socketOpenedBefore = true;
@@ -1065,6 +1088,7 @@ fn build_web_tauri_shim_script() -> String {
     }});
     if (response.status === 401) {{
       localStorage.removeItem(storageKey);
+      localStorage.removeItem(legacyStorageKey);
       goLogin();
       throw new Error("unauthorized");
     }}
@@ -1107,7 +1131,7 @@ fn build_web_tauri_shim_script() -> String {
       return "web-service";
     }}
     if (cmd === "plugin:app|name") {{
-      return "ccgui Web";
+      return "doge Web";
     }}
     if (cmd.startsWith("plugin:path|")) {{
       return "";
@@ -1151,7 +1175,7 @@ fn build_web_tauri_shim_script() -> String {
     }}
   }}
 
-  window.__MOSSX_WEB_SERVICE__ = true;
+  window.__DOGE_WEB_SERVICE__ = true;
 
   window.__TAURI_INTERNALS__ = Object.assign({{}}, window.__TAURI_INTERNALS__, {{
     metadata: {{
@@ -1179,12 +1203,16 @@ fn build_web_tauri_shim_script() -> String {
   ensureSocket();
 }})();"#,
         storage_key = serde_json::to_string(WEB_TOKEN_STORAGE_KEY)
-            .unwrap_or_else(|_| "\"mossx_web_token\"".to_string()),
+            .unwrap_or_else(|_| "\"doge_web_token\"".to_string()),
+        legacy_storage_key = serde_json::to_string(LEGACY_WEB_TOKEN_STORAGE_KEY)
+            .unwrap_or_else(|_| "\"ccgui_web_token\"".to_string()),
     )
 }
 
 fn resolve_web_assets_root(data_dir: Option<&Path>) -> Option<PathBuf> {
-    let env_assets_root = env::var_os(WEB_ASSETS_ENV_KEY).map(PathBuf::from);
+    let env_assets_root = env::var_os(WEB_ASSETS_ENV_KEY)
+        .or_else(|| env::var_os(LEGACY_WEB_ASSETS_ENV_KEY))
+        .map(PathBuf::from);
     let cwd = env::current_dir().ok();
     let current_exe = env::current_exe().ok();
     let appdir = env::var_os("APPDIR").map(PathBuf::from);
@@ -1281,6 +1309,8 @@ fn append_linux_bundle_asset_candidates(
     if !linux_bundle_enabled {
         return;
     }
+    output.push(base.join("usr/lib/doge/dist"));
+    output.push(base.join("lib/doge/dist"));
     output.push(base.join("usr/lib/ccgui/dist"));
     output.push(base.join("lib/ccgui/dist"));
 }
@@ -1301,7 +1331,10 @@ fn is_linux_bundle_daemon_exe(current_exe: &Path) -> bool {
     let Some(file_name) = current_exe.file_name().and_then(|value| value.to_str()) else {
         return false;
     };
-    if file_name != "cc_gui_daemon" && file_name != "moss_x_daemon" && file_name != "moss-x-daemon"
+    if file_name != "doge_daemon"
+        && file_name != "cc_gui_daemon"
+        && file_name != "moss_x_daemon"
+        && file_name != "moss-x-daemon"
     {
         return false;
     }
@@ -1399,13 +1432,23 @@ mod tests {
             None,
             None,
             None,
-            Some(Path::new("/tmp/.mount_ccgui_abc/usr/bin/cc_gui_daemon")),
-            Some(Path::new("/tmp/.mount_ccgui_abc")),
+            Some(Path::new("/tmp/.mount_doge_abc/usr/bin/doge_daemon")),
+            Some(Path::new("/tmp/.mount_doge_abc")),
             true,
         );
 
-        assert!(candidates
-            .contains(&Path::new("/tmp/.mount_ccgui_abc/usr/lib/ccgui/dist").to_path_buf()));
+        assert!(
+            candidates.contains(&Path::new("/tmp/.mount_doge_abc/usr/lib/doge/dist").to_path_buf())
+        );
+        let current_index = candidates
+            .iter()
+            .position(|path| path == Path::new("/tmp/.mount_doge_abc/usr/lib/doge/dist"))
+            .expect("doge bundle assets candidate");
+        let legacy_index = candidates
+            .iter()
+            .position(|path| path == Path::new("/tmp/.mount_doge_abc/usr/lib/ccgui/dist"))
+            .expect("legacy bundle assets candidate");
+        assert!(current_index < legacy_index);
     }
 
     #[test]
@@ -1414,13 +1457,31 @@ mod tests {
             None,
             None,
             None,
-            Some(Path::new("/tmp/.mount_ccgui_abc/usr/bin/cc_gui_daemon")),
+            Some(Path::new("/tmp/.mount_doge_abc/usr/bin/doge_daemon")),
+            None,
+            true,
+        );
+
+        assert!(
+            candidates.contains(&Path::new("/tmp/.mount_doge_abc/usr/lib/doge/dist").to_path_buf())
+        );
+    }
+
+    #[test]
+    fn web_asset_candidates_accept_legacy_linux_daemon_as_compatibility_read() {
+        let candidates = collect_web_asset_candidates_for_platform(
+            None,
+            None,
+            None,
+            Some(Path::new("/tmp/.mount_legacy_abc/usr/bin/cc_gui_daemon")),
             None,
             true,
         );
 
         assert!(candidates
-            .contains(&Path::new("/tmp/.mount_ccgui_abc/usr/lib/ccgui/dist").to_path_buf()));
+            .contains(&Path::new("/tmp/.mount_legacy_abc/usr/lib/doge/dist").to_path_buf()));
+        assert!(candidates
+            .contains(&Path::new("/tmp/.mount_legacy_abc/usr/lib/ccgui/dist").to_path_buf()));
     }
 
     #[test]
@@ -1435,7 +1496,7 @@ mod tests {
         );
 
         assert!(
-            !candidates.contains(&Path::new("/opt/other-app/current/lib/ccgui/dist").to_path_buf())
+            !candidates.contains(&Path::new("/opt/other-app/current/lib/doge/dist").to_path_buf())
         );
     }
 
@@ -1445,20 +1506,20 @@ mod tests {
             None,
             None,
             None,
-            Some(Path::new("/tmp/.mount_ccgui_abc/usr/bin/cc_gui_daemon")),
-            Some(Path::new("/tmp/.mount_ccgui_abc")),
+            Some(Path::new("/tmp/.mount_doge_abc/usr/bin/doge_daemon")),
+            Some(Path::new("/tmp/.mount_doge_abc")),
             false,
         );
 
         assert!(!candidates
-            .contains(&Path::new("/tmp/.mount_ccgui_abc/usr/lib/ccgui/dist").to_path_buf()));
+            .contains(&Path::new("/tmp/.mount_doge_abc/usr/lib/doge/dist").to_path_buf()));
     }
 
     #[test]
     fn web_asset_candidates_include_managed_data_directory() {
         let candidates = collect_web_asset_candidates_for_platform(
             None,
-            Some(Path::new("/tmp/ccgui-data")),
+            Some(Path::new("/tmp/doge-data")),
             None,
             None,
             None,
@@ -1467,7 +1528,7 @@ mod tests {
 
         assert_eq!(
             candidates.first().map(|path| path.as_path()),
-            Some(Path::new("/tmp/ccgui-data/web-assets/current"))
+            Some(Path::new("/tmp/doge-data/web-assets/current"))
         );
     }
 
@@ -1475,7 +1536,7 @@ mod tests {
     fn explicit_web_assets_override_precedes_managed_data_directory() {
         let candidates = collect_web_asset_candidates_for_platform(
             Some(Path::new("/tmp/explicit-assets")),
-            Some(Path::new("/tmp/ccgui-data")),
+            Some(Path::new("/tmp/doge-data")),
             None,
             None,
             None,
@@ -1491,7 +1552,7 @@ mod tests {
             vec![
                 Path::new("/tmp/explicit-assets"),
                 Path::new("/tmp/explicit-assets/dist"),
-                Path::new("/tmp/ccgui-data/web-assets/current"),
+                Path::new("/tmp/doge-data/web-assets/current"),
             ]
         );
     }

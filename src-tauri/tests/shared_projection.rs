@@ -4,23 +4,23 @@
 
 mod common;
 
-use cc_gui_lib::shared_event_log::canonical::shadow_v0::{
+use common::TempStoreDir;
+use doge_lib::shared_event_log::canonical::shadow_v0::{
     map_v0_snapshot_to_presentation_only_facts, map_v0_turn_to_presentation_only_facts, v0_evidence,
 };
-use cc_gui_lib::shared_event_log::canonical::types::{
+use doge_lib::shared_event_log::canonical::types::{
     ArtifactRef, AtomicToolExchange, CanonicalAssistantBlocks, CanonicalBlock, CanonicalFact,
     CanonicalUserInput, ControlFact, Outcome, OutcomeStatus, SquadNodeOutcomeRecordedFact,
     SquadRunRequestedFact, SquadRunSettledFact, ToolCall, ToolResult, ToolResultStatus,
     TurnCommittedFact, TurnExecutionSnapshot, TurnRequestedFact, UsageRecordedFact, UsageShape,
     UsageSource, UsageVerification,
 };
-use cc_gui_lib::shared_event_log::{
+use doge_lib::shared_event_log::{
     open, AppendOutcome, Fidelity, NewCanonicalEvent, OpenOutcome, ProjectionCheckpointRow,
 };
-use cc_gui_lib::shared_projection::{
+use doge_lib::shared_projection::{
     LegacySharedReader, ProjectionItemKind, ShadowComparator, SharedProjector,
 };
-use common::TempStoreDir;
 
 const SESSION: &str = "a3-session";
 
@@ -408,7 +408,7 @@ fn make_control(action: &str) -> CanonicalFact {
     })
 }
 
-fn open_writer(temp: &TempStoreDir) -> cc_gui_lib::shared_event_log::SharedEventWriter {
+fn open_writer(temp: &TempStoreDir) -> doge_lib::shared_event_log::SharedEventWriter {
     let outcome = open(&temp.db_path).expect("open shared event store");
     match outcome {
         OpenOutcome::Ready(writer) => writer,
@@ -706,21 +706,21 @@ fn shadow_comparator_reports_mismatches() {
     let comparator = ShadowComparator::new();
 
     let shadow = vec![
-        cc_gui_lib::shared_projection::ProjectionItem {
+        doge_lib::shared_projection::ProjectionItem {
             id: "shadow-user".to_string(),
             kind: ProjectionItemKind::Message,
             content: serde_json::json!({"role": "user", "text": "same"}),
             fidelity: Fidelity::Canonical,
             checksum: "x".to_string(),
         },
-        cc_gui_lib::shared_projection::ProjectionItem {
+        doge_lib::shared_projection::ProjectionItem {
             id: "shadow-assistant".to_string(),
             kind: ProjectionItemKind::Message,
             content: serde_json::json!({"role": "assistant", "text": "v1"}),
             fidelity: Fidelity::Canonical,
             checksum: "y".to_string(),
         },
-        cc_gui_lib::shared_projection::ProjectionItem {
+        doge_lib::shared_projection::ProjectionItem {
             id: "shadow-tool".to_string(),
             kind: ProjectionItemKind::Tool,
             content: serde_json::json!({"toolType": "Read", "status": "completed"}),
@@ -730,21 +730,21 @@ fn shadow_comparator_reports_mismatches() {
     ];
 
     let legacy = vec![
-        cc_gui_lib::shared_projection::ProjectionItem {
+        doge_lib::shared_projection::ProjectionItem {
             id: "legacy-user".to_string(),
             kind: ProjectionItemKind::Message,
             content: serde_json::json!({"role": "user", "text": "same"}),
             fidelity: Fidelity::PresentationOnly,
             checksum: "x".to_string(),
         },
-        cc_gui_lib::shared_projection::ProjectionItem {
+        doge_lib::shared_projection::ProjectionItem {
             id: "legacy-assistant".to_string(),
             kind: ProjectionItemKind::Message,
             content: serde_json::json!({"role": "assistant", "text": "v2"}),
             fidelity: Fidelity::PresentationOnly,
             checksum: "z".to_string(),
         },
-        cc_gui_lib::shared_projection::ProjectionItem {
+        doge_lib::shared_projection::ProjectionItem {
             id: "legacy-reasoning".to_string(),
             kind: ProjectionItemKind::Reasoning,
             content: serde_json::json!({"summary": "thinking", "content": "thinking"}),
@@ -760,15 +760,15 @@ fn shadow_comparator_reports_mismatches() {
     assert_eq!(report.mismatches.len(), 3);
     assert!(report.mismatches.iter().any(|m| matches!(
         m.kind,
-        cc_gui_lib::shared_projection::MismatchKind::ShadowOnly
+        doge_lib::shared_projection::MismatchKind::ShadowOnly
     )));
     assert!(report.mismatches.iter().any(|m| matches!(
         m.kind,
-        cc_gui_lib::shared_projection::MismatchKind::LegacyOnly
+        doge_lib::shared_projection::MismatchKind::LegacyOnly
     )));
     assert!(report.mismatches.iter().any(|m| matches!(
         m.kind,
-        cc_gui_lib::shared_projection::MismatchKind::ContentMismatch
+        doge_lib::shared_projection::MismatchKind::ContentMismatch
     )));
 }
 

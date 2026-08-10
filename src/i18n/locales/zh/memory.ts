@@ -168,7 +168,7 @@ const memory = {
     offlineStep1: "/plugin marketplace add thedotmack/claude-mem",
     offlineStep2: "/plugin install claude-mem",
     offlineStep3: "重启终端 Claude Code",
-    offlineStep4: "重启 ccgui 即可",
+    offlineStep4: "重启 doge 即可",
   },
 };
 

@@ -1,4 +1,4 @@
-const MESSAGE_JUMP_EVENT_NAME = "ccgui:jump-to-message";
+const MESSAGE_JUMP_EVENT_NAME = "doge:jump-to-message";
 
 export function dispatchMessageJumpEvent(messageId: string) {
   if (!messageId || typeof document === "undefined") {

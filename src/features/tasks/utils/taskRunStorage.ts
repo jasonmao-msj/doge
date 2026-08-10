@@ -350,7 +350,7 @@ export function loadTaskRunStore(): TaskRunStoreData {
 
 // 写入即广播：useTaskRunStore 靠此事件即时刷新，替代原来的 2s 高频轮询
 // （该 hook 挂在布局根上，任务运行期间每次轮询都换引用导致全树重渲染）。
-export const TASK_RUN_STORE_UPDATED_EVENT = "ccgui:task-run-store-updated" as const;
+export const TASK_RUN_STORE_UPDATED_EVENT = "doge:task-run-store-updated" as const;
 
 export function saveTaskRunStore(data: TaskRunStoreData): void {
   writeClientStoreValue("app", TASK_RUN_STORE_KEY, normalizeTaskRunStore(data), {

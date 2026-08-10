@@ -69,7 +69,7 @@ import { appendComposerRenderBudgetDiagnostic } from '../../../../services/rende
 // Re-export the handle type for Composer to use
 export type { ChatInputBoxHandle };
 
-const STREAMING_ENABLED_STORAGE_KEY = 'ccgui.composer.streaming-enabled';
+const STREAMING_ENABLED_STORAGE_KEY = 'doge.composer.streaming-enabled';
 const LOCAL_SETTINGS_PROVIDER_ID = '__local_settings_json__';
 
 type ClaudeProviderLike = {

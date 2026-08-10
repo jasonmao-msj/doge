@@ -1,3 +1,8 @@
+---
+type: analysis
+status: historical
+---
+
 # 冷启点击卡死：6 天全链路追踪与根因修复
 
 > **周期**：2026-08-05 ~ 2026-08-10  
@@ -5,9 +10,9 @@
 > **最终状态**：Windows + macOS 均完全解决（platform-split 终局）  
 > **基线**：v0.7.15 无此现象；v0.8.x 回归  
 > **关联文档**：
-> - `windows-ccgui-startup-hang-2026-08-05.md` — uiScale / WebView2 初步二分
-> - `windows-cold-start-click-freeze-and-uiscale-0.8-2026-08-07.md` — 列表 × 缩放交叉修复完整记录
-> - `workspace-switch-session-catalog-performance-regression-2026-08-08.md` — 工作区切换性能回归
+> - [`windows-ccgui-startup-hang-2026-08-05.md`](./windows-ccgui-startup-hang-2026-08-05.md) — uiScale / WebView2 初步二分
+> - [`windows-cold-start-click-freeze-and-uiscale-0.8-2026-08-07.md`](./windows-cold-start-click-freeze-and-uiscale-0.8-2026-08-07.md) — 列表 × 缩放交叉修复完整记录
+> - [`workspace-switch-session-catalog-performance-regression-2026-08-08.md`](./workspace-switch-session-catalog-performance-regression-2026-08-08.md) — 工作区切换性能回归
 
 ---
 

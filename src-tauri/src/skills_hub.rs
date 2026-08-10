@@ -8,7 +8,7 @@
 //!   对应本文件底部的 [`skills_hub_query`] / [`skills_hub_mutate`]。
 //!
 //! 与 upstream 的故意偏差（仅 4 条）：
-//! 1. SSOT 根目录为 `~/.ccgui/skills`（可用 env `CCGUI_SKILLS_HOME` 覆盖，便于测试隔离），upstream
+//! 1. SSOT 根目录为 `~/.doge/skills`（可用 env `DOGE_SKILLS_HOME` 覆盖，便于测试隔离），upstream
 //!    是 `~/.tokentracker/skills`；子布局一致（managed/ .trash/ tmp/ registry.json discover-cache.json
 //!    updates-cache.json popular-cache.json activity.jsonl usage-cache.json）。
 //! 2. skill_usage 响应不输出 cost 与 models（定价表不移植）。
@@ -25,6 +25,8 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use crate::app_paths;
 
 // ===== 常量（与 upstream skills-manager.js / skill-usage.js 对齐） =====
 
@@ -95,14 +97,19 @@ fn home_dir() -> PathBuf {
     dirs::home_dir().unwrap_or_else(|| PathBuf::from("/"))
 }
 
-/// SSOT 根目录：env `CCGUI_SKILLS_HOME` 覆盖（测试注入点），缺省 `~/.ccgui/skills`。
+/// SSOT 根目录：`DOGE_SKILLS_HOME` 覆盖；旧 `CCGUI_SKILLS_HOME` 仅兼容读取。
+/// 缺省路径由 app-home migration 统一解析为 `~/.doge/skills`。
 fn skills_root() -> PathBuf {
-    if let Some(override_dir) = std::env::var_os("CCGUI_SKILLS_HOME") {
-        if !override_dir.is_empty() {
-            return PathBuf::from(override_dir);
+    for env_name in ["DOGE_SKILLS_HOME", "CCGUI_SKILLS_HOME"] {
+        if let Some(override_dir) = std::env::var_os(env_name) {
+            if !override_dir.is_empty() {
+                return PathBuf::from(override_dir);
+            }
         }
     }
-    home_dir().join(".ccgui").join("skills")
+    app_paths::app_home_dir()
+        .unwrap_or_else(|_| home_dir().join(".doge"))
+        .join("skills")
 }
 
 fn registry_path() -> PathBuf {
@@ -3054,7 +3061,7 @@ pub(crate) async fn skills_hub_mutate(action: String, payload: Value) -> Result<
     }
 }
 
-// ===== 单元测试（fs 测试全部用临时目录 + CCGUI_SKILLS_HOME/HOME env 隔离，不碰真实 home） =====
+// ===== 单元测试（fs 测试全部用临时目录 + DOGE_SKILLS_HOME/HOME env 隔离，不碰真实 home） =====
 
 #[cfg(test)]
 mod tests {
@@ -3101,7 +3108,7 @@ mod tests {
     impl TestDir {
         fn new(tag: &str) -> Self {
             let unique = format!(
-                "ccgui-skills-hub-test-{}-{}-{}",
+                "doge-skills-hub-test-{}-{}-{}",
                 std::process::id(),
                 TEMP_COUNTER.fetch_add(1, Ordering::Relaxed),
                 tag
@@ -3365,7 +3372,7 @@ mod tests {
     #[test]
     fn registry_roundtrip_and_defaults() {
         let temp = TestDir::new("registry");
-        let _env = EnvGuard::new(&[("CCGUI_SKILLS_HOME", temp.path())]);
+        let _env = EnvGuard::new(&[("DOGE_SKILLS_HOME", temp.path())]);
         let registry = Registry {
             repos: default_repos(),
             skills: vec![json!({"id": "o/n:dir", "directory": "dir", "targets": ["claude"]})],
@@ -3409,7 +3416,7 @@ mod tests {
     #[test]
     fn purge_expired_trash_ttl() {
         let temp = TestDir::new("trash");
-        let _env = EnvGuard::new(&[("CCGUI_SKILLS_HOME", temp.path())]);
+        let _env = EnvGuard::new(&[("DOGE_SKILLS_HOME", temp.path())]);
         // 过期条目（trashedAt 在过去）应被清理；新鲜条目保留。
         let old_stamp = now_ms() - (TRASH_TTL_MS + 60_000);
         let new_stamp = now_ms();
@@ -3457,7 +3464,7 @@ mod tests {
     fn usage_scan_dedup_share_and_last_used() {
         let home = TestDir::new("usage-home");
         let skills_home = TestDir::new("usage-skills");
-        let _env = EnvGuard::new(&[("CCGUI_SKILLS_HOME", skills_home.path())]);
+        let _env = EnvGuard::new(&[("DOGE_SKILLS_HOME", skills_home.path())]);
         let line_b1 = skill_block_line(
             "2026-01-02T00:00:00.000Z",
             &[("b1", "pdf")],

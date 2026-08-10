@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useWindowDrag } from "../features/layout/hooks/useWindowDrag";
 import { isMacPlatform, isWindowsPlatform } from "../utils/platform";
 import type { WorkspaceInfo } from "../types";
+import { DOGE_NAME } from "../config/brand";
 
 export function useAppShellDesktopChrome(activeWorkspace: WorkspaceInfo | null) {
   useWindowDrag("titlebar");
@@ -11,7 +12,7 @@ export function useAppShellDesktopChrome(activeWorkspace: WorkspaceInfo | null) 
   const isMacDesktop = useMemo(() => isMacPlatform(), []);
 
   useEffect(() => {
-    const title = activeWorkspace ? `ccgui - ${activeWorkspace.name}` : "ccgui";
+    const title = activeWorkspace ? `${DOGE_NAME} - ${activeWorkspace.name}` : DOGE_NAME;
     try {
       void getCurrentWindow()
         .setTitle(title)

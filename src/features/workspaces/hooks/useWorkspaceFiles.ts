@@ -12,7 +12,7 @@ import {
   upsertSharedWorkspaceFileIndex,
 } from "../utils/sharedWorkspaceFileIndex";
 
-const WORKSPACE_FILES_DEBUG_KEY = "ccgui.debug.workspace-files";
+const WORKSPACE_FILES_DEBUG_KEY = "doge.debug.workspace-files";
 const WORKSPACE_FILES_SLOW_REQUEST_MS = 800;
 const INITIAL_RETRY_DELAY_MS = 1_500;
 const MAX_INITIAL_RETRY_ATTEMPTS = 1;

@@ -26,7 +26,7 @@ const globalServers: GlobalMcpServerEntry[] = [
     command: "uvx",
     url: null,
     argsCount: 3,
-    source: "ccgui_config",
+    source: "doge_config",
   },
 ];
 
@@ -93,11 +93,11 @@ describe("buildEngineRows", () => {
     },
   ];
   const claudeRuntimeServers = [
-    { name: "ccgui", status: "connected" },
+    { name: "doge", status: "connected" },
     { name: "chrome-devtools", status: null },
   ];
 
-  it("builds codex rows from ccgui config plus runtime inventory", () => {
+  it("builds codex rows from doge config plus runtime inventory", () => {
     const rows = buildEngineRows({
       engine: "codex",
       globalServers,
@@ -124,12 +124,12 @@ describe("buildEngineRows", () => {
 
     expect(rows.map((row) => row.id)).toEqual([
       "config:filesystem",
-      "runtime:ccgui",
+      "runtime:doge",
       "runtime:chrome-devtools",
     ]);
-    const ccguiRow = rows[1];
-    expect(ccguiRow.kind === "runtime" && ccguiRow.builtIn).toBe(true);
-    expect(ccguiRow.kind === "runtime" && ccguiRow.statusLabel).toBe("connected");
+    const dogeRow = rows[1];
+    expect(dogeRow.kind === "runtime" && dogeRow.builtIn).toBe(true);
+    expect(dogeRow.kind === "runtime" && dogeRow.statusLabel).toBe("connected");
   });
 });
 

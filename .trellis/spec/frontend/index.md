@@ -1,6 +1,6 @@
-# Frontend 开发规范（mossx）
+# Frontend 开发规范（doge）
 
-本目录是 `mossx` 前端执行规范，适用于 `React + TypeScript + Vite + Tauri`。
+本目录是 `doge` 前端执行规范，适用于 `React + TypeScript + Vite + Tauri`。
 
 ## 适用范围
 
@@ -13,6 +13,7 @@
 | 文档 | 用途 | 状态 |
 |---|---|---|
 | [Directory Structure](./directory-structure.md) | 模块目录与文件落位规则 | Active |
+| [doge Product Identity Contract](./doge-product-identity.md) | canonical manifest、UI/i18n、链接、品牌门禁与视觉资产 contract | Active |
 | [Component Guidelines](./component-guidelines.md) | 组件设计、props、样式与 i18n 规范 | Active |
 | [Preference Settings UI / UX Guide](../../../docs/ui-ux/preference-settings-ui-guide.md) | 设置/偏好面板视觉与交互基线（克制 preference list） | Active |
 | [Parallel Conversation Runtime Residuals](./parallel-conversation-runtime-residuals.md) | 多 session 并行实时对话的 7 条根因诊断 + 修复 + 回归契约 | Active |
@@ -35,7 +36,7 @@
 | [Markdown Math Normalization Idempotence](./quality-guidelines.md#markdown-math-normalization-must-preserve-container-and-math-range-idempotence) | Markdown container prefix、math-range idempotence 与回归口径 | Active |
 | [CodeMirror State-Coupled Extensions 不可跨越 Lazy Boundary](./quality-guidelines.md#codemirror-state-coupled-extensions-不可跨越-lazy-boundary) | 任何把 `@codemirror/*` state-coupled extension 拆到 lazy 边界后的硬性禁止 | Active |
 | [Type Safety](./type-safety.md) | strict TypeScript 与 boundary mapping 规则 | Active |
-| [Linux Native Baidu Analytics Transport](../backend/linux-native-baidu-analytics.md) | Linux native official `hm.js` Image bridge、Tauri IPC 与 Rust fixed transport contract | Active |
+| [Upstream Service and Release Isolation](../backend/upstream-service-isolation.md) | upstream runtime 隔离、custom provider 保留、updater/release fail-closed contract | Active |
 | [Vendored Frontend（tokentracker-dashboard）](./tokentracker-dashboard-vendored.md) | 拓展-使用统计 vendored dashboard 的维护、数据通道、Tailwind v4 与性能边界约定 | Active |
 | [Multi-Agent Collaboration Contracts](../multi-agent/contracts.md) | 多 CLI 协作 outcome 字符上限、§17.4.3 展示契约、降级 settle | Active |
 
@@ -52,7 +53,7 @@
 - 涉及 UI -> service -> tauri/rust 的跨层变更，额外读：
   - `../guides/cross-layer-thinking-guide.md`
   - `../guides/code-reuse-thinking-guide.md`
-- 涉及 `src/services/baiduTongji.ts` 或 Linux native analytics 时，额外读 [Linux Native Baidu Analytics Transport](../backend/linux-native-baidu-analytics.md)。
+- 涉及 analytics、managed provider default、About/Issue/Release URL 或 updater 时，额外读 [Upstream Service and Release Isolation](../backend/upstream-service-isolation.md)。
 - 涉及 Web Service assets 检测/安装状态或启动 gate 时，额外读 `../backend/web-assets-package-contract.md`。
 - 涉及 Claude 上下文用量窗体、`ThreadTokenUsage` 或 token indicator 时，额外读 [Claude Context Usage Display](./claude-context-usage-display.md)。
 - 涉及 AI model JSON、structured output、`Return pure JSON only` prompt、`JSON.parse(response.text)` 或模型输出 repair 时，额外读 [Model Structured Output Contract](./model-structured-output.md)。

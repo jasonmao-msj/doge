@@ -6,18 +6,15 @@ use crate::shared_event_log::canonical::types::{
     CanonicalFact, SquadCancelRequestedFact, SquadNodeOutcomeRecordedFact, SquadPlanApprovedFact,
     SquadPlanProposedFact, SquadPlanRevisedFact, SquadRunRequestedFact, SquadRunSettledFact,
 };
-use crate::shared_session_v2::{
-    require_shared_session_workspace_owner, ExecutionTargetInput,
-};
+use crate::shared_session_v2::{require_shared_session_workspace_owner, ExecutionTargetInput};
 use crate::state::AppState;
 
 use super::support::*;
 use super::types::{
     apply_stage_bindings, cap_text, empty_extra, short_text, stages_from_bindings,
     AgentCancelResultV1, AgentPlanDraftV1, AgentPreparedAttemptV1, AgentProjectionV1,
-    AgentRunStatus, AgentStageBindingInput, AgentStageId, AgentStageProjectionV1,
-    AgentStageStatus, AGENT_SCHEMA_VERSION, FINAL_SUMMARY_CHARS, STAGE_OUTCOME_BODY_CHARS,
-    STAGE_SHORT_OUTCOME_CHARS,
+    AgentRunStatus, AgentStageBindingInput, AgentStageId, AgentStageProjectionV1, AgentStageStatus,
+    AGENT_SCHEMA_VERSION, FINAL_SUMMARY_CHARS, STAGE_OUTCOME_BODY_CHARS, STAGE_SHORT_OUTCOME_CHARS,
 };
 
 fn stage_index(run: &AgentProjectionV1, stage_id: &str) -> Option<usize> {
@@ -190,9 +187,7 @@ pub(crate) async fn shared_agent_request_run(
         let trimmed = text.trim();
         if trimmed.is_empty() {
             if first_stage_images.is_empty() {
-                return Err(
-                    "agent-request-invalid: text or images must be non-empty".to_string(),
-                );
+                return Err("agent-request-invalid: text or images must be non-empty".to_string());
             }
             "（请根据附图回答）"
         } else {
@@ -212,10 +207,7 @@ pub(crate) async fn shared_agent_request_run(
         crate::shared_session_v2::validate_resolved_execution_target(&binding.target)?;
     }
     let stages = if bindings.is_empty() {
-        apply_stage_bindings(
-            super::types::default_stage_specs(&target),
-            &[],
-        )
+        apply_stage_bindings(super::types::default_stage_specs(&target), &[])
     } else {
         stages_from_bindings(&target, &bindings)
     };
@@ -482,13 +474,8 @@ pub(crate) async fn shared_agent_record_review(
     let result =
         record_stage_and_maybe_advance(workspace_id, thread_id, run_id, attempt_id, false, state)
             .await?;
-    serde_json::from_value(
-        result
-            .get("projection")
-            .cloned()
-            .unwrap_or(Value::Null),
-    )
-    .map_err(|error| error.to_string())
+    serde_json::from_value(result.get("projection").cloned().unwrap_or(Value::Null))
+        .map_err(|error| error.to_string())
 }
 
 async fn record_stage_and_maybe_advance(
@@ -580,8 +567,8 @@ async fn record_stage_and_maybe_advance(
         }
 
         // 仅 requires_approval 进入门闩；plan 段尽量解析 SUMMARY，失败不杀 run
-        let wants_plan_text = stage.requires_approval
-            || AgentStageId::parse(&stage.id) == Some(AgentStageId::Plan);
+        let wants_plan_text =
+            stage.requires_approval || AgentStageId::parse(&stage.id) == Some(AgentStageId::Plan);
 
         let summary_text = if wants_plan_text {
             match parse_plan_from_assistant(&raw) {
@@ -663,11 +650,7 @@ async fn record_stage_and_maybe_advance(
                     }));
                 }
                 Err(_) => {
-                    let is_last = run
-                        .stages
-                        .last()
-                        .map(|s| s.id == stage.id)
-                        .unwrap_or(false)
+                    let is_last = run.stages.last().map(|s| s.id == stage.id).unwrap_or(false)
                         || stage.id == AgentStageId::Review.as_str();
                     let body = stage_outcome_body(&raw, &stage.title, is_last);
                     let note = short_text(&body, STAGE_SHORT_OUTCOME_CHARS);
@@ -688,11 +671,7 @@ async fn record_stage_and_maybe_advance(
                 }
             }
         } else {
-            let is_last = run
-                .stages
-                .last()
-                .map(|s| s.id == stage.id)
-                .unwrap_or(false)
+            let is_last = run.stages.last().map(|s| s.id == stage.id).unwrap_or(false)
                 || stage.id == AgentStageId::Review.as_str();
             let body = stage_outcome_body(&raw, &stage.title, is_last);
             let note = short_text(&body, STAGE_SHORT_OUTCOME_CHARS);
@@ -971,12 +950,7 @@ pub(super) fn compose_orchestration_summary(run: &AgentProjectionV1) -> String {
             stage
                 .short_outcome
                 .clone()
-                .or_else(|| {
-                    stage
-                        .full_outcome
-                        .as_ref()
-                        .map(|s| short_text(s, 400))
-                })
+                .or_else(|| stage.full_outcome.as_ref().map(|s| short_text(s, 400)))
                 .unwrap_or_default()
         };
         if body.trim().is_empty() {
@@ -1010,10 +984,7 @@ pub(crate) async fn shared_agent_retry_stage(
         return Err("agent-retry-stage: workspace root changed".to_string());
     }
     if run.status.is_terminal() {
-        return Err(
-            "agent-retry-stage-terminal: run already settled; use full re-run"
-                .to_string(),
-        );
+        return Err("agent-retry-stage-terminal: run already settled; use full re-run".to_string());
     }
     let stage_id = stage_id.trim();
     if stage_id.is_empty() {
@@ -1043,9 +1014,7 @@ pub(crate) async fn shared_agent_retry_stage(
             writer,
             &session_id,
             CanonicalFact::SquadNodeOutcomeRecorded(SquadNodeOutcomeRecordedFact {
-                fact_id: format!(
-                    "agent:{run_id}:{stage_id}:{old_attempt}:retry-close:{now}"
-                ),
+                fact_id: format!("agent:{run_id}:{stage_id}:{old_attempt}:retry-close:{now}"),
                 run_id: run_id.clone(),
                 node_id: stage_id.to_string(),
                 attempt_id: old_attempt.clone(),
@@ -1146,9 +1115,7 @@ pub(crate) async fn shared_agent_finalize_cancel(
 
 #[cfg(test)]
 mod degrade_settle_tests {
-    use super::{
-        compose_orchestration_summary, should_degrade_settle_on_next_start_failure,
-    };
+    use super::{compose_orchestration_summary, should_degrade_settle_on_next_start_failure};
     use crate::agent_orchestration::types::{
         AgentPlanDraftV1, AgentProjectionV1, AgentRunStatus, AgentStageProjectionV1,
         AgentStageStatus, AGENT_SCHEMA_VERSION,

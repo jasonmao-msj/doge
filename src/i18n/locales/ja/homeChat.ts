@@ -9,7 +9,7 @@ const homeChat = {
     "announcementTag": "新機能",
     "announcementText": "ランディングテンプレート、ワークフローカード、スタータープロンプトを探索",
     "announcementAction": "見つける",
-    "title": "ccgui Agent で作業をもっと簡単に",
+    "title": "doge Agent で作業をもっと簡単に",
     "titleLineOne": "Enter を押して",
     "titleLineTwo": "アプリをより速く構築",
     "subtitle": "使い慣れたコンポーザーはそのままに、その周りにより力強いランディングのリズムを加え、セットアップの手間を減らして実際の実行へ移行します。",

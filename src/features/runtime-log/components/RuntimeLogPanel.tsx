@@ -56,8 +56,8 @@ const SPRING_BOOT_LINE_PATTERN =
 const RUNTIME_PANEL_MIN_HEIGHT = 160;
 const RUNTIME_PANEL_MAX_HEIGHT = 640;
 const RUNTIME_PANEL_DEFAULT_HEIGHT = 240;
-const RUNTIME_PANEL_HEIGHT_STORAGE_KEY = "ccgui.runtimeConsole.height";
-const RUNTIME_PANEL_THEME_STORAGE_KEY = "ccgui.runtimeConsole.ideaTheme";
+const RUNTIME_PANEL_HEIGHT_STORAGE_KEY = "doge.runtimeConsole.height";
+const RUNTIME_PANEL_THEME_STORAGE_KEY = "doge.runtimeConsole.ideaTheme";
 const IS_WINDOWS_RUNTIME = isWindowsPlatform();
 
 type RuntimeLineTone = "default" | "system" | "info" | "warn" | "error" | "debug";
@@ -279,7 +279,11 @@ function resolveLineTone(line: string): RuntimeLineTone {
     return "default";
   }
   const normalized = line.toUpperCase();
-  if (line.includes("[ccgui Run]") || line.includes("[CodeMoss Run]")) {
+  if (
+    line.includes("[doge Run]") ||
+    line.includes("[ccgui Run]") ||
+    line.includes("[CodeMoss Run]")
+  ) {
     return "system";
   }
   if (
@@ -424,7 +428,7 @@ export function RuntimeLogPanel({
   const isStoppable = status === "starting" || status === "running";
   const canRun = !isStoppable && Boolean(onRun);
   const rawOutput = error
-    ? `${log}${log.endsWith("\n") || !log ? "" : "\n"}[ccgui Run] ${error}\n`
+    ? `${log}${log.endsWith("\n") || !log ? "" : "\n"}[doge Run] ${error}\n`
     : log;
   const output = useMemo(() => sanitizeRuntimeOutput(rawOutput), [rawOutput]);
   const logLines = useMemo(

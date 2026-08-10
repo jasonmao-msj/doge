@@ -300,6 +300,7 @@ function extractPathCandidatesFromDataTransfer(
   }
 
   const customPayload =
+    dataTransfer.getData('application/x-doge-file-paths') ||
     dataTransfer.getData('application/x-ccgui-file-paths') ||
     dataTransfer.getData('application/x-codemoss-file-paths');
   if (customPayload) {
@@ -337,6 +338,7 @@ function hasPathLikeDragType(
   }
   const types = Array.from(dataTransfer.types ?? []);
   return (
+    types.includes('application/x-doge-file-paths') ||
     types.includes('application/x-ccgui-file-paths') ||
     types.includes('application/x-codemoss-file-paths') ||
     types.includes('text/plain') ||

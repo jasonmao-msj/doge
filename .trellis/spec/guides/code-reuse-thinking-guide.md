@@ -2,7 +2,7 @@
 
 ## 为什么重要
 
-`mossx` feature 多、runtime contract 多，复制粘贴会导致行为漂移（behavior drift）。
+`doge` feature 多、runtime contract 多，复制粘贴会导致行为漂移（behavior drift）。
 
 ## 写新代码前先搜索（Search First）
 

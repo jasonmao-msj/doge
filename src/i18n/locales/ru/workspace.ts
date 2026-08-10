@@ -245,13 +245,13 @@ const workspace = {
     "threads": "треды",
     "deleteWorkspaceTitle": "Удалить рабочую область",
     "deleteWorkspaceConfirm": "Вы уверены, что хотите удалить «{{name}}»?",
-    "deleteWorkspaceMessage": "Это удалит рабочую область из ccgui.",
+    "deleteWorkspaceMessage": "Это удалит рабочую область из doge.",
     "deleteWorkspaceWorktreeWarning": "Это также удалит {{count}} worktree на диске.",
     "deleteWorkspaceWorktreeWarning_other": "Это также удалит {{count}} worktree на диске.",
     "deleteWorkspaceBeforeYouConfirm": "Прежде чем продолжить:",
     "deleteWorkspaceWillHappenTitle": "Что произойдёт:",
     "deleteWorkspaceWillNotHappenTitle": "Что не произойдёт:",
-    "deleteWorkspaceEffectListOnly": "Рабочая область будет удалена только из списка ccgui.",
+    "deleteWorkspaceEffectListOnly": "Рабочая область будет удалена только из списка doge.",
     "deleteWorkspaceEffectSessions": "Активные сессии в этой рабочей области (и связанные worktree) будут закрыты.",
     "deleteWorkspaceEffectDeleteWorktrees": "{{count}} связанная папка worktree на диске будет удалена.",
     "deleteWorkspaceEffectDeleteWorktrees_other": "{{count}} связанных папок worktree на диске будут удалены.",
@@ -267,7 +267,7 @@ const workspace = {
     "reloadWorkspaceThreadsEffectNoGitWrite": "Не выполнит checkout/merge/rebase или любую другую операцию записи Git.",
     "deleteWorktreeTitle": "Удалить Worktree",
     "deleteWorktreeConfirm": "Вы уверены, что хотите удалить «{{name}}»?",
-    "deleteWorktreeMessage": "Это закроет агента, удалит его worktree и удалит его из ccgui.",
+    "deleteWorktreeMessage": "Это закроет агента, удалит его worktree и удалит его из doge.",
     "deleteWorktreeFailed": "Не удалось удалить worktree"
   }
 };

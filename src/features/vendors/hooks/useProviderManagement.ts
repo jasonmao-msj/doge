@@ -214,7 +214,7 @@ export function useProviderManagement() {
   });
 
   /**
-   * Mirror jetbrains-cc-gui: when the active Claude provider changes, push its
+   * Mirror reference desktop client: when the active Claude provider changes, push its
    * ANTHROPIC_DEFAULT_* env slots into localStorage so the model picker can
    * show mapped names (e.g. kimi-k3) and brand icons.
    */

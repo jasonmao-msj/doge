@@ -21,7 +21,7 @@ export default {
       collabRunningLock: "协作编排进行中，结束后可继续输入",
     },
     card: {
-      who: "协作编排 · mossx",
+      who: "协作编排 · doge",
       runTitle: "多 Agent 协作",
       roundTitle: "⚡ 协作编排 · 第{{n}}轮",
       orchestrationHint:

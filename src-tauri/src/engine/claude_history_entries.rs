@@ -435,7 +435,9 @@ fn is_gui_control_plane_client_info(value: &Value) -> bool {
             .get(*key)
             .and_then(Value::as_str)
             .map(|text| {
-                text.eq_ignore_ascii_case("ccgui") || text.eq_ignore_ascii_case("codex-tui")
+                text.eq_ignore_ascii_case("doge")
+                    || text.eq_ignore_ascii_case("ccgui")
+                    || text.eq_ignore_ascii_case("codex-tui")
             })
             .unwrap_or(false)
     })

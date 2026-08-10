@@ -374,7 +374,7 @@ describe("StartupGateOverlay", () => {
 
     expect(writeText).toHaveBeenCalledTimes(1);
     const dump = writeText.mock.calls[0]?.[0] as string;
-    expect(dump).toContain("=== mossx cold-start diagnostic dump ===");
+    expect(dump).toContain("=== doge cold-start diagnostic dump ===");
     expect(dump).toContain("--- command cost rank (IPC, desc) ---");
     expect(dump).toContain("list_threads");
     expect(dump).toContain("6091ms");

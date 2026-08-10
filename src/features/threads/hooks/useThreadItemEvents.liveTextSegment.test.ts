@@ -63,7 +63,7 @@ const dispatchedTypes = (dispatch: ReturnType<typeof vi.fn>) =>
 describe("useThreadItemEvents live-text segmentation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    window.localStorage.removeItem("ccgui.perf.realtimeBatching");
+    window.localStorage.removeItem("doge.perf.realtimeBatching");
     resetLiveAssistantTextChannelForTests();
     vi.mocked(buildConversationItem).mockReturnValue({
       id: "tool-1",

@@ -20,7 +20,7 @@ export default {
       "collabRunningLock": "Collab en cours — la saisie se débloque à la fin"
     },
     "card": {
-      "who": "Orchestration collab · mossx",
+      "who": "Orchestration collab · doge",
       "runTitle": "Collab multi-agents",
       "roundTitle": "⚡ Collab · Tour {{n}}",
       "orchestrationHint": "Après approbation du plan, les étapes s’enchaînent. Ouvrez une étape ou le carrousel de droite pour le flux complet.",

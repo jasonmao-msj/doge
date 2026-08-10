@@ -197,7 +197,7 @@ fn attach_claude_stream_timing(
         return;
     };
     params.insert(
-        "ccguiTiming".to_string(),
+        "dogeTiming".to_string(),
         json!({
             "source": "claude-stream",
             "stdoutReceivedAtMs": stream_timing.stdout_received_at_ms,

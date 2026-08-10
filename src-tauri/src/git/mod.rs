@@ -1865,7 +1865,7 @@ mod tests {
             "Git remote forwarding matrix contains duplicate methods"
         );
 
-        let daemon_dispatch = include_str!("../bin/cc_gui_daemon.rs");
+        let daemon_dispatch = include_str!("../bin/doge_daemon.rs");
         let mut categories = HashSet::new();
         for entry in GIT_REMOTE_FORWARDING_MATRIX {
             categories.insert(entry.category);
@@ -1899,7 +1899,7 @@ mod tests {
 
     #[test]
     fn git_file_blame_daemon_contract_preserves_payload_and_response_shape() {
-        let daemon_dispatch = include_str!("../bin/cc_gui_daemon.rs");
+        let daemon_dispatch = include_str!("../bin/doge_daemon.rs");
         let blame_arm = daemon_dispatch
             .split("\"get_git_file_blame\" => {")
             .nth(1)

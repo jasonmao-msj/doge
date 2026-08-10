@@ -26,7 +26,7 @@ export function WindowsMainWindowCloseConfirmDialog({
   onConfirm,
 }: WindowsMainWindowCloseConfirmDialogProps) {
   const { t } = useTranslation();
-  const appName = t("app.title", { defaultValue: "ccgui" });
+  const appName = t("app.title", { defaultValue: "doge" });
 
   const handleCancel = () => {
     if (isClosing) {

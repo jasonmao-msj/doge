@@ -202,7 +202,7 @@ const sidebar = {
         "sectionTitle": "伺服器詳情",
         "source": "來源",
         "sourceClaude": "~/.claude.json",
-        "sourceCcgui": "~/.ccgui/config.json",
+        "sourceDoge": "~/.doge/config.json",
         "transport": "傳輸方式",
         "transportUnknown": "未知傳輸方式",
         "command": "命令",

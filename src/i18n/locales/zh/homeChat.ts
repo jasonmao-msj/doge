@@ -6,7 +6,7 @@ const homeChat = {
     announcementTag: "New",
     announcementText: "探索首页模板、流程卡片与启动提示",
     announcementAction: "查看",
-    title: "ccgui Agent，让你的工作更轻松",
+    title: "doge Agent，让你的工作更轻松",
     titleLineOne: "按下回车",
     titleLineTwo: "更快开始构建",
     subtitle:

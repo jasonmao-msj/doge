@@ -5,6 +5,7 @@ import {
   DEFAULT_DOCK_ICON_ID,
   resolveDockIconSrc,
 } from "../../theme/utils/dockIcon";
+import { DOGE_NAME } from "../../../config/brand";
 
 type FeatureCard = {
   titleKey: string;
@@ -128,7 +129,7 @@ const elementCards: FeatureCard[] = [
   },
 ];
 
-const PASSWORD_STORAGE_PATH = "~/.ccgui/client/pwd.txt";
+const PASSWORD_STORAGE_PATH = "~/.doge/client/pwd.txt";
 
 export function LockScreenOverlay({
   isOpen,
@@ -207,7 +208,7 @@ export function LockScreenOverlay({
         <section className="panel-lock-atlas panel-lock-panel">
           <header className="panel-lock-hero">
             <div className="panel-lock-brand">
-              <img src={resolvedLogoSrc} alt="ccgui" className="panel-lock-logo" />
+              <img src={resolvedLogoSrc} alt={DOGE_NAME} className="panel-lock-logo" />
               <div>
                 <p className="panel-lock-brand-kicker">{t("lockScreen.brandKicker")}</p>
                 <h2>{t("lockScreen.title")}</h2>
@@ -301,7 +302,7 @@ export function LockScreenOverlay({
                   <p>{t("lockScreen.capabilityDesc")}</p>
                 </div>
                 <article className="panel-lock-capability-core">
-                  <h4>ccgui Core</h4>
+                  <h4>{DOGE_NAME} Core</h4>
                   <p>{t("lockScreen.facts.workflowValue")}</p>
                 </article>
                 <div className="panel-lock-capability-grid">

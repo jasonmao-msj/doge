@@ -225,7 +225,7 @@ export function normalizeBareWindowsFilePathLinksAround(
       if (previousChar === "(") {
         return rawPath;
       }
-      const token = `\u0000CCGUIWINDOWSPATH${protectedRegions.length}\u0000`;
+      const token = `\u0000DOGEWINDOWSPATH${protectedRegions.length}\u0000`;
       protectedRegions.push({
         token,
         markdownLink: `[${escapeMarkdownLinkText(rawPath)}](${toFileLink(rawPath)})`,

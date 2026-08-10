@@ -1,8 +1,6 @@
 pub(crate) fn invoke_handler(
 ) -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
-        crate::baidu_tongji::load_baidu_tongji_script,
-        crate::baidu_tongji::send_baidu_tongji_beacon,
         // Settings
         crate::settings::get_app_settings,
         crate::settings::take_settings_recovery_notice,

@@ -6,7 +6,7 @@ export const TURN_STALL_WARNING_MS = 6_000;
 export const CODEX_TURN_NO_PROGRESS_STALL_MS = 600_000;
 export const CODEX_EXECUTION_ACTIVE_NO_PROGRESS_STALL_MS = 20 * 60_000;
 
-const TURN_DIAGNOSTIC_VERBOSE_FLAG_KEY = "ccgui.debug.turnDiagnosticsVerbose";
+const TURN_DIAGNOSTIC_VERBOSE_FLAG_KEY = "doge.debug.turnDiagnosticsVerbose";
 const REQUEST_USER_INPUT_BLOCKED_REASON_CODE =
   "request_user_input_blocked_in_default_mode";
 const EXECUTION_ITEM_TYPES = new Set([
@@ -432,7 +432,7 @@ export function isThreadSessionMirrorEnabled() {
     return false;
   }
   try {
-    const value = window.localStorage.getItem("ccgui.debug.threadSessionMirror");
+    const value = window.localStorage.getItem("doge.debug.threadSessionMirror");
     if (!value) {
       return false;
     }

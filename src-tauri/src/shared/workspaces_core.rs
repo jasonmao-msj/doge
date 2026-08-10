@@ -88,8 +88,8 @@ use uuid::Uuid;
 pub(crate) const WORKTREE_SETUP_MARKERS_DIR: &str = "worktree-setup";
 pub(crate) const WORKTREE_SETUP_MARKER_EXT: &str = "ran";
 const WORKTREE_VALIDATION_ERROR_PREFIX: &str = "VALIDATION_ERROR";
-const LEGACY_BRAND_WORKSPACE_NAMES: &[&str] = &["codemoss", "ccgui"];
-const CURRENT_BRAND_WORKSPACE_NAME: &str = "ccgui";
+const LEGACY_BRAND_WORKSPACE_NAMES: &[&str] = &["ccgui", "mossx", "codemoss"];
+const CURRENT_BRAND_WORKSPACE_NAME: &str = "doge";
 const SESSION_HEALTH_PROBE_TIMEOUT_SECS: u64 = 15;
 const MIN_VISIBLE_THREAD_ROOT_COUNT: u32 = 1;
 const MAX_VISIBLE_THREAD_ROOT_COUNT: u32 = 200;
@@ -1752,11 +1752,11 @@ mod tests {
     fn normalize_workspace_display_name_rebrands_legacy_name() {
         assert_eq!(
             normalize_workspace_display_name("codemoss", "/Users/test/Desktop/codemoss"),
-            "ccgui"
+            "doge"
         );
         assert_eq!(
             normalize_workspace_display_name("workspace", "/Users/test/Desktop/codemoss"),
-            "ccgui"
+            "doge"
         );
     }
 
@@ -1769,10 +1769,10 @@ mod tests {
     }
 
     #[test]
-    fn workspace_name_from_path_preserves_non_legacy_workspace_names() {
+    fn workspace_name_from_path_rebrands_legacy_and_preserves_non_legacy_names() {
         assert_eq!(
             workspace_name_from_path("/Users/test/Desktop/ccgui"),
-            "ccgui"
+            "doge"
         );
         assert_eq!(
             workspace_name_from_path("/Users/test/Desktop/another-repo"),

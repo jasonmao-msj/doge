@@ -68,7 +68,7 @@ use approval::{
 mod tests_stream;
 pub use askuser_mcp::{global as askuser_mcp_global, AskUserMcpServer};
 // `init_global` is re-exported for the Tauri lib entrypoint (lib.rs) and tests; the
-// cc_gui_daemon binary compiles this module but never starts the askuser MCP server,
+// The daemon binary compiles this module but never starts the askuser MCP server,
 // so the re-export is unused in that build — allow it rather than trip `-D warnings`.
 #[allow(unused_imports)]
 pub use askuser_mcp::init_global as init_askuser_mcp_global;
@@ -120,7 +120,7 @@ impl ClaudeProviderSettingsOverride {
             return Ok(None);
         };
         let directory = std::env::temp_dir().join(format!(
-            "ccgui-claude-provider-settings-{}",
+            "doge-claude-provider-settings-{}",
             uuid::Uuid::new_v4()
         ));
         let mut directory_builder = fs::DirBuilder::new();
@@ -1093,7 +1093,9 @@ impl ClaudeSession {
             // placeholder after `-p` breaks Windows .cmd wrapper parsing.
             cmd.arg("--input-format");
             cmd.arg("stream-json");
-            if params.text.contains("MOSSX_CONTEXT_PACKAGE:") {
+            if params.text.contains("DOGE_CONTEXT_PACKAGE:")
+                || params.text.contains("MOSSX_CONTEXT_PACKAGE:")
+            {
                 // Change C：只为 Context Package 开 echo，避免改变普通 Claude turn。
                 // 旧 CLI 不支持时显式失败，不能降格为首 token ACK。
                 cmd.arg("--replay-user-messages");

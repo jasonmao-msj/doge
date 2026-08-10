@@ -15,20 +15,20 @@ use std::io::{BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
-use cc_gui_lib::shared_context::{
+use common::TempStoreDir;
+use doge_lib::shared_context::{
     compile_context, prepare_delivery, CompileContextRequest, PrepareDeliveryRequest,
     RuntimeContextCapabilities,
 };
-use cc_gui_lib::shared_event_log::canonical::CanonicalProviderProfileSource;
-use cc_gui_lib::shared_event_log::{
+use doge_lib::shared_event_log::canonical::CanonicalProviderProfileSource;
+use doge_lib::shared_event_log::{
     open, BindingStateUpdate, OpenOutcome, SharedEventWriter, StoreError,
 };
-use cc_gui_lib::shared_session_v2::{
+use doge_lib::shared_session_v2::{
     accept_turn_core, begin_turn_core, cancel_pre_dispatch_attempt_core, commit_turn_core,
     rebuild_binding_core, validate_prepare_target_core, BeginTurnStatus, CommitOutcomeInput,
     EngineType, ExecutionTargetInput,
 };
-use common::TempStoreDir;
 use serde_json::json;
 
 const SESSION: &str = "v2-session-a";

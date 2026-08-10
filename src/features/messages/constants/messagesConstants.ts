@@ -1,4 +1,4 @@
-export const MESSAGE_JUMP_EVENT_NAME = "ccgui:jump-to-message";
+export const MESSAGE_JUMP_EVENT_NAME = "doge:jump-to-message";
 export const ASSISTANT_FINALIZING_LIVE_WINDOW_MS = 320;
 export const CODEX_FINALIZING_LIVE_WINDOW_MS = 6_000;
 export const VISIBLE_TEXT_REPORT_MIN_INTERVAL_MS = 120;

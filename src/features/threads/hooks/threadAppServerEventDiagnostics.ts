@@ -32,7 +32,7 @@ type ThreadAppServerEventDiagnosticsInput = {
 export function isReasoningRawDebugEnabled() {
   if (import.meta.env?.DEV) {
     try {
-      const value = window.localStorage.getItem("ccgui.debug.reasoning.raw");
+      const value = window.localStorage.getItem("doge.debug.reasoning.raw");
       if (!value) {
         return true;
       }
@@ -46,7 +46,7 @@ export function isReasoningRawDebugEnabled() {
     return false;
   }
   try {
-    const value = window.localStorage.getItem("ccgui.debug.reasoning.raw");
+    const value = window.localStorage.getItem("doge.debug.reasoning.raw");
     if (!value) {
       return false;
     }

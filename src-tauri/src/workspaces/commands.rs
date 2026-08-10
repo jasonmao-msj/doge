@@ -124,6 +124,7 @@ fn allowed_external_skill_roots(
 fn allowed_external_project_map_roots(entry: &WorkspaceEntry) -> Result<Vec<PathBuf>, String> {
     let mut roots = vec![
         app_paths::app_home_dir()?.join("project-map"),
+        PathBuf::from(&entry.path).join(".doge").join("project-map"),
         PathBuf::from(&entry.path)
             .join(".ccgui")
             .join("project-map"),
@@ -509,7 +510,7 @@ mod image_preview_policy_tests {
     fn project_map_external_roots_are_derived_from_runtime_paths() {
         let workspace_path =
             std::env::temp_dir().join(format!("project-map-root-{}", Uuid::new_v4()));
-        let workspace_project_map_root = workspace_path.join(".ccgui").join("project-map");
+        let workspace_project_map_root = workspace_path.join(".doge").join("project-map");
         let entry = WorkspaceEntry {
             id: "ws-project-map-roots".to_string(),
             name: "Project Map Roots".to_string(),
@@ -2350,7 +2351,10 @@ fn expand_user_path(path: &str) -> Result<std::path::PathBuf, String> {
         return dirs::home_dir().ok_or_else(|| "Cannot determine home directory".to_string());
     }
 
-    if let Some(rest) = trimmed.strip_prefix("~/").or_else(|| trimmed.strip_prefix("~\\")) {
+    if let Some(rest) = trimmed
+        .strip_prefix("~/")
+        .or_else(|| trimmed.strip_prefix("~\\"))
+    {
         let home = dirs::home_dir().ok_or_else(|| "Cannot determine home directory".to_string())?;
         return Ok(home.join(rest));
     }
@@ -2375,18 +2379,11 @@ fn resolve_containing_folder(path: &str) -> Result<std::path::PathBuf, String> {
     };
 
     if folder.exists() {
-        return dunce::canonicalize(&folder).map_err(|error| {
-            format!(
-                "Failed to resolve folder `{}`: {error}",
-                folder.display()
-            )
-        });
+        return dunce::canonicalize(&folder)
+            .map_err(|error| format!("Failed to resolve folder `{}`: {error}", folder.display()));
     }
 
-    Err(format!(
-        "Folder does not exist: {}",
-        folder.display()
-    ))
+    Err(format!("Folder does not exist: {}", folder.display()))
 }
 
 fn open_directory_in_file_manager(folder: &std::path::Path) -> Result<(), String> {
@@ -2437,9 +2434,8 @@ pub(crate) async fn reveal_in_file_manager(path: String) -> Result<(), String> {
     }
 
     let expanded = expand_user_path(trimmed)?;
-    let canonical = dunce::canonicalize(&expanded).map_err(|error| {
-        format!("Failed to resolve path `{trimmed}`: {error}")
-    })?;
+    let canonical = dunce::canonicalize(&expanded)
+        .map_err(|error| format!("Failed to resolve path `{trimmed}`: {error}"))?;
 
     #[cfg(windows)]
     {
@@ -2487,7 +2483,7 @@ pub(crate) async fn open_folder_in_file_manager(path: String) -> Result<(), Stri
     open_directory_in_file_manager(&folder)
 }
 
-const DEFAULT_MACOS_APP_NAME: &str = "ccgui";
+const DEFAULT_MACOS_APP_NAME: &str = "doge";
 
 fn normalize_new_window_path(path: Option<String>) -> Option<String> {
     path.as_deref()
@@ -2918,7 +2914,7 @@ mod tests {
     #[test]
     fn build_macos_new_window_open_args_uses_workspace_path_when_provided() {
         let args = build_macos_new_window_open_args(
-            Some(Path::new("/Applications/ccgui.app")),
+            Some(Path::new("/Applications/doge.app")),
             Some("/tmp/project"),
         );
         assert_eq!(
@@ -2926,7 +2922,7 @@ mod tests {
             vec![
                 "-n".to_string(),
                 "-a".to_string(),
-                "/Applications/ccgui.app".to_string(),
+                "/Applications/doge.app".to_string(),
                 "/tmp/project".to_string(),
             ]
         );

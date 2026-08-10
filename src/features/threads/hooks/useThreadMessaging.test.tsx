@@ -215,7 +215,7 @@ describe("useThreadMessaging", () => {
     resetSharedTargetStoreForTests();
     resetSharedSendStateStoreForTests();
     resetSharedSessionAttemptReattachmentsForTests();
-    window.localStorage.removeItem("mossx.sharedV2Send");
+    window.localStorage.removeItem("doge.sharedV2Send");
   });
 
   it("routes opencode thread through engineSendMessage", async () => {
@@ -341,7 +341,7 @@ describe("useThreadMessaging", () => {
   });
 
   it("normalizes unsupported shared-session sends back to claude", async () => {
-    window.localStorage.setItem("mossx.sharedV2Send", "0");
+    window.localStorage.setItem("doge.sharedV2Send", "0");
     const dispatch = vi.fn();
     const { result } = makeThreadMessagingHook("gemini", {
       activeThreadId: "shared:thread-1",
@@ -375,7 +375,7 @@ describe("useThreadMessaging", () => {
   });
 
   it("uses active shared engine selection instead of stale thread engine when sending", async () => {
-    window.localStorage.setItem("mossx.sharedV2Send", "0");
+    window.localStorage.setItem("doge.sharedV2Send", "0");
     const dispatch = vi.fn();
     const { result } = makeThreadMessagingHook("claude", {
       activeThreadId: "shared:thread-sticky-engine",
@@ -411,7 +411,7 @@ describe("useThreadMessaging", () => {
   });
 
   it("uses the current Composer target only during explicit Shared V0 rollback", async () => {
-    window.localStorage.setItem("mossx.sharedV2Send", "0");
+    window.localStorage.setItem("doge.sharedV2Send", "0");
     const { result } = makeThreadMessagingHook("claude", {
       activeThreadId: "shared:thread-provider-target",
       resolveComposerSelection: () => ({

@@ -1,6 +1,7 @@
 import type { ConversationItem } from "../../../types/conversation";
 import {
   isCollabInternalPromptText,
+  isCollabSummaryPromptText,
   stripCollabInternalPrompt,
 } from "./collabPrompt";
 
@@ -268,7 +269,7 @@ export function filterMultiAgentCanvasItems(
       item.kind === "message" &&
       item.role === "assistant" &&
       isCollabInternalPromptText(item.text) &&
-      item.text.includes("[[mossx.collab.summary")
+      isCollabSummaryPromptText(item.text)
     ) {
       continue;
     }

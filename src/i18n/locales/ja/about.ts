@@ -5,7 +5,8 @@
 const about = {
   "about": {
     "version": "バージョン",
-    "tagline": "次世代 VibeCoding エディター",
+    "tagline": "複雑なことを、くわえて持ち帰り、やり遂げる。",
+    "story": "パソコンに住む小さな AI 柴犬が、散らばったファイル、タスク、アイデアをひとつに集めます。",
     "checkForUpdates": "アップデートを確認",
     "releaseNotes": "リリースノート",
     "reportIssue": "問題を報告",

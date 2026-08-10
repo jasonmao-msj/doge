@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { homedir } from "node:os";
 
-const DEFAULT_INPUT_PATH = `${homedir()}/.ccgui/client/app.json`;
+const DEFAULT_INPUT_PATH = `${homedir()}/.doge/client/app.json`;
 const DEFAULT_OUTPUT_PATH = ".artifacts/realtime-runtime-diagnostics.json";
 const DIAGNOSTICS_KEY = "diagnostics.rendererLifecycleLog";
 
@@ -72,7 +72,7 @@ async function main() {
   ).length;
   await writeJson(outputPath, {
     schemaVersion: "1.0",
-    source: "ccgui-client-store",
+    source: "doge-client-store",
     inputPath,
     generatedAt: new Date().toISOString(),
     entries,

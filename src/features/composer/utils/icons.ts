@@ -1,5 +1,5 @@
 /**
- * SVG icon stubs for ccgui
+ * SVG icon stubs for doge
  * Simplified version - returns generic icons instead of full icon set.
  * Full icon set can be copied from idea-claude-code-gui when needed.
  */

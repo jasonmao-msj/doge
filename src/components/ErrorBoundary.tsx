@@ -141,7 +141,7 @@ export class ErrorBoundary extends Component<
     const report = this.buildReportText();
     const status = await copyTextWithDownloadFallback(
       report,
-      `ccgui-error-report-${Date.now()}.txt`,
+      `doge-error-report-${Date.now()}.txt`,
     );
     this.setState({ copyStatus: status });
   };

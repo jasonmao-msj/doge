@@ -62,6 +62,23 @@ fn validates_current_version_and_rejects_mismatch() {
 }
 
 #[test]
+fn validates_legacy_marker_but_new_installations_write_doge_marker() {
+    let root = unique_test_dir("managed-web-assets-legacy-marker");
+    write_valid_installation(&root, "1.2.3");
+    fs::rename(
+        root.join(VERSION_MARKER_FILE),
+        root.join(LEGACY_VERSION_MARKER_FILES[0]),
+    )
+    .expect("replace current marker with legacy marker");
+
+    assert!(validate_installation(&root, "1.2.3").is_ok());
+    assert_eq!(read_installed_version(&root).as_deref(), Some("1.2.3"));
+    assert!(!root.join(VERSION_MARKER_FILE).exists());
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn extracts_valid_archive_and_rejects_path_traversal() {
     let root = unique_test_dir("managed-web-assets-zip");
     fs::create_dir_all(&root).expect("create root");
@@ -212,7 +229,7 @@ fn failed_initial_install_remains_failed() {
 async fn installs_local_package_with_adjacent_checksum() {
     let root = unique_test_dir("managed-web-assets-local");
     fs::create_dir_all(&root).expect("create root");
-    let source = root.join("ccgui-web-assets_2.0.0.zip");
+    let source = root.join("doge-web-assets_2.0.0.zip");
     create_zip(
         &source,
         &[
@@ -249,7 +266,7 @@ async fn rejects_tampered_local_package_without_replacing_current() {
     let current = root.join("current");
     fs::create_dir_all(&root).expect("create root");
     write_valid_installation(&current, "1.0.0");
-    let source = root.join("ccgui-web-assets_2.0.0.zip");
+    let source = root.join("doge-web-assets_2.0.0.zip");
     create_zip(&source, &[("index.html", b"tampered")]);
     fs::write(
         adjacent_checksum_path(&source),

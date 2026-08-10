@@ -7,9 +7,9 @@ export interface VendorModelManagerRequest {
   preferredProviderProfileId?: string | null;
 }
 
-const REQUEST_STORAGE_KEY = "ccgui.vendor.model-manager-request";
+const REQUEST_STORAGE_KEY = "doge.vendor.model-manager-request";
 export const VENDOR_MODEL_MANAGER_REQUEST_EVENT =
-  "ccgui:vendor-model-manager-request";
+  "doge:vendor-model-manager-request";
 
 export function requestVendorModelManager(
   request: VendorModelManagerRequest,

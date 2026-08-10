@@ -16,7 +16,7 @@ test("creates Tauri dev resource placeholders for bundle globs", async () => {
       "utf8",
     );
 
-    assert.match(indexHtml, /ccgui dev placeholder/);
+    assert.match(indexHtml, /doge dev placeholder/);
     assert.equal(assetPlaceholder, "");
   } finally {
     await rm(repoRoot, { recursive: true, force: true });

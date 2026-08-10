@@ -281,7 +281,7 @@ impl ClaudeSession {
 
                                     // Intercept the NATIVE (plan-mode) AskUserQuestion tool to emit a
                                     // RequestUserInput event. The MCP variant
-                                    // (`mcp__ccgui__AskUserQuestion`) is deliberately NOT matched here:
+                                    // (`mcp__doge__AskUserQuestion`) is deliberately NOT matched here:
                                     // its RequestUserInput is already emitted by the in-process MCP
                                     // handler (`ask_via_mcp`), so re-converting the transcript tool_use
                                     // would double-emit the dialog. It renders as a normal MCP tool card.

@@ -1499,7 +1499,7 @@ fn normalize_originator_source(value: Option<String>) -> Option<String> {
     }
     let lower = trimmed.to_ascii_lowercase();
     if lower == "ccgui" || lower == "codemoss" || lower == "mossx" {
-        return Some("ccgui".to_string());
+        return Some("doge".to_string());
     }
     if lower == "codex_cli_rs" {
         return Some("cli".to_string());

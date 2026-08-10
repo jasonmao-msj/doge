@@ -210,11 +210,11 @@ pub(crate) fn codex_import_projection(
         .collect();
     if !items.is_empty() {
         let package_marker = format!(
-            "MOSSX_CONTEXT_PACKAGE:{}:{}",
+            "DOGE_CONTEXT_PACKAGE:{}:{}",
             package.package_id, package.manifest.source_checksum
         );
         let accepted_marker = format!(
-            "MOSSX_CONTEXT_ACCEPTED:{}:{}",
+            "DOGE_CONTEXT_ACCEPTED:{}:{}",
             package.package_id, package.manifest.source_checksum
         );
         items.insert(
@@ -381,10 +381,9 @@ mod execution_target_contract_tests {
 
     #[test]
     fn execution_target_validation_rejects_mismatched_catalog_runtime_pair() {
-        let catalog = crate::engine::status::get_local_engine_models_for_validation(
-            EngineType::Codex,
-        )
-        .expect("Codex local catalog");
+        let catalog =
+            crate::engine::status::get_local_engine_models_for_validation(EngineType::Codex)
+                .expect("Codex local catalog");
         let selected = catalog.first().expect("non-empty Codex local catalog");
         let valid = ExecutionTargetInput {
             engine: EngineType::Codex,
@@ -2324,8 +2323,7 @@ pub fn rebuild_binding_core(
     // Main durable path still requires key == engine:provider to prevent identity mix-ups.
     let is_squad_binding = binding_key.starts_with("squad:");
     if !is_squad_binding {
-        let durable_binding_key =
-            shared_target_binding_key(engine, provider_profile_id.as_deref());
+        let durable_binding_key = shared_target_binding_key(engine, provider_profile_id.as_deref());
         if durable_binding_key != binding_key {
             return Err(format!(
                 "binding owner mismatch: key '{binding_key}' does not match durable owner '{durable_binding_key}'"
@@ -2638,7 +2636,8 @@ fn validate_runtime_dispatch_receipt(
     workspace_id: &str,
 ) -> Result<Value, String> {
     let receipt = response
-        .get("mossxDispatchReceipt")
+        .get("dogeDispatchReceipt")
+        .or_else(|| response.get("mossxDispatchReceipt"))
         .ok_or_else(|| "dispatch receipt is missing".to_string())?;
     if receipt_nullable_string(receipt, "engine")? != Some(owner.engine.icon()) {
         return Err("dispatch receipt engine does not match durable attempt".to_string());
@@ -6538,8 +6537,7 @@ mod shared_interrupt_owner_tests {
             Some("squad-worker-binding-recovery-required"),
         )
         .expect("mark squad recovery");
-        let rebuilt =
-            rebuild_binding_core(&writer, session_id, &squad_key).expect("rebuild squad");
+        let rebuilt = rebuild_binding_core(&writer, session_id, &squad_key).expect("rebuild squad");
         assert!(rebuilt.replaced_attempt_ids.is_empty());
         let binding = writer
             .binding_state(session_id, &squad_key)
@@ -6992,7 +6990,7 @@ mod native_continuation_import_tests {
         assert_eq!(items[0]["role"], "user");
         assert!(items[0]["content"][0]["text"]
             .as_str()
-            .is_some_and(|text| text.starts_with("MOSSX_CONTEXT_PACKAGE:")));
+            .is_some_and(|text| text.starts_with("DOGE_CONTEXT_PACKAGE:")));
         assert_eq!(items[1]["type"], "function_call");
         let package_marker = items[0]["content"][0]["text"]
             .as_str()
@@ -7003,7 +7001,7 @@ mod native_continuation_import_tests {
             .expect("accepted marker");
         assert_eq!(
             accepted_marker,
-            package_marker.replacen("MOSSX_CONTEXT_PACKAGE:", "MOSSX_CONTEXT_ACCEPTED:", 1)
+            package_marker.replacen("DOGE_CONTEXT_PACKAGE:", "DOGE_CONTEXT_ACCEPTED:", 1)
         );
         assert_eq!(dropped, 1);
         assert!(

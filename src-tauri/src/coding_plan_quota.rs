@@ -105,7 +105,7 @@ pub(crate) struct CodingPlanQuotaSnapshot {
     /// Sub2API 用量摘要；其它供应商为 None
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) usage_summary: Option<CodingPlanUsageSummary>,
-    /// 中转站 origin（如 `https://fufei.mossx.ai`），供 UI 展示「{origin}+sub2api」
+    /// 中转站 origin（如 `https://relay.example.com`），供 UI 展示「{origin}+sub2api」
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) site_origin: Option<String>,
     pub(crate) queried_at: i64,
@@ -291,9 +291,7 @@ fn relay_user_error(kind: &str) -> String {
         "not_found" | "404" => "该中转站暂不支持额度查询".to_string(),
         "auth" | "401" | "403" => "密钥无效或未授权".to_string(),
         // New API 的 /api/user/self 常要求系统访问令牌，sk 会 401
-        "auth_new_api" => {
-            "密钥无效或权限不足（New API 可能需要系统访问令牌，而非 sk）".to_string()
-        }
+        "auth_new_api" => "密钥无效或权限不足（New API 可能需要系统访问令牌，而非 sk）".to_string(),
         "rate_limited" | "429" => "请求过于频繁，请稍后重试".to_string(),
         "network" => "网络异常，请稍后重试".to_string(),
         "parse" | "empty" => "暂无可用额度数据".to_string(),
@@ -672,10 +670,7 @@ fn parse_zhipu_windows(data: &Value) -> Vec<CodingPlanQuotaWindow> {
         return vec![];
     };
     for item in limits {
-        let limit_type = item
-            .get("type")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let limit_type = item.get("type").and_then(|v| v.as_str()).unwrap_or("");
         // 与 CC Switch 一致：只吃 TOKENS_LIMIT（大小写不敏感）
         if !limit_type.is_empty() && !limit_type.eq_ignore_ascii_case("TOKENS_LIMIT") {
             continue;
@@ -794,10 +789,7 @@ async fn query_zhipu(base_url: &str, api_key: &str) -> CodingPlanQuotaSnapshot {
 
 async fn query_by_base_url_and_key(base_url: &str, api_key: &str) -> CodingPlanQuotaSnapshot {
     if api_key.trim().is_empty() {
-        return empty_snapshot(
-            "empty_credentials",
-            Some(relay_user_error("empty_key")),
-        );
+        return empty_snapshot("empty_credentials", Some(relay_user_error("empty_key")));
     }
     if let Some(provider) = detect_provider(base_url) {
         return match provider {
@@ -934,10 +926,7 @@ fn parse_new_api_user_self(body: &Value) -> Result<CodingPlanQuotaSnapshot, Stri
         }
     }
 
-    let data = body
-        .get("data")
-        .filter(|d| d.is_object())
-        .unwrap_or(body);
+    let data = body.get("data").filter(|d| d.is_object()).unwrap_or(body);
 
     let quota = data
         .get("quota")
@@ -983,8 +972,8 @@ fn parse_new_api_user_self(body: &Value) -> Result<CodingPlanQuotaSnapshot, Stri
         total_tokens: None,
         average_duration_ms: None,
     };
-    let has_usage = usage_summary.total_requests.is_some()
-        || usage_summary.total_actual_cost.is_some();
+    let has_usage =
+        usage_summary.total_requests.is_some() || usage_summary.total_actual_cost.is_some();
 
     let group = data
         .get("group")
@@ -1009,7 +998,8 @@ fn parse_new_api_user_self(body: &Value) -> Result<CodingPlanQuotaSnapshot, Stri
 
 async fn query_new_api(base_url: &str, api_key: &str) -> CodingPlanQuotaSnapshot {
     let origin = relay_origin(base_url).ok();
-    let fail = |kind: &str| empty_snapshot_ex("new_api", Some(relay_user_error(kind)), origin.clone());
+    let fail =
+        |kind: &str| empty_snapshot_ex("new_api", Some(relay_user_error(kind)), origin.clone());
     let self_url = match new_api_user_self_url(base_url) {
         Ok(u) => u,
         Err(_) => return fail("unsupported_format"),
@@ -1435,9 +1425,8 @@ fn parse_sub2api_usage(body: &Value) -> Result<CodingPlanQuotaSnapshot, String> 
 
 async fn query_sub2api(base_url: &str, api_key: &str) -> CodingPlanQuotaSnapshot {
     let origin = relay_origin(base_url).ok();
-    let fail = |kind: &str| {
-        empty_snapshot_ex("sub2api", Some(relay_user_error(kind)), origin.clone())
-    };
+    let fail =
+        |kind: &str| empty_snapshot_ex("sub2api", Some(relay_user_error(kind)), origin.clone());
     let usage_url = match sub2api_usage_url(base_url) {
         Ok(u) => u,
         Err(_) => return fail("unsupported_format"),
@@ -1711,14 +1700,11 @@ fn load_kimi_cli_credentials() -> Result<KimiCliCredentials, String> {
         .map(str::trim)
         .unwrap_or("")
         .to_string();
-    let expires_at = raw
-        .get("expires_at")
-        .and_then(|v| v.as_i64())
-        .or_else(|| {
-            raw.get("expires_at")
-                .and_then(|v| v.as_f64())
-                .map(|n| n as i64)
-        });
+    let expires_at = raw.get("expires_at").and_then(|v| v.as_i64()).or_else(|| {
+        raw.get("expires_at")
+            .and_then(|v| v.as_f64())
+            .map(|n| n as i64)
+    });
     Ok(KimiCliCredentials {
         access_token,
         refresh_token,
@@ -1773,9 +1759,7 @@ async fn refresh_kimi_cli_access_token(
     previous: &KimiCliCredentials,
 ) -> Result<KimiCliCredentials, String> {
     if refresh_token.trim().is_empty() {
-        return Err(
-            "Kimi CLI token expired and no refresh_token; run `kimi login`".to_string(),
-        );
+        return Err("Kimi CLI token expired and no refresh_token; run `kimi login`".to_string());
     }
     let client = http_client()?;
     let url = format!("{KIMI_CODE_OAUTH_HOST}/api/oauth/token");
@@ -1820,10 +1804,11 @@ async fn refresh_kimi_cli_access_token(
         .filter(|v| !v.is_empty())
         .map(str::to_string)
         .unwrap_or_else(|| previous.refresh_token.clone());
-    let expires_in = body
-        .get("expires_in")
-        .and_then(|v| v.as_i64())
-        .or_else(|| body.get("expires_in").and_then(|v| v.as_f64()).map(|n| n as i64));
+    let expires_in = body.get("expires_in").and_then(|v| v.as_i64()).or_else(|| {
+        body.get("expires_in")
+            .and_then(|v| v.as_f64())
+            .map(|n| n as i64)
+    });
     let expires_at = expires_in.map(|secs| now_unix_secs() + secs.max(0));
     let mut raw = previous.raw.clone();
     if let Some(obj) = raw.as_object_mut() {
@@ -1883,9 +1868,7 @@ async fn query_kimi_cli_status() -> CodingPlanQuotaSnapshot {
             Err(error) => {
                 return empty_snapshot(
                     "empty_credentials",
-                    Some(format!(
-                        "Kimi CLI auth failed after refresh: {error}"
-                    )),
+                    Some(format!("Kimi CLI auth failed after refresh: {error}")),
                 );
             }
         }
@@ -1910,7 +1893,7 @@ fn resolve_engine_base_url_and_key(
     match engine.as_str() {
         "kimi" => {
             // engine=kimi 额度在 get_coding_plan_quota_for_session 走 query_kimi_cli_status。
-            // 此处仅保留 mossx managed kimi provider 解析（其它调用方）；
+            // 此处仅保留 doge managed Kimi provider 解析（其它调用方）；
             // 不得在此静默用过期 access_token 冒充 CLI /status。
             let root = read_app_config_root();
             let providers = root
@@ -2359,7 +2342,11 @@ mod tests {
             None, // profile missing → may be None or official; just ensure no panic
         );
         // 无 profile 时官方 anthropic → none
-        assert!(matches!(route, QuotaRoute::None { .. }) || matches!(route, QuotaRoute::CodingPlanApi { .. }) || matches!(route, QuotaRoute::OfficialRuntime { .. }));
+        assert!(
+            matches!(route, QuotaRoute::None { .. })
+                || matches!(route, QuotaRoute::CodingPlanApi { .. })
+                || matches!(route, QuotaRoute::OfficialRuntime { .. })
+        );
     }
 
     #[test]
@@ -2379,20 +2366,20 @@ wire_api = "responses"
     #[test]
     fn sub2api_usage_url_from_root_and_v1() {
         assert_eq!(
-            sub2api_usage_url("https://fufei.mossx.ai").unwrap(),
-            "https://fufei.mossx.ai/v1/usage"
+            sub2api_usage_url("https://relay.example.com").unwrap(),
+            "https://relay.example.com/v1/usage"
         );
         assert_eq!(
-            sub2api_usage_url("https://fufei.mossx.ai/").unwrap(),
-            "https://fufei.mossx.ai/v1/usage"
+            sub2api_usage_url("https://relay.example.com/").unwrap(),
+            "https://relay.example.com/v1/usage"
         );
         assert_eq!(
-            sub2api_usage_url("https://fufei.mossx.ai/v1").unwrap(),
-            "https://fufei.mossx.ai/v1/usage"
+            sub2api_usage_url("https://relay.example.com/v1").unwrap(),
+            "https://relay.example.com/v1/usage"
         );
         assert_eq!(
-            sub2api_usage_url("https://fufei.mossx.ai/v1/").unwrap(),
-            "https://fufei.mossx.ai/v1/usage"
+            sub2api_usage_url("https://relay.example.com/v1/").unwrap(),
+            "https://relay.example.com/v1/usage"
         );
         assert_eq!(
             sub2api_usage_url("https://ai.td.ee/v1/chat/completions").unwrap(),
@@ -2493,7 +2480,10 @@ wire_api = "responses"
             }
         });
         let snap = parse_sub2api_usage(&body).expect("parse");
-        assert_eq!(snap.balance.as_ref().unwrap().items[0].total_balance, "2.59");
+        assert_eq!(
+            snap.balance.as_ref().unwrap().items[0].total_balance,
+            "2.59"
+        );
         assert_eq!(snap.plan_label.as_deref(), Some("钱包余额"));
         let usage = snap.usage_summary.expect("usage");
         assert_eq!(usage.total_requests, Some(149));
@@ -2571,7 +2561,10 @@ wire_api = "responses"
         let snap = parse_new_api_user_self(&body).expect("parse");
         assert!(snap.success);
         assert!(snap.balance.as_ref().unwrap().is_available);
-        assert_eq!(snap.balance.as_ref().unwrap().items[0].total_balance, "0.00");
+        assert_eq!(
+            snap.balance.as_ref().unwrap().items[0].total_balance,
+            "0.00"
+        );
     }
 
     #[test]
@@ -2588,7 +2581,11 @@ wire_api = "responses"
         );
         let picked = pick_better_relay_error(sub2, new_api);
         assert_eq!(picked.source, "new_api");
-        assert!(picked.error.as_deref().unwrap_or("").contains("系统访问令牌"));
+        assert!(picked
+            .error
+            .as_deref()
+            .unwrap_or("")
+            .contains("系统访问令牌"));
     }
 
     #[test]
@@ -2614,7 +2611,10 @@ wire_api = "responses"
         let snap = parse_new_api_user_self(&body).expect("parse");
         assert!(snap.success);
         assert_eq!(snap.source, "new_api");
-        assert_eq!(snap.balance.as_ref().unwrap().items[0].total_balance, "2.00");
+        assert_eq!(
+            snap.balance.as_ref().unwrap().items[0].total_balance,
+            "2.00"
+        );
         assert_eq!(snap.plan_label.as_deref(), Some("default"));
         let usage = snap.usage_summary.expect("usage");
         assert_eq!(usage.total_requests, Some(42));
@@ -2636,8 +2636,8 @@ wire_api = "responses"
     #[test]
     fn relay_origin_extracts_host() {
         assert_eq!(
-            relay_origin("https://fufei.mossx.ai/v1").unwrap(),
-            "https://fufei.mossx.ai"
+            relay_origin("https://relay.example.com/v1").unwrap(),
+            "https://relay.example.com"
         );
         assert_eq!(
             relay_origin("https://ai.td.ee/v1/chat/completions").unwrap(),
@@ -2650,7 +2650,7 @@ wire_api = "responses"
         assert!(is_official_grok_base(""));
         assert!(is_official_grok_base("https://api.x.ai/v1"));
         assert!(is_official_grok_base("https://api.x.ai"));
-        assert!(!is_official_grok_base("https://fufei.mossx.ai"));
+        assert!(!is_official_grok_base("https://relay.example.com"));
         assert!(!is_official_grok_base("https://ai.td.ee/v1"));
     }
 

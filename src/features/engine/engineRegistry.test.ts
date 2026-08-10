@@ -21,7 +21,7 @@ describe("engineRegistry", () => {
     expect(getEngineRegistryEntry("codex")).toMatchObject({
       protocolFamily: "app-server-json-rpc",
       executionModel: "persistent",
-      source: { kind: "builtin", trustOrigin: "mossx-host" },
+      source: { kind: "builtin", trustOrigin: "doge-host" },
     });
     expect(getEngineRegistryEntry("grok")).toMatchObject({
       protocolFamily: "stream-json-cli",

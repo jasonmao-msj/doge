@@ -1,6 +1,6 @@
 //! OpenCode CLI vendor/provider management.
 //!
-//! Provider definitions live in ccgui's `config.json` under the `opencode`
+//! Provider definitions live in doge's `config.json` under the `opencode`
 //! section (same pattern as claude/codex/kimi/grok providers). Unlike
 //! kimi/grok, switching a provider does NOT materialize anything into the
 //! OpenCode config file yet — the engine spawn path consumes
@@ -307,9 +307,8 @@ pub(crate) async fn vendor_read_opencode_config_json() -> Result<String, String>
         Some(path) => path,
         None => return Ok(String::new()),
     };
-    std::fs::read_to_string(&path).map_err(|error| {
-        format!("Failed to read {}: {}", path.display(), error)
-    })
+    std::fs::read_to_string(&path)
+        .map_err(|error| format!("Failed to read {}: {}", path.display(), error))
 }
 
 /// Write official OpenCode global config.
@@ -331,24 +330,18 @@ pub(crate) async fn vendor_save_opencode_config_json(content: String) -> Result<
         // Preserve user JSONC as-is; full JSONC parse is not available in-tree.
         content
     } else {
-        let value: serde_json::Value = serde_json::from_str(&content).map_err(|error| {
-            format!("Invalid JSON in {}: {error}", path.display())
-        })?;
+        let value: serde_json::Value = serde_json::from_str(&content)
+            .map_err(|error| format!("Invalid JSON in {}: {error}", path.display()))?;
         if !value.is_object() {
-            return Err(format!(
-                "{} must contain a JSON object.",
-                path.display()
-            ));
+            return Err(format!("{} must contain a JSON object.", path.display()));
         }
-        serde_json::to_string_pretty(&value).map_err(|error| {
-            format!("Failed to serialize {}: {error}", path.display())
-        })?
+        serde_json::to_string_pretty(&value)
+            .map_err(|error| format!("Failed to serialize {}: {error}", path.display()))?
     };
 
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|error| {
-            format!("Failed to create {}: {error}", parent.display())
-        })?;
+        std::fs::create_dir_all(parent)
+            .map_err(|error| format!("Failed to create {}: {error}", parent.display()))?;
     }
     let tmp_path = path.with_extension(format!(
         "{}.tmp",
@@ -356,9 +349,8 @@ pub(crate) async fn vendor_save_opencode_config_json(content: String) -> Result<
             .and_then(|ext| ext.to_str())
             .unwrap_or("json")
     ));
-    std::fs::write(&tmp_path, &to_write).map_err(|error| {
-        format!("Failed to write temp file {}: {error}", tmp_path.display())
-    })?;
+    std::fs::write(&tmp_path, &to_write)
+        .map_err(|error| format!("Failed to write temp file {}: {error}", tmp_path.display()))?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;

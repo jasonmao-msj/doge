@@ -61,6 +61,8 @@ describe("buildMainCanvasDialogueLines", () => {
       "[assistant] 助手回复",
     ]);
     expect(lines.join("\n")).not.toContain("[[mossx.collab");
+    expect(briefing).toContain("[[doge.collab.briefing]]");
+    expect(summary).toContain("[[doge.collab.summary]]");
     expect(lines.join("\n")).not.toContain("协作调度");
   });
 

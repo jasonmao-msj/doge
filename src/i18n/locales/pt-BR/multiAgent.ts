@@ -20,7 +20,7 @@ export default {
       "collabRunningLock": "Colab em andamento — a entrada libera ao terminar"
     },
     "card": {
-      "who": "Orquestração collab · mossx",
+      "who": "Orquestração collab · doge",
       "runTitle": "Colab multiagente",
       "roundTitle": "⚡ Colab · Rodada {{n}}",
       "orchestrationHint": "Após aprovar o plano, as etapas rodam em série. Abra uma etapa ou o carrossel à direita para o stream completo.",

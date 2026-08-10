@@ -9,7 +9,7 @@ const homeChat = {
     "announcementTag": "नया",
     "announcementText": "लैंडिंग टेम्पलेट, वर्कफ़्लो कार्ड और स्टार्टर prompts एक्सप्लोर करें",
     "announcementAction": "खोजें",
-    "title": "ccgui Agent, काम को आसान बनाएँ",
+    "title": "doge Agent, काम को आसान बनाएँ",
     "titleLineOne": "Enter दबाएँ",
     "titleLineTwo": "ऐप्स तेज़ी से बनाएँ",
     "subtitle": "जिस composer को आप पहले से जानते हैं उसे बनाए रखें, उसके चारों ओर एक मजबूत लैंडिंग लय जोड़ें, और कम सेटअप बाधा के साथ वास्तविक निष्पादन में आगे बढ़ें।",

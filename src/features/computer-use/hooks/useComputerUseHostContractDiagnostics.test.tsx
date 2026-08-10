@@ -36,8 +36,8 @@ function createDiagnosticsResult(): ComputerUseHostContractDiagnosticsResult {
         diagnosticMessage:
           "current host matches the last successful authorization host",
         currentHost: {
-          displayName: "ccgui.app",
-          executablePath: "/Applications/ccgui.app/Contents/MacOS/cc-gui",
+          displayName: "doge.app",
+          executablePath: "/Applications/doge.app/Contents/MacOS/cc-gui",
           identifier: "com.codex.ccgui",
           teamIdentifier: "TEAM123",
           backendMode: "local",
@@ -46,8 +46,8 @@ function createDiagnosticsResult(): ComputerUseHostContractDiagnosticsResult {
           signingSummary: "Authority=Developer ID Application: Demo",
         },
         lastSuccessfulHost: {
-          displayName: "ccgui.app",
-          executablePath: "/Applications/ccgui.app/Contents/MacOS/cc-gui",
+          displayName: "doge.app",
+          executablePath: "/Applications/doge.app/Contents/MacOS/cc-gui",
           identifier: "com.codex.ccgui",
           teamIdentifier: "TEAM123",
           backendMode: "local",

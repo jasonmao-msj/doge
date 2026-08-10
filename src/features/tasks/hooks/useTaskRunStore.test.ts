@@ -7,7 +7,7 @@ import type { TaskRunStoreData } from "../types";
 
 vi.mock("../utils/taskRunStorage", () => ({
   loadTaskRunStore: vi.fn(),
-  TASK_RUN_STORE_UPDATED_EVENT: "ccgui:task-run-store-updated",
+  TASK_RUN_STORE_UPDATED_EVENT: "doge:task-run-store-updated",
 }));
 
 const mockedLoadTaskRunStore = vi.mocked(loadTaskRunStore);
@@ -78,7 +78,7 @@ describe("useTaskRunStore", () => {
     expect(result.current.runs[0]?.runId).toBe("run-1");
 
     act(() => {
-      window.dispatchEvent(new CustomEvent("ccgui:task-run-store-updated"));
+      window.dispatchEvent(new CustomEvent("doge:task-run-store-updated"));
     });
 
     expect(result.current.runs[0]?.runId).toBe("run-3");

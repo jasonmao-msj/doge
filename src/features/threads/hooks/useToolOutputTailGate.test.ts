@@ -109,7 +109,7 @@ describe("useToolOutputTailGate", () => {
     const gate = createToolOutputTailGate({
       flushHandler: (_key, text) => flushed.push(text),
     });
-    window.localStorage.setItem("ccgui.perf.toolOutputTailGate", "off");
+    window.localStorage.setItem("doge.perf.toolOutputTailGate", "off");
     const k = buildToolOutputKey("ws-1", "item-1", "commandExecution");
     gate.submit(k, "x");
     gate.submit(k, "y");
@@ -201,7 +201,7 @@ describe("useToolOutputTailGate", () => {
   });
 
   it("uses tighter 16ms throttle when tier is aggressive", () => {
-    window.localStorage.setItem("ccgui.perf.streamingScheduleTier", "aggressive");
+    window.localStorage.setItem("doge.perf.streamingScheduleTier", "aggressive");
     const flushed: string[] = [];
     const gate = createToolOutputTailGate({
       flushHandler: (_key, text) => flushed.push(text),

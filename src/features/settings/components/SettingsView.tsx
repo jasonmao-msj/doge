@@ -15,6 +15,7 @@ import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
 import TerminalSquare from "lucide-react/dist/esm/icons/terminal-square";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import { DOGE_NAME, DOGE_REPOSITORY_URL } from "../../../config/brand";
 import Globe from "lucide-react/dist/esm/icons/globe";
 import Monitor from "lucide-react/dist/esm/icons/monitor";
 import Cog from "lucide-react/dist/esm/icons/cog";
@@ -2325,7 +2326,7 @@ export function SettingsView({
           {activeSection === "community" && (
             <section className="settings-section settings-about-section">
               <div className="settings-about-name">
-                ccgui
+                {DOGE_NAME}
                 {appVersion && (
                   <span className="settings-about-version">{appVersion}</span>
                 )}
@@ -2336,9 +2337,7 @@ export function SettingsView({
                   type="button"
                   className="ghost"
                   onClick={() =>
-                    void openUrl(
-                      "https://github.com/zhukunpenglinyutong/desktop-cc-gui",
-                    )
+                    void openUrl(DOGE_REPOSITORY_URL)
                   }
                 >
                   {t("about.github")}

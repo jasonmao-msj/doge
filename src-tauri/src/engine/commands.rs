@@ -2115,7 +2115,7 @@ pub async fn engine_send_message(
                     },
                 },
                 "modelResolution": model_resolution,
-                "mossxDispatchReceipt": dispatch_receipt,
+                "dogeDispatchReceipt": dispatch_receipt,
                 "turn": {
                     "id": turn_id,
                     "status": "started"
@@ -2195,7 +2195,7 @@ pub async fn engine_send_message(
             }
             // Always pass an explicit --model: a broken default model in the
             // user's opencode.json must not fail GUI turns. Managed providers
-            // resolve through the injected `ccgui/<model>` refs.
+            // resolve through the injected `doge/<model>` refs.
             let model_for_send = if provider_launch_profile.binding.is_some() {
                 sanitized_model
                     .or_else(|| provider_launch_profile.default_model.clone())
@@ -2346,7 +2346,7 @@ pub async fn engine_send_message(
                         "status": "started"
                     },
                 },
-                "mossxDispatchReceipt": dispatch_receipt,
+                "dogeDispatchReceipt": dispatch_receipt,
                 "turn": {
                     "id": turn_id,
                     "status": "started"
@@ -2480,10 +2480,8 @@ pub async fn engine_send_message(
                         // fusion (onAgentMessageCompleted) runs even after TextDelta.
                         // Use text-lane id so the frontend upserts the streamed bubble.
                         if !completed_text.trim().is_empty() {
-                            let completion_item_id = gemini_agent_completion_item_id(
-                                &render_state,
-                                &item_id_clone,
-                            );
+                            let completion_item_id =
+                                gemini_agent_completion_item_id(&render_state, &item_id_clone);
                             let synthetic = AppServerEvent {
                                 workspace_id: event.workspace_id().to_string(),
                                 message: json!({
@@ -2746,10 +2744,8 @@ pub async fn engine_send_message(
                         // fusion runs after normal TextDelta streaming (Claude-parity).
                         // Use text-lane id so the frontend upserts the streamed bubble.
                         if !completed_text.trim().is_empty() {
-                            let completion_item_id = gemini_agent_completion_item_id(
-                                &render_state,
-                                &item_id_clone,
-                            );
+                            let completion_item_id =
+                                gemini_agent_completion_item_id(&render_state, &item_id_clone);
                             let synthetic = AppServerEvent {
                                 workspace_id: event.workspace_id().to_string(),
                                 message: json!({
@@ -2834,7 +2830,7 @@ pub async fn engine_send_message(
                         "status": "started"
                     },
                 },
-                "mossxDispatchReceipt": dispatch_receipt,
+                "dogeDispatchReceipt": dispatch_receipt,
                 "turn": {
                     "id": turn_id,
                     "status": "started"
@@ -3014,10 +3010,8 @@ pub async fn engine_send_message(
                         // fusion runs after normal TextDelta streaming (Claude-parity).
                         // Use text-lane id so the frontend upserts the streamed bubble.
                         if !completed_text.trim().is_empty() {
-                            let completion_item_id = gemini_agent_completion_item_id(
-                                &render_state,
-                                &item_id_clone,
-                            );
+                            let completion_item_id =
+                                gemini_agent_completion_item_id(&render_state, &item_id_clone);
                             let synthetic = AppServerEvent {
                                 workspace_id: event.workspace_id().to_string(),
                                 message: json!({
@@ -3102,7 +3096,7 @@ pub async fn engine_send_message(
                         "status": "started"
                     },
                 },
-                "mossxDispatchReceipt": dispatch_receipt,
+                "dogeDispatchReceipt": dispatch_receipt,
                 "turn": {
                     "id": turn_id,
                     "status": "started"

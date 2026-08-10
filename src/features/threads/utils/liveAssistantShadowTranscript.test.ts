@@ -299,7 +299,7 @@ describe("liveAssistantShadowTranscript", () => {
     });
     flushLiveAssistantShadowTranscriptsNow();
     window.localStorage.setItem(
-      "ccgui.recovery.liveAssistantShadowTranscript.disabled",
+      "doge.recovery.liveAssistantShadowTranscript.disabled",
       "1",
     );
 

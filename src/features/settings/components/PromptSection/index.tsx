@@ -55,7 +55,7 @@ type PromptImportPayload = {
   }>;
 };
 
-const PROMPT_EXPORT_FORMAT = "ccgui-prompts-export-v1";
+const PROMPT_EXPORT_FORMAT = "doge-prompts-export-v1";
 
 function normalizePromptScope(prompt: CustomPromptOption): "workspace" | "global" {
   return prompt.scope === "workspace" ? "workspace" : "global";

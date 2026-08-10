@@ -568,7 +568,7 @@ describe("useThreads UX integration", () => {
 
   it("does not revive processing from late normalized realtime updates after turn completion", async () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     try {
       const { result } = renderHook(() =>
         useThreads({

@@ -78,8 +78,7 @@ export function useUiScaleShortcuts({
     }
     // CSS `zoom` carries uiScale; native WebView zoom is never touched.
     // setZoom (including identity writes during cold start) and transform+fill
-    // freezes are documented in
-    // docs/analysis/windows-ccgui-startup-hang-2026-08-05.md.
+    // freezes are documented in the historical Windows startup-hang analysis.
     //
     // Cold-start deferral: ANY uiScale ≠ 1 (0.8 / 0.9 / 1.1 / 1.2 / …) + early
     // clicks during list hydrate freezes WebView2 / WKWebView. Stay at identity

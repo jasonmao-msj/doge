@@ -350,7 +350,7 @@ describe("GitDiffPanel", () => {
 
   it("disables the last-config footer action for a retired engine", async () => {
       window.localStorage.setItem(
-        "ccgui.git.lastCommitMessageConfig",
+        "doge.git.lastCommitMessageConfig",
         JSON.stringify({ engine: "retired-engine", language: "en" }),
       );
       render(

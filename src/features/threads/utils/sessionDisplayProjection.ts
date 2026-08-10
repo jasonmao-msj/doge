@@ -1,7 +1,7 @@
 import type { ThreadSummary } from "../../../types";
 import {
   classifyContextProtocolText,
-  isMossxProgramControlTitle,
+  isDogeProgramControlTitle,
 } from "../../../utils/contextProtocol";
 
 const GENERIC_SESSION_TITLE_PATTERN =
@@ -36,7 +36,7 @@ function getSessionDisplayTitleStrength(
     || ORDINAL_AGENT_TITLE_PATTERN.test(normalized)
     || SHORT_HEX_TITLE_PATTERN.test(normalized)
     || COMMAND_TAG_TITLE_PATTERN.test(normalized)
-    || isMossxProgramControlTitle(normalized)
+    || isDogeProgramControlTitle(normalized)
     || classifyContextProtocolText(normalized) !== null
   ) {
     return 0;
@@ -63,7 +63,7 @@ export function selectProjectedSessionDisplayName(
   const rawMappedTitle = normalizeSessionDisplayTitle(params.mappedTitle);
   // 丢弃 control-plane mapped title（含截断后的 MOSSX_* 半截）
   const mappedTitle =
-    !isMossxProgramControlTitle(rawMappedTitle) &&
+    !isDogeProgramControlTitle(rawMappedTitle) &&
     classifyContextProtocolText(rawMappedTitle) === null
       ? rawMappedTitle
       : "";

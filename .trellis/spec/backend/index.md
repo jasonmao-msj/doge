@@ -1,4 +1,4 @@
-# Backend 开发规范（mossx / src-tauri）
+# Backend 开发规范（doge / src-tauri）
 
 本目录适用于 `src-tauri/src/**` 的 Rust backend 开发。
 
@@ -15,9 +15,10 @@
 | 文档 | 用途 |
 |---|---|
 | [Directory Structure](./directory-structure.md) | Rust 模块落位与拆分规则 |
+| [doge Storage and Serialized Compatibility](./doge-storage-and-serialized-compatibility.md) | app-home/bundle/project-local migration、dual-read/new-write namespace 与 privacy contract |
+| [Upstream Service and Release Isolation](./upstream-service-isolation.md) | upstream service removal、developer-only sync、credential/updater/release fail-closed contract |
 | [Error Handling](./error-handling.md) | `Result` 与错误传播策略 |
 | [Logging Guidelines](./logging-guidelines.md) | 日志可观测性与敏感信息约束 |
-| [Linux Native Baidu Analytics Transport](./linux-native-baidu-analytics.md) | Linux native 官方 `hm.js`、fixed native transport、匿名 cookie persistence 与 startup isolation contract |
 | [Database Guidelines](./database-guidelines.md) | 文件存储/锁/原子写规范 |
 | [Computer Use Bridge](./computer-use-bridge.md) | Computer Use status-only bridge 的 command / platform / status contract |
 | [Claude Context Usage Contract](./claude-context-usage-contract.md) | Claude home resolution、runtime `context_window`、post-turn `/context` probe 与 `UsageUpdate` payload contract |
@@ -36,7 +37,8 @@
 - 涉及文件写入时，先阅读 `storage.rs` 的 lock + atomic write 模式。
 - 涉及共享状态时，先确认 `AppState` 中锁粒度是否可复用。
 - 涉及 payload 结构变更时，同步检查 frontend `src/services/tauri.ts` mapping。
-- 涉及 `baiduTongji`、Linux native analytics 或 `hm.baidu.com` startup crash 时，先读 [Linux Native Baidu Analytics Transport](./linux-native-baidu-analytics.md)。
+- 涉及 analytics、managed provider default、updater、release signing 或 upstream sync 时，先读 [Upstream Service and Release Isolation](./upstream-service-isolation.md)。
+- 涉及 `.doge` path、legacy migration、serialized marker/MIME/env 或 daemon token 时，先读 [doge Storage and Serialized Compatibility](./doge-storage-and-serialized-compatibility.md)。
 - 涉及 Web Service frontend assets、Release ZIP、managed install 或 daemon asset candidate 时，先读 [Web Assets Package Contract](./web-assets-package-contract.md)。
 - 涉及 Claude usage/context/history 时，先读 [Claude Context Usage Contract](./claude-context-usage-contract.md)。
 - 涉及 Codex provider、`CODEX_HOME`、`start_thread` / `fork_thread` / `turn/start`、Codex history/catalog 或 app-server launch identity 时，先读 [Codex Provider-Scoped Runtime Contract](./codex-provider-scoped-runtime.md)。

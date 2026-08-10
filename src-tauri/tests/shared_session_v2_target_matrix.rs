@@ -10,13 +10,13 @@
 
 mod common;
 
-use cc_gui_lib::shared_event_log::canonical::CanonicalProviderProfileSource;
-use cc_gui_lib::shared_event_log::{open, OpenOutcome, SharedEventWriter, StoreError};
-use cc_gui_lib::shared_session_v2::{
+use common::TempStoreDir;
+use doge_lib::shared_event_log::canonical::CanonicalProviderProfileSource;
+use doge_lib::shared_event_log::{open, OpenOutcome, SharedEventWriter, StoreError};
+use doge_lib::shared_session_v2::{
     accept_turn_core, begin_turn_core, commit_turn_core, BeginTurnStatus, CommitOutcomeInput,
     EngineType, ExecutionTargetInput,
 };
-use common::TempStoreDir;
 
 const SESSION: &str = "v2-matrix-session";
 

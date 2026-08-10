@@ -54,7 +54,7 @@ test("exports renderer diagnostics from app client store", async () => {
   await runScript([`--input=${inputPath}`, `--output=${outputPath}`]);
 
   const fragment = JSON.parse(await readFile(outputPath, "utf-8"));
-  assert.equal(fragment.source, "ccgui-client-store");
+  assert.equal(fragment.source, "doge-client-store");
   assert.equal(fragment.entries.length, 1);
   assert.equal(fragment.entries[0]?.label, "realtime.turnTrace.summary");
   assert.match(fragment.notes.join("\n"), /turnTraceSummaryCount=1/);

@@ -213,11 +213,8 @@ fn apply_stage_bindings_rebuilds_when_rich_metadata_present() {
 
 #[test]
 fn persona_and_role_stack_before_base_prompt() {
-    let stacked = with_persona_and_role_prompt(
-        Some("你是 AI 工程师"),
-        Some("只修 bug"),
-        "基座内容".into(),
-    );
+    let stacked =
+        with_persona_and_role_prompt(Some("你是 AI 工程师"), Some("只修 bug"), "基座内容".into());
     assert!(stacked.contains("【智能体角色指令】"));
     assert!(stacked.contains("你是 AI 工程师"));
     assert!(stacked.contains("【本环节自定义指令】"));

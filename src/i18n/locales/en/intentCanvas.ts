@@ -32,7 +32,7 @@ const intentCanvas = {
         "Create the first diagram to sketch business intent, module relationships, and problem context.",
       noWorkspaceTitle: "Select a workspace",
       noWorkspaceBody:
-        "Intent Canvas writes files under the global ~/.ccgui/project-canvas directory, partitioned by project.",
+        "Intent Canvas writes files under the global ~/.doge/project-canvas directory, partitioned by project.",
       noSummary: "No summary yet.",
       elements: "Elements",
       files: "Files",
@@ -48,7 +48,7 @@ const intentCanvas = {
       duplicateConfirm:
         "Duplicate canvas “{{title}}”? A new Canvas copy will be created.",
       duplicateHint:
-        "The copy will be written under the global ~/.ccgui/project-canvas directory, partitioned by project.",
+        "The copy will be written under the global ~/.doge/project-canvas directory, partitioned by project.",
       deleteConfirm:
         "Delete canvas “{{title}}”? The file will be moved to trash.",
       deleteHint:

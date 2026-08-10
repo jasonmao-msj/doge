@@ -158,14 +158,14 @@ function recordContainsString(value: unknown, needle: string): boolean {
   );
 }
 
-function isCcguiClientInfo(value: unknown) {
+function isDogeClientInfo(value: unknown) {
   const record = asRecord(value);
   const clientInfo = asRecord(record?.clientInfo);
   if (!clientInfo) {
     return false;
   }
   return ["name", "title"].some(
-    (key) => asString(clientInfo[key]).toLowerCase() === "ccgui",
+    (key) => ["doge", "ccgui"].includes(asString(clientInfo[key]).toLowerCase()),
   );
 }
 
@@ -275,7 +275,7 @@ function classifyClaudeControlPlaneMessage(
   }
 
   const params = message.params ?? message.payload;
-  if (isCcguiClientInfo(params) && hasExperimentalApiCapability(params)) {
+  if (isDogeClientInfo(params) && hasExperimentalApiCapability(params)) {
     return "control-plane";
   }
 

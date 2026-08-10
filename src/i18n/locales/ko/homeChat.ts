@@ -9,7 +9,7 @@ const homeChat = {
     "announcementTag": "새 소식",
     "announcementText": "랜딩 템플릿, 워크플로 카드, 시작 프롬프트를 살펴보세요",
     "announcementAction": "둘러보기",
-    "title": "ccgui Agent로 일을 더 쉽게",
+    "title": "doge Agent로 일을 더 쉽게",
     "titleLineOne": "Enter를 누르세요",
     "titleLineTwo": "앱을 더 빠르게 만드세요",
     "subtitle": "익숙한 작성기를 그대로 유지하면서 더 강력한 랜딩 리듬을 더하고, 준비 과정의 마찰을 줄여 실제 실행으로 넘어가세요.",

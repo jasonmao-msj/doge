@@ -1,11 +1,16 @@
 import { writeClientStoreData, getClientStoreFullSync } from "./clientStorage";
 
-const FILE_STORE_MIGRATION_FLAG = "ccgui.clientStorageMigrated";
-const PREFIX_MIGRATION_FLAG = "ccgui.localStoragePrefixMigrated";
-const LEGACY_FILE_STORE_MIGRATION_FLAGS = ["mossx.clientStorageMigrated"];
+const FILE_STORE_MIGRATION_FLAG = "doge.clientStorageMigrated";
+const PREFIX_MIGRATION_FLAG = "doge.localStoragePrefixMigrated";
+const LEGACY_FILE_STORE_MIGRATION_FLAGS = [
+  "ccgui.clientStorageMigrated",
+  "mossx.clientStorageMigrated",
+];
 const LEGACY_LOCAL_STORAGE_PREFIXES: ReadonlyArray<readonly [string, string]> = [
-  ["mossx.", "ccgui."],
-  ["codemoss:", "ccgui:"],
+  ["ccgui.", "doge."],
+  ["mossx.", "doge."],
+  ["ccgui:", "doge:"],
+  ["codemoss:", "doge:"],
 ];
 
 function readLocalNum(key: string): number | undefined {
@@ -37,7 +42,7 @@ function readLocalString(key: string): string | undefined {
 }
 
 function collectPromptHistories(): Record<string, string[]> {
-  const prefix = "ccgui.promptHistory.";
+  const prefix = "doge.promptHistory.";
   const result: Record<string, string[]> = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -68,13 +73,13 @@ function migrateLegacyLocalStoragePrefixes(): void {
     }
   }
 
-  for (const key of keys) {
-    const raw = localStorage.getItem(key);
-    if (raw == null) {
-      continue;
-    }
-    for (const [legacyPrefix, nextPrefix] of LEGACY_LOCAL_STORAGE_PREFIXES) {
+  for (const [legacyPrefix, nextPrefix] of LEGACY_LOCAL_STORAGE_PREFIXES) {
+    for (const key of keys) {
       if (!key.startsWith(legacyPrefix)) {
+        continue;
+      }
+      const raw = localStorage.getItem(key);
+      if (raw == null) {
         continue;
       }
       const nextKey = `${nextPrefix}${key.slice(legacyPrefix.length)}`;
@@ -122,27 +127,27 @@ export function migrateLocalStorageToFileStore(): void {
   // --- layout ---
   const layout: Record<string, unknown> = {};
   const layoutNumKeys: [string, string][] = [
-    ["ccgui.sidebarWidth", "sidebarWidth"],
-    ["ccgui.rightPanelWidth", "rightPanelWidth"],
-    ["ccgui.planPanelHeight", "planPanelHeight"],
-    ["ccgui.terminalPanelHeight", "terminalPanelHeight"],
-    ["ccgui.debugPanelHeight", "debugPanelHeight"],
-    ["ccgui.kanbanConversationWidth", "kanbanConversationWidth"],
+    ["doge.sidebarWidth", "sidebarWidth"],
+    ["doge.rightPanelWidth", "rightPanelWidth"],
+    ["doge.planPanelHeight", "planPanelHeight"],
+    ["doge.terminalPanelHeight", "terminalPanelHeight"],
+    ["doge.debugPanelHeight", "debugPanelHeight"],
+    ["doge.kanbanConversationWidth", "kanbanConversationWidth"],
   ];
   for (const [localKey, jsonKey] of layoutNumKeys) {
     const v = readLocalNum(localKey);
     if (v !== undefined) layout[jsonKey] = v;
   }
   const layoutBoolKeys: [string, string][] = [
-    ["ccgui.sidebarCollapsed", "sidebarCollapsed"],
-    ["ccgui.rightPanelCollapsed", "rightPanelCollapsed"],
+    ["doge.sidebarCollapsed", "sidebarCollapsed"],
+    ["doge.rightPanelCollapsed", "rightPanelCollapsed"],
     ["reduceTransparency", "reduceTransparency"],
   ];
   for (const [localKey, jsonKey] of layoutBoolKeys) {
     const v = readLocalBool(localKey);
     if (v !== undefined) layout[jsonKey] = v;
   }
-  const collapsedGroups = readLocalJson<string[]>("ccgui.collapsedGroups");
+  const collapsedGroups = readLocalJson<string[]>("doge.collapsedGroups");
   if (collapsedGroups) layout.collapsedGroups = collapsedGroups;
 
   if (Object.keys(layout).length > 0) {
@@ -164,10 +169,10 @@ export function migrateLocalStorageToFileStore(): void {
   // --- threads ---
   const threads: Record<string, unknown> = {};
   const threadKeys: [string, string][] = [
-    ["ccgui.threadLastUserActivity", "lastUserActivity"],
-    ["ccgui.threadCustomNames", "customNames"],
-    ["ccgui.threadAutoTitlePending", "autoTitlePending"],
-    ["ccgui.pinnedThreads", "pinnedThreads"],
+    ["doge.threadLastUserActivity", "lastUserActivity"],
+    ["doge.threadCustomNames", "customNames"],
+    ["doge.threadAutoTitlePending", "autoTitlePending"],
+    ["doge.pinnedThreads", "pinnedThreads"],
   ];
   for (const [localKey, jsonKey] of threadKeys) {
     const v = readLocalJson(localKey);
@@ -179,11 +184,11 @@ export function migrateLocalStorageToFileStore(): void {
 
   // --- app ---
   const app: Record<string, unknown> = {};
-  const language = readLocalString("ccgui.language");
+  const language = readLocalString("doge.language");
   if (language) app.language = language;
   const openApp = readLocalString("open-workspace-app");
   if (openApp) app.openWorkspaceApp = openApp;
-  const kanban = readLocalJson("ccgui.kanban");
+  const kanban = readLocalJson("doge.kanban");
   if (kanban) app.kanban = kanban;
   if (Object.keys(app).length > 0) {
     writeClientStoreData("app", app);

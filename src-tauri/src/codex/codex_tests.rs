@@ -1047,7 +1047,7 @@ async fn hook_safe_fallback_retries_once_after_invalid_thread_start_response() {
 
     assert_eq!(result["result"]["thread"]["id"], "thread-fallback");
     assert_eq!(
-        result["ccguiHookSafeFallback"]["reason"],
+        result["dogeHookSafeFallback"]["reason"],
         "invalid_thread_start_response"
     );
     assert_eq!(ensure_calls.load(Ordering::SeqCst), 1);
@@ -1236,7 +1236,7 @@ async fn sessionstart_hook_matrix_normal_hook_stays_on_primary_path() {
     .expect("healthy SessionStart hook should keep primary create-session path");
 
     assert_eq!(result["result"]["thread"]["id"], "thread-normal-hook");
-    assert!(result.get("ccguiHookSafeFallback").is_none());
+    assert!(result.get("dogeHookSafeFallback").is_none());
     assert_eq!(fallback_ensure_calls.load(Ordering::SeqCst), 0);
     assert_eq!(start_calls.load(Ordering::SeqCst), 1);
 }
@@ -1274,7 +1274,7 @@ async fn sessionstart_hook_matrix_no_hook_stays_on_primary_path() {
     .expect("workspace without hooks should keep primary create-session path");
 
     assert_eq!(result["result"]["thread"]["id"], "thread-no-hook");
-    assert!(result.get("ccguiHookSafeFallback").is_none());
+    assert!(result.get("dogeHookSafeFallback").is_none());
     assert_eq!(fallback_ensure_calls.load(Ordering::SeqCst), 0);
     assert_eq!(start_calls.load(Ordering::SeqCst), 1);
 }
@@ -1319,7 +1319,7 @@ async fn sessionstart_hook_matrix_broken_hook_falls_back_once() {
         "thread-broken-hook-fallback"
     );
     assert_eq!(
-        result["ccguiHookSafeFallback"]["reason"],
+        result["dogeHookSafeFallback"]["reason"],
         "invalid_thread_start_response"
     );
     assert_eq!(fallback_ensure_calls.load(Ordering::SeqCst), 1);
@@ -1366,7 +1366,7 @@ async fn sessionstart_hook_matrix_slow_hook_falls_back_once() {
         "thread-slow-hook-fallback"
     );
     assert_eq!(
-        result["ccguiHookSafeFallback"]["reason"],
+        result["dogeHookSafeFallback"]["reason"],
         "thread_start_timeout"
     );
     assert_eq!(fallback_ensure_calls.load(Ordering::SeqCst), 1);

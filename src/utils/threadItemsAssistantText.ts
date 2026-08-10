@@ -14,7 +14,7 @@ const ASSISTANT_LINE_FRAGMENT_MIN_TOTAL_CHARS = 12;
 const ASSISTANT_TEXT_CACHE_MAX = 320;
 const ASSISTANT_NO_CONTENT_PLACEHOLDER_SET = new Set(["(no content)", "no content"]);
 const CLAUDE_APPROVAL_RESUME_MARKER_REGEX =
-  /<ccgui-approval-resume>([\s\S]*?)<\/ccgui-approval-resume>\s*/i;
+  /<(?:doge|ccgui)-approval-resume>([\s\S]*?)<\/(?:doge|ccgui)-approval-resume>\s*/i;
 const CLAUDE_APPROVAL_RESUME_TRAILER_REGEX =
   /\bPlease continue from the current workspace state and finish the original task\.\s*$/i;
 const CLAUDE_APPROVAL_RESUME_BLOCK_REGEX =

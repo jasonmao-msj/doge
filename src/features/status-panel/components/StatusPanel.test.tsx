@@ -1949,7 +1949,7 @@ describe("StatusPanel", () => {
   });
 
   it("gates expanded cost modules behind statusPanel costV2 flag", () => {
-    window.localStorage.setItem("ccgui.flags.statusPanel.costV2", "1");
+    window.localStorage.setItem("doge.flags.statusPanel.costV2", "1");
     render(
       <StatusPanel
         items={[editToolItem]}
@@ -1984,7 +1984,7 @@ describe("StatusPanel", () => {
       screen.getByLabelText("statusPanel.cost.tokenBreakdownLabel"),
     ).toBeTruthy();
     expect(screen.getByLabelText("statusPanel.budget.barLabel")).toBeTruthy();
-    window.localStorage.removeItem("ccgui.flags.statusPanel.costV2");
+    window.localStorage.removeItem("doge.flags.statusPanel.costV2");
   });
 
   it("shows dock todo and subagent tabs again once status data exists", () => {

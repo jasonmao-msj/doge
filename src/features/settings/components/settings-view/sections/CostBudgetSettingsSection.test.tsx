@@ -33,12 +33,12 @@ const usage = {
 
 describe("CostBudgetSettingsSection", () => {
   afterEach(() => {
-    window.localStorage.removeItem("ccgui.flags.statusPanel.costV2");
-    window.localStorage.removeItem("ccgui.statusPanel.monthlyBudget.v1");
+    window.localStorage.removeItem("doge.flags.statusPanel.costV2");
+    window.localStorage.removeItem("doge.statusPanel.monthlyBudget.v1");
   });
 
   it("updates the StatusPanel budget bar in the same app session", async () => {
-    window.localStorage.setItem("ccgui.flags.statusPanel.costV2", "1");
+    window.localStorage.setItem("doge.flags.statusPanel.costV2", "1");
     render(
       <>
         <CostBudgetSettingsSection />

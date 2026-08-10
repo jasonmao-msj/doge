@@ -22,7 +22,7 @@ export type CostHistoryStore = {
   };
 };
 
-const COST_HISTORY_STORAGE_KEY = "ccgui.statusPanel.costHistory.v1";
+const COST_HISTORY_STORAGE_KEY = "doge.statusPanel.costHistory.v1";
 const KNOWN_ENGINES: readonly EngineType[] = [
   "claude",
   "codex",

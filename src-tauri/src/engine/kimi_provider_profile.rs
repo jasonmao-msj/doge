@@ -13,8 +13,8 @@ use crate::storage::with_storage_lock;
 use crate::types::KimiProviderConfig;
 
 pub(crate) const KIMI_LOCAL_PROVIDER_PROFILE_ID: &str = "__local_config_toml__";
-const KIMI_PROVIDER_TOML_PREFIX: &str = "ccgui:";
-const KIMI_MODEL_TOML_PREFIX: &str = "ccgui/";
+const KIMI_PROVIDER_TOML_PREFIX: &str = "doge:";
+const KIMI_MODEL_TOML_PREFIX: &str = "doge/";
 const DEFAULT_KIMI_PROVIDER_TYPE: &str = "openai";
 
 #[derive(Debug, Clone)]
@@ -25,7 +25,7 @@ pub(crate) struct KimiProviderLaunchProfile {
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
-struct CodemossConfig {
+struct DogeConfig {
     #[serde(default)]
     kimi: KimiSection,
     #[serde(flatten)]
@@ -76,15 +76,15 @@ fn sanitize_provider_path_segment(provider_id: &str) -> Result<&str, String> {
     Ok(trimmed)
 }
 
-fn read_config() -> Result<CodemossConfig, String> {
+fn read_config() -> Result<DogeConfig, String> {
     let path = app_paths::config_file_path()?;
     if !path.exists() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     let content = fs::read_to_string(&path)
         .map_err(|error| format!("failed to read provider config {}: {error}", path.display()))?;
     if content.trim().is_empty() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     serde_json::from_str(&content).map_err(|error| {
         format!(
@@ -435,7 +435,7 @@ mod tests {
         let path = root.join("provider-a").join("config.toml");
         materialize_kimi_provider_at(&sample_provider(), &path, false).expect("materialize");
         let rendered = fs::read_to_string(&path).expect("read");
-        assert!(rendered.contains("ccgui:provider-a"));
+        assert!(rendered.contains("doge:provider-a"));
         assert!(rendered.contains("api_key = \"secret\""));
         #[cfg(unix)]
         {
@@ -490,7 +490,7 @@ mod tests {
         let parsed: toml::Table = toml::from_str(&rendered).expect("parse final config");
         assert_eq!(
             parsed.get("default_model").and_then(toml::Value::as_str),
-            Some("ccgui/kimi-k2")
+            Some("doge/kimi-k2")
         );
         let _ = fs::remove_dir_all(root);
     }

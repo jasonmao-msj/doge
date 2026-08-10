@@ -445,7 +445,7 @@ fn is_grok_runtime_context_user_text(raw: &str) -> bool {
 /// </user_query>
 /// ```
 ///
-/// When mossx injects [`super::cli_image_input::GROK_IMAGE_ONLY_FALLBACK_TEXT`]
+/// When the legacy image path injects [`super::cli_image_input::GROK_IMAGE_ONLY_FALLBACK_TEXT`]
 /// for image-only sends, Grok persists that string as `<user_query>…</user_query>`.
 /// The canvas must not show it as user-authored text — strip it here.
 pub(crate) fn parse_grok_user_prompt_for_display(text: &str) -> (String, Vec<String>) {
@@ -493,14 +493,16 @@ fn strip_grok_image_only_fallback_text(display: &str, has_images: bool) -> Strin
     }
     // Defense: fallback was the only line of a multi-line block that is otherwise empty.
     if has_images {
-        let without_fallback = candidates.iter().fold(trimmed.to_string(), |acc, candidate| {
-            acc.lines()
-                .filter(|line| !line.trim().eq_ignore_ascii_case(candidate))
-                .collect::<Vec<_>>()
-                .join("\n")
-                .trim()
-                .to_string()
-        });
+        let without_fallback = candidates
+            .iter()
+            .fold(trimmed.to_string(), |acc, candidate| {
+                acc.lines()
+                    .filter(|line| !line.trim().eq_ignore_ascii_case(candidate))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    .trim()
+                    .to_string()
+            });
         if without_fallback.is_empty() {
             return String::new();
         }

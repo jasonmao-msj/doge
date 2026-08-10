@@ -7,20 +7,34 @@ function readWorkspaceFile(relativePath: string): string {
 }
 
 describe("update release configuration", () => {
-  it("points the updater endpoint at the desktop-cc-gui release feed", () => {
+  it("keeps updater artifacts and trust config disabled until doge signing is ready", () => {
     const config = JSON.parse(readWorkspaceFile("src-tauri/tauri.conf.json")) as {
-      plugins?: { updater?: { endpoints?: string[] } };
+      bundle?: { createUpdaterArtifacts?: boolean };
+      plugins?: {
+        updater?: { endpoints?: string[]; pubkey?: string; active?: boolean };
+      };
     };
+    const windowsConfig = JSON.parse(
+      readWorkspaceFile("src-tauri/tauri.windows.conf.json"),
+    ) as { bundle?: { createUpdaterArtifacts?: boolean } };
 
-    expect(config.plugins?.updater?.endpoints).toContain(
-      "https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/latest/download/latest.json",
-    );
+    expect(config.bundle?.createUpdaterArtifacts).toBe(false);
+    expect(windowsConfig.bundle?.createUpdaterArtifacts).toBe(false);
+    expect(config.plugins?.updater).toEqual({ endpoints: [], pubkey: "" });
+    expect(config.plugins?.updater?.active).not.toBe(true);
   });
 
-  it("generates latest.json asset URLs from the desktop-cc-gui repo", () => {
+  it("generates release asset URLs from the doge repo", () => {
     const workflow = readWorkspaceFile(".github/workflows/release.yml");
 
-    expect(workflow).toContain("zhukunpenglinyutong/desktop-cc-gui/releases/download");
-    expect(workflow).not.toContain("zhukunpenglinyutong/ccgui/releases/download");
+    expect(workflow).toContain("jasonmao-msj/doge/releases/download");
+    expect(workflow).not.toContain("zhukunpenglinyutong/desktop-cc-gui");
+    expect(workflow).toContain("release_preflight:");
+    expect(workflow).toContain("needs: release_preflight");
+    expect(workflow).toContain("needs.release_preflight.result == 'success'");
+    expect(workflow).toContain("doge_aarch64.app.tar.gz.sig");
+    expect(workflow).toContain("doge_x86_64.app.tar.gz.sig");
+    expect(workflow).toContain("Missing Linux updater signature");
+    expect(workflow).toContain("Missing Windows updater signature");
   });
 });

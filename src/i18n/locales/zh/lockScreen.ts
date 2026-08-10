@@ -3,10 +3,10 @@ const lockScreen = {
   lockScreen: {
     lock: "锁屏",
     locked: "已锁定",
-    brandKicker: "Codemoss Product Atlas",
-    title: "ccgui 安全锁屏 · 工程能力总览",
+    brandKicker: "doge Product Atlas",
+    title: "doge 安全锁屏 · 工程能力总览",
     description:
-      "会话与任务在后台持续运行。你可以在锁屏页快速复盘 ccgui 的完整工程链路：从需求规划、执行编排、代码审阅到交付归档。",
+      "会话与任务在后台持续运行。你可以在锁屏页快速复盘 doge 的完整工程链路：从需求规划、执行编排、代码审阅到交付归档。",
     tabLabel: "锁屏内容切换",
     tabs: {
       live: "实时会话",
@@ -22,12 +22,12 @@ const lockScreen = {
     capabilityDesc:
       "这不是聊天壳，而是一套围绕工程生产力构建的本地优先 AI 工作台。",
     journeyTitle: "典型工作流",
-    journeyDesc: "一个需求在 ccgui 中通常这样落地：",
+    journeyDesc: "一个需求在 doge 中通常这样落地：",
     elementsTitle: "界面元素介绍",
     elementsDesc: "锁屏页可直接回看核心模块职责，便于团队协作时统一认知。",
     unlockTitle: "解锁面板",
     unlockDesc:
-      "密码文件为 ~/.ccgui/client/pwd.txt。若文件缺失将允许解锁并自动创建默认密码文件。",
+      "密码文件为 ~/.doge/client/pwd.txt。若文件缺失将允许解锁并自动创建默认密码文件。",
     passwordInput: "输入解锁密码",
     passwordPlaceholder: "请输入密码",
     passwordHint: "输入密码后按 Enter 或点击按钮解锁。",

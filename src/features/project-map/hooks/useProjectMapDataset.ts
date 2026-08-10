@@ -351,7 +351,7 @@ function isProjectStorageDir(
     normalizePathSeparator(value.replace(/[/\\]+$/g, ""));
   const normalizedStorageDir = normalize(storageDir);
   const normalizedWorkspacePath = normalize(workspacePath);
-  const expected = `${normalizedWorkspacePath}/.ccgui/project-map/${storageKey}`;
+  const expected = `${normalizedWorkspacePath}/.doge/project-map/${storageKey}`;
 
   if (isCaseInsensitive) {
     return normalizedStorageDir.toLowerCase() === expected.toLowerCase();
@@ -363,7 +363,7 @@ function isProjectStorageDir(
 function buildProjectWritePath(workspacePath: string, storageKey: string): string {
   const pathSeparator = workspacePath.includes("\\") ? "\\" : "/";
   const trimmedWorkspacePath = workspacePath.replace(/[\\/]+$/g, "");
-  return `${trimmedWorkspacePath}${pathSeparator}.ccgui${pathSeparator}project-map${pathSeparator}${storageKey}`;
+  return `${trimmedWorkspacePath}${pathSeparator}.doge${pathSeparator}project-map${pathSeparator}${storageKey}`;
 }
 
 function resolveWritePath(
@@ -381,9 +381,9 @@ function resolveWritePath(
     storageDir !== null &&
     isProjectStorageDir(storageDir, workspacePath, storageKey)
   ) {
-    return `.ccgui/project-map/${storageKey}`;
+    return `.doge/project-map/${storageKey}`;
   }
-  return storageDir ?? `.ccgui/project-map/${storageKey}`;
+  return storageDir ?? `.doge/project-map/${storageKey}`;
 }
 
 function resolveWorkspaceIdentity(

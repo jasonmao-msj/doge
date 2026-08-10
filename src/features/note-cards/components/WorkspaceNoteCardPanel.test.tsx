@@ -255,7 +255,7 @@ describe("WorkspaceNoteCardPanel", () => {
     await flushListLoad();
     vi.useRealTimers();
 
-    expect(screen.getByText("storage:%USERPROFILE%\\.ccgui\\note_card\\demo\\active | archive")).toBeTruthy();
+    expect(screen.getByText("storage:%USERPROFILE%\\.doge\\note_card\\demo\\active | archive")).toBeTruthy();
   });
 
   it("surfaces picker errors instead of leaving an unhandled rejection", async () => {

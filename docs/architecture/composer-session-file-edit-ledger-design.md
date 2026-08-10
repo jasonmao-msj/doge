@@ -1,6 +1,6 @@
 ---
 type: architecture
-status: draft-for-implementation
+status: active
 ---
 
 <!-- DOC-LIFECYCLE: draft-architecture-design -->

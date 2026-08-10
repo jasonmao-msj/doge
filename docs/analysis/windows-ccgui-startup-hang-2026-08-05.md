@@ -1,3 +1,8 @@
+---
+type: analysis
+status: historical
+---
+
 # Windows 本机 `cc-gui.exe` 启动卡死调研
 
 > **日期**：2026-08-05（撰写），2026-08-10（最终解决）  

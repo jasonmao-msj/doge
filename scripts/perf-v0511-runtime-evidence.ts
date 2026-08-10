@@ -761,7 +761,7 @@ function buildFileChangeDebounceMetrics() {
 }
 
 async function measureBackendFileIo() {
-  const dir = await mkdtemp(join(tmpdir(), "ccgui-v0511-file-io-"));
+  const dir = await mkdtemp(join(tmpdir(), "doge-v0511-file-io-"));
   const filePath = join(dir, "fixture.bin");
   const payload = Buffer.alloc(fileIoFixtureBytes, 7);
   const wallDurations: number[] = [];

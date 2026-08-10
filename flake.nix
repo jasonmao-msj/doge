@@ -1,5 +1,5 @@
 {
-  description = "ccgui Tauri app for orchestrating Codex agents";
+  description = "doge AI life and work assistant";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -27,7 +27,7 @@
         ];
 
         frontend = pkgs.buildNpmPackage {
-          pname = "ccgui-frontend";
+          pname = "doge-frontend";
           version = packageJson.version;
           src = ./.;
           nodejs = pkgs.nodejs_20;
@@ -49,7 +49,7 @@
         };
 
         appPackage = pkgs.rustPlatform.buildRustPackage {
-          pname = "ccgui";
+          pname = "doge";
           version = packageJson.version;
           src = ./.;
           cargoRoot = "src-tauri";
@@ -87,11 +87,11 @@
           installPhase = ''
             mkdir -p $out/bin
             target_dir="target/${pkgs.stdenv.hostPlatform.rust.rustcTarget}"
-            cp "$target_dir/release/cc-gui" $out/bin/
+            cp "$target_dir/release/doge" $out/bin/
           '';
 
           meta = {
-            mainProgram = "cc-gui";
+            mainProgram = "doge";
           };
         };
       in

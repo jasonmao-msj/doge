@@ -3,7 +3,7 @@
 .message {
   display: flex;
   margin-bottom: 12px;
-  /* 2026-08：禁用 content-visibility（对齐 jetbrains-cc-gui 的事故教训）——
+  /* 2026-08：禁用 content-visibility（对齐 reference desktop client 的事故教训）——
      屏外占位→真实高度的跳变导致 scrollHeight 骤降、浏览器 clamp、视口上跳卡半屏。
      长对话性能由虚拟化（idle）与流式尾窗兜底。 */
 }

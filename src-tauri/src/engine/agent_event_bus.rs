@@ -38,7 +38,7 @@ pub struct AgentEventProvenance {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MossxAgentEvent {
+pub struct DogeAgentEvent {
     pub schema_version: String,
     pub event_id: String,
     pub sequence: u64,
@@ -84,21 +84,21 @@ impl AgentEventBusDiagnostics {
 }
 
 struct AgentEventSink {
-    critical_tx: mpsc::UnboundedSender<MossxAgentEvent>,
-    normal_tx: mpsc::Sender<MossxAgentEvent>,
-    coalesced_deltas: Arc<Mutex<VecDeque<MossxAgentEvent>>>,
+    critical_tx: mpsc::UnboundedSender<DogeAgentEvent>,
+    normal_tx: mpsc::Sender<DogeAgentEvent>,
+    coalesced_deltas: Arc<Mutex<VecDeque<DogeAgentEvent>>>,
     coalesced_notify_tx: mpsc::UnboundedSender<()>,
 }
 
 pub struct AgentEventSubscription {
-    critical_rx: mpsc::UnboundedReceiver<MossxAgentEvent>,
-    normal_rx: mpsc::Receiver<MossxAgentEvent>,
-    coalesced_deltas: Arc<Mutex<VecDeque<MossxAgentEvent>>>,
+    critical_rx: mpsc::UnboundedReceiver<DogeAgentEvent>,
+    normal_rx: mpsc::Receiver<DogeAgentEvent>,
+    coalesced_deltas: Arc<Mutex<VecDeque<DogeAgentEvent>>>,
     coalesced_notify_rx: mpsc::UnboundedReceiver<()>,
 }
 
 impl AgentEventSubscription {
-    pub async fn recv(&mut self) -> Option<MossxAgentEvent> {
+    pub async fn recv(&mut self) -> Option<DogeAgentEvent> {
         if let Ok(event) = self.critical_rx.try_recv() {
             return Some(event);
         }
@@ -137,7 +137,10 @@ impl AgentEventBus {
     pub fn new() -> Self {
         Self {
             enabled: Arc::new(AtomicBool::new(
-                std::env::var("MOSSX_AGENT_EVENT_BUS_ENABLED").as_deref() != Ok("0"),
+                std::env::var("DOGE_AGENT_EVENT_BUS_ENABLED")
+                    .or_else(|_| std::env::var("MOSSX_AGENT_EVENT_BUS_ENABLED"))
+                    .as_deref()
+                    != Ok("0"),
             )),
             sequence: Arc::new(AtomicU64::new(0)),
             next_sink_id: Arc::new(AtomicU64::new(0)),
@@ -211,7 +214,7 @@ impl AgentEventBus {
             );
         }
         let sequence = self.sequence.fetch_add(1, Ordering::Relaxed) + 1;
-        self.publish(MossxAgentEvent {
+        self.publish(DogeAgentEvent {
             schema_version: EVENT_SCHEMA_VERSION.to_string(),
             event_id: format!("{}:{sequence}", event.workspace_id()),
             sequence,
@@ -252,7 +255,7 @@ impl AgentEventBus {
         }
         drop(settled_runs);
         let sequence = self.sequence.fetch_add(1, Ordering::Relaxed) + 1;
-        self.publish(MossxAgentEvent {
+        self.publish(DogeAgentEvent {
             schema_version: EVENT_SCHEMA_VERSION.to_string(),
             event_id: format!("{logical_session_id}:{sequence}"),
             sequence,
@@ -274,7 +277,7 @@ impl AgentEventBus {
         })
     }
 
-    fn publish(&self, event: MossxAgentEvent) -> bool {
+    fn publish(&self, event: DogeAgentEvent) -> bool {
         self.diagnostics.published.fetch_add(1, Ordering::Relaxed);
         let mut dead_sink_ids = Vec::new();
         let sinks = self.sinks.lock().expect("agent event sinks poisoned");
@@ -317,7 +320,7 @@ impl AgentEventBus {
     }
 }
 
-fn coalesce_delta(pending: &mut VecDeque<MossxAgentEvent>, event: MossxAgentEvent) {
+fn coalesce_delta(pending: &mut VecDeque<DogeAgentEvent>, event: DogeAgentEvent) {
     if let Some(existing) = pending.iter_mut().find(|existing| {
         existing.logical_session_id == event.logical_session_id
             && existing.turn_id == event.turn_id

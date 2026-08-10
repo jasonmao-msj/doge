@@ -202,7 +202,7 @@ const sidebar = {
         "sectionTitle": "서버 세부 정보",
         "source": "원본",
         "sourceClaude": "~/.claude.json",
-        "sourceCcgui": "~/.ccgui/config.json",
+        "sourceDoge": "~/.doge/config.json",
         "transport": "전송",
         "transportUnknown": "알 수 없는 전송",
         "command": "명령",

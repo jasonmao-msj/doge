@@ -14,7 +14,7 @@ import {
 import { matchesWorkspacePath } from "./useThreadActions.workspacePath";
 import {
   classifyContextProtocolText,
-  isMossxProgramControlTitle,
+  isDogeProgramControlTitle,
 } from "../../../utils/contextProtocol";
 
 const CLAUDE_HISTORY_MESSAGE_ID_REGEX =
@@ -1272,7 +1272,7 @@ export function isSharedControlPlaneSpawnTitle(
   const normalized = typeof value === "string" ? value.trim() : "";
   if (!normalized) return false;
   // 行首 MOSSX_：覆盖截断 title（主缺口）与全部已知 control token
-  if (isMossxProgramControlTitle(normalized)) {
+  if (isDogeProgramControlTitle(normalized)) {
     return true;
   }
   // 完整 protocol envelope（未截断 multi-line 也可能被 classify 命中）

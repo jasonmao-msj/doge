@@ -869,7 +869,7 @@ fn attach_codex_dispatch_receipt(
 ) -> Value {
     if let Some(root) = response.as_object_mut() {
         root.insert(
-            "mossxDispatchReceipt".to_string(),
+            "dogeDispatchReceipt".to_string(),
             json!({
                 "engine": "codex",
                 "providerProfileId": provider_profile_id,
@@ -1240,7 +1240,7 @@ pub(crate) async fn probe_thread_inject_items_core(
         .send_request(
             "thread/inject_items",
             json!({
-                "threadId": "mossx-capability-probe-no-thread",
+                "threadId": "doge-capability-probe-no-thread",
                 "items": [],
             }),
         )
@@ -1281,21 +1281,21 @@ mod tests {
             Some("high"),
         );
 
-        assert_eq!(response["mossxDispatchReceipt"]["engine"], "codex");
+        assert_eq!(response["dogeDispatchReceipt"]["engine"], "codex");
         assert_eq!(
-            response["mossxDispatchReceipt"]["providerProfileId"],
+            response["dogeDispatchReceipt"]["providerProfileId"],
             "provider-kimi"
         );
         assert_eq!(
-            response["mossxDispatchReceipt"]["providerRuntimeKey"],
+            response["dogeDispatchReceipt"]["providerRuntimeKey"],
             "workspace::provider-kimi"
         );
         assert_eq!(
-            response["mossxDispatchReceipt"]["providerProfileSource"],
+            response["dogeDispatchReceipt"]["providerProfileSource"],
             "managed"
         );
-        assert_eq!(response["mossxDispatchReceipt"]["model"], "kimi-for-coding");
-        assert_eq!(response["mossxDispatchReceipt"]["reasoningEffort"], "high");
+        assert_eq!(response["dogeDispatchReceipt"]["model"], "kimi-for-coding");
+        assert_eq!(response["dogeDispatchReceipt"]["reasoningEffort"], "high");
     }
 
     #[test]
@@ -1308,20 +1308,20 @@ mod tests {
             None,
         );
 
-        assert!(response["mossxDispatchReceipt"]["providerProfileId"].is_null());
+        assert!(response["dogeDispatchReceipt"]["providerProfileId"].is_null());
         assert_eq!(
-            response["mossxDispatchReceipt"]["providerProfileSource"],
+            response["dogeDispatchReceipt"]["providerProfileSource"],
             "local"
         );
         assert_eq!(
-            response["mossxDispatchReceipt"]["providerRuntimeKey"],
+            response["dogeDispatchReceipt"]["providerRuntimeKey"],
             "workspace-local"
         );
         assert_eq!(
-            response["mossxDispatchReceipt"]["model"],
+            response["dogeDispatchReceipt"]["model"],
             "gpt-5.3-codex-spark"
         );
-        assert!(response["mossxDispatchReceipt"]["reasoningEffort"].is_null());
+        assert!(response["dogeDispatchReceipt"]["reasoningEffort"].is_null());
     }
 
     #[test]

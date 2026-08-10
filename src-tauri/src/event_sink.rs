@@ -100,7 +100,8 @@ pub(crate) const APP_SERVER_EVENT_BATCH: &str = "app-server-event-batch";
 pub(crate) const APP_SERVER_EVENT_BATCH_STATS: &str = "app-server-event-batch-stats";
 const BATCH_FLUSH_INTERVAL_MS: u64 = 40;
 const BATCH_STATS_INTERVAL_MS: u64 = 1_000;
-const APP_SERVER_EVENT_BATCH_ENV: &str = "CCGUI_APP_SERVER_EVENT_BATCH";
+const APP_SERVER_EVENT_BATCH_ENV: &str = "DOGE_APP_SERVER_EVENT_BATCH";
+const LEGACY_APP_SERVER_EVENT_BATCH_ENV: &str = "CCGUI_APP_SERVER_EVENT_BATCH";
 const TERMINAL_BARRIER_METHODS: &[&str] = &["turn/completed", "turn/error", "runtime/ended"];
 const URGENT_BYPASS_METHODS: &[&str] = &[
     "item/tool/requestUserInput",
@@ -458,7 +459,10 @@ fn parse_app_server_event_batch_enabled(value: Option<&str>) -> bool {
 }
 
 pub(crate) fn app_server_event_batch_enabled() -> bool {
-    parse_app_server_event_batch_enabled(env::var(APP_SERVER_EVENT_BATCH_ENV).ok().as_deref())
+    let configured = env::var(APP_SERVER_EVENT_BATCH_ENV)
+        .or_else(|_| env::var(LEGACY_APP_SERVER_EVENT_BATCH_ENV))
+        .ok();
+    parse_app_server_event_batch_enabled(configured.as_deref())
 }
 
 /// Build the appropriate event sink for the runtime configuration.

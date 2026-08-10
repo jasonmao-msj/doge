@@ -42,7 +42,7 @@ const balanceQuota: SessionOverviewQuotaView = {
 
 const sub2apiQuota: SessionOverviewQuotaView = {
   source: "coding_plan",
-  providerLabel: "https://fufei.mossx.ai sub2api",
+  providerLabel: "https://relay.example.com sub2api",
   showRemaining: false,
   planType: "钱包余额",
   windows: [],
@@ -98,7 +98,7 @@ describe("SessionControlQuotaPane", () => {
     expect(pane.textContent).toMatch(/6\.6K\s*\/\s*11/);
     expect(pane.textContent).toMatch(/19\.7K/);
     expect(pane.textContent).toMatch(/3\.88s/);
-    expect(pane.textContent).toContain("https://fufei.mossx.ai sub2api");
+    expect(pane.textContent).toContain("https://relay.example.com sub2api");
   });
 
   it("shows friendly error without raw http body", () => {

@@ -260,8 +260,8 @@ describe("useThreadEventHandlers diagnostics", () => {
     vi.setSystemTime(new Date("2026-04-18T10:00:00.000Z"));
     turnHookFactory.setOnTurnCompletedOverride(null);
     itemHookFactory.reset();
-    window.localStorage.removeItem("ccgui.debug.turnDiagnosticsVerbose");
-    window.localStorage.removeItem("ccgui.debug.turnTrace.enabled");
+    window.localStorage.removeItem("doge.debug.turnDiagnosticsVerbose");
+    window.localStorage.removeItem("doge.debug.turnTrace.enabled");
     streamLatencyMocks.getCurrentClaudeConfig.mockReset();
     streamLatencyMocks.queryTurnReconciliationStatus.mockReset();
     streamLatencyMocks.queryTurnReconciliationStatus.mockResolvedValue({
@@ -285,7 +285,7 @@ describe("useThreadEventHandlers diagnostics", () => {
   });
 
   afterEach(() => {
-    window.localStorage.removeItem("ccgui.debug.turnTrace.enabled");
+    window.localStorage.removeItem("doge.debug.turnTrace.enabled");
     vi.useRealTimers();
     vi.clearAllMocks();
   });
@@ -2664,8 +2664,8 @@ describe("useThreadEventHandlers diagnostics", () => {
   });
 
   it("emits detailed diagnostics when verbose flag is enabled", () => {
-    window.localStorage.setItem("ccgui.debug.turnDiagnosticsVerbose", "1");
-    window.localStorage.setItem("ccgui.debug.turnTrace.enabled", "1");
+    window.localStorage.setItem("doge.debug.turnDiagnosticsVerbose", "1");
+    window.localStorage.setItem("doge.debug.turnTrace.enabled", "1");
     const onDebug = vi.fn();
     const { result } = renderHook(() => useThreadEventHandlers(makeOptions(onDebug)));
 
@@ -2706,7 +2706,7 @@ describe("useThreadEventHandlers diagnostics", () => {
   });
 
   it("includes latest progress evidence in terminal diagnostics", () => {
-    window.localStorage.setItem("ccgui.debug.turnDiagnosticsVerbose", "1");
+    window.localStorage.setItem("doge.debug.turnDiagnosticsVerbose", "1");
     const onDebug = vi.fn();
     const { result } = renderHook(() => useThreadEventHandlers(makeOptions(onDebug)));
 
@@ -2736,7 +2736,7 @@ describe("useThreadEventHandlers diagnostics", () => {
   });
 
   it("includes correlated provider fingerprint and mitigation evidence on completion", async () => {
-    window.localStorage.setItem("ccgui.debug.turnDiagnosticsVerbose", "1");
+    window.localStorage.setItem("doge.debug.turnDiagnosticsVerbose", "1");
     streamLatencyMocks.isWindowsPlatform.mockReturnValue(true);
     streamLatencyMocks.getCurrentClaudeConfig.mockResolvedValue({
       apiKey: "",
@@ -2790,7 +2790,7 @@ describe("useThreadEventHandlers diagnostics", () => {
   });
 
   it("treats growing claude agentMessage snapshots as streaming ingress for markdown recovery", async () => {
-    window.localStorage.setItem("ccgui.debug.turnDiagnosticsVerbose", "1");
+    window.localStorage.setItem("doge.debug.turnDiagnosticsVerbose", "1");
     await primeThreadStreamLatencyContext({
       workspaceId: "ws-1",
       threadId: "claude:session-snapshot",
@@ -2839,7 +2839,7 @@ describe("useThreadEventHandlers diagnostics", () => {
   });
 
   it("ignores unchanged claude agentMessage snapshots when counting streaming ingress", async () => {
-    window.localStorage.setItem("ccgui.debug.turnDiagnosticsVerbose", "1");
+    window.localStorage.setItem("doge.debug.turnDiagnosticsVerbose", "1");
     await primeThreadStreamLatencyContext({
       workspaceId: "ws-1",
       threadId: "claude:session-snapshot-static",

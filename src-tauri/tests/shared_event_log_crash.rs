@@ -21,11 +21,11 @@ use std::process::{Child, Command, Stdio};
 use std::sync::mpsc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use cc_gui_lib::shared_event_log::{
+use common::TempStoreDir;
+use doge_lib::shared_event_log::{
     open, open_crash_test_writer, AppendOutcome, Fidelity, NewCanonicalEvent, OpenOutcome,
     SharedEventWriter, TxBoundary,
 };
-use common::TempStoreDir;
 
 const VICTIM_FLAG_ENV: &str = "MOSSX_STORE_VICTIM";
 const VICTIM_DB_ENV: &str = "MOSSX_STORE_VICTIM_DB";

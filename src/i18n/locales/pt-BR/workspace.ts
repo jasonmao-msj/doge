@@ -245,13 +245,13 @@ const workspace = {
     "threads": "threads",
     "deleteWorkspaceTitle": "Remover workspace",
     "deleteWorkspaceConfirm": "Tem certeza de que deseja remover \"{{name}}\"?",
-    "deleteWorkspaceMessage": "Isso removerá o workspace do ccgui.",
+    "deleteWorkspaceMessage": "Isso removerá o workspace do doge.",
     "deleteWorkspaceWorktreeWarning": "Isso também excluirá {{count}} worktree do disco.",
     "deleteWorkspaceWorktreeWarning_other": "Isso também excluirá {{count}} worktrees do disco.",
     "deleteWorkspaceBeforeYouConfirm": "Antes de continuar:",
     "deleteWorkspaceWillHappenTitle": "O que vai acontecer:",
     "deleteWorkspaceWillNotHappenTitle": "O que não vai acontecer:",
-    "deleteWorkspaceEffectListOnly": "O workspace será removido apenas da lista do ccgui.",
+    "deleteWorkspaceEffectListOnly": "O workspace será removido apenas da lista do doge.",
     "deleteWorkspaceEffectSessions": "As sessões ativas sob este workspace (e worktrees vinculados) serão fechadas.",
     "deleteWorkspaceEffectDeleteWorktrees": "{{count}} pasta de worktree vinculada no disco será excluída.",
     "deleteWorkspaceEffectDeleteWorktrees_other": "{{count}} pastas de worktree vinculadas no disco serão excluídas.",
@@ -267,7 +267,7 @@ const workspace = {
     "reloadWorkspaceThreadsEffectNoGitWrite": "Não executar checkout/merge/rebase ou qualquer outra operação de gravação do Git.",
     "deleteWorktreeTitle": "Excluir worktree",
     "deleteWorktreeConfirm": "Tem certeza de que deseja excluir \"{{name}}\"?",
-    "deleteWorktreeMessage": "Isso fechará o agent, removerá seu worktree e o excluirá do ccgui.",
+    "deleteWorktreeMessage": "Isso fechará o agent, removerá seu worktree e o excluirá do doge.",
     "deleteWorktreeFailed": "Falha ao excluir o worktree"
   }
 };

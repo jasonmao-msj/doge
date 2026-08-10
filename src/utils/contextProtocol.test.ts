@@ -4,8 +4,8 @@ import {
   classifyContextProtocolText,
   filterContextProtocolConversationItems,
   hasContextProtocolControlTail,
-  isMossxProgramControlTitle,
-  MOSSX_PROGRAM_CONTROL_TITLE_TOKENS,
+  isDogeProgramControlTitle,
+  DOGE_PROGRAM_CONTROL_TITLE_TOKENS,
 } from "./contextProtocol";
 
 const PACKAGE = `sha256:${"a".repeat(64)}`;
@@ -13,6 +13,16 @@ const CHECKSUM = `sha256:${"b".repeat(64)}`;
 
 describe("classifyContextProtocolText", () => {
   it("recognizes exact package and acceptance markers", () => {
+    expect(
+      classifyContextProtocolText(
+        `DOGE_CONTEXT_PACKAGE:${PACKAGE}:${CHECKSUM}`,
+      ),
+    ).toBe("context-package");
+    expect(
+      classifyContextProtocolText(
+        `DOGE_CONTEXT_ACCEPTED:${PACKAGE}:${CHECKSUM}`,
+      ),
+    ).toBe("context-accepted");
     expect(
       classifyContextProtocolText(
         `MOSSX_CONTEXT_PACKAGE:${PACKAGE}:${CHECKSUM}`,
@@ -83,9 +93,13 @@ describe("classifyContextProtocolText", () => {
   });
 });
 
-describe("isMossxProgramControlTitle", () => {
+describe("isDogeProgramControlTitle", () => {
   it("lists the full runtime control token inventory", () => {
-    expect([...MOSSX_PROGRAM_CONTROL_TITLE_TOKENS]).toEqual([
+    expect([...DOGE_PROGRAM_CONTROL_TITLE_TOKENS]).toEqual([
+      "DOGE_CONTEXT_PACKAGE",
+      "DOGE_CONTEXT_ACCEPTED",
+      "DOGE_NATIVE_CONTEXT_V1",
+      "DOGE_SHARED_CONTEXT_V1",
       "MOSSX_CONTEXT_PACKAGE",
       "MOSSX_CONTEXT_ACCEPTED",
       "MOSSX_NATIVE_CONTEXT_V1",
@@ -94,25 +108,25 @@ describe("isMossxProgramControlTitle", () => {
   });
 
   it("matches line-start MOSSX_ titles including truncated package hashes", () => {
-    for (const token of MOSSX_PROGRAM_CONTROL_TITLE_TOKENS) {
-      expect(isMossxProgramControlTitle(`${token}:partial`)).toBe(true);
+    for (const token of DOGE_PROGRAM_CONTROL_TITLE_TOKENS) {
+      expect(isDogeProgramControlTitle(`${token}:partial`)).toBe(true);
     }
     expect(
-      isMossxProgramControlTitle("MOSSX_CONTEXT_PACKAGE:sha25…"),
+      isDogeProgramControlTitle("MOSSX_CONTEXT_PACKAGE:sha25…"),
     ).toBe(true);
-    expect(isMossxProgramControlTitle("  MOSSX_SHARED_CONTEXT_V1\nbody")).toBe(
+    expect(isDogeProgramControlTitle("  MOSSX_SHARED_CONTEXT_V1\nbody")).toBe(
       true,
     );
   });
 
   it("does not match user prose that only mentions MOSSX mid-sentence", () => {
     expect(
-      isMossxProgramControlTitle(
+      isDogeProgramControlTitle(
         "请解释 MOSSX_CONTEXT_PACKAGE 是什么，不要隐藏这条消息",
       ),
     ).toBe(false);
-    expect(isMossxProgramControlTitle("Agent 12")).toBe(false);
-    expect(isMossxProgramControlTitle("")).toBe(false);
+    expect(isDogeProgramControlTitle("Agent 12")).toBe(false);
+    expect(isDogeProgramControlTitle("")).toBe(false);
   });
 });
 

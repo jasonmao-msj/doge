@@ -20,7 +20,7 @@ export default {
       "collabRunningLock": "Collab चल रहा है — खत्म होने पर इनपुट खुलेगा"
     },
     "card": {
-      "who": "Collab ऑर्केस्ट्रेशन · mossx",
+      "who": "Collab ऑर्केस्ट्रेशन · doge",
       "runTitle": "मल्टी-एजेंट collab",
       "roundTitle": "⚡ Collab · राउंड {{n}}",
       "orchestrationHint": "योजना स्वीकृति के बाद चरण क्रम से चलते हैं। पूरा स्ट्रीम चरण या दाएँ कैरसेल में देखें।",
