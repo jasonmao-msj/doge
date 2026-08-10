@@ -19,6 +19,6 @@ describe("settings sidebar compact layout", () => {
   it("keeps the expanded settings sidebar narrow enough to avoid a blank gutter", () => {
     const bodyRule = getCssRuleBlock(settingsCss, ".settings-body");
 
-    expect(bodyRule).toContain("grid-template-columns: 180px minmax(0, 1fr);");
+    expect(bodyRule).toContain("grid-template-columns: 200px minmax(0, 1fr);");
   });
 });

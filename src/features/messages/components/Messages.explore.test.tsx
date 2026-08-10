@@ -699,6 +699,11 @@ describe("Messages explore rows", () => {
       />,
     );
 
+    const processSummaryToggle = container.querySelector(
+      ".messages-process-phase-toggle",
+    );
+    expect(processSummaryToggle).toBeTruthy();
+    fireEvent.click(processSummaryToggle as HTMLElement);
     await waitFor(() => {
       const exploreBlocks = container.querySelectorAll(".explore-inline");
       expect(exploreBlocks.length).toBe(2);

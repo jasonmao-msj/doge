@@ -577,7 +577,7 @@ describe("GitDiffPanel", () => {
 
       expect(await screen.findByRole("radio", { name: "Codex" })).toBeTruthy();
       expect(screen.getByRole("radio", { name: "Claude Code" })).toBeTruthy();
-      expect(screen.getByRole("button", { name: "Use last configuration" })).toBeTruthy();
+      expect(screen.getByRole("button", { name: /^Use last configuration/ })).toBeTruthy();
       expect(screen.getByRole("button", { name: "English" })).toBeTruthy();
       expect(onGenerateCommitMessage).not.toHaveBeenCalled();
     });
@@ -594,7 +594,7 @@ describe("GitDiffPanel", () => {
         />,
       );
       fireEvent.click(screen.getByRole("button", { name: "Generate commit message" }));
-      fireEvent.click(await screen.findByRole("button", { name: "Use last configuration" }));
+      fireEvent.click(await screen.findByRole("button", { name: /^Use last configuration/ }));
 
       await waitFor(() => {
         expect(onGenerateCommitMessage).toHaveBeenCalledWith("zh", "codex");

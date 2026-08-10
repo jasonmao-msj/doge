@@ -381,11 +381,16 @@ mod execution_target_contract_tests {
 
     #[test]
     fn execution_target_validation_rejects_mismatched_catalog_runtime_pair() {
+        let catalog = crate::engine::status::get_local_engine_models_for_validation(
+            EngineType::Codex,
+        )
+        .expect("Codex local catalog");
+        let selected = catalog.first().expect("non-empty Codex local catalog");
         let valid = ExecutionTargetInput {
             engine: EngineType::Codex,
             provider_profile_id: None,
-            model_catalog_entry_id: Some("gpt-5.3-codex-spark".to_string()),
-            model: Some("gpt-5.3-codex-spark".to_string()),
+            model_catalog_entry_id: Some(selected.id.clone()),
+            model: Some(selected.model.clone()),
             reasoning_effort: None,
             provider_profile_name_snapshot: Some("本地配置".to_string()),
             provider_profile_source: Some(CanonicalProviderProfileSource::Local),
@@ -402,7 +407,7 @@ mod execution_target_contract_tests {
         };
         assert!(validate_resolved_execution_target(&poisoned)
             .expect_err("mismatched runtime model must fail before the turn is persisted")
-            .contains("requires runtime model 'gpt-5.3-codex-spark'"));
+            .contains(&format!("requires runtime model '{}'", selected.model)));
     }
 
     #[test]
@@ -7108,14 +7113,14 @@ mod native_continuation_import_tests {
     }
 
     #[test]
-    fn codex_zero_delta_projection_does_not_create_marker_only_import() {
+    fn codex_zero_delta_projection_is_rejected_before_marker_import() {
         let source = NativeHistorySource {
             session_id: "codex:source".to_string(),
             native_session_id: "source".to_string(),
             engine: NativeHistoryEngine::Codex,
             provider_profile_id: Some("provider-a".to_string()),
         };
-        let package = compile_native_context(&CompileNativeContextRequest {
+        let error = compile_native_context(&CompileNativeContextRequest {
             session_id: source.session_id.clone(),
             binding_key: "continuation:op".to_string(),
             destination: json!({"engine": "codex"}),
@@ -7139,10 +7144,8 @@ mod native_continuation_import_tests {
             },
             budget_estimated_tokens: None,
         })
-        .expect("compile empty projection");
+        .expect_err("empty projection must fail before marker-only import");
 
-        let (items, dropped) = codex_import_projection(&package);
-        assert!(items.is_empty());
-        assert_eq!(dropped, 0);
+        assert_eq!(error, "native history has no portable context entries");
     }
 }

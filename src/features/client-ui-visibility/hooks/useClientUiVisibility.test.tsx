@@ -105,7 +105,10 @@ describe("useClientUiVisibility", () => {
       CLIENT_UI_VISIBILITY_STORE,
       CLIENT_UI_VISIBILITY_KEY,
       {
-        panels: {},
+        panels: {
+          topToolControls: true,
+          rightActivityToolbar: true,
+        },
         controls: {
           "topTool.clientDocumentation": false,
           "bottomActivity.checkpointDetails": false,

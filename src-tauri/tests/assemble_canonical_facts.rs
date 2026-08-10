@@ -25,10 +25,10 @@ const SESSION: &str = "a2-session";
 fn rust_facts_round_trip_wave0_valid_schema_fixtures() {
     for source in [
         include_str!(
-            "../../openspec/changes/establish-session-foundation-contracts/schemas/examples/valid/turn-committed.json"
+            "../../openspec/changes/archive/2026-08-03-establish-session-foundation-contracts/schemas/examples/valid/turn-committed.json"
         ),
         include_str!(
-            "../../openspec/changes/establish-session-foundation-contracts/schemas/examples/valid/control-fact.json"
+            "../../openspec/changes/archive/2026-08-03-establish-session-foundation-contracts/schemas/examples/valid/control-fact.json"
         ),
     ] {
         let envelope: serde_json::Value = serde_json::from_str(source).expect("fixture json");

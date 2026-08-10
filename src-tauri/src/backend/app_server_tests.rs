@@ -134,6 +134,7 @@ fn spawn_test_runtime_process() -> (tokio::process::Child, String) {
         command.stdin(Stdio::piped());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
+        WorkspaceSession::configure_spawn_command(&mut command);
         let child = command
             .spawn()
             .unwrap_or_else(|error| panic!("failed to spawn {command_path}: {error}"));
@@ -147,6 +148,7 @@ fn spawn_test_runtime_process() -> (tokio::process::Child, String) {
         command.stdin(Stdio::piped());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
+        WorkspaceSession::configure_spawn_command(&mut command);
         let child = command
             .spawn()
             .unwrap_or_else(|error| panic!("failed to spawn {command_path}: {error}"));
@@ -231,7 +233,7 @@ async fn send_provider_turn_and_capture(
     effort: &str,
     runtime_turn_id: &str,
 ) -> (Value, Value) {
-    let send_task = tokio::spawn({
+    let mut send_task = tokio::spawn({
         let sessions = Arc::clone(sessions);
         let workspace_id = workspace_id.to_string();
         let provider_profile_id = provider_profile_id.to_string();
@@ -257,11 +259,17 @@ async fn send_provider_turn_and_capture(
             .await
         }
     });
-    let line = tokio::time::timeout(Duration::from_secs(2), lines.next_line())
-        .await
-        .expect("request reached expected provider runtime before timeout")
-        .expect("read provider request")
-        .expect("provider request line");
+    let line = tokio::select! {
+        result = &mut send_task => {
+            panic!("provider send settled before emitting a runtime request: {result:?}");
+        }
+        result = tokio::time::timeout(Duration::from_secs(2), lines.next_line()) => {
+            result
+                .expect("request reached expected provider runtime before timeout")
+                .expect("read provider request")
+                .expect("provider request line")
+        }
+    };
     let request: Value = serde_json::from_str(&line).expect("valid provider request");
     settle_echoed_test_request(
         session,
@@ -273,6 +281,12 @@ async fn send_provider_turn_and_capture(
         .await
         .expect("provider send task")
         .expect("provider send succeeds");
+    // The production terminal path releases this reservation. This focused
+    // routing test settles only the JSON-RPC ACK, so mirror terminal cleanup
+    // before sending the next turn on the same provider runtime.
+    session
+        .release_codex_user_dispatch_reservation("shared-native-1")
+        .await;
     (request, response)
 }
 

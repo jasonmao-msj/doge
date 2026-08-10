@@ -58,6 +58,8 @@ export type GetOpenCodeSessionListOptions = {
    * full wall-clock in command cost rank.
    */
   timeoutMs?: number;
+  /** Preserve timeout as null so callers can distinguish it from an authoritative empty list. */
+  timeoutResult?: "empty" | "null";
 };
 
 export async function getOpenCodeSessionList(
@@ -86,7 +88,7 @@ export async function getOpenCodeSessionList(
             invokePromise,
             options.timeoutMs,
           );
-          return budgeted ?? [];
+          return budgeted ?? (options.timeoutResult === "null" ? null : []);
         }
         return await invokePromise;
       } catch (error) {

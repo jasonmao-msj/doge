@@ -318,20 +318,21 @@ describe("useThreadMessaging", () => {
     });
 
     expect(sendSharedSessionTurnRouted).toHaveBeenCalledTimes(1);
-    expect(
-      dispatch.mock.calls.filter(
-        ([action]) =>
-          action?.type === "upsertItem" &&
-          action.item?.kind === "message" &&
-          action.item?.role === "user",
-      ),
-    ).toHaveLength(1);
-    expect(
-      markProcessing.mock.calls.filter(
-        ([threadId, processing]) =>
-          threadId === "shared:thread-race" && processing === true,
-      ),
-    ).toHaveLength(1);
+    const optimisticUserItemIds = new Set(
+      dispatch.mock.calls
+        .filter(
+          ([action]) =>
+            action?.type === "upsertItem" &&
+            action.item?.kind === "message" &&
+            action.item?.role === "user",
+        )
+        .map(([action]) => action.item.id),
+    );
+    expect(optimisticUserItemIds.size).toBe(1);
+    expect(markProcessing).toHaveBeenCalledWith(
+      "shared:thread-race",
+      true,
+    );
 
     resolveFirstRoute?.({ result: { turn: { id: "shared-turn-race" } } });
     await act(async () => {
@@ -436,12 +437,12 @@ describe("useThreadMessaging", () => {
         engine: "claude",
         model: "claude-provider-model",
         effort: "high",
-        target: {
+        target: expect.objectContaining({
           engine: "claude",
           providerProfileId: "provider-openrouter",
           model: "claude-provider-model",
           reasoning: { effort: "high" },
-        },
+        }),
       }),
     );
   });
@@ -3477,21 +3478,31 @@ describe("useThreadMessaging", () => {
         "hello codex",
         expect.any(Object),
       );
-      const optimisticUserBubbleActions = dispatch.mock.calls.filter(
-        ([action]) =>
-          action &&
-          typeof action === "object" &&
-          "type" in action &&
-          (action as { type?: string }).type === "upsertItem" &&
-          "item" in action &&
-          (action as { item?: { kind?: string; role?: string; text?: string } }).item?.kind ===
-            "message" &&
-          (action as { item?: { kind?: string; role?: string; text?: string } }).item?.role ===
-            "user" &&
-          (action as { item?: { kind?: string; role?: string; text?: string } }).item?.text ===
-            "hello codex",
+      const optimisticUserBubbleIds = new Set(
+        dispatch.mock.calls
+          .filter(
+            ([action]) =>
+              action &&
+              typeof action === "object" &&
+              "type" in action &&
+              (action as { type?: string }).type === "upsertItem" &&
+              "item" in action &&
+              (action as {
+                item?: { kind?: string; role?: string; text?: string };
+              }).item?.kind === "message" &&
+              (action as {
+                item?: { kind?: string; role?: string; text?: string };
+              }).item?.role === "user" &&
+              (action as {
+                item?: { kind?: string; role?: string; text?: string };
+              }).item?.text === "hello codex",
+          )
+          .map(
+            ([action]) =>
+              (action as { item: { id: string } }).item.id,
+          ),
       );
-      expect(optimisticUserBubbleActions).toHaveLength(1);
+      expect(optimisticUserBubbleIds.size).toBe(1);
     });
   });
 

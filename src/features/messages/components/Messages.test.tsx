@@ -1450,7 +1450,7 @@ describe("Messages", () => {
     Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
       configurable: true,
       get() {
-        return this.classList.contains("user-collapsible-content") ? 280 : 0;
+        return this.classList.contains("user-collapsible-text-content") ? 280 : 0;
       },
     });
 

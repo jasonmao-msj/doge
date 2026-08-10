@@ -153,13 +153,14 @@ async function chooseCodexEnglishCommitMessage() {
   fireEvent.click(generateButton);
 
   fireEvent.click(await screen.findByRole("button", { name: "English" }));
-  const codexItem = screen.getByRole("button", { name: "Codex" });
-  expect(screen.getByRole("button", { name: "Claude Code" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Grok" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "Kimi" })).toBeTruthy();
-  expect(screen.getByRole("button", { name: "OpenCode" })).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Gemini" })).toBeNull();
+  const codexItem = screen.getByRole("radio", { name: "Codex" });
+  expect(screen.getByRole("radio", { name: "Claude Code" })).toBeTruthy();
+  expect(screen.getByRole("radio", { name: "Grok" })).toBeTruthy();
+  expect(screen.getByRole("radio", { name: "Kimi" })).toBeTruthy();
+  expect(screen.getByRole("radio", { name: "OpenCode" })).toBeTruthy();
+  expect(screen.queryByRole("radio", { name: "Gemini" })).toBeNull();
   fireEvent.click(codexItem);
+  fireEvent.click(screen.getByRole("button", { name: "Generate with this config" }));
 }
 
   function renderScopedPanel(repositoryRoot: string, onSummaryChange?: (summary: {
@@ -567,9 +568,9 @@ async function chooseCodexEnglishCommitMessage() {
     });
     fireEvent.click(generateButton);
 
-    expect(await screen.findByRole("button", { name: "Codex" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Claude Code" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Use last configuration" })).toBeTruthy();
+    expect(await screen.findByRole("radio", { name: "Codex" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Claude Code" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Use last configuration/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: "English" })).toBeTruthy();
     expect(mockGenerateCommitMessage).not.toHaveBeenCalled();
   });
@@ -586,7 +587,7 @@ async function chooseCodexEnglishCommitMessage() {
       return button;
     });
     fireEvent.click(generateButton);
-    fireEvent.click(await screen.findByRole("button", { name: "Use last configuration" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Use last configuration/ }));
 
     await waitFor(() => {
       expect(mockGenerateCommitMessage).toHaveBeenCalledWith(

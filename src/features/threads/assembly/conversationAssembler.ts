@@ -11,7 +11,6 @@ import {
   findEquivalentReasoningObservationIndex,
   isEquivalentUserObservation,
   normalizeComparableUserText,
-  normalizeUserImages,
 } from "./conversationNormalization";
 import {
   classifyConversationObservation,
@@ -177,21 +176,24 @@ export function preferRicherUserImages(
   existing: UserMessageItem,
   incoming: UserMessageItem,
 ): string[] | undefined {
-  const existingImages = normalizeUserImages(existing.images, existing.text);
-  const incomingImages = normalizeUserImages(incoming.images, incoming.text);
+  // Image normalization deliberately removes note-card injected attachments
+  // for intent comparison. Presentation merging must retain the raw attached
+  // images so replacing an optimistic user row cannot make them disappear.
+  const existingImages = existing.images ?? [];
+  const incomingImages = incoming.images ?? [];
   if (incomingImages.length === 0 && existingImages.length === 0) {
     return undefined;
   }
   if (incomingImages.length === 0) {
-    return existing.images ?? existingImages;
+    return existingImages;
   }
   if (existingImages.length === 0) {
-    return incoming.images ?? incomingImages;
+    return incomingImages;
   }
   if (incomingImages.length >= existingImages.length) {
-    return incoming.images ?? incomingImages;
+    return incomingImages;
   }
-  return existing.images ?? existingImages;
+  return existingImages;
 }
 
 function mergeUserMessageSnapshot(

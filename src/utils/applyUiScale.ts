@@ -125,6 +125,14 @@ function setScaleLayoutStyles_Mac(el: HTMLElement, scale: number): void {
 /** Only clear properties that carry a non-empty inline value. */
 function clearResidualScaleStyles(el: HTMLElement): void {
   for (const prop of ZOOM_FILL_CSS_PROPS) {
+    // jsdom does not expose the non-standard `zoom` accessor through
+    // getPropertyValue/removeProperty, so inspect and clear it directly.
+    if (prop === "zoom") {
+      if (el.style.zoom !== "") {
+        el.style.zoom = "";
+      }
+      continue;
+    }
     if (el.style.getPropertyValue(prop) !== "") {
       el.style.removeProperty(prop);
     }

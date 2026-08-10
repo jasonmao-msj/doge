@@ -1330,7 +1330,6 @@ describe("useThreads memory race integration", () => {
   });
 
   it("reconciles claude realtime output from history once after turn completion", async () => {
-    vi.useFakeTimers();
     try {
       vi.mocked(loadClaudeSession).mockResolvedValue({
         messages: [
@@ -1361,6 +1360,10 @@ describe("useThreads memory race integration", () => {
           preserveState: true,
         });
       });
+
+      // Thread listing has its own budget timers. Keep that setup on real
+      // timers, then fake only the delayed realtime-history reconciliation.
+      vi.useFakeTimers();
 
       act(() => {
         handlers?.onTurnStarted?.("ws-1", "claude:session-1", "turn-1");

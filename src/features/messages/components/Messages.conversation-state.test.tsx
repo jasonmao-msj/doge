@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversationItem, RequestUserInputRequest } from "../../../types";
 import { Messages } from "./Messages";
@@ -215,6 +215,7 @@ describe("Messages conversationState routing", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "tools.fileEditSceneToggle" }));
     expect(screen.getByText("a.ts")).toBeTruthy();
     expect(screen.getByText("b.ts")).toBeTruthy();
     expect(screen.queryByText("Legacy step")).toBeNull();

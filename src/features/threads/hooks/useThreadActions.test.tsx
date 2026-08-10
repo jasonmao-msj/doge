@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "@testing-library/react";
+import { act, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversationItem } from "../../../types";
 import { resetUseThreadActionsTestMocks } from "./useThreadActions.test-mocks";
@@ -1583,7 +1583,9 @@ describe("useThreadActions", () => {
       () => new Promise(() => undefined),
     );
     vi.mocked(getOpenCodeSessionList).mockImplementation(
-      () => new Promise(() => undefined),
+      (_workspaceId, options) => new Promise((resolve) => {
+        setTimeout(() => resolve(null), options?.timeoutMs ?? 0);
+      }),
     );
 
     const { result, dispatch } = renderActions();
@@ -1641,7 +1643,13 @@ describe("useThreadActions", () => {
     const { result, dispatch } = renderActions();
 
     const firstRefresh = result.current.listThreadsForWorkspace(workspace);
+    await waitFor(() => {
+      expect(listThreads).toHaveBeenCalledTimes(1);
+    });
     const secondRefresh = result.current.listThreadsForWorkspace(workspace);
+    await waitFor(() => {
+      expect(listThreads).toHaveBeenCalledTimes(2);
+    });
 
     await act(async () => {
       secondResponse.resolve({
@@ -2601,7 +2609,10 @@ describe("useThreadActions", () => {
 
     expect(listThreads).toHaveBeenCalledTimes(1);
     expect(listClaudeSessions).toHaveBeenCalled();
-    expect(getOpenCodeSessionList).toHaveBeenCalledWith("ws-1");
+    expect(getOpenCodeSessionList).toHaveBeenCalledWith("ws-1", {
+      timeoutMs: 3_000,
+      timeoutResult: "null",
+    });
     expect(listWorkspaceSessions).toHaveBeenCalledWith("ws-1", {
       query: { status: "active", sessionAttributionMode: "related" },
       cursor: null,

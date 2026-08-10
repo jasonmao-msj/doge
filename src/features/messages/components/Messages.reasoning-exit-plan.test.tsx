@@ -85,6 +85,9 @@ describe("Messages reasoning visibility and exit plan handoff", () => {
       />,
     );
 
+    fireEvent.click(
+      container.querySelector(".messages-process-phase-toggle") as HTMLElement,
+    );
     const reasoningBlock = container.querySelector(".thinking-block");
     const assistantMessage = container.querySelector(".message.assistant");
     expect(reasoningBlock).toBeTruthy();

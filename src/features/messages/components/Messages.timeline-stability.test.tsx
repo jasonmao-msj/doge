@@ -195,7 +195,7 @@ describe("Messages timeline prop stability", () => {
     expect(timelineProbe.snapshots.at(-1)?.heartbeatPulse).toBe(2);
   });
 
-  it("updates same-item live text before re-deriving the stable timeline projection", () => {
+  it("updates same-item live text and timeline projection in the same render", () => {
     const userItem = {
       id: "user-live-projection",
       kind: "message" as const,
@@ -252,7 +252,7 @@ describe("Messages timeline prop stability", () => {
       timelineProbe.snapshots.some(
         (snapshot) =>
           snapshot.liveAssistantText === "第一段\n\n第二段"
-          && snapshot.stableProjectionVersion === stableProjectionVersion,
+          && snapshot.stableProjectionVersion !== stableProjectionVersion,
       ),
     ).toBe(true);
   });

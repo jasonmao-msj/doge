@@ -860,7 +860,7 @@ describe("useThreadMessaging context injection", () => {
         item: expect.objectContaining({
           kind: "message",
           role: "user",
-          text: expect.stringContaining("<note-card-context>"),
+          text: "请按这个执行",
           images: ["/tmp/ws/.ccgui/note_card/ws/assets/note-1/deploy.png"],
         }),
       }),

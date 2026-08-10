@@ -417,7 +417,6 @@ describe("GenericToolBlock", () => {
       />,
     );
 
-    expandFileEditScene(view.container);
     const markers = view.container.querySelectorAll('[data-slot="marker"]');
     fireEvent.click(markers[markers.length - 1] as HTMLElement);
 
@@ -450,7 +449,6 @@ describe("GenericToolBlock", () => {
       />,
     );
 
-    expandFileEditScene(view.container);
     const markers = view.container.querySelectorAll('[data-slot="marker"]');
     fireEvent.click(markers[markers.length - 1] as HTMLElement);
 
@@ -467,8 +465,8 @@ describe("GenericToolBlock", () => {
       />,
     );
 
-    expect(screen.queryByText("App.tsx")).toBeNull();
-    expandFileEditScene();
+    expect(screen.getByText("App.tsx")).toBeTruthy();
+    fireEvent.click(document.querySelector('[data-slot="marker"]') as HTMLElement);
     expect(screen.getByText("App.tsx")).toBeTruthy();
   });
 
@@ -555,7 +553,6 @@ describe("GenericToolBlock", () => {
       />,
     );
 
-    expandFileEditScene(view.container);
     expect(screen.getByText("App.tsx")).toBeTruthy();
     expect(document.querySelector(".tool-output-raw-pre")).toBeNull();
     // diff 仅在展开该行后出现，且不回退到原始输出面板
@@ -600,7 +597,6 @@ describe("GenericToolBlock", () => {
       />,
     );
 
-    expandFileEditScene(view.container);
     // 折叠行即显示来自输出回退的统计，不显示原始输出面板
     expect(screen.getAllByText("+1").length).toBeGreaterThan(0);
     expect(screen.getAllByText("-1").length).toBeGreaterThan(0);

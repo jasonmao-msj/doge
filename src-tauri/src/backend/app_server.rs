@@ -1415,6 +1415,7 @@ fn spawn_test_runtime_process_for_runtime() -> (tokio::process::Child, String) {
         command.stdin(Stdio::piped());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
+        WorkspaceSession::configure_spawn_command(&mut command);
         let child = command
             .spawn()
             .unwrap_or_else(|error| panic!("failed to spawn {command_path}: {error}"));
@@ -1428,6 +1429,7 @@ fn spawn_test_runtime_process_for_runtime() -> (tokio::process::Child, String) {
         command.stdin(Stdio::piped());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
+        WorkspaceSession::configure_spawn_command(&mut command);
         let child = command
             .spawn()
             .unwrap_or_else(|error| panic!("failed to spawn {command_path}: {error}"));

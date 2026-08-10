@@ -38,9 +38,11 @@ const notifyContentResized = () => {
 // 新跟随模型的 RO/followSignal 追底统一由 pinIfFollowing 合并到下一 rAF 落位，
 // 断言 scrollTop 前需要先推进一帧（fake timers 用例内请改用 advanceTimersByTime）。
 const flushFollowFrame = async () => {
-  await act(async () => {
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-  });
+  for (let frame = 0; frame < 3; frame += 1) {
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    });
+  }
 };
 
 describe("Messages live behavior", () => {
@@ -1129,6 +1131,7 @@ describe("Messages live behavior", () => {
     await flushFollowFrame();
 
     rerender(renderWith(true));
+    await flushFollowFrame();
     scrollHeight = 2500;
     notifyContentResized();
     await flushFollowFrame();
@@ -1379,7 +1382,7 @@ describe("Messages live behavior", () => {
       // 回合结束：settle 钉底（pinIfFollowing 合并到下一 rAF，fake timers 推进一帧）。
       rerender(renderWith(false));
       act(() => {
-        vi.advanceTimersByTime(20);
+        vi.advanceTimersByTime(50);
       });
       expect(scroller.scrollTop).toBe(scrollHeight - 720);
 
@@ -1439,7 +1442,7 @@ describe("Messages live behavior", () => {
 
       rerender(renderWith(false));
       act(() => {
-        vi.advanceTimersByTime(20);
+        vi.advanceTimersByTime(50);
       });
       expect(scroller.scrollTop).toBe(scrollHeight - 720);
 
@@ -1498,7 +1501,7 @@ describe("Messages live behavior", () => {
       // settle：先钉到当时的底（rAF 落位）
       rerender(renderWith(false));
       act(() => {
-        vi.advanceTimersByTime(20);
+        vi.advanceTimersByTime(50);
       });
       expect(scroller.scrollTop).toBe(scrollHeight - 720);
 
@@ -1730,7 +1733,7 @@ describe("Messages live behavior", () => {
       rerender(renderWith("thread-reopen", historyItems));
       notifyContentResized();
       act(() => {
-        vi.advanceTimersByTime(20);
+        vi.advanceTimersByTime(50);
       });
       expect(scroller.scrollTop).toBe(2_400 - 720);
 

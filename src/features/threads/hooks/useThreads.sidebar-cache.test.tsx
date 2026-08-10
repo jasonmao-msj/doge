@@ -373,7 +373,6 @@ describe("useThreads sidebar cache", () => {
   });
 
   it("tracks Claude history loading while selecting an unloaded session", async () => {
-    vi.useFakeTimers();
     vi.mocked(listThreads).mockResolvedValue({
       result: { data: [], nextCursor: null },
     } as never);
@@ -396,6 +395,10 @@ describe("useThreads sidebar cache", () => {
       await act(async () => {
         await result.current.listThreadsForWorkspace(workspace);
       });
+
+      // The list pipeline owns independent request-budget timers. Fake only
+      // the lazy selection resume exercised by this test.
+      vi.useFakeTimers();
 
       act(() => {
         result.current.setActiveThreadId("claude:session-history");

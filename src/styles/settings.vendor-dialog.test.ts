@@ -25,7 +25,8 @@ describe("vendor official config dialog layout", () => {
     );
     const editorRule = getCssRuleBlock(
       vendorDialogCss,
-      ".vendor-official-config-dialog-body .vendor-official-json-editor",
+      ".vendor-official-config-dialog-body .vendor-official-json-editor,\n" +
+        ".vendor-official-config-dialog-body .vendor-official-code-editor",
     );
     const paneRule = getCssRuleBlock(
       vendorDialogCss,

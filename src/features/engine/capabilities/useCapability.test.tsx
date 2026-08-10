@@ -61,7 +61,7 @@ describe("useCapability", () => {
       engine: "codex",
       capability: "reasoning.effort",
       specState: "supported",
-      runtimeState: "unknown",
+      runtimeState: "supported",
       supported: true,
       available: true,
       error: null,

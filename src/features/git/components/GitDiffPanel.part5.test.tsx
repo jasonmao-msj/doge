@@ -392,7 +392,7 @@ describe("GitDiffPanel", () => {
       // 上次配置仍是可见 quick option，不改变主按钮的显式选择语义。
       fireEvent.click(screen.getByRole("button", { name: "Generate commit message" }));
       fireEvent.click(
-        await screen.findByRole("button", { name: "Use last configuration" }),
+        await screen.findByRole("button", { name: /^Use last configuration/ }),
       );
 
       await waitFor(() => {

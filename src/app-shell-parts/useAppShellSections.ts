@@ -646,11 +646,11 @@ export function useAppShellSections(input: UseAppShellSectionsInput) {
   };
 
   /** Sidebar / settings-compatible within-group project reorder. */
-  const handleReorderWorkspaces = async (input: {
+  const handleReorderWorkspaces = async (reorderInput: {
     groupId: string | null;
     orderedWorkspaceIds: string[];
   }) => {
-    const { groupId, orderedWorkspaceIds } = input;
+    const { groupId, orderedWorkspaceIds } = reorderInput;
     if (orderedWorkspaceIds.length === 0) {
       return;
     }

@@ -46,6 +46,8 @@ export const CLIENT_DOCUMENTATION_REQUIRED_UI_CONTROL_IDS = [
   "bottomActivity.tasks",
   "bottomActivity.agents",
   "bottomActivity.checkpoint",
+  "bottomActivity.checkpointDetails",
+  "bottomActivity.governanceEvidence",
   "cornerStatus.messageAnchors",
 ] as const;
 
@@ -755,6 +757,38 @@ export const CLIENT_DOCUMENTATION_TREE: ClientDocumentationNode[] = [
         ],
         ["结果展示不等于最终 CI 通过，仍需看具体验证命令。"],
         ["任务与状态面板", "Spec Hub 与规范工作流"],
+      ),
+      uiControlFeature(
+        "bottomActivity.checkpointDetails",
+        "检查点详情",
+        "显示当前检查点的完整分区、策略审计与建议动作。",
+        "底部活动面板；Result checkpoint 中的详情入口。",
+        "让需要深度排查的用户查看检查点摘要背后的证据和建议。",
+        ["检查点分区", "策略审计", "建议动作", "完整证据入口"],
+        [
+          "打开底部活动面板。",
+          "切换到 Result tab。",
+          "打开检查点详情。",
+          "逐项查看摘要、审计与建议动作。",
+        ],
+        ["建议动作只提供指导，不会自动执行命令或改变检查点结论。"],
+        ["任务与状态面板", "Spec Hub 与规范工作流"],
+      ),
+      uiControlFeature(
+        "bottomActivity.governanceEvidence",
+        "治理证据",
+        "显示检查点使用的 advisory governance evidence。",
+        "底部活动面板；Result checkpoint 中的治理证据入口。",
+        "帮助用户追溯治理信号的来源、观察时间与降级原因。",
+        ["advisory signals", "evidence trail", "来源追溯", "降级说明"],
+        [
+          "打开底部活动面板。",
+          "切换到 Result tab。",
+          "展开治理证据。",
+          "按来源查看证据、时间与提示。",
+        ],
+        ["治理证据默认是 advisory 信号，不替代核心 runtime failure 的 blocking 语义。"],
+        ["任务与状态面板", "通知、更新与关于"],
       ),
       uiControlFeature(
         "cornerStatus.messageAnchors",

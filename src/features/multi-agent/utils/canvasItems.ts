@@ -184,6 +184,9 @@ function userMessageHasRenderableAttachment(
   if (Array.isArray(item.images) && item.images.some((path) => path.trim().length > 0)) {
     return true;
   }
+  if (Array.isArray(item.deferredImages) && item.deferredImages.length > 0) {
+    return true;
+  }
   if (item.browserContextAttachment) {
     return true;
   }

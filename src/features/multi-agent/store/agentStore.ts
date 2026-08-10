@@ -331,7 +331,12 @@ export function findCanonicalAgentRunId(items: unknown): string | null {
   if (!Array.isArray(items)) return null;
   for (const item of items) {
     if (!item || typeof item !== "object") continue;
-    const row = item as { id?: unknown; content?: unknown };
+    const row = item as {
+      id?: unknown;
+      content?: unknown;
+      fidelity?: unknown;
+    };
+    if (row.fidelity !== "canonical") continue;
     const content =
       row.content && typeof row.content === "object"
         ? (row.content as Record<string, unknown>)

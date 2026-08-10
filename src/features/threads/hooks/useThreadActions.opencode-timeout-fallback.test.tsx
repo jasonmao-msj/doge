@@ -89,7 +89,9 @@ vi.mock("../../../services/globalRuntimeNotices", async () => {
   return actual;
 });
 
-const NEVER_RESOLVES = () => new Promise<never>(() => {});
+const RESOLVES_TIMEOUT_SIGNAL = (
+  _workspaceId: string,
+) => Promise.resolve(null);
 
 function makeCachedOpenCodeSummary(idSuffix: string, updatedAt: number): ThreadSummary {
   return {
@@ -206,13 +208,16 @@ describe("useThreadActions opencode sidebar listing timeout fallback", () => {
       });
     });
 
-    expect(getOpenCodeSessionList).toHaveBeenCalledWith("ws-1");
+    expect(getOpenCodeSessionList).toHaveBeenCalledWith("ws-1", {
+      timeoutMs: 3_000,
+      timeoutResult: "null",
+    });
   });
 
   it(
     "case 1: opencode listing timeout still keeps last-good opencode entries when codex returns a session",
     async () => {
-      vi.mocked(getOpenCodeSessionList).mockImplementation(NEVER_RESOLVES);
+      vi.mocked(getOpenCodeSessionList).mockImplementation(RESOLVES_TIMEOUT_SIGNAL);
       vi.mocked(listWorkspaceSessions).mockResolvedValue({
         data: [
           {
@@ -241,15 +246,10 @@ describe("useThreadActions opencode sidebar listing timeout fallback", () => {
         },
       });
 
-      vi.useFakeTimers();
       const promise = result.current.listThreadsForWorkspace(workspace, {
         preserveState: true,
         includeOpenCodeSessions: true,
       });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(30_001);
-      });
-      vi.useRealTimers();
       await act(async () => {
         await promise;
       });
@@ -336,7 +336,7 @@ describe("useThreadActions opencode sidebar listing timeout fallback", () => {
   it(
     "case 3: consecutive opencode timeouts do not progressively drop more opencode sessions",
     async () => {
-      vi.mocked(getOpenCodeSessionList).mockImplementation(NEVER_RESOLVES);
+      vi.mocked(getOpenCodeSessionList).mockImplementation(RESOLVES_TIMEOUT_SIGNAL);
       vi.mocked(listWorkspaceSessions).mockResolvedValue({
         data: [
           {
@@ -366,15 +366,10 @@ describe("useThreadActions opencode sidebar listing timeout fallback", () => {
       const { result, dispatch, rerenderWithThreadState } =
         renderActionsWithMutableThreadState(initialThreadsByWorkspace);
 
-      vi.useFakeTimers();
       const firstRun = result.current.listThreadsForWorkspace(workspace, {
         preserveState: true,
         includeOpenCodeSessions: true,
       });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(30_001);
-      });
-      vi.useRealTimers();
       await act(async () => {
         await firstRun;
       });
@@ -398,15 +393,10 @@ describe("useThreadActions opencode sidebar listing timeout fallback", () => {
         })),
       });
 
-      vi.useFakeTimers();
       const secondRun = result.current.listThreadsForWorkspace(workspace, {
         preserveState: true,
         includeOpenCodeSessions: true,
       });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(30_001);
-      });
-      vi.useRealTimers();
       await act(async () => {
         await secondRun;
       });
@@ -427,7 +417,7 @@ describe("useThreadActions opencode sidebar listing timeout fallback", () => {
   it(
     "case 4: archived and pending last-good opencode entries are not resurrected by seed",
     async () => {
-      vi.mocked(getOpenCodeSessionList).mockImplementation(NEVER_RESOLVES);
+      vi.mocked(getOpenCodeSessionList).mockImplementation(RESOLVES_TIMEOUT_SIGNAL);
       vi.mocked(listWorkspaceSessions).mockResolvedValue({
         data: [
           {
@@ -467,15 +457,10 @@ describe("useThreadActions opencode sidebar listing timeout fallback", () => {
         },
       });
 
-      vi.useFakeTimers();
       const run = result.current.listThreadsForWorkspace(workspace, {
         preserveState: true,
         includeOpenCodeSessions: true,
       });
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(30_001);
-      });
-      vi.useRealTimers();
       await act(async () => {
         await run;
       });

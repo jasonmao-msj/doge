@@ -61,6 +61,31 @@ describe("multiAgent canvas item identity", () => {
 });
 
 describe("filterMultiAgentCanvasItems", () => {
+  it("keeps deferred-image-only user messages renderable", () => {
+    const deferredImageOnly: ConversationItem = {
+      id: "claude-deferred-image",
+      kind: "message",
+      role: "user",
+      text: "",
+      deferredImages: [{
+        workspacePath: "/workspace",
+        mediaType: "image/png",
+        estimatedByteSize: 700_000,
+        reason: "large-inline-image",
+        locator: {
+          sessionId: "session-1",
+          lineIndex: 2,
+          blockIndex: 1,
+          mediaType: "image/png",
+        },
+      }],
+    };
+
+    expect(filterMultiAgentCanvasItems([deferredImageOnly])).toEqual([
+      deferredImageOnly,
+    ]);
+  });
+
   it("drops settle summary assistant and keeps hist-fold", () => {
     const items: ConversationItem[] = [
       user("squad:run-1:user", "fix docs"),

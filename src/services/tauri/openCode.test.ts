@@ -115,4 +115,16 @@ describe("getOpenCodeSessionList", () => {
       getOpenCodeSessionList("ws-1", { timeoutMs: 30 }),
     ).resolves.toEqual([]);
   }, 5_000);
+
+  it("can preserve the timeout signal for last-good callers", async () => {
+    vi.mocked(invoke).mockImplementation(
+      () => new Promise(() => undefined),
+    );
+    await expect(
+      getOpenCodeSessionList("ws-1", {
+        timeoutMs: 30,
+        timeoutResult: "null",
+      }),
+    ).resolves.toBeNull();
+  }, 5_000);
 });

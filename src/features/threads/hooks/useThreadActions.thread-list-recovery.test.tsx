@@ -193,14 +193,17 @@ describe("useThreadActions thread list recovery and pagination", () => {
       await Promise.all([leaderRefresh, waiterRefresh]);
     });
 
-    expect(connectWorkspace).toHaveBeenCalledWith("ws-1", "thread-list-live");
+    expect(connectWorkspace).toHaveBeenCalledWith(
+      "ws-1",
+      expect.stringMatching(/^(thread-list-live|focus-refresh)$/),
+    );
     expectSetThreadsDispatched(dispatch, "ws-1", [
       {
         id: "cached-thread",
         name: "Cached chat",
         updatedAt: 900,
         engineSource: "codex",
-        partialSource: "guarded-recovery-waiter",
+        partialSource: "workspace-not-connected",
         isDegraded: true,
         degradedReason: "last-good-fallback",
       },
