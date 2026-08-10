@@ -83,3 +83,36 @@
 - 解锁 Mac 后完成 title/menu/Home/Settings/About/update-disabled 原生 UI 冒烟与截图。
 - 安装完整 Xcode，配置 Developer ID/notarization 与独立 doge updater key；完成 signed release 和两版本更新验收。
 - 通过 GitHub Actions 验证 Windows/Linux artifacts；未满足前不 archive OpenSpec change。
+
+
+## Session 3: Computer Use 完成 doge 实机品牌验收
+
+**Date**: 2026-08-10
+**Task**: Computer Use 完成 doge 实机品牌验收
+**Branch**: `chore/rebrand-client-to-doge`
+
+### Summary
+
+在 macOS debug bundle 中核对窗口、Home、Settings、Community、更新失败关闭状态与原生菜单；发现并移除上游公众号/微信群二维码，改为 doge 品牌故事及 canonical GitHub/Issues 入口，补 45 项 focused 回归与 OpenSpec 证据。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `de0aa7f47` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
