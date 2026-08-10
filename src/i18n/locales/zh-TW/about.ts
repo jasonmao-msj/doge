@@ -11,8 +11,7 @@ const about = {
     "releaseNotes": "版本說明",
     "reportIssue": "回報問題",
     "website": "官方網站",
-    "github": "GitHub",
-    "wechatGroupTitle": "掃碼加入微信群"
+    "github": "GitHub"
   }
 };
 

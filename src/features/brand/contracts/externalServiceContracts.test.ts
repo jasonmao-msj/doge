@@ -104,8 +104,12 @@ describe("doge external-service contracts", () => {
     expect(about).toContain("DOGE_REPOSITORY_URL");
     expect(about).toContain("openUrl(DOGE_REPOSITORY_URL)");
 
-    const settings = source("src/features/settings/components/SettingsView.tsx");
-    expect(settings).toContain("openUrl(DOGE_REPOSITORY_URL)");
+    const community = source(
+      "src/features/settings/components/settings-view/sections/CommunitySection.tsx",
+    );
+    expect(community).toContain("openUrl(DOGE_REPOSITORY_URL)");
+    expect(community).toContain("openUrl(DOGE_ISSUES_URL)");
+    expect(community).not.toMatch(/(?:wxq|WeChat|公众号|微信群)/iu);
 
     const errorReport = source("src/components/errorBoundaryReport.ts");
     expect(errorReport).toContain("DOGE_ISSUES_URL");

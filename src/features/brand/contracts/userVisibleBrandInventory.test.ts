@@ -116,4 +116,10 @@ describe("user-visible doge brand inventory", () => {
       /(?:desktop-cc-gui|cc[\s_-]?gui|CodeMoss|MossX|mossx|codemoss)/iu,
     );
   });
+
+  it.each(inventory.locales)("%s keeps upstream-owned support channels out of locale copy", (locale) => {
+    expect(JSON.stringify(localeBundles[locale])).not.toMatch(
+      /(?:WeChat|公众号|微信群)/iu,
+    );
+  });
 });

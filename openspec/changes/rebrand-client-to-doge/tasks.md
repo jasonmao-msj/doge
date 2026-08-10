@@ -50,8 +50,8 @@
 - [x] 5.2 [P0][depends:5.1][I:App/Home/About/Lock/Error/Update source locale copy][O:doge 品牌故事、tagline、developer-first 能力描述与 doge links][V:组件 focused tests + 文案人工 review] 替换核心 UI copy。
 - [x] 5.3 [P0][depends:4.5,5.1][I:Settings/Workspace/Memory/Canvas/ProjectMap storage/path copy][O:`~/.doge` 与 doge product wording][V:path-copy focused tests + legacy only in migration message] 替换设置与路径提示。
 - [x] 5.4 [P0][depends:5.2,5.3][I:source locale key set与其余 locale modules][O:所有 registered locales 的 doge brand copy][V:locale namespace/key/placeholder parity script] 同步 10 套已发布 locale。
-- [ ] 5.5 [P0][depends:5.4][I:native `menu.rs`、Info.plist、window labels][O:doge native menu/title/permission descriptions][V:Rust menu tests + macOS dev manual smoke] 替换 native chrome 文案。
-- [ ] 5.6 [P0][depends:5.2,5.3,5.4,5.5][I:完整 UI/i18n change][O:普通用户 surface doge-only][V:`npm run check:branding`、i18n parity、App 页面遍历截图 checklist] 验收用户可见品牌。
+- [x] 5.5 [P0][depends:5.4][I:native `menu.rs`、Info.plist、window labels][O:doge native menu/title/permission descriptions][V:Rust menu tests + macOS dev manual smoke] 替换 native chrome 文案。
+- [x] 5.6 [P0][depends:5.2,5.3,5.4,5.5][I:完整 UI/i18n change][O:普通用户 surface doge-only][V:`npm run check:branding`、i18n parity、App 页面遍历截图 checklist] 验收用户可见品牌。
 
 ## 6. Mascot、平台图标与产品截图
 
@@ -86,7 +86,7 @@
 - [x] 9.2 [P0][depends:9.1][I:shipping source/config/artifacts/current docs][O:legacy brand/upstream service 仅剩 reasoned allowlist][V:`npm run check:branding` + raw `rg` audit + allowlist diff] 运行最终品牌/服务审计。
 - [x] 9.3 [P0][depends:9.1][I:frontend implementation][O:前端质量门禁全绿][V:`npm run lint && npm run typecheck && npm run test`] 运行 frontend full gates。
 - [x] 9.4 [P0][depends:9.1][I:Rust/backend implementation][O:backend test suite 全绿][V:`cargo test --manifest-path src-tauri/Cargo.toml`] 运行 Rust full gate。
-- [ ] 9.5 [P0][depends:9.2,9.3,9.4][I:macOS arm64 dev environment][O:doge Tauri 实际启动与核心 surface smoke evidence][V:`npm run tauri:dev` + title/menu/home/settings/About/update manual checklist] 完成 macOS dev smoke。
+- [x] 9.5 [P0][depends:9.2,9.3,9.4][I:macOS arm64 dev environment][O:doge Tauri 实际启动与核心 surface smoke evidence][V:`npm run tauri:dev` + title/menu/home/settings/About/update manual checklist] 完成 macOS dev smoke。
 - [ ] 9.6 [P0][depends:9.5][I:doge release config/assets/signing environment][O:macOS ARM64 doge bundle][V:`npm run build:mac-arm64` + bundle identifier/icons/dylib/signature inspection] 完成 macOS ARM64 构建。
 - [ ] 9.7 [P1][depends:7.6,9.3,9.4][I:GitHub Actions matrix][O:Windows/Linux artifacts 与 static inspection evidence][V:workflow jobs green；artifact names/config/signatures/launch logs] 验证跨平台 CI。
 - [x] 9.8 [P0][depends:9.1][I:change artifacts][O:strict-valid proposal/design/specs/tasks][V:`openspec validate rebrand-client-to-doge --strict --no-interactive`] 验证 OpenSpec change。

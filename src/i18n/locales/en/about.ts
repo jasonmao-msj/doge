@@ -10,7 +10,6 @@ const about = {
     reportIssue: "Report Issue",
     website: "Website",
     github: "GitHub",
-    wechatGroupTitle: "Scan to join WeChat Group",
   },
 };
 

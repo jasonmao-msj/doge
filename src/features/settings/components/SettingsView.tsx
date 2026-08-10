@@ -14,8 +14,6 @@ import LayoutGrid from "lucide-react/dist/esm/icons/layout-grid";
 import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
 import TerminalSquare from "lucide-react/dist/esm/icons/terminal-square";
 import { getVersion } from "@tauri-apps/api/app";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import { DOGE_NAME, DOGE_REPOSITORY_URL } from "../../../config/brand";
 import Globe from "lucide-react/dist/esm/icons/globe";
 import Monitor from "lucide-react/dist/esm/icons/monitor";
 import Cog from "lucide-react/dist/esm/icons/cog";
@@ -38,7 +36,6 @@ import type {
   WorkspaceInfo,
 } from "../../../types";
 import { loadSettingsStyles } from "../../../styles/featureStyleLoaders";
-import wxqImage from "../../../assets/wxq.png";
 import { buildShortcutValue } from "../../../utils/shortcuts";
 import { clampUiScale } from "../../../utils/uiScale";
 import {
@@ -88,6 +85,7 @@ import { useSystemResolvedTheme } from "./settings-view/hooks/useSystemResolvedT
 import { ProjectsSection } from "./settings-view/sections/ProjectsSection";
 import { ComposerSection } from "./settings-view/sections/ComposerSection";
 import { ShortcutsSection } from "./settings-view/sections/ShortcutsSection";
+import { CommunitySection } from "./settings-view/sections/CommunitySection";
 import { OpenAppsSection } from "./settings-view/sections/OpenAppsSection";
 import { BasicAppearanceSection } from "./settings-view/sections/BasicAppearanceSection";
 import { CodexSection } from "./settings-view/sections/CodexSection";
@@ -2324,36 +2322,7 @@ export function SettingsView({
             </section>
           )}
           {activeSection === "community" && (
-            <section className="settings-section settings-about-section">
-              <div className="settings-about-name">
-                {DOGE_NAME}
-                {appVersion && (
-                  <span className="settings-about-version">{appVersion}</span>
-                )}
-              </div>
-              <div className="settings-about-tagline">{t("about.tagline")}</div>
-              <div className="settings-about-links">
-                <button
-                  type="button"
-                  className="ghost"
-                  onClick={() =>
-                    void openUrl(DOGE_REPOSITORY_URL)
-                  }
-                >
-                  {t("about.github")}
-                </button>
-              </div>
-              <div className="settings-about-wechat">
-                <div className="settings-about-wechat-label">
-                  {t("about.wechatGroupTitle")}
-                </div>
-                <img
-                  className="settings-about-wechat-qr"
-                  src={wxqImage}
-                  alt={t("about.wechatGroupTitle")}
-                />
-              </div>
-            </section>
+            <CommunitySection appVersion={appVersion} />
           )}
           <ComposerSection
             active={activeSection === "composer"}

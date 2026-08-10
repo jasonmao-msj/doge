@@ -11,8 +11,7 @@ const about = {
     "releaseNotes": "릴리스 노트",
     "reportIssue": "이슈 신고",
     "website": "웹사이트",
-    "github": "GitHub",
-    "wechatGroupTitle": "스캔하여 WeChat 그룹 참여"
+    "github": "GitHub"
   }
 };
 

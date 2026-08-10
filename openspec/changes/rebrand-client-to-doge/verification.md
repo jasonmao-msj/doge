@@ -30,7 +30,7 @@ The tracked upstream audit helper is read-only: it inspects local remote configu
 
 | Area | Command or suite | Result |
 | --- | --- | --- |
-| Canonical brand | brand manifest + config contracts | pass, 6 files / 35 tests in the combined brand suite |
+| Canonical brand | brand manifest + config contracts | pass, 5 brand-contract files / 43 tests; Community UI regression 2/2 |
 | Upstream services | external-service and product-link contracts | pass; no shipping upstream analytics, relay, updater trust, or product URL |
 | Branding gate | `npm run check:branding` | pass |
 | Branding checker | `npm run check:branding:test` | pass, 4/4 |
@@ -80,7 +80,21 @@ An earlier invocation without the repository's standard shell environment failed
 - The first smoke found a real startup blocker: missing updater plugin config was deserialized as `null`. The disabled configuration now uses a valid empty `{ endpoints: [], pubkey: "" }` object, while updater artifacts remain disabled and release preflight still rejects activation.
 - Focused updater/release contracts pass after the fix: 2 Vitest tests, 3 Node workflow tests, branding gate, and 4 branding-checker tests.
 - The second smoke reached the running doge process without a setup panic.
-- Native window inspection could not continue because macOS was locked and the computer-use safety boundary requires the user to unlock it manually. Task 9.5 therefore remains open for the title/menu/Home/Settings/About checklist.
+- After macOS was unlocked, a bundled debug app was built with `npm run tauri -- build --debug --bundles app` and inspected through Computer Use. The cold debug bundle build completed in 1m39s after the 16.96s frontend build; subsequent builds reuse this target cache.
+
+Computer Use manual checklist on 2026-08-10:
+
+| Surface | Evidence | Result |
+| --- | --- | --- |
+| App/window identity | app `doge`, bundle `io.github.jasonmao-msj.doge`, window `doge - workspace` | pass |
+| Home | main navigation, workspace migration data, composer and Home heading rendered | pass |
+| Settings | Basic Settings and its appearance, behavior, open method, Web Service and mail sections rendered | pass |
+| Community/About | `doge 0.1.0`, canonical tagline, localized AI Shiba story, GitHub and Report Issue actions rendered | pass |
+| Upstream support isolation | the smoke exposed an upstream WeChat/official-account QR residual; the QR asset, component, styles and all 10 locale strings were removed; rebuilt app no longer renders an image or upstream support copy | pass after fix |
+| Update disabled state | Check for Updates reports `Updater does not have any endpoints set`; no upstream endpoint fallback occurs | pass, fail closed as designed |
+| Native app menu | `关于 doge`, `检查更新…`, `设置…`, `Hide doge`, `Quit doge`; native About window title `关于 doge` | pass |
+
+The accessibility tree and Computer Use screenshots were used for inspection. Screenshots containing local workspace names were not committed, so private local project/session data is not turned into repository evidence. Tasks 5.5, 5.6, and 9.5 are complete; README-safe product screenshot work remains task 6.5.
 
 ### macOS ARM64 unsigned artifact
 
@@ -118,8 +132,7 @@ The updater is deliberately **not enabled** by this evidence. It proves the disa
 
 The following claims must not be treated as complete until their tasks have direct evidence:
 
-- macOS doge window title, menu, Home, Settings, About, and update-disabled state manually inspected after the Mac is unlocked;
-- macOS ARM64 production bundle, identifier, icon, dylib, and code-signature inspection;
+- Developer ID signed/notarized macOS ARM64 production bundle and final code-signature inspection;
 - replacement README product screenshots captured from a running doge build;
 - Windows and Linux GitHub Actions artifacts and launch smoke;
 - doge updater key generation, GitHub secret configuration, signed draft release, `latest.json`, and two-version update smoke;

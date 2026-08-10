@@ -11,8 +11,7 @@ const about = {
     "releaseNotes": "Notes de version",
     "reportIssue": "Signaler un problème",
     "website": "Site web",
-    "github": "GitHub",
-    "wechatGroupTitle": "Scannez pour rejoindre le groupe WeChat"
+    "github": "GitHub"
   }
 };
 
