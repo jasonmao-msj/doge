@@ -599,6 +599,16 @@ describe("SettingsView projects display", () => {
 });
 
 describe("SettingsView Display", () => {
+  it("keeps alternate app icon selection hidden for the canonical doge identity", async () => {
+    renderDisplaySection({
+      appSettings: { dockIconId: "multi-orbit-hub" },
+    });
+    await flushSettingsViewEffects();
+
+    expect(document.querySelector(".settings-dock-icon-picker-wrap")).toBeNull();
+    expect(screen.queryByText("App icon")).toBeNull();
+  });
+
   it("uses the in-content page head for the active settings section title and description", async () => {
     renderDisplaySection({ initialSection: null });
     await flushSettingsViewEffects();

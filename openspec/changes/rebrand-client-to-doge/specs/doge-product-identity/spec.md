@@ -61,6 +61,13 @@ doge MUST have a reviewed master mascot asset and platform-appropriate simplifie
 - **THEN** it MUST show doge artwork and doge UI
 - **AND** it MUST NOT reuse a legacy-branded screenshot as a current product fact
 
+#### Scenario: User opens Appearance settings
+
+- **WHEN** a user opens the Appearance section after upgrading from a version that stored an alternate app icon preference
+- **THEN** the UI MUST keep the alternate app icon selector hidden
+- **AND** the installed application MUST continue to present the canonical doge icon
+- **AND** legacy icon preference data MAY remain readable only for backward compatibility
+
 ### Requirement: Third-party engine identity MUST remain intact
 
 The doge rebrand MUST NOT rename third-party engines, providers, protocols or compatibility fields merely because their identifier contains a generic or historical token. Any retained third-party or legacy field MUST be classified by the brand allowlist rather than silently rewritten.
