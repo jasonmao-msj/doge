@@ -149,3 +149,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: 产出并校验 Windows NSIS 安装包
+
+**Date**: 2026-08-10
+**Task**: 产出并校验 Windows NSIS 安装包
+**Branch**: `chore/rebrand-client-to-doge`
+
+### Summary
+
+GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1.0_x64-setup.exe；下载到 release-local/windows，校验 27,981,697 bytes 与 SHA-256 859b683d2aabf8ed4813750901e1d385d25d840b7413dd0ec37ad8f278691bce，并写回 OpenSpec verification。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `15a51b01a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
