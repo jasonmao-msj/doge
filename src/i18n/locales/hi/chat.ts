@@ -92,7 +92,6 @@ const chat = {
     "noMatchingCommands": "कोई मेल खाती कमांड नहीं",
     "noMatchingHistory": "कोई मेल खाता इतिहास नहीं",
     "noAvailableAgents": "कोई उपलब्ध agents नहीं",
-    "openSourceBanner": "इस प्रोजेक्ट के 100% ओपन सोर्स होने की गारंटी है (पायरेटेड प्रोजेक्ट्स से सावधान रहें)",
     "sdkNotInstalled": "{{provider}} SDK इंस्टॉल नहीं है। चैट शुरू करने के लिए कृपया SDK इंस्टॉल करें।",
     "sdkStatusLoading": "SDK स्थिति जांची जा रही है...",
     "goInstallSdk": "इंस्टॉल पर जाएं",

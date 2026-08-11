@@ -92,7 +92,6 @@ const chat = {
     "noMatchingCommands": "No hay comandos coincidentes",
     "noMatchingHistory": "No hay historial coincidente",
     "noAvailableAgents": "No hay agentes disponibles",
-    "openSourceBanner": "Se garantiza que este proyecto es 100 % de código abierto (cuidado con los proyectos pirateados)",
     "sdkNotInstalled": "El SDK de {{provider}} no está instalado. Instala el SDK para empezar a chatear.",
     "sdkStatusLoading": "Comprobando el estado del SDK...",
     "goInstallSdk": "Ir a instalar",

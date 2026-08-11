@@ -95,6 +95,10 @@ import { perfTimer } from '../../utils/debug.js';
 import { DEBOUNCE_TIMING } from '../../constants/performance.js';
 import { requestPromptCreation } from '../../../prompts/promptEvents';
 import { recordPromptUsage } from '../../../prompts/promptUsage';
+import {
+  dismissDailyPoetryBannerForDate,
+  readDailyPoetryBannerSnapshot,
+} from './dailyPoetryBannerStorage.js';
 import './styles.css';
 
 const INCREMENTAL_UNDO_REDO_ENABLED = true;
@@ -285,14 +289,14 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
   ) => {
     const { t } = useTranslation();
 
-    // Open source banner state (show once, dismiss permanently)
-    const BANNER_DISMISSED_KEY = 'openSourceBannerDismissed';
-    const [showOpenSourceBanner, setShowOpenSourceBanner] = useState(
-      () => !localStorage.getItem(BANNER_DISMISSED_KEY)
+    const [dailyPoetryBanner, setDailyPoetryBanner] = useState(
+      readDailyPoetryBannerSnapshot,
     );
-    const handleDismissOpenSourceBanner = useCallback(() => {
-      localStorage.setItem(BANNER_DISMISSED_KEY, 'true');
-      setShowOpenSourceBanner(false);
+    const handleDismissDailyPoetryBanner = useCallback(() => {
+      dismissDailyPoetryBannerForDate();
+      setDailyPoetryBanner((current) =>
+        current.isVisible ? { ...current, isVisible: false } : current,
+      );
     }, []);
     const [modelStorageSnapshot, setModelStorageSnapshot] = useState<ModelStorageSnapshot>(
       () => readModelStorageSnapshot(),
@@ -1729,8 +1733,10 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
               canFuseFromQueue={canFuseFromQueue}
               fuseDisabledReasonKey={fuseDisabledReasonKey}
               fusingQueueMessageId={fusingQueueMessageId}
-              showOpenSourceBanner={showOpenSourceBanner}
-              onDismissOpenSourceBanner={handleDismissOpenSourceBanner}
+              dailyPoetryText={
+                dailyPoetryBanner.isVisible ? dailyPoetryBanner.displayText : null
+              }
+              onDismissDailyPoetry={handleDismissDailyPoetryBanner}
             />
           )}
 
