@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 9
-- **Last Active**: 2026-08-10
+- **Total Sessions**: 10
+- **Last Active**: 2026-08-11
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~316 | Active |
+| `journal-1.md` | ~349 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 10 | 2026-08-11 | 固定 doge 单一应用图标 | `1bf44af01` | `fix/hide-app-icon-switcher` |
 | 9 | 2026-08-10 | 默认合并构建桌面安装包 | `2b78bee46` | `ci/default-combined-installers` |
 | 8 | 2026-08-10 | 合并并行 main 进展 | `8b462e062` | `ci/macos-artifact-only` |
 | 7 | 2026-08-10 | macOS 内部安装包工作流 | `8b1a5bc13` | `ci/macos-artifact-only` |

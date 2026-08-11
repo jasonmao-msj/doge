@@ -314,3 +314,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: 固定 doge 单一应用图标
+
+**Date**: 2026-08-11
+**Task**: 固定 doge 单一应用图标
+**Branch**: `fix/hide-app-icon-switcher`
+
+### Summary
+
+隐藏设置页应用图标切换器，移除专用 UI/CSS；将历史 dockIconId 统一归一为 default 并固定使用 canonical doge 柴犬图标；补充品牌契约与回归测试，完成 1078 个前端测试文件、类型检查、lint、品牌/图标/OpenSpec 门禁和生产构建验证。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1bf44af01` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
