@@ -92,7 +92,6 @@ const chat = {
     "noMatchingCommands": "일치하는 명령 없음",
     "noMatchingHistory": "일치하는 기록 없음",
     "noAvailableAgents": "사용 가능한 에이전트 없음",
-    "openSourceBanner": "이 프로젝트는 100% 오픈 소스임이 보장됩니다 (불법 복제 프로젝트에 주의하세요)",
     "sdkNotInstalled": "{{provider}} SDK가 설치되어 있지 않습니다. 채팅을 시작하려면 SDK를 설치하세요.",
     "sdkStatusLoading": "SDK 상태 확인 중...",
     "goInstallSdk": "설치하러 가기",

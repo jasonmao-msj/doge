@@ -348,9 +348,9 @@
 }
 
 /* ============================================================
-   Open Source Promotional Banner
+   Daily Classical Chinese Poetry Banner
    ============================================================ */
-.open-source-banner {
+.daily-poetry-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -362,11 +362,11 @@
   font-size: 12px;
 }
 
-.open-source-banner .banner-text {
+.daily-poetry-banner .banner-text {
   flex: 1;
 }
 
-.open-source-banner .banner-close {
+.daily-poetry-banner .banner-close {
   background: none;
   border: none;
   color: #64b5f6;
@@ -378,17 +378,17 @@
   transition: opacity 0.2s;
 }
 
-.open-source-banner .banner-close:hover {
+.daily-poetry-banner .banner-close:hover {
   opacity: 1;
 }
 
-[data-theme="light"] .open-source-banner {
+[data-theme="light"] .daily-poetry-banner {
   background: rgba(33, 150, 243, 0.08);
   border-bottom-color: rgba(33, 150, 243, 0.15);
   color: #1976d2;
 }
 
-[data-theme="light"] .open-source-banner .banner-close {
+[data-theme="light"] .daily-poetry-banner .banner-close {
   color: #1976d2;
 }
 

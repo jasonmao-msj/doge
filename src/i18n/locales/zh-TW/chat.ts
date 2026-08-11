@@ -92,7 +92,6 @@ const chat = {
     "noMatchingCommands": "沒有相符的指令",
     "noMatchingHistory": "沒有相符的歷史記錄",
     "noAvailableAgents": "沒有可用的 agent",
-    "openSourceBanner": "本專案保證 100% 開源（謹防盜版專案）",
     "sdkNotInstalled": "尚未安裝 {{provider}} SDK。請先安裝 SDK 以開始對話。",
     "sdkStatusLoading": "正在檢查 SDK 狀態…",
     "goInstallSdk": "前往安裝",
