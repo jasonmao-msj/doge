@@ -1,5 +1,5 @@
 export const STARTUP_GATE_OVERLAY_TEST_FLAG_KEY =
-  "ccgui.startupGateOverlay.test";
+  "doge.startupGateOverlay.test";
 
 function getLocalStorage(): Storage | null {
   try {

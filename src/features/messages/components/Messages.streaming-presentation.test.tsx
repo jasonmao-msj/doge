@@ -63,9 +63,9 @@ describe("Messages streaming presentation contract", () => {
 
   beforeEach(() => {
     timelineSnapshots.entries = [];
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
   });
 
   beforeAll(() => {
@@ -77,7 +77,7 @@ describe("Messages streaming presentation contract", () => {
     }
   });
 
-  it("keeps heavy timeline derivations on the stable snapshot while the live assistant row updates immediately", async () => {
+  it("updates the timeline and final boundary in the same render", async () => {
     const liveAssistantItem: Extract<ConversationItem, { kind: "message" }> = {
       id: "assistant-1",
       kind: "message",
@@ -133,7 +133,7 @@ describe("Messages streaming presentation contract", () => {
         (entry) =>
           entry.liveAssistantText === "第一段输出\n\n第二段输出"
           && entry.liveAssistantIsFinal === true
-          && entry.assistantFinalBoundaryIds.length === 0,
+          && entry.assistantFinalBoundaryIds.includes("assistant-1"),
       ),
     ).toBe(true);
 
@@ -282,7 +282,7 @@ describe("Messages streaming presentation contract", () => {
     ).toBe(true);
   });
 
-  it("keeps expanded history bounded while streaming after a jump request", async () => {
+  it("keeps expanded full history available while streaming after a jump request", async () => {
     const items: ConversationItem[] = [
       {
         id: "user-oldest",
@@ -328,7 +328,7 @@ describe("Messages streaming presentation contract", () => {
 
     act(() => {
       document.dispatchEvent(
-        new CustomEvent<string>("ccgui:jump-to-message", {
+        new CustomEvent<string>("doge:jump-to-message", {
           detail: "user-oldest",
         }),
       );
@@ -348,10 +348,10 @@ describe("Messages streaming presentation contract", () => {
 
     expect(expandedStreamingSnapshot?.renderedTexts).toContain("最新问题");
     expect(expandedStreamingSnapshot?.renderedTexts).toContain("正在生成的回复");
-    expect(expandedStreamingSnapshot?.renderedTexts).not.toContain("最早的历史问题");
+    expect(expandedStreamingSnapshot?.renderedTexts).toContain("最早的历史问题");
     expect(
       expandedStreamingSnapshot?.renderedTexts.some((text) => text === "历史回复 1"),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("keeps the session file-change summary gated while Codex is still working", async () => {

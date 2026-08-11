@@ -3,8 +3,8 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { isMultiAgentEnabled } from "./featureFlag";
 
-const STORAGE_KEY = "ccgui.agentOrchestrationV1";
-const LEGACY_KEY = "ccgui.squadOrchestrationV1";
+const STORAGE_KEY = "doge.agentOrchestrationV1";
+const LEGACY_KEY = "doge.squadOrchestrationV1";
 
 afterEach(() => {
   window.localStorage.removeItem(STORAGE_KEY);

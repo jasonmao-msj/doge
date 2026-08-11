@@ -202,7 +202,7 @@ const sidebar = {
         "sectionTitle": "सर्वर विवरण",
         "source": "स्रोत",
         "sourceClaude": "~/.claude.json",
-        "sourceCcgui": "~/.ccgui/config.json",
+        "sourceDoge": "~/.doge/config.json",
         "transport": "ट्रांसपोर्ट",
         "transportUnknown": "अज्ञात ट्रांसपोर्ट",
         "command": "कमांड",

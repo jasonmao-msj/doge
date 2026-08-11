@@ -94,7 +94,7 @@ describe("useDeferredFrameAccumulator", () => {
   });
 
   it("commits in a single rAF tick when tier is baseline", () => {
-    window.localStorage.setItem("ccgui.perf.streamingScheduleTier", "baseline");
+    window.localStorage.setItem("doge.perf.streamingScheduleTier", "baseline");
     const rafMock = vi.fn(() => 1);
     const cafMock = vi.fn();
     const { result, rerender } = renderHook(

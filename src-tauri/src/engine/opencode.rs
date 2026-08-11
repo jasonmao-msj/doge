@@ -343,7 +343,7 @@ impl OpenCodeSession {
         }
 
         // Managed vendor providers are injected inline; the user's own
-        // opencode.json is never modified by ccgui.
+        // opencode.json is never modified by doge.
         if let Some(ref content) = self.provider_config_content {
             cmd.env("OPENCODE_CONFIG_CONTENT", content);
         }

@@ -22,7 +22,7 @@ function extractFileViewPanelUsages(source: string) {
 describe("file surface runtime boundary guard", () => {
   it("keeps realtime conversation maps out of FileViewPanel props", () => {
     const fileViewPanelSource = readSource(
-      "src/features/files/components/FileViewPanel.tsx",
+      "src/features/files/components/FileViewPanelContract.ts",
     );
     const propsBlock = extractFileViewPanelProps(fileViewPanelSource);
 

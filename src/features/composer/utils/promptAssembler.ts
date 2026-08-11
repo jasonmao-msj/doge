@@ -34,7 +34,7 @@ const LEADING_COMMAND_RE = /^\/([^\s/]+)(?:\s+([\s\S]*))?$/;
 
 /**
  * 将开头的 `/<managed 命令> [args]` 展开为命令正文：managed 目录是
- * mossx 私有注册表（workspace_context），引擎只认项目/全局 `.claude` 等
+ * doge 私有注册表（workspace_context），引擎只认项目/全局 `.claude` 等
  * 目录（engine_injected），因此 managed 命令必须在客户端展开后发送。
  * 正文含 `$ARGUMENTS` 时全部替换为参数；无占位符时参数追加在正文后。
  * 非 managed（引擎可解析）或未知命令原样返回，交给引擎处理/报错。

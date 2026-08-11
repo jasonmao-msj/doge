@@ -84,22 +84,22 @@ describe("OtherSection", () => {
 
     fireEvent.click(toggle);
 
-    expect(window.localStorage.getItem("mossx.sharedProjection")).toBe("0");
+    expect(window.localStorage.getItem("doge.sharedProjection")).toBe("0");
     expect(reload).toHaveBeenCalledTimes(1);
     expect(toggle.getAttribute("data-state")).toBe("unchecked");
 
     fireEvent.click(toggle);
 
-    expect(window.localStorage.getItem("mossx.sharedProjection")).toBe("1");
+    expect(window.localStorage.getItem("doge.sharedProjection")).toBe("1");
     expect(reload).toHaveBeenCalledTimes(2);
     expect(toggle.getAttribute("data-state")).toBe("checked");
   });
 
   it("clears known realtime performance overrides and asks for reload", () => {
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "0");
-    window.localStorage.setItem("ccgui.perf.backgroundRenderGating", "off");
-    window.localStorage.setItem("ccgui.perf.streamingScheduleTier", "aggressive");
-    window.localStorage.setItem("ccgui.other.flag", "kept");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "0");
+    window.localStorage.setItem("doge.perf.backgroundRenderGating", "off");
+    window.localStorage.setItem("doge.perf.streamingScheduleTier", "aggressive");
+    window.localStorage.setItem("doge.other.flag", "kept");
 
     renderOtherSection();
 
@@ -109,10 +109,10 @@ describe("OtherSection", () => {
       }),
     );
 
-    expect(window.localStorage.getItem("ccgui.perf.realtimeBatching")).toBeNull();
-    expect(window.localStorage.getItem("ccgui.perf.backgroundRenderGating")).toBeNull();
-    expect(window.localStorage.getItem("ccgui.perf.streamingScheduleTier")).toBeNull();
-    expect(window.localStorage.getItem("ccgui.other.flag")).toBe("kept");
+    expect(window.localStorage.getItem("doge.perf.realtimeBatching")).toBeNull();
+    expect(window.localStorage.getItem("doge.perf.backgroundRenderGating")).toBeNull();
+    expect(window.localStorage.getItem("doge.perf.streamingScheduleTier")).toBeNull();
+    expect(window.localStorage.getItem("doge.other.flag")).toBe("kept");
     expect(
       screen.getByText("settings.performanceFlagsResetDone:3"),
     ).toBeTruthy();
@@ -134,7 +134,7 @@ describe("OtherSection", () => {
 
     expect(select.value).toBe("baseline");
     expect(screen.getByText("Baseline detail")).toBeTruthy();
-    expect(window.localStorage.getItem("ccgui.perf.streamingScheduleTier")).toBe(
+    expect(window.localStorage.getItem("doge.perf.streamingScheduleTier")).toBe(
       "baseline",
     );
   });

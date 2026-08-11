@@ -1,3 +1,8 @@
+---
+type: architecture
+status: active
+---
+
 # 多引擎协作编排设计（Multi-Engine Collaboration Orchestration）
 
 | 字段 | 值 |

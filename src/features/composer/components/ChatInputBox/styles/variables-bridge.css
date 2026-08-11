@@ -1,8 +1,8 @@
 /**
- * CSS Variables Bridge: ccgui -> ChatInputBox
+ * CSS Variables Bridge: doge -> ChatInputBox
  *
- * Maps ccgui theme variables to ChatInputBox's expected variables.
- * Imported BEFORE variables.css so ChatInputBox variables use ccgui theme.
+ * Maps doge theme variables to ChatInputBox's expected variables.
+ * Imported BEFORE variables.css so ChatInputBox variables use doge theme.
  */
 
 :root {
@@ -13,7 +13,7 @@
   --bg-chat: var(--surface-messages, #ffffff);
 }
 
-/* Override ChatInputBox dark theme to match ccgui */
+/* Override ChatInputBox dark theme to match doge */
 :root .chat-input-box,
 :root .chat-input-box-wrapper,
 [data-theme="dark"] .chat-input-box,
@@ -49,7 +49,7 @@
   --codex-context-accent-track: color-mix(in srgb, var(--text-primary, #e6e7ea) 24%, transparent);
 }
 
-/* Override ChatInputBox light theme to match ccgui */
+/* Override ChatInputBox light theme to match doge */
 [data-theme="light"] .chat-input-box,
 [data-theme="light"] .chat-input-box-wrapper {
   --input-bg: color-mix(in srgb, var(--surface-messages, #ffffff) 97%, #0e1118 3%);

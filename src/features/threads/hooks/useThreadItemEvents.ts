@@ -48,7 +48,7 @@ import {
 import { recordHotspotSample } from "../../../services/perfBaseline/hotspotTracker";
 import { inferEngineFromLegacyThreadId } from "../contracts/engineRuntimeIdentity";
 
-const CLAUDE_STREAM_DEBUG_FLAG_KEY = "ccgui.debug.claude.stream";
+const CLAUDE_STREAM_DEBUG_FLAG_KEY = "doge.debug.claude.stream";
 // A4 流式正文外部化（docs/perf/a4-live-text-externalization-plan.md）：
 // 模块加载时读一次，翻转 flag 需刷新页面（与其余 perf flag 同语义）。
 const LIVE_TEXT_EXTERNALIZATION_ENABLED = isLiveTextExternalizationEnabled();
@@ -1551,7 +1551,7 @@ export function useThreadItemEvents({
   // handler enqueues a single `toolOutputDelta` op into the existing
   // realtime delta queue, preserving the contract with
   // `applyRealtimeDeltaOperation`. The gate can be disabled at runtime
-  // via `localStorage.setItem("ccgui.perf.toolOutputTailGate", "off")`,
+  // via `localStorage.setItem("doge.perf.toolOutputTailGate", "off")`,
   // in which case the flush handler is invoked synchronously per submit.
   const toolOutputMetadataRef = useRef(
     new Map<ToolOutputKey, { threadId: string; turnId: string | null }>(),

@@ -7,10 +7,10 @@ export const TIMELINE_VIRTUALIZATION_STREAMING_MIN_ROWS = 16;
 export const TIMELINE_VIRTUALIZATION_MIN_RENDER_WEIGHT = 96;
 export const TIMELINE_VIRTUALIZATION_HEAVY_ROW_WEIGHT = 16;
 export const TIMELINE_RENDER_WEIGHT_BASELINE_FLAG_KEY =
-  "ccgui.perf.timelineRenderWeightBaseline";
+  "doge.perf.timelineRenderWeightBaseline";
 /**
  * Adaptive render-weight 统计仍开启（轻量诊断 / heavy 行计数）。
- * 2026-08：消息时间线列表虚拟化已永久关闭（对齐 jetbrains-cc-gui 全量 DOM）。
+ * 2026-08：消息时间线列表虚拟化已永久关闭（对齐 reference desktop client 全量 DOM）。
  */
 export const TIMELINE_ADAPTIVE_RENDERING_ENABLED = true;
 

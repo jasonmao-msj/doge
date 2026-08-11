@@ -350,7 +350,7 @@ describe("GitDiffPanel", () => {
 
   it("disables the last-config footer action for a retired engine", async () => {
       window.localStorage.setItem(
-        "ccgui.git.lastCommitMessageConfig",
+        "doge.git.lastCommitMessageConfig",
         JSON.stringify({ engine: "retired-engine", language: "en" }),
       );
       render(
@@ -392,7 +392,7 @@ describe("GitDiffPanel", () => {
       // 上次配置仍是可见 quick option，不改变主按钮的显式选择语义。
       fireEvent.click(screen.getByRole("button", { name: "Generate commit message" }));
       fireEvent.click(
-        await screen.findByRole("button", { name: "Use last configuration" }),
+        await screen.findByRole("button", { name: /^Use last configuration/ }),
       );
 
       await waitFor(() => {

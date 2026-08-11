@@ -10,10 +10,10 @@ use tokio::time::Duration;
 const SESSION_HEALTH_PROBE_TIMEOUT_SECS: u64 = 15;
 pub(crate) const CREATE_SESSION_RUNTIME_RECOVERING_ERROR_PREFIX: &str =
     "[SESSION_CREATE_RUNTIME_RECOVERING]";
-pub(crate) const HOOK_SAFE_FALLBACK_METADATA_KEY: &str = "ccguiHookSafeFallback";
+pub(crate) const HOOK_SAFE_FALLBACK_METADATA_KEY: &str = "dogeHookSafeFallback";
 const HOOK_SAFE_FALLBACK_SOURCE: &str = "codex-sessionstart-hook-safe-fallback";
 const HOOK_SKIPPED_NOTICE: &str =
-    "ccgui skipped project SessionStart hooks for this thread because the primary thread creation path was blocked. Project hook context may be incomplete; inspect .codex/hooks.json.";
+    "doge skipped project SessionStart hooks for this thread because the primary thread creation path was blocked. Project hook context may be incomplete; inspect .codex/hooks.json.";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum CodexSessionEnsureMode {
@@ -690,14 +690,14 @@ mod tests {
 
         assert_eq!(response["result"]["thread"]["id"], "thread-1");
         assert_eq!(
-            response["ccguiHookSafeFallback"]["mode"],
+            response["dogeHookSafeFallback"]["mode"],
             "session-hooks-disabled"
         );
         assert_eq!(
-            response["ccguiHookSafeFallback"]["reason"],
+            response["dogeHookSafeFallback"]["reason"],
             "invalid_thread_start_response"
         );
-        assert!(response["ccguiHookSafeFallback"]["notice"]
+        assert!(response["dogeHookSafeFallback"]["notice"]
             .as_str()
             .unwrap_or_default()
             .contains(".codex/hooks.json"));

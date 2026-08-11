@@ -1,7 +1,7 @@
 // app — Simplified Chinese UI strings
 const app = {
   app: {
-    title: "ccgui",
+    title: "doge",
     subtitle: "下一代 VibeCoding编辑器",
   },
 };

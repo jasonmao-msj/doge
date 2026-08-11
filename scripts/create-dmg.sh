@@ -1,5 +1,5 @@
 #!/bin/bash
-# Create a DMG with drag-to-install panel for ccgui
+# Create a DMG with drag-to-install panel for doge
 #
 # Usage:
 #   ./scripts/create-dmg.sh <app_path> <output_dmg_path> [volume_name]
@@ -8,7 +8,7 @@ set -euo pipefail
 
 APP_PATH="${1:?Usage: $0 <app_path> <output_dmg_path> [volume_name]}"
 OUTPUT_DMG="${2:?Usage: $0 <app_path> <output_dmg_path> [volume_name]}"
-VOLUME_NAME="${3:-ccgui}"
+VOLUME_NAME="${3:-doge}"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
@@ -43,6 +43,36 @@ TEMP_DMG=""
 MOUNT_DIR=""
 DISK_NAME=""
 STAGE_DIR=""
+
+run_osascript_with_timeout() {
+  local timeout_seconds="$1"
+  shift
+
+  local output_file
+  local script_pid
+  local deadline
+  local exit_code=0
+
+  output_file="$(mktemp /tmp/doge-osascript-output-XXXXXX)"
+  osascript "$@" >"$output_file" &
+  script_pid=$!
+  deadline=$((SECONDS + timeout_seconds))
+
+  while kill -0 "$script_pid" 2>/dev/null; do
+    if (( SECONDS >= deadline )); then
+      kill "$script_pid" 2>/dev/null || true
+      wait "$script_pid" 2>/dev/null || true
+      rm -f "$output_file"
+      return 124
+    fi
+    sleep 0.2
+  done
+
+  wait "$script_pid" || exit_code=$?
+  cat "$output_file"
+  rm -f "$output_file"
+  return "$exit_code"
+}
 
 copy_app_bundle() {
   local src="$1"
@@ -93,7 +123,7 @@ create_applications_alias() {
   rm -rf "$target_path"
 
   alias_path=$(
-    osascript <<APPLESCRIPT
+    run_osascript_with_timeout 8 <<APPLESCRIPT
 tell application "Finder"
   set aliasFile to make alias file to POSIX file "/Applications" at POSIX file "$target_dir"
   return POSIX path of (aliasFile as alias)
@@ -137,10 +167,10 @@ trap cleanup EXIT
 APP_SIZE_KB=$(du -sk "$APP_PATH" | cut -f1)
 DMG_SIZE_KB=$((APP_SIZE_KB + 20480))
 
-STAGE_DIR="$(mktemp -d /tmp/ccgui-dmg-stage-XXXXXX)"
+STAGE_DIR="$(mktemp -d /tmp/doge-dmg-stage-XXXXXX)"
 mkdir -p "$STAGE_DIR/.background"
 
-if ! copy_app_bundle "$APP_PATH" "$STAGE_DIR/ccgui.app"; then
+if ! copy_app_bundle "$APP_PATH" "$STAGE_DIR/doge.app"; then
   echo "Error: Failed to stage app bundle"
   exit 1
 fi
@@ -148,7 +178,7 @@ fi
 create_applications_alias "$STAGE_DIR"
 cp "$BG_IMAGE" "$STAGE_DIR/.background/background.png"
 
-TEMP_DMG="$(mktemp /tmp/ccgui-dmg-XXXXXX).dmg"
+TEMP_DMG="$(mktemp /tmp/doge-dmg-XXXXXX).dmg"
 rm -f "$TEMP_DMG"
 
 echo "Creating writable DMG image..."
@@ -177,7 +207,7 @@ mdutil -i off "$MOUNT_DIR" 2>/dev/null || true
 mdutil -d "$MOUNT_DIR" 2>/dev/null || true
 
 echo "Configuring Finder window layout via AppleScript..."
-if ! osascript <<APPLESCRIPT
+if ! run_osascript_with_timeout 15 <<APPLESCRIPT
 tell application "Finder"
   tell disk "$DISK_NAME"
     open
@@ -192,7 +222,7 @@ tell application "Finder"
     set text size of theViewOptions to 12
     set background picture of theViewOptions to file ".background:background.png"
 
-    set position of item "ccgui.app" of container window to {180, 170}
+    set position of item "doge.app" of container window to {180, 170}
     set position of item "Applications" of container window to {480, 170}
 
     close
@@ -207,7 +237,7 @@ then
 fi
 
 # Close Finder windows referencing the volume to prevent busy-volume issues
-osascript -e "tell application \"Finder\" to close every window" 2>/dev/null || true
+run_osascript_with_timeout 5 -e "tell application \"Finder\" to close every window" 2>/dev/null || true
 sleep 2
 
 chmod -Rf go-w "$MOUNT_DIR" 2>/dev/null || true

@@ -16,7 +16,7 @@ describe("Messages explore rows", () => {
   });
 
   beforeEach(() => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
   });
 
   beforeAll(() => {
@@ -699,6 +699,11 @@ describe("Messages explore rows", () => {
       />,
     );
 
+    const processSummaryToggle = container.querySelector(
+      ".messages-process-phase-toggle",
+    );
+    expect(processSummaryToggle).toBeTruthy();
+    fireEvent.click(processSummaryToggle as HTMLElement);
     await waitFor(() => {
       const exploreBlocks = container.querySelectorAll(".explore-inline");
       expect(exploreBlocks.length).toBe(2);

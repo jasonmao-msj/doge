@@ -384,7 +384,7 @@ export function AgentInspectorDrawer() {
               selectedOpenAppId=""
             />
           </div>
-        ) : Boolean(isLive) ? (
+        ) : isLive ? (
           <div
             className="subagent-session-canvas-status is-waiting"
             role="status"

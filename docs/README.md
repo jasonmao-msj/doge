@@ -3,7 +3,7 @@ type: index
 status: active
 ---
 
-# mossx 文档中心
+# doge 文档中心
 
 本目录承载架构解释、操作指南、实现参考、计划、研究与可复核 evidence。产品行为以当前代码和 OpenSpec 为准；`docs/**` 不承担 active backlog 或 code-level rule 的 single source of truth。
 
@@ -67,6 +67,7 @@ status: active
 ### Performance 与卡顿
 
 - [`perf/README.md`](perf/README.md)
+- [`analysis/cold-start-click-freeze-postmortem-2026-08-10.md`](analysis/cold-start-click-freeze-postmortem-2026-08-10.md) — 历史冷启动点击冻结的完整复盘与平台差异
 - [`analysis/workspace-switch-session-catalog-performance-regression-2026-08-08.md`](analysis/workspace-switch-session-catalog-performance-regression-2026-08-08.md) — workspace navigation exhaustive catalog scan 根因、版本归因与闭环修复指南
 - [`perf/render-jank-knife-experiments-2026-07-08.md`](perf/render-jank-knife-experiments-2026-07-08.md)
 - [`perf/streaming-render-stall-design-2026-07-30.md`](perf/streaming-render-stall-design-2026-07-30.md)

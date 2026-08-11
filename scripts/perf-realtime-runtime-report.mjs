@@ -433,7 +433,7 @@ function buildFragment(summaries, ackDiagnostics, codexTimingDiagnostics, source
         metric: "codexPostAckFirstDeltaP95",
         values: codexPostAckFirstDeltaValues,
         unit: "ms",
-        notes: `measured renderer stream-latency/app-server-event Codex ccguiTiming from ${sourcePath}`,
+        notes: `measured renderer stream-latency/app-server-event Codex dogeTiming from ${sourcePath}`,
         unsupportedReason:
           unsupportedReason ??
           "No Codex stream-latency/app-server-event diagnostics with turnStartResponseToFirstTextDeltaMs were found. Run a build with Codex backend post-ack timing instrumentation.",
@@ -446,7 +446,7 @@ function buildFragment(summaries, ackDiagnostics, codexTimingDiagnostics, source
         notes: `measured renderer stream-latency/app-server-event Codex first runtime event from ${sourcePath}`,
         unsupportedReason:
           unsupportedReason ??
-          "No Codex ccguiTiming.turnStartResponseToFirstRuntimeEventMs diagnostics were found. Run a build with Codex backend phase timing instrumentation.",
+          "No Codex dogeTiming.turnStartResponseToFirstRuntimeEventMs diagnostics were found. Run a build with Codex backend phase timing instrumentation.",
       }),
       metricFromValues({
         scenario: "S-RS-RT",
@@ -456,7 +456,7 @@ function buildFragment(summaries, ackDiagnostics, codexTimingDiagnostics, source
         notes: `measured renderer stream-latency/app-server-event Codex runtime-event-to-text phase from ${sourcePath}`,
         unsupportedReason:
           unsupportedReason ??
-          "No Codex ccguiTiming.firstRuntimeEventToFirstTextDeltaMs diagnostics were found. Run a build with Codex backend phase timing instrumentation.",
+          "No Codex dogeTiming.firstRuntimeEventToFirstTextDeltaMs diagnostics were found. Run a build with Codex backend phase timing instrumentation.",
       }),
       metricFromValues({
         scenario: "S-RS-RI",
@@ -466,7 +466,7 @@ function buildFragment(summaries, ackDiagnostics, codexTimingDiagnostics, source
         notes: `measured renderer stream-latency/app-server-event Codex runtime-event-to-assistant-item phase from ${sourcePath}`,
         unsupportedReason:
           unsupportedReason ??
-          "No Codex ccguiTiming.firstRuntimeEventToFirstAssistantItemEventMs diagnostics were found. Run a build with Codex assistant item phase timing instrumentation.",
+          "No Codex dogeTiming.firstRuntimeEventToFirstAssistantItemEventMs diagnostics were found. Run a build with Codex assistant item phase timing instrumentation.",
       }),
       metricFromValues({
         scenario: "S-RS-IT",
@@ -476,7 +476,7 @@ function buildFragment(summaries, ackDiagnostics, codexTimingDiagnostics, source
         notes: `measured renderer stream-latency/app-server-event Codex assistant-item-to-text phase from ${sourcePath}`,
         unsupportedReason:
           unsupportedReason ??
-          "No Codex ccguiTiming.firstAssistantItemEventToFirstTextDeltaMs diagnostics were found. Run a build with Codex assistant item phase timing instrumentation.",
+          "No Codex dogeTiming.firstAssistantItemEventToFirstTextDeltaMs diagnostics were found. Run a build with Codex assistant item phase timing instrumentation.",
       }),
       metricFromValues({
         scenario: "S-RS-VL",

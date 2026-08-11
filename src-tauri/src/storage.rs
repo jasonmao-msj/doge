@@ -136,7 +136,8 @@ fn read_workspace_list(path: &Path) -> Result<Vec<WorkspaceEntry>, String> {
     serde_json::from_str(&data).map_err(|e| e.to_string())
 }
 
-const DEFAULT_WORKSPACE_PATH_SUFFIXES: [&str; 6] = [
+const DEFAULT_WORKSPACE_PATH_SUFFIXES: [&str; 7] = [
+    "/.doge/workspace",
     "/.ccgui/workspace",
     "/.mossx/workspace",
     "/.codemoss/workspace",

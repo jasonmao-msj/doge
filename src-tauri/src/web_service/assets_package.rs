@@ -13,12 +13,13 @@ use tokio::io::AsyncWriteExt;
 use uuid::Uuid;
 use zip::ZipArchive;
 
-const VERSION_MARKER_FILE: &str = ".ccgui-web-assets-version";
+const VERSION_MARKER_FILE: &str = ".doge-web-assets-version";
+const LEGACY_VERSION_MARKER_FILES: &[&str] = &[".ccgui-web-assets-version"];
 const MANIFEST_FILE: &str = "manifest.json";
 const MANIFEST_SCHEMA_VERSION: u32 = 1;
-const RELEASE_BASE_URL_ENV: &str = "MOSSX_WEB_ASSETS_BASE_URL";
-const RELEASE_REPOSITORY_URL: &str =
-    "https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/download";
+const RELEASE_BASE_URL_ENV: &str = "DOGE_WEB_ASSETS_BASE_URL";
+const LEGACY_RELEASE_BASE_URL_ENV: &str = "MOSSX_WEB_ASSETS_BASE_URL";
+const RELEASE_REPOSITORY_URL: &str = "https://github.com/jasonmao-msj/doge/releases/download";
 const MAX_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
 const MAX_UNPACKED_BYTES: u64 = 1024 * 1024 * 1024;
 const MAX_ARCHIVE_ENTRIES: usize = 100_000;
@@ -110,7 +111,7 @@ pub(crate) async fn install(app: &AppHandle) -> WebAssetsStatus {
         );
     }
 
-    let archive_name = format!("ccgui-web-assets_{required_version}.zip");
+    let archive_name = format!("doge-web-assets_{required_version}.zip");
     let base_url = release_base_url(&required_version);
     let archive_url = format!("{base_url}/{archive_name}");
     let checksum_url = format!("{archive_url}.sha256");
@@ -516,8 +517,8 @@ fn validate_installation(
     current_dir: &Path,
     required_version: &str,
 ) -> Result<WebAssetsManifest, String> {
-    let marker = fs::read_to_string(current_dir.join(VERSION_MARKER_FILE))
-        .map_err(|error| format!("failed to read Web assets version marker: {error}"))?;
+    let marker = read_version_marker(current_dir)
+        .ok_or_else(|| "failed to read Web assets version marker".to_string())?;
     if marker.trim() != required_version {
         return Err(format!(
             "Web assets version {} does not match required version {required_version}",
@@ -608,8 +609,9 @@ fn parse_checksum(source: &str) -> Result<String, String> {
 }
 
 fn release_base_url(version: &str) -> String {
-    env::var(RELEASE_BASE_URL_ENV)
-        .ok()
+    [RELEASE_BASE_URL_ENV, LEGACY_RELEASE_BASE_URL_ENV]
+        .into_iter()
+        .find_map(|env_name| env::var(env_name).ok())
         .map(|value| value.trim_end_matches('/').to_string())
         .filter(|value| !value.is_empty())
         .unwrap_or_else(|| format!("{RELEASE_REPOSITORY_URL}/v{version}"))
@@ -627,8 +629,7 @@ fn current_assets_dir(app: &AppHandle) -> Result<PathBuf, String> {
 }
 
 fn read_installed_version(current_dir: &Path) -> Option<String> {
-    fs::read_to_string(current_dir.join(VERSION_MARKER_FILE))
-        .ok()
+    read_version_marker(current_dir)
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())
         .or_else(|| {
@@ -637,6 +638,12 @@ fn read_installed_version(current_dir: &Path) -> Option<String> {
                 .ok()
                 .map(|manifest| manifest.assets_version)
         })
+}
+
+fn read_version_marker(current_dir: &Path) -> Option<String> {
+    std::iter::once(VERSION_MARKER_FILE)
+        .chain(LEGACY_VERSION_MARKER_FILES.iter().copied())
+        .find_map(|filename| fs::read_to_string(current_dir.join(filename)).ok())
 }
 
 fn failed_status(

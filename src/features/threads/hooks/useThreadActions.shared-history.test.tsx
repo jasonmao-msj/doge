@@ -31,7 +31,7 @@ vi.mock("../../shared-session/services/sharedSessions", async (importOriginal) =
 describe("useThreadActions Shared history", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    window.localStorage.removeItem("mossx.sharedProjection");
+    window.localStorage.removeItem("doge.sharedProjection");
   });
 
   it("accepts a valid empty Shared history without entering Native recovery", async () => {

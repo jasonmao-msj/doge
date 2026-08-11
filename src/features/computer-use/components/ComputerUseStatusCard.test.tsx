@@ -50,8 +50,8 @@ function authorizationContinuityStatus(
     kind: "matching_host",
     diagnosticMessage: "current host matches the last successful authorization host",
     currentHost: {
-      displayName: "ccgui.app",
-      executablePath: "/Applications/ccgui.app/Contents/MacOS/cc-gui",
+      displayName: "doge.app",
+      executablePath: "/Applications/doge.app/Contents/MacOS/cc-gui",
       identifier: "com.codex.ccgui",
       teamIdentifier: "TEAM123",
       backendMode: "local",
@@ -60,8 +60,8 @@ function authorizationContinuityStatus(
       signingSummary: "Authority=Developer ID Application: Demo",
     },
     lastSuccessfulHost: {
-      displayName: "ccgui.app",
-      executablePath: "/Applications/ccgui.app/Contents/MacOS/cc-gui",
+      displayName: "doge.app",
+      executablePath: "/Applications/doge.app/Contents/MacOS/cc-gui",
       identifier: "com.codex.ccgui",
       teamIdentifier: "TEAM123",
       backendMode: "local",
@@ -661,8 +661,8 @@ describe("ComputerUseStatusCard", () => {
             signingSummary: "adhoc",
           },
           lastSuccessfulHost: {
-            displayName: "ccgui.app",
-            executablePath: "/Applications/ccgui.app/Contents/MacOS/cc-gui",
+            displayName: "doge.app",
+            executablePath: "/Applications/doge.app/Contents/MacOS/cc-gui",
             identifier: "com.codex.ccgui",
             teamIdentifier: "TEAM123",
             backendMode: "local",
@@ -705,7 +705,7 @@ describe("ComputerUseStatusCard", () => {
       ),
     ).toBeTruthy();
     expect(screen.getByText("target/debug/cc-gui")).toBeTruthy();
-    expect(screen.getAllByText("ccgui.app")[0]).toBeTruthy();
+    expect(screen.getAllByText("doge.app")[0]).toBeTruthy();
     expect(
       screen.getByText("executable_path, host_role, launch_mode"),
     ).toBeTruthy();
@@ -754,7 +754,7 @@ describe("ComputerUseStatusCard", () => {
             "Computer Use authorization continuity is blocked because the current packaged app sender is not signed with a stable Developer ID identity. Rebuild and relaunch a signed packaged app before retrying.",
           currentHost: {
             displayName: "cc-gui",
-            executablePath: "/Applications/ccgui.app/Contents/MacOS/cc-gui",
+            executablePath: "/Applications/doge.app/Contents/MacOS/cc-gui",
             identifier: "cc_gui-f691d086c63a0067",
             teamIdentifier: null,
             backendMode: "local",

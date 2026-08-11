@@ -110,7 +110,7 @@ pub(crate) struct MaterializedCodexProviderProfile {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-struct CodemossConfig {
+struct DogeConfig {
     #[serde(default)]
     codex: CodexSection,
     #[serde(flatten)]
@@ -127,15 +127,15 @@ fn config_path() -> Result<PathBuf, String> {
     app_paths::config_file_path()
 }
 
-fn read_config() -> Result<CodemossConfig, String> {
+fn read_config() -> Result<DogeConfig, String> {
     let path = config_path()?;
     if !path.exists() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     let content = fs::read_to_string(&path)
         .map_err(|error| format!("failed to read provider config {}: {error}", path.display()))?;
     if content.trim().is_empty() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     serde_json::from_str(&content).map_err(|error| {
         format!(

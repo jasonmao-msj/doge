@@ -3,7 +3,7 @@
 //! Unlike kimi/grok (which materialize provider configs into the CLI's own
 //! config file under an isolated home), OpenCode providers are injected at
 //! spawn time through the `OPENCODE_CONFIG_CONTENT` environment variable, so
-//! ccgui never modifies the user's own `opencode.json`.
+//! doge never modifies the user's own `opencode.json`.
 
 use std::collections::HashMap;
 use std::fs;
@@ -16,7 +16,7 @@ use crate::session_management::EngineProviderBinding;
 use crate::types::OpenCodeProviderConfig;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
-struct CodemossConfig {
+struct DogeConfig {
     #[serde(default)]
     opencode: OpenCodeSection,
     #[serde(flatten)]
@@ -29,15 +29,15 @@ struct OpenCodeSection {
     providers: HashMap<String, Value>,
 }
 
-fn read_config() -> Result<CodemossConfig, String> {
+fn read_config() -> Result<DogeConfig, String> {
     let path = app_paths::config_file_path()?;
     if !path.exists() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     let content = fs::read_to_string(&path)
         .map_err(|error| format!("failed to read provider config {}: {error}", path.display()))?;
     if content.trim().is_empty() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     serde_json::from_str(&content).map_err(|error| {
         format!(
@@ -88,7 +88,7 @@ fn value_to_opencode_provider(id: &str, value: &Value) -> Result<OpenCodeProvide
     })
 }
 
-/// Resolve a stored managed provider by id from ccgui's config.json.
+/// Resolve a stored managed provider by id from doge's config.json.
 /// Returns `None` for the reserved local profile id or unknown ids.
 fn resolve_managed_provider(profile_id: &str) -> Result<Option<OpenCodeProviderConfig>, String> {
     let profile_id = profile_id.trim();
@@ -105,8 +105,9 @@ fn resolve_managed_provider(profile_id: &str) -> Result<Option<OpenCodeProviderC
 pub(crate) const OPENCODE_LOCAL_PROVIDER_PROFILE_ID: &str = "__local_opencode_json__";
 
 /// Stable provider key inside the injected `OPENCODE_CONFIG_CONTENT`.
-/// Model refs under a managed provider look like `ccgui/<model>`.
-pub(crate) const OPENCODE_MANAGED_PROVIDER_KEY: &str = "ccgui";
+/// Model refs under a managed provider look like `doge/<model>`.
+pub(crate) const OPENCODE_MANAGED_PROVIDER_KEY: &str = "doge";
+const LEGACY_OPENCODE_MANAGED_PROVIDER_KEYS: &[&str] = &["ccgui"];
 
 #[derive(Debug, Clone)]
 pub(crate) struct OpenCodeProviderLaunchProfile {
@@ -130,12 +131,16 @@ pub(crate) fn opencode_runtime_key(
     format!("opencode::{workspace_id}::{profile_id}")
 }
 
-/// Qualify a bare model id with the managed provider key (`ccgui/<model>`).
-/// Already-qualified refs (`ccgui/...`) pass through unchanged.
+/// Qualify a bare or legacy model id with the managed provider key (`doge/<model>`).
 pub(crate) fn qualify_managed_model_ref(model: &str) -> String {
     let trimmed = model.trim();
     if trimmed.starts_with(&format!("{OPENCODE_MANAGED_PROVIDER_KEY}/")) {
         trimmed.to_string()
+    } else if let Some(model_id) = LEGACY_OPENCODE_MANAGED_PROVIDER_KEYS
+        .iter()
+        .find_map(|key| trimmed.strip_prefix(&format!("{key}/")))
+    {
+        format!("{OPENCODE_MANAGED_PROVIDER_KEY}/{model_id}")
     } else {
         format!("{OPENCODE_MANAGED_PROVIDER_KEY}/{trimmed}")
     }
@@ -287,8 +292,9 @@ mod tests {
 
     #[test]
     fn qualify_managed_model_ref_prefixes_bare_models_only() {
-        assert_eq!(qualify_managed_model_ref("gpt-5"), "ccgui/gpt-5");
-        assert_eq!(qualify_managed_model_ref("ccgui/gpt-5"), "ccgui/gpt-5");
+        assert_eq!(qualify_managed_model_ref("gpt-5"), "doge/gpt-5");
+        assert_eq!(qualify_managed_model_ref("doge/gpt-5"), "doge/gpt-5");
+        assert_eq!(qualify_managed_model_ref("ccgui/gpt-5"), "doge/gpt-5");
     }
 
     #[test]
@@ -307,7 +313,7 @@ mod tests {
         let content = render_opencode_provider_config_content(&sample_provider())
             .expect("config content renders");
         let document: Value = serde_json::from_str(&content).expect("valid json");
-        let provider = &document["provider"]["ccgui"];
+        let provider = &document["provider"]["doge"];
         assert_eq!(provider["npm"], "@ai-sdk/openai-compatible");
         assert_eq!(provider["name"], "Relay");
         assert_eq!(

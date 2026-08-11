@@ -176,7 +176,7 @@ impl ClaudeSession {
     /// compact retry path silently drops the snapshot, so a curated
     /// skill that was enabled after the first attempt's settings clone
     /// would not be injected on retry.
-    #[allow(dead_code)] // callers live in `bin/cc_gui_daemon`; the lib
+    #[allow(dead_code)] // callers live in the daemon source tree; the lib
                         // build cannot see those references and the
                         // method is otherwise correct.
     pub async fn send_message_with_auto_compact_retry_with_app_settings(

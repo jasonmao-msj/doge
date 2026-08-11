@@ -15,7 +15,7 @@ import {
 } from "./mainCanvasContextInjection";
 
 export const MULTI_AGENT_CONVERSATION_ITEM_EVENT =
-  "ccgui:multi-agent-conversation-item";
+  "doge:multi-agent-conversation-item";
 
 export type MultiAgentConversationItemDetail = {
   workspaceId: string;
@@ -82,10 +82,10 @@ export function subscribeMultiAgentConversationItems(
     if (isDetail(detail)) listener(detail);
   };
   window.addEventListener(MULTI_AGENT_CONVERSATION_ITEM_EVENT, handle);
-  window.addEventListener("ccgui:squad-conversation-item", handle);
+  window.addEventListener("doge:squad-conversation-item", handle);
   return () => {
     window.removeEventListener(MULTI_AGENT_CONVERSATION_ITEM_EVENT, handle);
-    window.removeEventListener("ccgui:squad-conversation-item", handle);
+    window.removeEventListener("doge:squad-conversation-item", handle);
   };
 }
 

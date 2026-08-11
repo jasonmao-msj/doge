@@ -137,7 +137,7 @@ fn write_agent_store(store: &AgentStore) -> Result<(), String> {
     let path = agent_file_path()?;
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create .ccgui directory: {}", e))?;
+            .map_err(|e| format!("Failed to create .doge directory: {}", e))?;
     }
     let content = serde_json::to_string(store)
         .map_err(|e| format!("Failed to serialize agent store: {}", e))?;

@@ -1,16 +1,148 @@
-name: Release
+name: doge Release
 
 on:
   workflow_dispatch:
+    inputs:
+      windows_artifact_only:
+        description: Build an unsigned Windows installer artifact without publishing a release
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  build_web_assets:
-    name: web assets
+  release_preflight:
+    name: updater release preflight
+    if: ${{ inputs.windows_artifact_only != true }}
     runs-on: ubuntu-latest
+    environment: release
+    env:
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      TAURI_SIGNING_PRIVATE_KEY_B64: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_B64 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify doge updater trust chain
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TAURI_SIGNING_PRIVATE_KEY_B64:-}" ] || \
+             [ -z "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" ]; then
+            echo "doge updater signing secrets are not configured; release is blocked." >&2
+            exit 1
+          fi
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          config = json.loads(Path("src-tauri/tauri.conf.json").read_text())
+          windows_config = json.loads(Path("src-tauri/tauri.windows.conf.json").read_text())
+          updater = config.get("plugins", {}).get("updater")
+          expected_endpoint = "https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json"
+
+          errors = []
+          if config.get("bundle", {}).get("createUpdaterArtifacts") is not True:
+              errors.append("Tauri updater artifacts are disabled")
+          if windows_config.get("bundle", {}).get("createUpdaterArtifacts") is not True:
+              errors.append("Windows updater artifacts are disabled")
+          if not isinstance(updater, dict) or updater.get("active") is not True:
+              errors.append("Tauri updater plugin is disabled")
+          else:
+              if not updater.get("pubkey"):
+                  errors.append("doge updater public key is missing")
+              if updater.get("endpoints") != [expected_endpoint]:
+                  errors.append("doge updater endpoint is not canonical")
+
+          if errors:
+              raise SystemExit("Release is fail-closed:\n- " + "\n- ".join(errors))
+          PY
+
+  build_windows_artifact:
+    name: doge windows artifact-only (x64)
+    if: ${{ inputs.windows_artifact_only == true }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          cache-bin: false
+          shared-key: v1-win-x64-artifact-rust
+          cache-on-failure: true
+
+      - name: Configure sccache environment
+        shell: pwsh
+        run: |
+          "RUSTC_WRAPPER=sccache" >> $env:GITHUB_ENV
+          "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
+          "SCCACHE_DIR=$env:LOCALAPPDATA\sccache" >> $env:GITHUB_ENV
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify doge branding
+        run: npm run check:branding
+
+      - name: Build unsigned Windows NSIS installer
+        shell: pwsh
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
+        run: |
+          $ErrorActionPreference = "Stop"
+          npm run tauri -- build --config src-tauri/tauri.windows.conf.json --bundles nsis
+
+      - name: Stage installer and checksum
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installers = @(Get-ChildItem "src-tauri/target/release/bundle/nsis" -Filter "doge_*-setup.exe")
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one doge NSIS installer, found $($installers.Count)"
+          }
+
+          New-Item -ItemType Directory -Force "release-artifacts" | Out-Null
+          $installer = $installers[0]
+          $target = Join-Path "release-artifacts" $installer.Name
+          Copy-Item $installer.FullName $target
+          $hash = (Get-FileHash -Algorithm SHA256 $target).Hash.ToLowerInvariant()
+          "$hash  $($installer.Name)" | Set-Content -Encoding ascii "$target.sha256"
+
+      - name: Upload Windows installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: doge-windows-x64-unsigned
+          path: |
+            release-artifacts/doge_*-setup.exe
+            release-artifacts/doge_*-setup.exe.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  build_web_assets:
+    name: doge web assets
+    runs-on: ubuntu-latest
+    needs: release_preflight
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,7 +187,7 @@ jobs:
           test -f dist/index.html
           test -d dist/assets
           mkdir -p release-artifacts
-          ARCHIVE="ccgui-web-assets_${VERSION}.zip"
+          ARCHIVE="doge-web-assets_${VERSION}.zip"
           (cd dist && zip -q -r "../release-artifacts/${ARCHIVE}" .)
           (cd release-artifacts && sha256sum "$ARCHIVE" > "${ARCHIVE}.sha256")
           unzip -t "release-artifacts/${ARCHIVE}"
@@ -67,16 +199,17 @@ jobs:
       - name: Upload Web assets
         uses: actions/upload-artifact@v4
         with:
-          name: web-assets
+          name: doge-web-assets
           path: |
-            release-artifacts/ccgui-web-assets_*.zip
-            release-artifacts/ccgui-web-assets_*.zip.sha256
+            release-artifacts/doge-web-assets_*.zip
+            release-artifacts/doge-web-assets_*.zip.sha256
           if-no-files-found: error
 
   build_macos:
-    name: macos (${{ matrix.arch }})
+    name: doge macos (${{ matrix.arch }})
     runs-on: ${{ matrix.platform }}
     environment: release
+    needs: release_preflight
     strategy:
       fail-fast: false
       matrix:
@@ -111,7 +244,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
           cache-bin: false
           shared-key: v1-macos-${{ matrix.arch == 'aarch64' && 'arm64' || 'x64' }}-rust
           cache-on-failure: true
@@ -170,7 +303,7 @@ jobs:
           set -euo pipefail
           mkdir -p "$HOME/.tauri"
           # DO NOT decode - Tauri expects base64-encoded key
-          printf '%s' "$TAURI_SIGNING_PRIVATE_KEY_B64" > "$HOME/.tauri/ccgui.key"
+          printf '%s' "$TAURI_SIGNING_PRIVATE_KEY_B64" > "$HOME/.tauri/doge.key"
 
       - name: Build app bundle
         env:
@@ -192,15 +325,15 @@ jobs:
         run: |
           set -euo pipefail
           ditto -c -k --keepParent \
-            src-tauri/target/release/bundle/macos/ccgui.app \
-            ccgui.zip
+            src-tauri/target/release/bundle/macos/doge.app \
+            doge.zip
 
-          xcrun notarytool submit ccgui.zip \
+          xcrun notarytool submit doge.zip \
             --keychain-profile "$NOTARY_PROFILE_NAME" \
             --wait
 
           xcrun stapler staple \
-            src-tauri/target/release/bundle/macos/ccgui.app
+            src-tauri/target/release/bundle/macos/doge.app
 
       - name: Package artifacts
         run: |
@@ -215,48 +348,49 @@ jobs:
           )
 
           mkdir -p release-artifacts
+          ARCH="${{ matrix.arch }}"
 
           ditto -c -k --keepParent \
-            src-tauri/target/release/bundle/macos/ccgui.app \
-            release-artifacts/ccgui.zip
+            src-tauri/target/release/bundle/macos/doge.app \
+            release-artifacts/doge_${ARCH}.zip
 
-          ARCH="${{ matrix.arch }}"
           bash scripts/create-dmg.sh \
-            src-tauri/target/release/bundle/macos/ccgui.app \
-            release-artifacts/ccgui_${VERSION}_${ARCH}.dmg
+            src-tauri/target/release/bundle/macos/doge.app \
+            release-artifacts/doge_${VERSION}_${ARCH}.dmg
 
           COPYFILE_DISABLE=1 tar -czf \
-            src-tauri/target/release/bundle/macos/ccgui.app.tar.gz \
-            -C src-tauri/target/release/bundle/macos ccgui.app
+            src-tauri/target/release/bundle/macos/doge.app.tar.gz \
+            -C src-tauri/target/release/bundle/macos doge.app
 
           # Write the base64-encoded key to file (tauri signer expects this format)
           mkdir -p "$HOME/.tauri"
-          printf '%s' "$TAURI_SIGNING_PRIVATE_KEY_B64" > "$HOME/.tauri/ccgui.key"
+          printf '%s' "$TAURI_SIGNING_PRIVATE_KEY_B64" > "$HOME/.tauri/doge.key"
 
           npm run tauri signer sign -- \
-            -f "$HOME/.tauri/ccgui.key" \
+            -f "$HOME/.tauri/doge.key" \
             -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" \
-            src-tauri/target/release/bundle/macos/ccgui.app.tar.gz
+            src-tauri/target/release/bundle/macos/doge.app.tar.gz
 
-          cp src-tauri/target/release/bundle/macos/ccgui.app.tar.gz \
-            release-artifacts/ccgui_${ARCH}.app.tar.gz
-          cp src-tauri/target/release/bundle/macos/ccgui.app.tar.gz.sig \
-            release-artifacts/ccgui_${ARCH}.app.tar.gz.sig
+          cp src-tauri/target/release/bundle/macos/doge.app.tar.gz \
+            release-artifacts/doge_${ARCH}.app.tar.gz
+          cp src-tauri/target/release/bundle/macos/doge.app.tar.gz.sig \
+            release-artifacts/doge_${ARCH}.app.tar.gz.sig
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: macos-${{ matrix.arch }}
+          name: doge-macos-${{ matrix.arch }}
           path: |
-            release-artifacts/ccgui.zip
-            release-artifacts/ccgui_*_${{ matrix.arch }}.dmg
-            release-artifacts/ccgui_${{ matrix.arch }}.app.tar.gz
-            release-artifacts/ccgui_${{ matrix.arch }}.app.tar.gz.sig
+            release-artifacts/doge_${{ matrix.arch }}.zip
+            release-artifacts/doge_*_${{ matrix.arch }}.dmg
+            release-artifacts/doge_${{ matrix.arch }}.app.tar.gz
+            release-artifacts/doge_${{ matrix.arch }}.app.tar.gz.sig
 
   build_linux:
-    name: appimage (x86_64)
+    name: doge appimage (x86_64)
     runs-on: ubuntu-24.04
     environment: release
+    needs: release_preflight
     env:
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       TAURI_SIGNING_PRIVATE_KEY_B64: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_B64 }}
@@ -280,7 +414,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
           cache-bin: false
           shared-key: v1-linux-x64-rust
           cache-on-failure: true
@@ -335,22 +469,23 @@ jobs:
             exit 1
           fi
           mkdir -p "$HOME/.tauri"
-          printf '%s' "$TAURI_SIGNING_PRIVATE_KEY_B64" > "$HOME/.tauri/ccgui.key"
+          printf '%s' "$TAURI_SIGNING_PRIVATE_KEY_B64" > "$HOME/.tauri/doge.key"
           npm run tauri signer sign -- \
-            -f "$HOME/.tauri/ccgui.key" \
+            -f "$HOME/.tauri/doge.key" \
             -p "$TAURI_SIGNING_PRIVATE_KEY_PASSWORD" \
             "$APPIMAGE"
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: appimage-x86_64
+          name: doge-appimage-x86_64
           path: src-tauri/target/release/bundle/appimage/*.AppImage*
 
   build_windows:
-    name: windows (x64)
+    name: doge windows (x64)
     runs-on: windows-latest
     environment: release
+    needs: release_preflight
     env:
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
       TAURI_SIGNING_PRIVATE_KEY_B64: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_B64 }}
@@ -369,7 +504,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
           cache-bin: false
           shared-key: v1-win-x64-rust
           cache-on-failure: true
@@ -406,7 +541,7 @@ jobs:
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: windows-x64
+          name: doge-windows-x64
           path: |
             src-tauri/target/release/bundle/nsis/*.exe
             src-tauri/target/release/bundle/nsis/*.exe.sig
@@ -415,6 +550,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     needs:
+      - release_preflight
       - build_web_assets
       - build_macos
       - build_linux
@@ -425,7 +561,8 @@ jobs:
         !cancelled() &&
         needs.build_macos.result == 'success' &&
         needs.build_linux.result == 'success' &&
-        needs.build_windows.result == 'success'
+        needs.build_windows.result == 'success' &&
+        needs.release_preflight.result == 'success'
       }}
     steps:
       - name: Checkout
@@ -436,20 +573,20 @@ jobs:
       - name: Download macOS artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: macos-*
+          pattern: doge-macos-*
           path: release-artifacts
           merge-multiple: true
 
       - name: Download Linux AppImage
         uses: actions/download-artifact@v4
         with:
-          name: appimage-x86_64
+          name: doge-appimage-x86_64
           path: release-artifacts
 
       - name: Download Windows installer
         uses: actions/download-artifact@v4
         with:
-          name: windows-x64
+          name: doge-windows-x64
           path: release-artifacts
 
       - name: Download Web assets
@@ -457,7 +594,7 @@ jobs:
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: web-assets
+          name: doge-web-assets
           path: release-artifacts
 
       - name: Build latest.json
@@ -472,8 +609,10 @@ jobs:
           PY
           )
 
-          SIGNATURE_AARCH64=$(cat release-artifacts/ccgui_aarch64.app.tar.gz.sig)
-          SIGNATURE_X86_64=$(cat release-artifacts/ccgui_x86_64.app.tar.gz.sig)
+          test -s release-artifacts/doge_aarch64.app.tar.gz.sig
+          test -s release-artifacts/doge_x86_64.app.tar.gz.sig
+          SIGNATURE_AARCH64=$(cat release-artifacts/doge_aarch64.app.tar.gz.sig)
+          SIGNATURE_X86_64=$(cat release-artifacts/doge_x86_64.app.tar.gz.sig)
           LAST_TAG=$(git tag --sort=-version:refname \
             | grep -v "^v${VERSION}$" \
             | head -n 1 || true)
@@ -531,19 +670,23 @@ jobs:
 
           platforms = {
             "darwin-aarch64": {
-              "url": "https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/download/v${VERSION}/ccgui_aarch64.app.tar.gz",
+              "url": "https://github.com/jasonmao-msj/doge/releases/download/v${VERSION}/doge_aarch64.app.tar.gz",
               "signature": "${SIGNATURE_AARCH64}",
             },
             "darwin-x86_64": {
-              "url": "https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/download/v${VERSION}/ccgui_x86_64.app.tar.gz",
+              "url": "https://github.com/jasonmao-msj/doge/releases/download/v${VERSION}/doge_x86_64.app.tar.gz",
               "signature": "${SIGNATURE_X86_64}",
             }
           }
 
-          # Find Linux AppImages
-          appimages = list(artifacts_dir.rglob("*.AppImage.tar.gz"))
+          # Require one signed Linux updater artifact. Prefer the Tauri updater
+          # archive when it exists, otherwise use the signed AppImage itself.
+          appimages = list(artifacts_dir.rglob("doge_*.AppImage.tar.gz"))
           if not appimages:
-            appimages = list(artifacts_dir.rglob("*.AppImage"))
+            appimages = list(artifacts_dir.rglob("doge_*.AppImage"))
+
+          if len(appimages) != 1:
+            raise SystemExit(f"Expected exactly one doge Linux updater artifact, found {len(appimages)}")
 
           def detect_arch(name):
             lowered = name.lower()
@@ -553,27 +696,32 @@ jobs:
               return "x86_64"
             return None
 
-          for appimage in appimages:
-            arch = detect_arch(appimage.name)
-            if not arch:
-              continue
-            sig_path = appimage.with_suffix(appimage.suffix + ".sig")
-            if sig_path.exists():
-              platforms[f"linux-{arch}"] = {
-                "url": f"https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/download/v${VERSION}/{appimage.name}",
-                "signature": sig_path.read_text().strip(),
-              }
+          appimage = appimages[0]
+          arch = detect_arch(appimage.name)
+          if arch != "x86_64":
+            raise SystemExit(f"Unexpected Linux updater architecture: {appimage.name}")
+          sig_path = appimage.with_suffix(appimage.suffix + ".sig")
+          signature = sig_path.read_text().strip() if sig_path.is_file() else ""
+          if not signature:
+            raise SystemExit(f"Missing Linux updater signature: {sig_path}")
+          platforms["linux-x86_64"] = {
+            "url": f"https://github.com/jasonmao-msj/doge/releases/download/v${VERSION}/{appimage.name}",
+            "signature": signature,
+          }
 
-          # Find Windows NSIS installer (Tauri 2 generates .exe + .exe.sig)
-          nsis_exes = [f for f in artifacts_dir.rglob("*-setup.exe") if not f.name.endswith(".sig")]
-          for nsis_exe in nsis_exes:
-            sig_path = Path(str(nsis_exe) + ".sig")
-            if sig_path.exists():
-              platforms["windows-x86_64"] = {
-                "url": f"https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases/download/v${VERSION}/{nsis_exe.name}",
-                "signature": sig_path.read_text().strip(),
-              }
-              break
+          # Require one signed doge NSIS installer.
+          nsis_exes = list(artifacts_dir.rglob("doge_*-setup.exe"))
+          if len(nsis_exes) != 1:
+            raise SystemExit(f"Expected exactly one doge NSIS installer, found {len(nsis_exes)}")
+          nsis_exe = nsis_exes[0]
+          sig_path = Path(str(nsis_exe) + ".sig")
+          signature = sig_path.read_text().strip() if sig_path.is_file() else ""
+          if not signature:
+            raise SystemExit(f"Missing Windows updater signature: {sig_path}")
+          platforms["windows-x86_64"] = {
+            "url": f"https://github.com/jasonmao-msj/doge/releases/download/v${VERSION}/{nsis_exe.name}",
+            "signature": signature,
+          }
 
           payload = {
             "version": "${VERSION}",
@@ -601,18 +749,19 @@ jobs:
 
           ASSETS=()
           for pattern in \
-            "release-artifacts/ccgui.zip" \
-            "release-artifacts/ccgui_*_aarch64.dmg" \
-            "release-artifacts/ccgui_*_x86_64.dmg" \
-            "release-artifacts/ccgui_aarch64.app.tar.gz" \
-            "release-artifacts/ccgui_aarch64.app.tar.gz.sig" \
-            "release-artifacts/ccgui_x86_64.app.tar.gz" \
-            "release-artifacts/ccgui_x86_64.app.tar.gz.sig" \
+            "release-artifacts/doge_aarch64.zip" \
+            "release-artifacts/doge_x86_64.zip" \
+            "release-artifacts/doge_*_aarch64.dmg" \
+            "release-artifacts/doge_*_x86_64.dmg" \
+            "release-artifacts/doge_aarch64.app.tar.gz" \
+            "release-artifacts/doge_aarch64.app.tar.gz.sig" \
+            "release-artifacts/doge_x86_64.app.tar.gz" \
+            "release-artifacts/doge_x86_64.app.tar.gz.sig" \
             "release-artifacts/*.AppImage*" \
             "release-artifacts/*-setup.exe" \
             "release-artifacts/*-setup.exe.sig" \
-            "release-artifacts/ccgui-web-assets_*.zip" \
-            "release-artifacts/ccgui-web-assets_*.zip.sha256" \
+            "release-artifacts/doge-web-assets_*.zip" \
+            "release-artifacts/doge-web-assets_*.zip.sha256" \
             "release-artifacts/latest.json"
           do
             for f in $pattern; do

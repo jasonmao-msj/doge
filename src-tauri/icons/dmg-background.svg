@@ -1,29 +1,29 @@
 <svg width="660" height="400" viewBox="0 0 660 400" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bgGrad" x1="24" y1="14" x2="636" y2="392" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#F8FBFF"/>
-      <stop offset="0.52" stop-color="#EAF6F2"/>
-      <stop offset="1" stop-color="#E4EEFF"/>
+      <stop offset="0" stop-color="#FFF8ED"/>
+      <stop offset="0.52" stop-color="#F8F1E4"/>
+      <stop offset="1" stop-color="#EAF5F2"/>
     </linearGradient>
     <linearGradient id="veilGrad" x1="18" y1="384" x2="620" y2="38" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#C8DBFA" stop-opacity="0.2"/>
-      <stop offset="1" stop-color="#BFF1E0" stop-opacity="0.24"/>
+      <stop offset="0" stop-color="#F4B45B" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#7CCEC4" stop-opacity="0.2"/>
     </linearGradient>
     <radialGradient id="leftAura" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(92 314) rotate(4.8) scale(228 176)">
-      <stop offset="0" stop-color="#8CB7F3" stop-opacity="0.24"/>
-      <stop offset="1" stop-color="#8CB7F3" stop-opacity="0"/>
+      <stop offset="0" stop-color="#F4A62A" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#F4A62A" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="rightAura" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(570 88) rotate(5.8) scale(210 164)">
-      <stop offset="0" stop-color="#8BE4C6" stop-opacity="0.24"/>
-      <stop offset="1" stop-color="#8BE4C6" stop-opacity="0"/>
+      <stop offset="0" stop-color="#2B9A92" stop-opacity="0.2"/>
+      <stop offset="1" stop-color="#2B9A92" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="arrowGrad" x1="248" y1="170" x2="428" y2="170" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2D8DD9"/>
-      <stop offset="1" stop-color="#2CB67F"/>
+      <stop offset="0" stop-color="#F4A62A"/>
+      <stop offset="1" stop-color="#2B9A92"/>
     </linearGradient>
     <linearGradient id="badgeGrad" x1="434" y1="124" x2="526" y2="216" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#2F8FE4"/>
-      <stop offset="1" stop-color="#2BB989"/>
+      <stop offset="0" stop-color="#F4A62A"/>
+      <stop offset="1" stop-color="#2B9A92"/>
     </linearGradient>
     <filter id="arrowGlow" x="216" y="138" width="248" height="64" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
       <feGaussianBlur stdDeviation="5"/>
@@ -37,7 +37,7 @@
   <rect width="660" height="400" fill="url(#veilGrad)"/>
 
   <path d="M0 264C78 214 168 206 252 234C346 266 456 274 660 218V400H0V264Z" fill="#FFFFFF" fill-opacity="0.24"/>
-  <path d="M0 322C132 268 250 267 376 309C486 344 574 354 660 336V400H0V322Z" fill="#D9E8FE" fill-opacity="0.3"/>
+  <path d="M0 322C132 268 250 267 376 309C486 344 574 354 660 336V400H0V322Z" fill="#F7D9AD" fill-opacity="0.28"/>
 
   <circle cx="92" cy="314" r="176" fill="url(#leftAura)"/>
   <circle cx="570" cy="88" r="158" fill="url(#rightAura)"/>
@@ -50,14 +50,14 @@
   <circle cx="330" cy="370" r="3" fill="#2A5A89" fill-opacity="0.2"/>
 
   <g opacity="0.46" filter="url(#arrowGlow)">
-    <rect x="250" y="162" width="126" height="16" rx="8" fill="#2F95DE"/>
-    <path d="M372 152L426 170L372 188V152Z" fill="#2AAA84"/>
+    <rect x="250" y="162" width="126" height="16" rx="8" fill="#F4A62A"/>
+    <path d="M372 152L426 170L372 188V152Z" fill="#2B9A92"/>
   </g>
   <g>
     <rect x="250" y="162" width="126" height="16" rx="8" fill="url(#arrowGrad)"/>
     <path d="M372 152L428 170L372 188V152Z" fill="url(#arrowGrad)"/>
-    <line x1="236" y1="170" x2="248" y2="170" stroke="#2D87D0" stroke-width="3" stroke-linecap="round" stroke-opacity="0.34"/>
-    <line x1="224" y1="170" x2="232" y2="170" stroke="#2D87D0" stroke-width="2" stroke-linecap="round" stroke-opacity="0.2"/>
+    <line x1="236" y1="170" x2="248" y2="170" stroke="#E3951D" stroke-width="3" stroke-linecap="round" stroke-opacity="0.38"/>
+    <line x1="224" y1="170" x2="232" y2="170" stroke="#E3951D" stroke-width="2" stroke-linecap="round" stroke-opacity="0.22"/>
   </g>
 
   <!-- App Store icon, source path from Simple Icons (https://simpleicons.org/icons/appstore.svg) -->
@@ -73,19 +73,19 @@
         font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif"
         font-size="15"
         font-weight="600"
-        fill="#24374B"
+        fill="#0A1F34"
         text-anchor="middle"
         letter-spacing="0.8">
-    拖拽到 Applications 文件夹完成安装
+    把 doge 拖到 Applications 文件夹完成安装
   </text>
 
   <text x="330" y="319"
         font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif"
         font-size="12"
-        fill="#4C657D"
+        fill="#456B70"
         text-anchor="middle"
         letter-spacing="0.3"
         opacity="0.84">
-    Drag to Applications folder to install
+    Drag doge to Applications to install
   </text>
 </svg>

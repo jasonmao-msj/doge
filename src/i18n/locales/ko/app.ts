@@ -4,7 +4,7 @@
 // Machine translation of src/i18n/locales/en/app.ts; keys mirror the English source.
 const app = {
   "app": {
-    "title": "ccgui",
+    "title": "doge",
     "subtitle": "로컬 프로젝트 전반에 걸쳐 에이전트를 오케스트레이션하세요."
   }
 };

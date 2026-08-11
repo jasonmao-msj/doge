@@ -34,7 +34,7 @@ describe("project map persistence mapper", () => {
           summary: "Token issue and refresh flow.",
           sourceRefs: ["src/AuthService.ts"],
           relativePath: "diagrams/auth-service-flow.md",
-          path: "/repo/.ccgui/project-map/mossx-abcd/diagrams/auth-service-flow.md",
+          path: "/repo/.doge/project-map/mossx-abcd/diagrams/auth-service-flow.md",
           content: "# AuthService Token Flow\n\n```mermaid\nsequenceDiagram\nA->>B: token\n```\n",
           createdAt: "2026-05-26T00:00:00.000Z",
         },
@@ -107,7 +107,7 @@ describe("project map persistence mapper", () => {
   it("builds a dataset from persisted read payloads and sanitizes settings/cursor", () => {
     const response: ProjectMapReadResponse = {
       storageKey: "mossx-abcd",
-      storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+      storageDir: "/repo/.doge/project-map/mossx-abcd",
       exists: true,
       manifest: manifestForStorageKey("mossx-abcd"),
       profile: {
@@ -162,7 +162,7 @@ describe("project map persistence mapper", () => {
             summary: "Token issue and refresh flow.",
             sourceRefs: ["src/AuthService.ts"],
             relativePath: "diagrams/auth-service-flow.md",
-            path: "/repo/.ccgui/project-map/mossx-abcd/diagrams/auth-service-flow.md",
+            path: "/repo/.doge/project-map/mossx-abcd/diagrams/auth-service-flow.md",
             createdAt: "2026-05-26T00:00:00.000Z",
           },
         ],
@@ -215,7 +215,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "mossx-abcd",
-        storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+        storageDir: "/repo/.doge/project-map/mossx-abcd",
         exists: true,
         manifest: manifestForStorageKey("springboot-demo-8e13fe53"),
         profile: mockProjectMapData.profile,
@@ -250,7 +250,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "mossx-abcd",
-        storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+        storageDir: "/repo/.doge/project-map/mossx-abcd",
         exists: true,
         manifest: manifestForStorageKey("mossx-abcd"),
         profile: mockProjectMapData.profile,
@@ -279,7 +279,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "mossx-abcd",
-        storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+        storageDir: "/repo/.doge/project-map/mossx-abcd",
         exists: true,
         manifest: manifestForStorageKey("mossx-abcd"),
         profile: mockProjectMapData.profile,
@@ -311,7 +311,7 @@ describe("project map persistence mapper", () => {
     const oldSnapshot = buildDatasetFromProjectMapRead(
       {
         storageKey: "mossx-abcd",
-        storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+        storageDir: "/repo/.doge/project-map/mossx-abcd",
         exists: true,
         manifest: manifestForStorageKey("mossx-abcd"),
         profile: mockProjectMapData.profile,
@@ -328,7 +328,7 @@ describe("project map persistence mapper", () => {
     const malformedSnapshot = buildDatasetFromProjectMapRead(
       {
         storageKey: "mossx-abcd",
-        storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+        storageDir: "/repo/.doge/project-map/mossx-abcd",
         exists: true,
         manifest: manifestForStorageKey("mossx-abcd"),
         profile: mockProjectMapData.profile,
@@ -369,7 +369,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "mossx-abcd",
-        storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+        storageDir: "/repo/.doge/project-map/mossx-abcd",
         exists: true,
         manifest: manifestForStorageKey("mossx-abcd"),
         profile: mockProjectMapData.profile,
@@ -465,7 +465,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "mossx-abcd",
-        storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+        storageDir: "/repo/.doge/project-map/mossx-abcd",
         exists: true,
         manifest: manifestForStorageKey("mossx-abcd"),
         profile: mockProjectMapData.profile,
@@ -530,7 +530,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "mossx-abcd",
-        storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+        storageDir: "/repo/.doge/project-map/mossx-abcd",
         exists: true,
         manifest: manifestForStorageKey("mossx-abcd"),
         profile: mockProjectMapData.profile,
@@ -572,7 +572,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "mossx-abcd",
-        storageDir: "/repo/.ccgui/project-map/mossx-abcd",
+        storageDir: "/repo/.doge/project-map/mossx-abcd",
         exists: true,
         manifest: manifestForStorageKey("mossx-abcd"),
         profile: mockProjectMapData.profile,
@@ -611,7 +611,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "future",
-        storageDir: "/repo/.ccgui/project-map/future",
+        storageDir: "/repo/.doge/project-map/future",
         exists: true,
         manifest: { ...mockProjectMapData.manifest, schemaVersion: 999 },
         profile: mockProjectMapData.profile,
@@ -651,7 +651,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "project-map-fixture",
-        storageDir: "workspace/project-map-fixture/.ccgui/project-map/project-map-fixture",
+        storageDir: "workspace/project-map-fixture/.doge/project-map/project-map-fixture",
         exists: true,
         manifest: fixture.manifest,
         profile: fixture.profile,
@@ -696,7 +696,7 @@ describe("project map persistence mapper", () => {
     const dataset = buildDatasetFromProjectMapRead(
       {
         storageKey: "project-map-fixture",
-        storageDir: "workspace/project-map-fixture/.ccgui/project-map/project-map-fixture",
+        storageDir: "workspace/project-map-fixture/.doge/project-map/project-map-fixture",
         exists: true,
         manifest: fixture.manifest,
         profile: fixture.profile,

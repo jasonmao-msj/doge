@@ -46,7 +46,7 @@ describe("turnTraceCorrelation", () => {
   beforeEach(() => {
     mocks.appendRendererDiagnostic.mockReset();
     window.localStorage.clear();
-    window.localStorage.setItem("ccgui.debug.streamLatencyTrace", "1");
+    window.localStorage.setItem("doge.debug.streamLatencyTrace", "1");
     resetTurnTraceCorrelationForTests();
   });
 
@@ -253,8 +253,8 @@ describe("turnTraceCorrelation", () => {
   });
 
   it("ignores all writes when the trace gate is off", () => {
-    window.localStorage.setItem("ccgui.debug.streamLatencyTrace", "0");
-    window.localStorage.setItem("ccgui.debug.turnTrace.enabled", "0");
+    window.localStorage.setItem("doge.debug.streamLatencyTrace", "0");
+    window.localStorage.setItem("doge.debug.turnTrace.enabled", "0");
     resetTurnTraceCorrelationForTests();
     expect(isTurnTraceEnabled()).toBe(false);
     noteTurnSendCommitted(baseDimensions, 0);

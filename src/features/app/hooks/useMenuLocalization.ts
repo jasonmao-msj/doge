@@ -1,8 +1,9 @@
 import { useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { updateMenuLabels } from "../../../services/tauri";
+import { DOGE_NAME } from "../../../config/brand";
 
-const APP_NAME = "ccgui";
+const APP_NAME = DOGE_NAME;
 
 type MenuLabelUpdate = {
   id: string;

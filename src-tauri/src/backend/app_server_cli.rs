@@ -1057,7 +1057,7 @@ fn codex_curated_skills_developer_instructions_block(
             .join(", ")
     };
     let mut snapshot = format!(
-        "## Curated Skills\n\nThis section is the authoritative state for ccgui bundled curated skills in the current runtime or turn. Only `<skill>` blocks listed in this section are active. Any ccgui bundled curated-skill instructions from earlier turns whose id is not listed here are inactive and MUST NOT be followed. This state does not change user-supplied developer instructions, system instructions, or skills provided through other mechanisms.\n\nEnabled: {enabled_label}."
+        "## Curated Skills\n\nThis section is the authoritative state for doge bundled curated skills in the current runtime or turn. Only `<skill>` blocks listed in this section are active. Any doge bundled curated-skill instructions from earlier turns whose id is not listed here are inactive and MUST NOT be followed. This state does not change user-supplied developer instructions, system instructions, or skills provided through other mechanisms.\n\nEnabled: {enabled_label}."
     );
     if !enabled.is_empty() {
         let bodies = enabled
@@ -1646,7 +1646,10 @@ pub(crate) fn visible_console_fallback_enabled_from_env(value: Option<&str>) -> 
 }
 
 fn wrapper_visible_console_retry_requested() -> bool {
-    visible_console_fallback_enabled_from_env(env::var("CODEMOSS_SHOW_CONSOLE").ok().as_deref())
+    let configured = env::var("DOGE_SHOW_CONSOLE")
+        .or_else(|_| env::var("CODEMOSS_SHOW_CONSOLE"))
+        .ok();
+    visible_console_fallback_enabled_from_env(configured.as_deref())
 }
 
 #[cfg(windows)]

@@ -251,7 +251,7 @@ const sidebar = {
         sectionTitle: "服务详情",
         source: "来源",
         sourceClaude: "~/.claude.json",
-        sourceCcgui: "~/.ccgui/config.json",
+        sourceDoge: "~/.doge/config.json",
         transport: "传输方式",
         transportUnknown: "未知传输方式",
         command: "命令",

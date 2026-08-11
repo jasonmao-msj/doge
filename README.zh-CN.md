@@ -1,313 +1,109 @@
-<div align="center">
+# doge
 
-# CC GUI 客户端
+<p align="center">
+  <img src="./public/app-icon.png" width="128" height="128" alt="doge AI 小柴犬助手应用图标" />
+</p>
 
-<img width="120" alt="ccgui 图标" src="./icon.png" />
+> 把复杂的事，叼回来做好。
 
-[English](./README.md) · **简体中文**
+doge 是一只住在电脑里的拟人化 AI 小柴犬。它不是高高在上的万能 AI，也不是只会等待命令的工具；它会记得你的习惯，把散落在文件、终端、任务和灵感里的事情一件件叼回来。
 
-<a href="https://trendshift.io/repositories/25546" target="_blank"><img src="https://trendshift.io/api/badge/repositories/25546" alt="zhukunpenglinyutong%2Fdesktop-cc-gui | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+工作时，doge 陪你拆解目标、编写代码、查找资料、推进任务；生活里，它将逐步学会整理计划、保存想法、照看琐事。首个版本先专注开发者工作流，不会宣称尚未实现的生活服务。
 
-![][github-contributors-shield] ![][github-forks-shield] ![][github-stars-shield] ![][github-issues-shield]
+当前版本：`0.1.0`
 
-</div>
+## 现在能做什么
 
-**ccgui** 是一个开源的 AI 编程桌面客户端。简单说：它把 Claude Code、Codex CLI、Gemini CLI、OpenCode 等命令行 AI 编程 runtime，放进一个统一的图形界面里。
+- 在一个桌面界面中使用 Claude Code、Codex CLI、Gemini CLI、OpenCode、Kimi、Grok 等本地 AI runtime。
+- 管理多个项目、工作区和 Git worktree，并在会话间快速切换。
+- 实时查看推理、工具调用、文件修改、终端输出和任务状态。
+- 浏览与编辑文件、查看 Git diff、提交变更、管理分支和历史。
+- 使用项目地图、上下文账本、记忆、任务板和多智能体协作能力处理复杂工作。
+- 数据默认保存在本机；doge 不依赖自建云服务才能运行。
 
-你不用再盯着黑乎乎的终端敲命令——打开 ccgui，选好项目，像聊天一样让 AI 帮你写代码、改 Bug、提交 Git。文件与工具活动会实时展示；token 用量和预估费用则取决于当前 runtime 是否提供相应 metadata。
+## 下载与更新
 
-应用基于 **Tauri 2 + React 19 + TypeScript + Rust** 开发，支持 macOS / Windows / Linux。应用设置、工作区索引和客户端状态默认在本机持久化；发送给 AI provider、Browser Agent、邮件服务或可选 remote/web service 的内容，遵循对应配置与第三方服务边界。
+公开安装包将发布到 [doge Releases](https://github.com/jasonmao-msj/doge/releases)。
 
-<img src="./docs/banner.png" alt="ccgui 界面截图" width="800" />
+doge 的自动更新只会信任 doge 自己的 GitHub Releases 签名。独立签名密钥和首个正式 Release 完成前，客户端更新器保持关闭，不会连接或信任其他更新源。
 
----
+初期不需要云厂商服务器：应用本地运行，安装包与静态更新清单由 GitHub Releases 托管。只有未来出现账号同步、远程任务或更复杂的分发需求时，才需要评估后端服务。
 
-## ccgui 能干什么
+## 本地开发
 
-### 一个客户端，装下多个 AI 引擎
+### 环境要求
 
-- 当前注册 **Claude Code**、**Codex CLI**、**Gemini CLI**、**OpenCode** 四套 runtime adapter。Gemini 默认启用，OpenCode 可选启用；二者的退役仍是 active migration，并未交付。
-- Claude 与 Codex 支持多套 managed provider profile；Gemini、OpenCode 保留各自 runtime 提供的 provider/config 能力。
-- 会话不丢：关掉应用再打开，历史对话还在；会话断了可以接着聊，还能看每个会话用了多少上下文。
+- Node.js 20+
+- npm 10+
+- Rust stable、Cargo、rustfmt
+- CMake
+- macOS 构建建议安装 Homebrew OpenSSL 3
 
-### 聊天框是为写代码设计的
-
-- 输入框支持 `@` 引用项目文件、斜杠命令、粘贴图片、上传附件。
-- 支持展示的文件修改、shell/tool call 与读取操作会以实时卡片呈现。
-- Claude/Codex 会话在当前 runtime capability 支持时提供**回退**（rewind）和**分叉**（fork）。
-- 懒得打字可以用**语音输入**；提示词写不好，内置的**提示词增强**帮你润色。
-- 排队提问：AI 正在干活时，你可以把下一个问题先排上队。
-
-### 不只是聊天，是一整套开发面板
-
-- **文件树**：浏览、预览、复制、粘贴、重命名，直接拖文件进对话。
-- **内置终端**：完整的终端体验，不用切出去开别的窗口。
-- **Git 面板**：暂存、提交（AI 帮你写提交信息）、分支、worktree、看 diff、翻提交历史。
-- **全局搜索**：文件、会话、历史消息、技能、命令，一个搜索框全搞定。
-
-### 任务多了也不乱
-
-- **Plan 面板**：AI 的执行计划一步步列出来，做到哪了一眼看清。
-- **Kanban 看板**：任务卡片拖来拖去，管理整个迭代。
-- **任务中心**：查看 Kanban/orchestration task run、日志和 artifact 摘要；仅在 run 与 engine 支持时提供 retry、resume、cancel 或 fork。
-- **意图画布**：在画布上拖节点做规划，想清楚再动手。
-
-### 项目智能（ccgui 比较独特的部分）
-
-- **项目知识地图**：AI 扫描你的项目，生成可交互的结构图谱——文件关系、API 接口、模块依赖一目了然，还支持增量更新。
-- **项目记忆**：保存关键约定和经验；发送时可用 `@@` 手动选择，或显式开启 Memory Reference 检索后注入当前 turn。
-- **上下文账本**：展示已选择或继承的 context source，以及可用的 token/character estimate、freshness 和 attribution confidence。
-- **用量统计**：runtime 提供 metadata 时展示 token、cache 与预估费用。月度 budget threshold 只是本地视觉提醒，不会中断 runtime。
-
-### 扩展和个性化
-
-- 可发现和管理已配置的 MCP server 与 Skills，并启用 bundled curated skills；MCP / Plugin marketplace 入口当前仍是 **Coming Soon**。
-- **浏览器 Agent**：打开策略允许的 HTTP(S) 页面并采集有界的只读 context；snapshot/navigation 会因平台降级，element/form action 尚不支持。
-- **21 个 VS Code 衍生主题**，并支持用户消息颜色、窗口透明度、UI/code 字体调整。
-- WebView UI 已提供 **10 种语言**。native desktop menu 当前只本地化中文与英文，其他 locale 回退中文；composer、panel、navigation 与 file action 快捷键可配置。
-- macOS / Windows / Linux 全平台，支持应用内**自动更新**。
-
-每个版本的详细更新内容，见 [CHANGELOG.md](./CHANGELOG.md)。
-
----
-
-## 下载安装
-
-直接去 [Releases 页面](https://github.com/zhukunpenglinyutong/desktop-cc-gui/releases) 下载对应平台的安装包：
-
-| 平台 | 安装包 |
-| --- | --- |
-| macOS（M 系列芯片） | `aarch64.dmg` |
-| macOS（Intel 芯片） | `x64.dmg` |
-| Windows | `.exe`（NSIS）安装包 |
-| Linux | `.AppImage` |
-
-装好之后，在设置里配置好你的 AI 引擎（比如 Claude Code 的 API Key 或本地 CLI），添加一个项目文件夹，就可以开始用了。
-
----
-
-## 把项目跑起来（启动教程）
-
-想自己编译、或者参与开发？跟着下面三步走。
-
-### 第一步：准备环境
-
-需要装这三样东西：
-
-| 工具 | 版本要求 | 用来干嘛 |
-| --- | --- | --- |
-| [Node.js](https://nodejs.org/) | 20 或更新 | 跑前端 |
-| [Rust](https://rustup.rs/) | stable（用 rustup 装） | 编译后端 |
-| [CMake](https://cmake.org/download/) | 较新版本即可 | 编译部分依赖 |
-
-不同系统还需要一点额外准备（这是 Tauri 框架的要求，详见 [Tauri 官方环境文档](https://v2.tauri.app/start/prerequisites/)）：
-
-- **macOS**：装 Xcode 命令行工具：`xcode-select --install`；CMake 用 `brew install cmake`。
-- **Windows**：装 Microsoft C++ Build Tools 和 WebView2（Win 11 自带 WebView2）。
-- **Linux**：装 `webkit2gtk` 等系统库，照着 Tauri 官方文档抄命令就行。
-
-### 第二步：装依赖
+### 启动
 
 ```bash
-git clone https://github.com/zhukunpenglinyutong/desktop-cc-gui.git
-cd desktop-cc-gui
+git clone https://github.com/jasonmao-msj/doge.git
+cd doge
 npm install
+npm run tauri:dev:hot
 ```
 
-注意：**必须用 npm**。用 pnpm 或 yarn 会被脚本拦下来（为了保证所有人的依赖版本一致）。
-
-### 第三步：启动
+仅启动 Web 前端：
 
 ```bash
-# macOS / Linux
-npm run tauri:dev
-
-# Windows
-npm run tauri:dev:win
+npm run dev
 ```
 
-几个小提示：
+### 常用检查
 
-- **第一次启动要编译整个 Rust 后端，可能等上几分钟**，去倒杯水。之后是增量编译，很快。
-- 启动前会自动做环境自检（doctor）。报错了就单独跑 `npm run doctor`，它会告诉你缺什么、怎么装。
-- 前端跑在 `1420` 端口。端口被占了不用管，脚本会自动清理。
-- 只想改界面、不碰 Rust？跑 `npm run dev` 可以在浏览器里调前端（但调不了和后端相关的功能）。
-
-### 打安装包
+日常开发优先运行与改动相关的测试：
 
 ```bash
-npm run build:mac-arm64      # macOS Apple Silicon
-npm run build:mac-x64        # macOS Intel
-npm run build:mac-universal  # macOS 通用包
-npm run build:win-x64        # Windows x64
-npm run build:linux-x64      # Linux x64
-npm run build:linux-arm64    # Linux arm64
+npm run typecheck
+npm exec vitest run -- path/to/changed.test.ts
+cargo test --manifest-path src-tauri/Cargo.toml module_name --lib
 ```
 
----
+合并或发布前再运行完整门禁：
 
-## 怎么改代码（开发教程）
-
-### 技术栈一览
-
-| 部分 | 用的什么 |
-| --- | --- |
-| 界面 | React 19 + TypeScript + Tailwind CSS 4 |
-| 构建 | Vite 7 |
-| 桌面框架 | Tauri 2（后端是 Rust） |
-| 测试 | Vitest（前端）+ cargo test（Rust） |
-
-### 目录结构
-
-```text
-desktop-cc-gui/
-├── src/                    # 前端代码
-│   ├── features/           # ★ 功能模块（50+ 个），按功能分目录，开发主战场
-│   │   ├── composer/       #    输入框
-│   │   ├── messages/       #    消息流
-│   │   ├── git/            #    Git 面板
-│   │   ├── project-map/    #    项目知识地图
-│   │   └── ...             #    每个目录就是一个独立功能
-│   ├── components/         # 跨功能共享的通用 UI 组件
-│   ├── services/           # 业务逻辑；services/tauri/* 放前端↔Rust wrapper
-│   ├── i18n/               # WebView UI 的 10 套 locale bundle
-│   ├── styles/             # 全局样式
-│   └── lib/ utils/         # 工具函数
-├── src-tauri/              # Rust 后端
-│   └── src/                # 按模块分目录：engine / codex / git / terminal / files ...
-├── scripts/                # 构建、检查、诊断脚本
-└── docs/                   # 架构文档、性能基线
+```bash
+npm run check:runtime-contracts
+npm run check:branding
+npm run lint
+npm run typecheck
+npm run test
+cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-### 改一个功能的套路
+macOS Apple Silicon 构建：
 
-1. **只改界面**：找到 `src/features/` 下对应的模块改就行。新组件直接放在该模块自己的目录里。
-2. **需要后端配合**：在 `src-tauri/src/` 对应模块里加 `#[tauri::command]`，注册到 `src-tauri/src/command_registry.rs`，再把前端 wrapper 放进 `src/services/tauri/<domain>.ts`；需要统一出口时由 `src/services/tauri.ts` re-export。
-3. **改了界面文字**：必须走 i18n，并同步 `src/i18n/locales/` 下所有已发布 locale bundle；界面文字不允许硬编码。
-
-### 常用命令
-
-| 命令 | 干嘛的 |
-| --- | --- |
-| `npm run tauri:dev` | 启动完整应用（开发模式） |
-| `npm run dev` | 只启动前端（浏览器调试） |
-| `npm run lint` | 代码风格检查 |
-| `npm run typecheck` | TypeScript 类型检查 |
-| `npm run test` | 跑单元测试 |
-| `npm run test:watch` | 监听模式跑测试（边改边测） |
-| `npm run test:integration` | 跑包含重型集成测试的完整测试 |
-
-### 测试怎么写
-
-- 测试文件和源码放一起，命名 `xxx.test.ts` / `xxx.test.tsx`。
-- 框架是 [Vitest](https://vitest.dev/)，写法和 Jest 基本一样。
-- 重型集成测试命名为 `xxx.integration.test.tsx`，默认不跑，`npm run test:integration` 才跑。
-- Rust 端测试照常写在模块里，从仓库根目录用 `cargo test --manifest-path src-tauri/Cargo.toml` 跑。
-
----
-
-## 开发规范
-
-规矩不多，但都有原因，提交前过一遍：
-
-1. **提交前跑三件套**：`npm run lint && npm run typecheck && npm run test`，全绿再提。当前 CI 只在 push 到 `main` 或手动 dispatch 时运行，因此提 PR 前必须先准备本地验证证据。
-2. **界面文字必须走 i18n**：所有用户可见文案都从 `src/i18n/` 取，并保持全部已发布 locale bundle 同步，不许硬编码。
-3. **组件就近放**：新组件先放自己 feature 的目录里；确实被多个功能复用了，再挪到 `src/components/`。
-4. **CSS 类名加功能前缀**：比如 Git 历史面板的样式类用 `git-history-*` 开头，避免不同功能的样式互相打架。
-5. **遵守大文件策略**：新文件使用 800 行 ratchet，既有区域使用 2600/2800/3000 行 hard threshold。`npm run check:large-files` 只出报告，阻断检查用 `npm run check:large-files:gate`。
-6. **TypeScript 严格模式**：别用 `any` 糊弄，类型写明白。
-7. **Rust 端写文件走统一封装**：用 `storage.rs` 提供的原子写入，不要直接 `write`，避免写一半断电把用户数据写坏。
-8. **加 Tauri command 前先搜一搜**：`command_registry` 里可能已经有现成的，别重复造。
-9. **永远不要提交密钥**：API Key、token 这类东西绝对不能进代码和提交记录。
-
-### Commit 信息怎么写
-
-默认使用中文主体的 [Conventional Commits](https://www.conventionalcommits.org/)：`type(scope): 中文动宾短句`。
-
-| type | 什么时候用 |
-| --- | --- |
-| `feat` | 加新功能 |
-| `fix` | 修 Bug |
-| `refactor` | 重构（行为不变） |
-| `docs` | 改文档 |
-| `test` | 加/改测试 |
-| `chore` | 杂活（版本号、依赖、脚本） |
-| `perf` / `style` / `ci` | 性能优化 / 格式 / CI |
-
-真实例子：
-
-```text
-feat(composer): 支持粘贴图片自动转附件
-fix(git): 修复 diff 面板滚动位置丢失
-docs(readme): 校准项目文档索引
+```bash
+npm run build:mac-arm64
 ```
 
-不要在 commit 信息里写 emoji，也不要带 AI 生成署名。
+## 本地数据与迁移
 
----
+- doge 当前数据目录：`~/.doge`
+- 新安装只写入 doge 命名空间。
+- 从历史版本升级时，doge 会复制旧数据到新目录；新目录已有数据时不会覆盖。
+- 旧目录不会被移动或删除，便于回滚。
+- 迁移日志只记录来源类型、版本与时间，不记录密钥、Token、完整用户路径或文件内容。
 
-## 怎么提交你的代码（贡献流程）
+## 品牌
 
-1. **Fork** 本仓库，clone 到本地。
-2. 从 `main` 切一个分支，名字按 `feat/xxx`、`fix/xxx` 这种风格起。
-3. 改代码，本地把三件套跑绿（`lint` / `typecheck` / `test`）。
-4. 提 PR 到本仓库的 **`main` 分支**。标题按 commit 格式写，描述里说清楚：改了什么、为什么改、怎么验证的。
-5. 在 PR 中附上本地验证证据。当前 CI 只在 push 到 `main` 或手动 dispatch 时运行，不要假设打开 PR 会自动触发；审查指出的中高风险问题必须修复后才能合并。
+官方名称始终使用小写 `doge`。视觉方向是一只琥珀色、温暖、可靠的拟人化小柴犬，避免硬币、行情、火箭等加密货币元素。
 
-不知道从哪下手？看看 [Issues](https://github.com/zhukunpenglinyutong/desktop-cc-gui/issues)，挑一个感兴趣的开干。发现 Bug 或有新点子，也欢迎直接开 Issue 聊。
+品牌故事：
 
-### 想深入了解项目内部？
+> doge 的故事，从一只总爱坐在你桌边的小柴犬开始。它会把散落在文件、终端、任务和灵感里的事情一件件叼回来。工作时，它陪你拆解目标、编写代码、查找资料、推进任务；生活里，它将逐步学会整理计划、保存想法、照看琐事。doge 是一只住在电脑里的拟人化 AI 小柴犬，也是你可以信任的生活与工作搭档。
 
-- [AGENTS.md](AGENTS.md) — 仓库规则总入口（用 AI 辅助开发本项目时必读）。
-- [项目文档总索引](docs/README.md) — 架构、性能、计划、研究和时间快照，并明确各自事实边界。
-- [.trellis/spec/](.trellis/spec/) — 前端、后端的详细实现规范。
-- [OpenSpec 工作区](openspec/README.md) — behavior specs、工作流与治理总览。
-- [主 capability spec 索引](openspec/specs/README.md) — 已同步到主线的全部 behavior contract。
-- [活跃提案索引](openspec/changes/README.md) — 当前变更、进度、归档门禁与 artifact 链接。
-- [归档提案索引](openspec/changes/archive/README.md) — 按月份和归档日期分组的完整历史提案。
-- [OpenSpec 审计 / evidence 索引](openspec/docs/README.md) — durable reference 与时间快照的分层入口。
+## 开源许可
 
----
+本项目依据 [MIT License](./LICENSE) 发布。Git 历史与 LICENSE 中保留了继承代码所需的版权和许可信息。
 
-## License
+## 参与贡献
 
-[MIT](https://github.com/zhukunpenglinyutong/desktop-cc-gui?tab=MIT-1-ov-file)
+- 问题与建议：[GitHub Issues](https://github.com/jasonmao-msj/doge/issues)
+- 代码仓库：[jasonmao-msj/doge](https://github.com/jasonmao-msj/doge)
 
----
-
-## 友链
-
-感谢 [LINUX DO](https://linux.do/) 用户的支持与反馈。
-
----
-
-## 贡献者列表
-
-感谢所有帮助 ccgui 变得更好的贡献者。
-
-<a href="https://github.com/zhukunpenglinyutong/desktop-cc-gui/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=zhukunpenglinyutong/desktop-cc-gui" alt="Contributors" />
-</a>
-
----
-
-## 参考项目说明
-
-1.本项目最初源自 [CodexMonitor](https://github.com/Dimillian/CodexMonitor)
-2.拓展-使用统计 模块 主要采用 [TokenTracker](https://github.com/mm7894215/TokenTracker) 源码
-
-
----
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=zhukunpenglinyutong/desktop-cc-gui&type=date&legend=top-left)](https://www.star-history.com/#zhukunpenglinyutong/desktop-cc-gui&type=date&legend=top-left)
-
-<!-- LINK GROUP -->
-
-[github-contributors-shield]: https://img.shields.io/github/contributors/zhukunpenglinyutong/desktop-cc-gui?color=c4f042&labelColor=black&style=flat-square
-[github-forks-shield]: https://img.shields.io/github/forks/zhukunpenglinyutong/desktop-cc-gui?color=8ae8ff&labelColor=black&style=flat-square
-[github-issues-link]: https://github.com/zhukunpenglinyutong/desktop-cc-gui/issues
-[github-issues-shield]: https://img.shields.io/github/issues/zhukunpenglinyutong/desktop-cc-gui?color=ff80eb&labelColor=black&style=flat-square
-[github-license-link]: https://github.com/zhukunpenglinyutong/desktop-cc-gui/blob/main/LICENSE
-[github-stars-shield]: https://img.shields.io/github/stars/zhukunpenglinyutong/desktop-cc-gui?color=ffcb47&labelColor=black&style=flat-square
+提交前请确保品牌门禁、类型检查和相关测试通过。`main` 是 doge 的发布事实来源。

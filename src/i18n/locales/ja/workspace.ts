@@ -245,13 +245,13 @@ const workspace = {
     "threads": "スレッド",
     "deleteWorkspaceTitle": "ワークスペースを削除",
     "deleteWorkspaceConfirm": "「{{name}}」を削除してもよろしいですか？",
-    "deleteWorkspaceMessage": "これにより ccgui からワークスペースが削除されます。",
+    "deleteWorkspaceMessage": "これにより doge からワークスペースが削除されます。",
     "deleteWorkspaceWorktreeWarning": "これにより、ディスク上の {{count}} 個の worktree も削除されます。",
     "deleteWorkspaceWorktreeWarning_other": "これにより、ディスク上の {{count}} 個の worktree も削除されます。",
     "deleteWorkspaceBeforeYouConfirm": "続行する前に:",
     "deleteWorkspaceWillHappenTitle": "実行される内容:",
     "deleteWorkspaceWillNotHappenTitle": "実行されない内容:",
-    "deleteWorkspaceEffectListOnly": "ワークスペースは ccgui のリストからのみ削除されます。",
+    "deleteWorkspaceEffectListOnly": "ワークスペースは doge のリストからのみ削除されます。",
     "deleteWorkspaceEffectSessions": "このワークスペース配下のアクティブなセッション（およびリンクされた worktree）は閉じられます。",
     "deleteWorkspaceEffectDeleteWorktrees": "ディスク上の {{count}} 個のリンクされた worktree フォルダーが削除されます。",
     "deleteWorkspaceEffectDeleteWorktrees_other": "ディスク上の {{count}} 個のリンクされた worktree フォルダーが削除されます。",
@@ -267,7 +267,7 @@ const workspace = {
     "reloadWorkspaceThreadsEffectNoGitWrite": "checkout/merge/rebase やその他の Git 書き込み操作は実行しません。",
     "deleteWorktreeTitle": "Worktreeを削除",
     "deleteWorktreeConfirm": "「{{name}}」を削除してもよろしいですか？",
-    "deleteWorktreeMessage": "これによりエージェントが閉じられ、その worktree が削除され、ccgui からも削除されます。",
+    "deleteWorktreeMessage": "これによりエージェントが閉じられ、その worktree が削除され、doge からも削除されます。",
     "deleteWorktreeFailed": "worktree の削除に失敗しました"
   }
 };

@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-app_path="${1:-src-tauri/target/release/bundle/macos/ccgui.app}"
+app_path="${1:-src-tauri/target/release/bundle/macos/doge.app}"
 identity="${CODESIGN_IDENTITY:-}"
+skip_codesign="${SKIP_CODESIGN:-0}"
 entitlements_path="${ENTITLEMENTS_PATH:-src-tauri/Entitlements.plist}"
 
-if [[ -z "${identity}" ]]; then
+if [[ "${skip_codesign}" != "1" && -z "${identity}" ]]; then
   echo "CODESIGN_IDENTITY is required. Example:"
   echo "  CODESIGN_IDENTITY='Developer ID Application: Your Name (TEAMID)' $0"
   exit 1
@@ -25,7 +26,9 @@ else
 fi
 
 openssl_prefix=""
-if command -v brew >/dev/null 2>&1; then
+if [[ -n "${OPENSSL_DIR:-}" && -d "${OPENSSL_DIR}" ]]; then
+  openssl_prefix="${OPENSSL_DIR}"
+elif command -v brew >/dev/null 2>&1; then
   openssl_prefix="$(brew --prefix openssl@3 2>/dev/null || true)"
 fi
 if [[ -z "${openssl_prefix}" ]]; then
@@ -44,8 +47,8 @@ fi
 libssl="${openssl_prefix}/lib/libssl.3.dylib"
 libcrypto="${openssl_prefix}/lib/libcrypto.3.dylib"
 frameworks_dir="${app_path}/Contents/Frameworks"
-bin_path="${app_path}/Contents/MacOS/cc-gui"
-daemon_path="${app_path}/Contents/MacOS/cc_gui_daemon"
+bin_path="${app_path}/Contents/MacOS/doge"
+daemon_path="${app_path}/Contents/MacOS/doge_daemon"
 
 if [[ ! -f "${libssl}" || ! -f "${libcrypto}" ]]; then
   echo "OpenSSL dylibs not found at ${openssl_prefix}/lib"
@@ -110,6 +113,11 @@ if [[ ${verify_failed} -eq 1 ]]; then
   exit 1
 fi
 echo "All library references verified OK."
+
+if [[ "${skip_codesign}" == "1" ]]; then
+  echo "Bundled OpenSSL dylibs without code signing: ${app_path}"
+  exit 0
+fi
 
 codesign --force --options runtime --timestamp --sign "${identity}" "${frameworks_dir}/libcrypto.3.dylib"
 codesign --force --options runtime --timestamp --sign "${identity}" "${frameworks_dir}/libssl.3.dylib"

@@ -21,7 +21,7 @@ Keep this managed block so 'trellis update' can refresh the instructions.
 
 <!-- TRELLIS:END -->
 
-# 项目规则入口（mossx）
+# 项目规则入口（doge）
 
 ## 规则优先级
 

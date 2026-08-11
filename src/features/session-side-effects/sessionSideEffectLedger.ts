@@ -16,7 +16,7 @@ import {
 } from "../messages/utils/turnFileChanges";
 import { collectRunStatusSourceItems } from "../composer/components/run-status/collectRunStatusSourceItems";
 
-const STORAGE_KEY = "ccgui.sessionSideEffectLedger.v1";
+const STORAGE_KEY = "doge.sessionSideEffectLedger.v1";
 
 export type LedgerSubagentEntry = {
   id: string;

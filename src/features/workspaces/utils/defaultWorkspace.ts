@@ -1,4 +1,5 @@
 const DEFAULT_WORKSPACE_SUFFIXES = [
+  "/.doge/workspace",
   "/.ccgui/workspace",
   "/.mossx/workspace",
   "/.codemoss/workspace",

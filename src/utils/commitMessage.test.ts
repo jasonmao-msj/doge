@@ -15,7 +15,7 @@ describe("commit message engine config", () => {
 
   it("normalizes a legacy Gemini quick config to Codex", () => {
     window.localStorage.setItem(
-      "ccgui.git.lastCommitMessageConfig",
+      "doge.git.lastCommitMessageConfig",
       JSON.stringify({ engine: "gemini", language: "en" }),
     );
 

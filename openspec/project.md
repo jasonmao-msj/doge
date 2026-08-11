@@ -2,14 +2,14 @@
 
 - Type: OpenSpec Workspace
 - Updated At: 2026-08-03T20:00:00+08:00
-- Scope: governance snapshot for the current `mossx` repository workspace
-- Product version fact: `ccgui@0.7.5` from `package.json` and `src-tauri/tauri.conf.json`
+- Scope: governance snapshot for the current `doge` repository workspace
+- Product version fact: `doge@0.1.0` from `config/brand.json`, `package.json`, and `src-tauri/tauri.conf.json`
 
 ## Domain
 
-OpenSpec workflow and governance for `mossx`, covering change lifecycle, main spec maintenance, validation, sync, and archive discipline.
+OpenSpec workflow and governance for `doge`, covering change lifecycle, main spec maintenance, validation, sync, and archive discipline.
 
-The product in this repository is `ccgui`: a Tauri 2 desktop AI engineering workbench that integrates multiple coding engines, project intelligence, task execution, session activity, memory, terminal, Git, and governance surfaces.
+The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work assistant, initially focused on developer workflows across multiple coding engines, project intelligence, task execution, session activity, memory, terminal, Git, and governance surfaces.
 
 ## Architecture
 
@@ -379,7 +379,7 @@ npm run check:large-files
 
 ## Owners
 
-- ccgui contributors
+- doge contributors
 
 ## Update History
 

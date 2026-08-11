@@ -7,19 +7,17 @@ use std::path::PathBuf;
 /// process (cmd.exe, git, node, etc.) opens its own terminal window.
 ///
 /// NOTE: This flag can interfere with stdio pipe handling for some .cmd wrapper
-/// scripts. Set the environment variable CODEMOSS_SHOW_CONSOLE=1 to disable
+/// scripts. Set `DOGE_SHOW_CONSOLE=1` to disable
 /// this flag for debugging purposes.
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 /// Check if CREATE_NO_WINDOW should be applied.
-/// Returns false if CODEMOSS_SHOW_CONSOLE=1 is set (useful for debugging pipe issues).
+/// Returns false if DOGE_SHOW_CONSOLE=1 or the legacy variable is set.
 #[cfg(windows)]
 fn should_hide_console() -> bool {
-    !matches!(
-        env::var("CODEMOSS_SHOW_CONSOLE").as_deref(),
-        Ok("1") | Ok("true")
-    )
+    let configured = env::var("DOGE_SHOW_CONSOLE").or_else(|_| env::var("CODEMOSS_SHOW_CONSOLE"));
+    !matches!(configured.as_deref(), Ok("1") | Ok("true"))
 }
 
 #[cfg(windows)]

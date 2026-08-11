@@ -1,6 +1,6 @@
-# ccgui OpenSpec Workspace
+# doge OpenSpec Workspace
 
-本目录是 `mossx` 的 behavior-spec 工作区，负责 proposal / design / tasks / specs / archive 的生命周期管理。
+本目录是 `doge` 的 behavior-spec 工作区，负责 proposal / design / tasks / specs / archive 的生命周期管理。
 
 ## 先看哪里
 

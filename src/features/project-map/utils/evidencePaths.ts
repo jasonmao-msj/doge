@@ -63,7 +63,7 @@ const PROJECT_MAP_EXCLUDED_PATH_SEGMENTS = new Set([
   ".next",
   ".nuxt",
   "coverage",
-  ".ccgui",
+  ".doge",
   ".venv",
   "venv",
   "__pycache__",

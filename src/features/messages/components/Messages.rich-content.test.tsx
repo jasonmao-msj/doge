@@ -30,9 +30,9 @@ describe("Messages rich content", () => {
     vi.mocked(readEngineTaskOutputArtifact).mockImplementation(
       () => new Promise(() => {}),
     );
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
   });
 
   beforeAll(() => {
@@ -1031,7 +1031,7 @@ describe("Messages rich content", () => {
     const approvalSlot = container.querySelector(".messages-inline-approval-slot");
     expect(messagesFull).toBeTruthy();
     expect(approvalSlot).toBeTruthy();
-    expect(messagesFull?.lastElementChild?.previousElementSibling?.classList.contains("messages-inline-approval-slot")).toBe(true);
+    expect(messagesFull?.lastElementChild).toBe(approvalSlot);
   });
 
   it("retires SubAgent-style user task-notification from the canvas", () => {
@@ -1190,9 +1190,7 @@ describe("Messages rich content", () => {
     );
 
     // 场景默认折叠，先展开再断言文件名
-    const sceneHeader = screen.getByRole("button", {
-      name: /tools\.fileEditSceneToggle|Batch edit|File changes|批量修改|文件修改/i,
-    });
+    const sceneHeader = screen.getByRole("button", { name: /App\.tsx/ });
     fireEvent.click(sceneHeader);
 
     // 文件名统一为纯文本：不再存在可点跳转的 diff 链接按钮

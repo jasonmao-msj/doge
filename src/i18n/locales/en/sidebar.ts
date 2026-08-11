@@ -258,7 +258,7 @@ const sidebar = {
         sectionTitle: "Server details",
         source: "Source",
         sourceClaude: "~/.claude.json",
-        sourceCcgui: "~/.ccgui/config.json",
+        sourceDoge: "~/.doge/config.json",
         transport: "Transport",
         transportUnknown: "Unknown transport",
         command: "Command",

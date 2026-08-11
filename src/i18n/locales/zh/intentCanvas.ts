@@ -30,7 +30,7 @@ const intentCanvas = {
       emptyBody: "创建第一张图，把你的业务意图、模块关系和问题上下文画出来。",
       noWorkspaceTitle: "请选择工作区",
       noWorkspaceBody:
-        "Intent Canvas 会按项目分层写入全局 ~/.ccgui/project-canvas 目录。",
+        "Intent Canvas 会按项目分层写入全局 ~/.doge/project-canvas 目录。",
       noSummary: "暂无摘要。",
       elements: "元素",
       files: "文件",
@@ -42,7 +42,7 @@ const intentCanvas = {
       openConfirm: "打开画布“{{title}}”？当前列表会切换到编辑器。",
       openHint: "若当前有未保存的编辑器内容，请先保存后再打开其他画布。",
       duplicateConfirm: "复制画布“{{title}}”？系统会创建一个新的 Canvas 副本。",
-      duplicateHint: "副本会按项目分层写入全局 ~/.ccgui/project-canvas 目录。",
+      duplicateHint: "副本会按项目分层写入全局 ~/.doge/project-canvas 目录。",
       deleteConfirm: "删除画布“{{title}}”？文件会被移到废纸篓。",
       deleteHint:
         "此操作不会删除会话消息，只移除全局 project-canvas 里的 Canvas 文件。",

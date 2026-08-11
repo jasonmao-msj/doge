@@ -33,7 +33,7 @@ const translations = vi.hoisted((): Record<string, string> => ({
   "extensions.mcps.detail.sectionTitle": "Server details",
   "extensions.mcps.detail.source": "Source",
   "extensions.mcps.detail.sourceClaude": "~/.claude.json",
-  "extensions.mcps.detail.sourceCcgui": "~/.ccgui/config.json",
+  "extensions.mcps.detail.sourceDoge": "~/.doge/config.json",
   "extensions.mcps.detail.transport": "Transport",
   "extensions.mcps.detail.transportUnknown": "Unknown transport",
   "extensions.mcps.detail.command": "Command",
@@ -117,7 +117,7 @@ describe("McpsPage", () => {
         command: "uvx",
         url: null,
         argsCount: 3,
-        source: "ccgui_config",
+        source: "doge_config",
       },
     ]);
     vi.mocked(listMcpServerStatus).mockResolvedValue({
@@ -140,7 +140,7 @@ describe("McpsPage", () => {
       sessionId: "session-1",
       tools: [],
       mcpServers: [
-        { name: "ccgui", status: "connected" },
+        { name: "doge", status: "connected" },
         { name: "chrome-devtools", status: "connected" },
       ],
       capturedAt: Date.now(),
@@ -158,13 +158,13 @@ describe("McpsPage", () => {
     expect(screen.getByText("Runtime")).toBeTruthy();
     expect(screen.getByText("stdio · npx · args 2")).toBeTruthy();
     expect(screen.getByText("Enabled")).toBeTruthy();
-    expect(screen.getByText("ccgui")).toBeTruthy();
+    expect(screen.getByText("doge")).toBeTruthy();
     expect(screen.getByText("Built-in")).toBeTruthy();
     expect(screen.getByText("chrome-devtools")).toBeTruthy();
     expect(screen.getByText("3 / 3 servers")).toBeTruthy();
   });
 
-  it("switches to the Codex tab and shows ccgui config plus runtime inventory", async () => {
+  it("switches to the Codex tab and shows doge config plus runtime inventory", async () => {
     render(<McpsPage activeWorkspace={workspace} />);
 
     await screen.findByText("filesystem");

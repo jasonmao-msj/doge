@@ -26,9 +26,9 @@ import { inferMutatingFileChangesFromCommand } from "../../../utils/threadItemsF
 
 export const SCROLL_THRESHOLD_PX = 120;
 export const OPENCODE_NON_STREAMING_HINT_DELAY_MS = 12_000;
-const MESSAGES_PERF_DEBUG_FLAG_KEY = "ccgui.debug.messages.perf";
-const CLAUDE_HIDE_REASONING_MODULE_FLAG_KEY = "ccgui.claude.hideReasoningModule";
-const CLAUDE_RENDER_DEBUG_FLAG_KEY = "ccgui.debug.claude.render";
+const MESSAGES_PERF_DEBUG_FLAG_KEY = "doge.debug.messages.perf";
+const CLAUDE_HIDE_REASONING_MODULE_FLAG_KEY = "doge.claude.hideReasoningModule";
+const CLAUDE_RENDER_DEBUG_FLAG_KEY = "doge.debug.claude.render";
 export const MESSAGES_SLOW_RENDER_WARN_MS = 18;
 export const MESSAGES_SLOW_ANCHOR_WARN_MS = 8;
 export const VISIBLE_MESSAGE_WINDOW = 10000;

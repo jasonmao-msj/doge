@@ -14,7 +14,10 @@ import {
 } from "../constants/codexProviderProfiles";
 import type { ThreadAction, ThreadState } from "./useThreadsReducer";
 
-const HOOK_SAFE_FALLBACK_METADATA_KEY = "ccguiHookSafeFallback";
+const HOOK_SAFE_FALLBACK_METADATA_KEYS = [
+  "dogeHookSafeFallback",
+  "ccguiHookSafeFallback",
+] as const;
 
 export type ProviderProfileSelection = {
   providerProfileId?: string | null;
@@ -212,7 +215,9 @@ export function extractHookSafeFallbackMetadata(
   if (!response || typeof response !== "object") {
     return null;
   }
-  const metadata = response[HOOK_SAFE_FALLBACK_METADATA_KEY];
+  const metadata = HOOK_SAFE_FALLBACK_METADATA_KEYS
+    .map((key) => response[key])
+    .find((value) => value != null);
   return metadata && typeof metadata === "object"
     ? (metadata as Record<string, unknown>)
     : null;

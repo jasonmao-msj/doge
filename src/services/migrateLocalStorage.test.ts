@@ -21,19 +21,19 @@ describe("migrateLocalStorageToFileStore", () => {
     clientStorageMocks.getClientStoreFullSync.mockReturnValue(undefined);
   });
 
-  it("copies legacy localStorage prefixes into ccgui-prefixed keys", () => {
+  it("copies legacy localStorage prefixes into doge-prefixed keys", () => {
     window.localStorage.setItem("mossx.promptUsage.v1", '{"prompt:test":{"count":1,"lastUsedAt":10}}');
     window.localStorage.setItem("mossx.runtimeConsole.height", "280");
     window.localStorage.setItem("codemoss:memory-debug", "1");
 
     migrateLocalStorageToFileStore();
 
-    expect(window.localStorage.getItem("ccgui.promptUsage.v1")).toBe(
+    expect(window.localStorage.getItem("doge.promptUsage.v1")).toBe(
       '{"prompt:test":{"count":1,"lastUsedAt":10}}',
     );
-    expect(window.localStorage.getItem("ccgui.runtimeConsole.height")).toBe("280");
-    expect(window.localStorage.getItem("ccgui:memory-debug")).toBe("1");
-    expect(window.localStorage.getItem("ccgui.clientStorageMigrated")).toBe("true");
+    expect(window.localStorage.getItem("doge.runtimeConsole.height")).toBe("280");
+    expect(window.localStorage.getItem("doge:memory-debug")).toBe("1");
+    expect(window.localStorage.getItem("doge.clientStorageMigrated")).toBe("true");
   });
 
   it("migrates legacy mossx layout values into the client file store", () => {
@@ -68,6 +68,31 @@ describe("migrateLocalStorageToFileStore", () => {
     migrateLocalStorageToFileStore();
 
     expect(clientStorageMocks.writeClientStoreData).not.toHaveBeenCalled();
-    expect(window.localStorage.getItem("ccgui.clientStorageMigrated")).toBe("true");
+    expect(window.localStorage.getItem("doge.clientStorageMigrated")).toBe("true");
+  });
+
+  it("prefers an existing doge value over all legacy prefixes", () => {
+    window.localStorage.setItem("doge.sidebarWidth", "410");
+    window.localStorage.setItem("ccgui.sidebarWidth", "320");
+    window.localStorage.setItem("mossx.sidebarWidth", "280");
+
+    migrateLocalStorageToFileStore();
+
+    expect(window.localStorage.getItem("doge.sidebarWidth")).toBe("410");
+    expect(clientStorageMocks.writeClientStoreData).toHaveBeenCalledWith(
+      "layout",
+      expect.objectContaining({ sidebarWidth: 410 }),
+    );
+  });
+
+  it("uses ccgui before older mossx data and remains idempotent", () => {
+    window.localStorage.setItem("ccgui.language", "zh-TW");
+    window.localStorage.setItem("mossx.language", "zh");
+
+    migrateLocalStorageToFileStore();
+    migrateLocalStorageToFileStore();
+
+    expect(window.localStorage.getItem("doge.language")).toBe("zh-TW");
+    expect(clientStorageMocks.writeClientStoreData).toHaveBeenCalledTimes(1);
   });
 });

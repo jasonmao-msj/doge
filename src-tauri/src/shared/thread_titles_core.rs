@@ -50,7 +50,7 @@ fn thread_titles_path() -> Result<PathBuf, String> {
             .replace(')', "");
         let mut path = std::env::temp_dir();
         path.push(format!(
-            "mossx-thread-titles-test-{}-{}.json",
+            "doge-thread-titles-test-{}-{}.json",
             std::process::id(),
             thread_id
         ));

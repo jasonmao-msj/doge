@@ -106,9 +106,9 @@ const FOLLOW_BUBBLE_AUTO_DISMISS_MS = 8000;
 const REASONING_FOLLOW_PAUSE_THRESHOLD_PX = 48;
 const MAX_STICKY_CHILD_SESSION_COUNT = 24;
 const SOLO_FOLLOW_COACH_DISMISSED_BY_WORKSPACE_STORAGE_KEY =
-  "ccgui.sessionActivity.soloFollowCoachDismissedByWorkspace";
-const SOLO_FOLLOW_DISCOVERY_COACH_FLAG_KEY = "ccgui.flags.soloFollow.discovery.coachmark";
-const SOLO_FOLLOW_DISCOVERY_NUDGE_FLAG_KEY = "ccgui.flags.soloFollow.discovery.nudge";
+  "doge.sessionActivity.soloFollowCoachDismissedByWorkspace";
+const SOLO_FOLLOW_DISCOVERY_COACH_FLAG_KEY = "doge.flags.soloFollow.discovery.coachmark";
+const SOLO_FOLLOW_DISCOVERY_NUDGE_FLAG_KEY = "doge.flags.soloFollow.discovery.nudge";
 const SESSION_PILL_COLOR_PALETTE = [
   { hue: 158, saturation: 66, lightness: 44 },
   { hue: 210, saturation: 72, lightness: 48 },
@@ -218,7 +218,7 @@ function emitSoloFollowMetric(
   }
   try {
     window.dispatchEvent(
-      new CustomEvent("ccgui:solo-follow-metric", {
+      new CustomEvent("doge:solo-follow-metric", {
         detail: {
           name,
           ...(payload ?? {}),

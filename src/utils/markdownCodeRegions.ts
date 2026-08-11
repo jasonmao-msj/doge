@@ -1,5 +1,5 @@
 const CODE_FENCE_LINE_REGEX = /^\s*(```|~~~)/;
-const INLINE_CODE_PLACEHOLDER_PREFIX = "\u0000CCGUIINLINECODETOKEN";
+const INLINE_CODE_PLACEHOLDER_PREFIX = "\u0000DOGEINLINECODETOKEN";
 
 type InlineCodeInfo = {
   hasInlineCode: boolean;

@@ -784,7 +784,7 @@ describe("VendorSettingsPanel", () => {
     );
     expect(
       within(brandHeader).queryByText(
-        "Configure Claude Code CLI providers and local settings used by ccgui.",
+        "Configure Claude Code CLI providers and local settings used by doge.",
       ),
     ).toBeNull();
     expect(screen.getByTestId("claude-local-settings-stub")).toBeTruthy();

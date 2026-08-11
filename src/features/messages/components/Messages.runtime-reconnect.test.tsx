@@ -50,9 +50,9 @@ describe("Messages runtime reconnect", () => {
   });
 
   beforeEach(() => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
     vi.mocked(ensureRuntimeReady).mockReset();
   });
 

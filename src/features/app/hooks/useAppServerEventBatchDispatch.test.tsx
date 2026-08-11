@@ -50,7 +50,7 @@ describe("useAppServerEventBatchDispatch (v2)", () => {
       };
     });
     resetRealtimePerfFlags();
-    window.localStorage.setItem("ccgui.perf.streamingScheduleTier", "guarded");
+    window.localStorage.setItem("doge.perf.streamingScheduleTier", "guarded");
   });
 
   afterEach(() => {
@@ -139,7 +139,7 @@ describe("useAppServerEventBatchDispatch (v2)", () => {
   });
 
   it("does not use requestIdleCallback in baseline tier", async () => {
-    window.localStorage.setItem("ccgui.perf.streamingScheduleTier", "baseline");
+    window.localStorage.setItem("doge.perf.streamingScheduleTier", "baseline");
     const requestIdleCallback = vi.fn();
     const cancelIdleCallback = vi.fn();
     Object.defineProperty(window, "requestIdleCallback", {

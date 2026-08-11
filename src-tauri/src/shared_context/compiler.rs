@@ -12,7 +12,7 @@ use super::types::{
     ProjectionOmission, RuntimeContextCapabilities,
 };
 
-const COMPILER_VERSION: &str = "mossx-shared-context/1";
+const COMPILER_VERSION: &str = "doge-shared-context/1";
 const DEFAULT_TRANSCRIPT_BUDGET: u64 = 12_000;
 const FOLD_BLOCK_THRESHOLD_CHARS: usize = 800;
 const FOLDED_TEXT_MAX_CHARS: usize = 2_400;
@@ -132,7 +132,10 @@ fn is_collab_control_user_text(text: &str) -> bool {
     if raw.is_empty() {
         return false;
     }
-    raw.contains("[[mossx.collab.briefing")
+    raw.contains("[[doge.collab.briefing")
+        || raw.contains("[[doge.collab.summary")
+        || raw.contains("[[doge.collab.")
+        || raw.contains("[[mossx.collab.briefing")
         || raw.contains("[[mossx.collab.summary")
         || raw.contains("[[mossx.collab.")
         || raw.contains("【协作调度")
@@ -160,9 +163,7 @@ fn collab_stage_portable_text(payload: &Value) -> Option<String> {
                 .map(str::trim)
                 .filter(|value| !value.is_empty())
         })?;
-    Some(format!(
-        "[协作环节 {node_id} · {status}]\n{body}"
-    ))
+    Some(format!("[协作环节 {node_id} · {status}]\n{body}"))
 }
 
 fn transform_event(
@@ -181,8 +182,9 @@ fn transform_event(
                     omissions.push(ProjectionOmission {
                         entry_id: entry_id.clone(),
                         category: "collab-control-prompt".to_string(),
-                        reason: "collab scheduler briefing/summary is not portable ordinary context"
-                            .to_string(),
+                        reason:
+                            "collab scheduler briefing/summary is not portable ordinary context"
+                                .to_string(),
                         disposition: OmissionDisposition::NotRetrievable,
                         retrievable_ref: None,
                     });
@@ -840,7 +842,7 @@ pub fn compile_context(
         .map(|entry| entry.entry_id.clone())
         .collect::<Vec<_>>();
     let stable_prefix = format!(
-        "MOSSX_SHARED_CONTEXT_V1\nsession:{}\nbinding:{}\n",
+        "DOGE_SHARED_CONTEXT_V1\nsession:{}\nbinding:{}\n",
         request.session_id, request.binding_key
     );
     let projected_text = transcript(&entries, mode == ProjectionMode::Checkpoint);
@@ -871,7 +873,7 @@ pub fn compile_context(
     });
     let package_id =
         sha256(&deterministic_json_bytes(&identity).map_err(|error| error.to_string())?);
-    let marker = format!("MOSSX_CONTEXT_PACKAGE:{package_id}:{source_checksum}");
+    let marker = format!("DOGE_CONTEXT_PACKAGE:{package_id}:{source_checksum}");
     let prompt_prefix = match mode {
         ProjectionMode::PortableTranscript | ProjectionMode::Checkpoint
             if projected_text.is_empty() =>
@@ -991,7 +993,7 @@ pub fn compile_native_context(
         .map(|entry| entry.entry_id.clone())
         .collect::<Vec<_>>();
     let stable_prefix = format!(
-        "MOSSX_NATIVE_CONTEXT_V1\nsource:{}\nbinding:{}\n",
+        "DOGE_NATIVE_CONTEXT_V1\nsource:{}\nbinding:{}\n",
         request.source.session_id, request.binding_key
     );
     let projected_text = transcript(&entries, requires_checkpoint);
@@ -1026,7 +1028,7 @@ pub fn compile_native_context(
     });
     let package_id =
         sha256(&deterministic_json_bytes(&identity).map_err(|error| error.to_string())?);
-    let marker = format!("MOSSX_CONTEXT_PACKAGE:{package_id}:{source_checksum}");
+    let marker = format!("DOGE_CONTEXT_PACKAGE:{package_id}:{source_checksum}");
     let prompt_prefix = match mode {
         ProjectionMode::PortableTranscript | ProjectionMode::Checkpoint => {
             format!("{marker}\n{stable_prefix}\n{projected_text}\n{marker}\n")

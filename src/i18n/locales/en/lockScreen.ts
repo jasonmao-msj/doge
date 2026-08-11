@@ -3,10 +3,10 @@ const lockScreen = {
   lockScreen: {
     lock: "Lock Screen",
     locked: "Locked",
-    brandKicker: "Codemoss Product Atlas",
-    title: "ccgui Secure Lock · Engineering Capability Overview",
+    brandKicker: "doge Product Atlas",
+    title: "doge Secure Lock · Engineering Capability Overview",
     description:
-      "Threads and tasks keep running in the background. Use this lock screen to review the full ccgui delivery loop: planning, execution orchestration, review, and shipping.",
+      "Threads and tasks keep running in the background. Use this lock screen to review the full doge delivery loop: planning, execution orchestration, review, and shipping.",
     tabLabel: "Lock screen tab navigation",
     tabs: {
       live: "Live Sessions",
@@ -21,15 +21,15 @@ const lockScreen = {
     liveRunning: "Running",
     capabilityTitle: "Capability Atlas",
     capabilityDesc:
-      "ccgui is not just a chat shell. It is a local-first engineering workspace designed for production flow.",
+      "doge is not just a chat shell. It is a local-first engineering workspace designed for production flow.",
     journeyTitle: "Typical Delivery Journey",
-    journeyDesc: "Most changes move through this sequence in ccgui:",
+    journeyDesc: "Most changes move through this sequence in doge:",
     elementsTitle: "Element Guide",
     elementsDesc:
       "Use this page to quickly review each core module and its responsibility.",
     unlockTitle: "Unlock Panel",
     unlockDesc:
-      "Password file is ~/.ccgui/client/pwd.txt. If missing, unlock is allowed and the file is auto-created with a default value.",
+      "Password file is ~/.doge/client/pwd.txt. If missing, unlock is allowed and the file is auto-created with a default value.",
     passwordInput: "Enter unlock password",
     passwordPlaceholder: "Type password",
     passwordHint: "Press Enter or click Unlock after entering password.",

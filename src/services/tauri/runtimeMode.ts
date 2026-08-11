@@ -38,7 +38,7 @@ export function isWebServiceRuntime(): boolean {
   if (typeof window === "undefined") {
     return false;
   }
-  return window.__MOSSX_WEB_SERVICE__ === true;
+  return window.__DOGE_WEB_SERVICE__ === true || window.__MOSSX_WEB_SERVICE__ === true;
 }
 
 export function shouldUseWebServiceFallback(): boolean {

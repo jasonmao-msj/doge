@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversationItem, RequestUserInputRequest } from "../../../types";
 import { Messages } from "./Messages";
@@ -16,9 +16,9 @@ describe("Messages conversationState routing", () => {
   });
 
   beforeEach(() => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
   });
 
   beforeAll(() => {
@@ -215,6 +215,7 @@ describe("Messages conversationState routing", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "tools.fileEditSceneToggle" }));
     expect(screen.getByText("a.ts")).toBeTruthy();
     expect(screen.getByText("b.ts")).toBeTruthy();
     expect(screen.queryByText("Legacy step")).toBeNull();

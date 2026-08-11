@@ -2,7 +2,7 @@
  * 协作 worker native thread id 前端 hide 注册表。
  *
  * 问题：Codex/Grok 等 worker 落盘后会被 catalog 改名成 `Agent N` / 模型正文标题，
- * 仅靠 MOSSX 标题闸会漏；hide set 又依赖 shared list 的 nativeThreadIds materialize。
+ * 仅靠协议标题闸会漏；hide set 又依赖 shared list 的 nativeThreadIds materialize。
  *
  * 方案：worker realtime 一旦出现，立刻把 native id（含 engine 前缀变体）记入本表，
  * listThreads strip 时与 expandHiddenSharedBindingIds 结果求并集。

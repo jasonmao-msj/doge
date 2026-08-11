@@ -109,9 +109,9 @@ describe("§11.3 path 4: appServerEventBatch=off", () => {
     );
     // test mode 下 default = false
     expect(isAppServerEventBatchConsumerEnabled()).toBe(false);
-    window.localStorage.setItem("ccgui.perf.appServerEventBatch", "on");
+    window.localStorage.setItem("doge.perf.appServerEventBatch", "on");
     expect(isAppServerEventBatchConsumerEnabled()).toBe(true);
-    window.localStorage.setItem("ccgui.perf.appServerEventBatch", "off");
+    window.localStorage.setItem("doge.perf.appServerEventBatch", "off");
     expect(isAppServerEventBatchConsumerEnabled()).toBe(false);
   });
 });

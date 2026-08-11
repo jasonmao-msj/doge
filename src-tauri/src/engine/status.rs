@@ -331,7 +331,7 @@ fn grok_provider_models_from_config(
         return Vec::new();
     }
     // Managed providers are materialized into the isolated GROK_HOME as
-    // `[model."ccgui/<model>"]`. Grok's `-m` resolves config section aliases
+    // `[model."doge/<model>"]`. Grok's `-m` resolves config section aliases
     // (not inner `model` fields), so the catalog id must be the materialized
     // alias — passing the bare API model name would select the built-in model
     // and bypass the provider's base_url/api_key.
@@ -366,8 +366,8 @@ fn opencode_provider_models_from_config(
     provider: &crate::types::OpenCodeProviderConfig,
 ) -> Vec<ModelInfo> {
     // Managed providers are injected via OPENCODE_CONFIG_CONTENT under the
-    // stable `ccgui` provider key, so the catalog id must be the qualified
-    // `ccgui/<model>` ref — passing the bare API model name would bypass the
+    // stable `doge` provider key, so the catalog id must be the qualified
+    // `doge/<model>` ref — passing the bare API model name would bypass the
     // provider's base_url/api_key.
     let provider_name = provider.name.trim();
     let provider_name = if provider_name.is_empty() {
@@ -1238,7 +1238,7 @@ fn get_gemini_models() -> Vec<ModelInfo> {
 }
 
 fn read_configured_gemini_model() -> Option<String> {
-    if let Some(from_config) = read_gemini_model_from_ccgui_config() {
+    if let Some(from_config) = read_gemini_model_from_doge_config() {
         return Some(from_config);
     }
     std::env::var("GEMINI_MODEL")
@@ -1247,7 +1247,7 @@ fn read_configured_gemini_model() -> Option<String> {
         .filter(|value| !value.is_empty())
 }
 
-fn read_gemini_model_from_ccgui_config() -> Option<String> {
+fn read_gemini_model_from_doge_config() -> Option<String> {
     let config_path = app_paths::config_file_path().ok()?;
     let content = std::fs::read_to_string(config_path).ok()?;
     let root = serde_json::from_str::<Value>(&content).ok()?;
@@ -1448,7 +1448,7 @@ fn resolve_override_for_family<'a>(
 /// - `model` (runtime id sent to CLI)
 /// - `name` / displayName (what the picker shows when mapping is active)
 ///
-/// This matches jetbrains-cc-gui: mapping changes labels, not the tier list.
+/// Mapping changes labels, not the tier list.
 fn apply_claude_model_overrides(models: &mut Vec<ModelInfo>, overrides: ClaudeModelOverrides) {
     let has_any = overrides.main.is_some()
         || overrides.fable.is_some()
@@ -2187,8 +2187,8 @@ mod tests {
         let models = grok_provider_models_from_config("provider-a", provider);
 
         assert_eq!(models.len(), 1);
-        assert_eq!(models[0].id, "ccgui/grok-4.5");
-        assert_eq!(models[0].model, "ccgui/grok-4.5");
+        assert_eq!(models[0].id, "doge/grok-4.5");
+        assert_eq!(models[0].model, "doge/grok-4.5");
         assert_eq!(models[0].name, "Provider Grok");
         assert!(models[0].default);
     }

@@ -1,6 +1,6 @@
 # File History View Cross-Layer Contract
 
-本规范固化单文件 Git history 从 FileTree 到 Desktop/daemon backend 的 executable contract，适用于 `src/features/files/**`、`src/features/git-history/**`、`src/services/tauri/git.ts`、`src-tauri/src/git/commands.rs`、`src-tauri/src/shared/git_core.rs` 与 `src-tauri/src/bin/cc_gui_daemon*`。
+本规范固化单文件 Git history 从 FileTree 到 Desktop/daemon backend 的 executable contract，适用于 `src/features/files/**`、`src/features/git-history/**`、`src/services/tauri/git.ts`、`src-tauri/src/git/commands.rs`、`src-tauri/src/shared/git_core.rs` 与 `src-tauri/src/bin/doge_daemon*`。
 
 ## 1. Scope / Trigger
 
@@ -418,7 +418,7 @@ fn push_git_history_branch_scope(
 - `loadHistory(false)` MUST 调用 `createHistoryRequestFilters()` 创建新 payload，并写入 `historyRequestFiltersRef`；Date resolver 在这里重新读取 clock。
 - `loadHistory(true)` 与 snapshot-expired retry MUST 复用该 ref/local payload，禁止重新计算 `dateFrom/dateTo`。
 - `"all"`（case-insensitive）与 `"*"` MUST 由 shared `push_git_history_branch_scope` 推入 `refs/heads/*` + `refs/remotes/*`；其他 branch 按 local ref、remote ref、revparse 顺序解析。
-- Desktop `src-tauri/src/git/commands.rs` 与 daemon `src-tauri/src/bin/cc_gui_daemon/git.rs` MUST 调用同一个 shared helper，禁止复制两套特殊值判断。
+- Desktop `src-tauri/src/git/commands.rs` 与 daemon `src-tauri/src/bin/doge_daemon/git.rs` MUST 调用同一个 shared helper，禁止复制两套特殊值判断。
 - Clear MUST 先同步清空 child query/author draft，再通知 parent；`draftScopeKey` MUST 同时参与 external value sync 与 debounce cleanup dependency。
 - partial author filter 只在 email 命中且 display name 未命中时显示 email；长 email MUST bounded/ellipsis。
 

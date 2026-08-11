@@ -54,7 +54,7 @@ describe("buildErrorBoundaryReportText", () => {
       language: "zh",
     });
 
-    expect(text).toContain("=== CC GUI Application Error Report ===");
+    expect(text).toContain("=== doge Application Error Report ===");
     expect(text).toContain("appVersion: 0.7.13");
     expect(text).toContain("errorClass: react-maximum-update-depth");
     expect(text).toContain("Maximum update depth exceeded");

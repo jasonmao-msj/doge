@@ -219,7 +219,7 @@ pub fn write_artifact(
         workspace_id: workspace_id.to_string(),
         session_id: session_id.to_string(),
         checksum: package_checksum(package)?,
-        media_type: "application/vnd.mossx.context-package+json".to_string(),
+        media_type: "application/vnd.doge.context-package+json".to_string(),
         created_at,
         reference_only: true,
         package: package.clone(),

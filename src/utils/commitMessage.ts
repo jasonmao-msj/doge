@@ -4,7 +4,7 @@ import type {
 } from "../services/tauri";
 import { normalizeEngineForExecution } from "./engineExecutionPolicy";
 
-const LAST_COMMIT_MESSAGE_CONFIG_KEY = "ccgui.git.lastCommitMessageConfig";
+const LAST_COMMIT_MESSAGE_CONFIG_KEY = "doge.git.lastCommitMessageConfig";
 const COMMIT_MESSAGE_ENGINES: readonly CommitMessageEngine[] = [
   "claude",
   "codex",

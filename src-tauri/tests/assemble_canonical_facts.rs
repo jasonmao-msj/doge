@@ -4,7 +4,8 @@
 
 mod common;
 
-use cc_gui_lib::shared_event_log::{
+use common::TempStoreDir;
+use doge_lib::shared_event_log::{
     canonical::{
         assembler::{assemble_turn_committed, RuntimeFinalSnapshot, RuntimeToolCall},
         shadow_v0::{map_v0_to_presentation_only, v0_evidence},
@@ -17,7 +18,6 @@ use cc_gui_lib::shared_event_log::{
     },
     open, AppendOutcome, Fidelity, LedgerOutcome, OpenOutcome, ProviderUsageRecord,
 };
-use common::TempStoreDir;
 
 const SESSION: &str = "a2-session";
 
@@ -25,17 +25,17 @@ const SESSION: &str = "a2-session";
 fn rust_facts_round_trip_wave0_valid_schema_fixtures() {
     for source in [
         include_str!(
-            "../../openspec/changes/establish-session-foundation-contracts/schemas/examples/valid/turn-committed.json"
+            "../../openspec/changes/archive/2026-08-03-establish-session-foundation-contracts/schemas/examples/valid/turn-committed.json"
         ),
         include_str!(
-            "../../openspec/changes/establish-session-foundation-contracts/schemas/examples/valid/control-fact.json"
+            "../../openspec/changes/archive/2026-08-03-establish-session-foundation-contracts/schemas/examples/valid/control-fact.json"
         ),
     ] {
         let envelope: serde_json::Value = serde_json::from_str(source).expect("fixture json");
         let expected_fact = envelope.get("fact").expect("fixture fact").clone();
         let fact: CanonicalFact =
             serde_json::from_value(expected_fact.clone()).expect("deserialize Rust fact");
-        cc_gui_lib::shared_event_log::canonical::validate_fact(&fact).expect("validate Rust fact");
+        doge_lib::shared_event_log::canonical::validate_fact(&fact).expect("validate Rust fact");
         assert_eq!(
             serde_json::to_value(fact).expect("serialize Rust fact"),
             expected_fact
@@ -139,7 +139,7 @@ fn make_usage_recorded(usage_record_id: &str, attempt_id: &str) -> CanonicalFact
     })
 }
 
-fn open_writer(temp: &TempStoreDir) -> cc_gui_lib::shared_event_log::SharedEventWriter {
+fn open_writer(temp: &TempStoreDir) -> doge_lib::shared_event_log::SharedEventWriter {
     let outcome = open(&temp.db_path).expect("open shared event store");
     match outcome {
         OpenOutcome::Ready(writer) => writer,
@@ -172,7 +172,7 @@ fn valid_fact_accepted_invalid_rejected() {
     assert!(
         matches!(
             error,
-            cc_gui_lib::shared_event_log::StoreError::ValidationFailed { .. }
+            doge_lib::shared_event_log::StoreError::ValidationFailed { .. }
         ),
         "unexpected error: {error}"
     );

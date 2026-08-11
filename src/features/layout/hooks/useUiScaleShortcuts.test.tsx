@@ -224,7 +224,7 @@ describe("useUiScaleShortcuts", () => {
   it("startup guard forces identity scale for one session after an unhealthy ≠1 launch", async () => {
     platformMocks.platform = "macos";
     window.localStorage.setItem(
-      "ccgui.uiScaleStartupGuard.v1",
+      "doge.uiScaleStartupGuard.v1",
       JSON.stringify({ scale: 0.9, markedAt: Date.now() }),
     );
     document.body.style.zoom = "0.9";

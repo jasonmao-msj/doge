@@ -1,13 +1,13 @@
 //! Kimi CLI vendor/provider management.
 //!
-//! Provider definitions live in ccgui's `config.json` under the `kimi` section
+//! Provider definitions live in doge's `config.json` under the `kimi` section
 //! (same pattern as claude/codex providers). Switching a provider materializes
 //! it into `~/.kimi-code/config.toml` under namespaced keys so the managed
 //! `managed:kimi-code` entries stay untouched:
 //!
-//! - `providers."ccgui:<id>"` with `type` / `base_url` / `api_key`
-//! - `models."ccgui/<model>"` referencing that provider
-//! - `default_model = "ccgui/<model>"`
+//! - `providers."doge:<id>"` with `type` / `base_url` / `api_key`
+//! - `models."doge/<model>"` referencing that provider
+//! - `default_model = "doge/<model>"`
 //!
 //! The special `__local_config_toml__` provider means "leave config.toml alone".
 
@@ -30,7 +30,8 @@ use crate::engine::kimi_provider_profile::{
 const LOCAL_KIMI_PROVIDER_ID: &str = KIMI_LOCAL_PROVIDER_PROFILE_ID;
 const LOCAL_KIMI_PROVIDER_NAME: &str = "Local config.toml";
 const LOCAL_KIMI_PROVIDER_REMARK: &str = "Use configuration directly from ~/.kimi-code/config.toml";
-const KIMI_PROVIDER_TOML_PREFIX: &str = "ccgui:";
+const KIMI_PROVIDER_TOML_PREFIX: &str = "doge:";
+const LEGACY_KIMI_PROVIDER_TOML_PREFIXES: &[&str] = &["ccgui:"];
 
 fn kimi_config_toml_path() -> Result<PathBuf, String> {
     if let Some(home) = std::env::var_os("KIMI_CODE_HOME").filter(|value| !value.is_empty()) {
@@ -113,7 +114,7 @@ fn apply_provider_to_kimi_config(provider: &KimiProviderConfig) -> Result<(), St
     materialize_kimi_provider_at(provider, &path, true)
 }
 
-/// Remove `ccgui:`-namespaced entries while keeping durable provider deletion
+/// Remove doge and legacy namespaced entries while keeping durable provider deletion
 /// independent from external config cleanup.
 fn cleanup_provider_from_kimi_config(provider_id: &str) -> Result<(), String> {
     let path = kimi_config_toml_path()?;
@@ -138,11 +139,16 @@ fn cleanup_provider_from_kimi_config_at(path: &Path, provider_id: &str) -> Resul
     let mut doc = toml::from_str::<toml::Table>(&original)
         .map_err(|error| format!("Failed to parse residual Kimi config: {error}"))?;
 
-    let provider_toml_id = format!("{}{}", KIMI_PROVIDER_TOML_PREFIX, provider_id);
+    let provider_toml_ids = std::iter::once(KIMI_PROVIDER_TOML_PREFIX)
+        .chain(LEGACY_KIMI_PROVIDER_TOML_PREFIXES.iter().copied())
+        .map(|prefix| format!("{prefix}{provider_id}"))
+        .collect::<Vec<_>>();
     let mut dirty = false;
 
     if let Some(providers) = doc.get_mut("providers").and_then(|v| v.as_table_mut()) {
-        dirty |= providers.remove(&provider_toml_id).is_some();
+        for provider_toml_id in &provider_toml_ids {
+            dirty |= providers.remove(provider_toml_id).is_some();
+        }
     }
 
     let mut removed_aliases = Vec::new();
@@ -150,7 +156,10 @@ fn cleanup_provider_from_kimi_config_at(path: &Path, provider_id: &str) -> Resul
         let dangling: Vec<String> = models
             .iter()
             .filter(|(_, model)| {
-                model.get("provider").and_then(|v| v.as_str()) == Some(provider_toml_id.as_str())
+                model
+                    .get("provider")
+                    .and_then(|v| v.as_str())
+                    .is_some_and(|value| provider_toml_ids.iter().any(|id| id == value))
             })
             .map(|(alias, _)| alias.clone())
             .collect();
@@ -336,11 +345,7 @@ pub(crate) async fn vendor_read_kimi_config_toml() -> Result<String, String> {
     match std::fs::read_to_string(&path) {
         Ok(content) => Ok(content),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
-        Err(error) => Err(format!(
-            "Failed to read {}: {}",
-            path.display(),
-            error
-        )),
+        Err(error) => Err(format!("Failed to read {}: {}", path.display(), error)),
     }
 }
 
@@ -350,23 +355,20 @@ pub(crate) async fn vendor_save_kimi_config_toml(content: String) -> Result<(), 
     let path = kimi_config_toml_path()?;
     // Allow empty (user clearing / starting fresh) but reject malformed TOML.
     if !content.trim().is_empty() {
-        toml::from_str::<toml::Table>(&content).map_err(|error| {
-            format!("Invalid TOML in {}: {error}", path.display())
-        })?;
+        toml::from_str::<toml::Table>(&content)
+            .map_err(|error| format!("Invalid TOML in {}: {error}", path.display()))?;
     }
     atomic_write_text_file(&path, &content, "toml")
 }
 
 fn atomic_write_text_file(path: &Path, content: &str, tmp_ext: &str) -> Result<(), String> {
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|error| {
-            format!("Failed to create {}: {error}", parent.display())
-        })?;
+        std::fs::create_dir_all(parent)
+            .map_err(|error| format!("Failed to create {}: {error}", parent.display()))?;
     }
     let tmp_path = path.with_extension(format!("{tmp_ext}.tmp"));
-    std::fs::write(&tmp_path, content).map_err(|error| {
-        format!("Failed to write temp file {}: {error}", tmp_path.display())
-    })?;
+    std::fs::write(&tmp_path, content)
+        .map_err(|error| format!("Failed to write temp file {}: {error}", tmp_path.display()))?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -631,9 +633,10 @@ mod tests {
 
     #[test]
     fn atomic_write_creates_parent_and_round_trips_toml() {
-        let path = config_test_path("atomic").join("nested").join("config.toml");
-        atomic_write_text_file(&path, "default_model = \"demo\"\n", "toml")
-            .expect("write");
+        let path = config_test_path("atomic")
+            .join("nested")
+            .join("config.toml");
+        atomic_write_text_file(&path, "default_model = \"demo\"\n", "toml").expect("write");
         assert_eq!(
             std::fs::read_to_string(&path).expect("read"),
             "default_model = \"demo\"\n"

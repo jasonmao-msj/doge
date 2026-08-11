@@ -1,4 +1,4 @@
-export const OPEN_TASK_RUN_EVENT = "ccgui:open-task-run";
+export const OPEN_TASK_RUN_EVENT = "doge:open-task-run";
 
 export function dispatchOpenTaskRunEvent(runId: string): void {
   if (typeof window === "undefined" || !runId.trim()) {

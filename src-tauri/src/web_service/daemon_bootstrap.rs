@@ -45,7 +45,7 @@ pub(crate) async fn maybe_start_local_daemon_for_remote(
     // processes that were started before installation.
     if !cfg!(debug_assertions) {
         if let Some(assets_dir) = super::assets_package::ready_assets_dir(app) {
-            command.env("MOSSX_WEB_ASSETS_DIR", assets_dir);
+            command.env("DOGE_WEB_ASSETS_DIR", assets_dir);
         }
     }
     command.arg("--listen").arg(&resolved_host);
@@ -457,7 +457,7 @@ async fn resolve_or_build_daemon_binary(app: &AppHandle) -> Result<PathBuf, Stri
     }
 
     // Dev-only fallback: tauri dev usually doesn't build secondary bin targets
-    // unless explicitly requested. Build cc_gui_daemon once, then retry resolve.
+    // unless explicitly requested. Build doge_daemon once, then retry resolve.
     if cfg!(debug_assertions) {
         if let Some(manifest_path) = find_dev_manifest_path() {
             build_dev_daemon_binary(&manifest_path).await?;
@@ -467,7 +467,7 @@ async fn resolve_or_build_daemon_binary(app: &AppHandle) -> Result<PathBuf, Stri
         }
     }
 
-    Err("Failed to locate cc_gui_daemon binary for local auto-start.".to_string())
+    Err("Failed to locate doge_daemon binary for local auto-start.".to_string())
 }
 
 fn find_dev_manifest_path() -> Option<PathBuf> {
@@ -507,16 +507,16 @@ async fn build_dev_daemon_binary(manifest_path: &Path) -> Result<(), String> {
         .arg("--manifest-path")
         .arg(manifest_path)
         .arg("--bin")
-        .arg("cc_gui_daemon")
+        .arg("doge_daemon")
         .status()
         .await
-        .map_err(|error| format!("Failed to execute cargo build for cc_gui_daemon: {error}"))?;
+        .map_err(|error| format!("Failed to execute cargo build for doge_daemon: {error}"))?;
 
     if status.success() {
         Ok(())
     } else {
         Err(format!(
-            "cargo build --bin cc_gui_daemon failed with status {status}"
+            "cargo build --bin doge_daemon failed with status {status}"
         ))
     }
 }
@@ -531,9 +531,11 @@ fn daemon_binary_names() -> &'static [&'static str] {
     #[cfg(windows)]
     {
         &[
+            "doge_daemon.exe",
             "cc_gui_daemon.exe",
             "moss_x_daemon.exe",
             "moss-x-daemon.exe",
+            "doge_daemon",
             "cc_gui_daemon",
             "moss_x_daemon",
             "moss-x-daemon",
@@ -541,7 +543,12 @@ fn daemon_binary_names() -> &'static [&'static str] {
     }
     #[cfg(not(windows))]
     {
-        &["cc_gui_daemon", "moss_x_daemon", "moss-x-daemon"]
+        &[
+            "doge_daemon",
+            "cc_gui_daemon",
+            "moss_x_daemon",
+            "moss-x-daemon",
+        ]
     }
 }
 
@@ -559,7 +566,7 @@ fn capture_daemon_stderr(base: &Path) -> Option<Stdio> {
 
 /// Fallback stderr capture when `app_data_dir` is unavailable.
 fn capture_fallback_stderr_tmpdir() -> Stdio {
-    let path = std::env::temp_dir().join("cc_gui_daemon_stderr.log");
+    let path = std::env::temp_dir().join("doge_daemon_stderr.log");
     std::fs::OpenOptions::new()
         .create(true)
         .append(true)

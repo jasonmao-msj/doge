@@ -10,7 +10,7 @@ export const GIT_COMMIT_COMPOSER_PLACEMENT_KEY =
   "git.commitComposerPlacement";
 
 const GIT_COMMIT_COMPOSER_PLACEMENT_EVENT =
-  "ccgui:git-commit-composer-placement";
+  "doge:git-commit-composer-placement";
 
 export function normalizeGitCommitComposerPlacement(
   value: unknown,

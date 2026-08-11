@@ -11,12 +11,12 @@
 
 mod common;
 
-use cc_gui_lib::shared_event_log::{
+use common::TempStoreDir;
+use doge_lib::shared_event_log::{
     open, AppendOutcome, BindingStateUpdate, Fidelity, LedgerOutcome, NewCanonicalEvent,
     OpenOutcome, ProviderUsageRecord, SessionTargetUpdate, SharedEventWriter, StoreError,
     USAGE_FACT_TYPE,
 };
-use common::TempStoreDir;
 
 const SESSION: &str = "session-a";
 
@@ -83,13 +83,18 @@ fn make_ledger_record(
 #[test]
 fn repeated_open_is_stable_and_idempotent() {
     let temp = TempStoreDir::new("migration");
-    {
+    let first_version = {
         let store = open_writer(&temp.db_path).expect("first open");
-        assert_eq!(store.user_version().expect("user_version"), 1);
-    }
-    // 重复 open 不报错、user_version 单调（停留在 1）。
+        let version = store.user_version().expect("user_version");
+        assert!(
+            version > 0,
+            "migrated schema must have a positive user_version"
+        );
+        version
+    };
+    // 重复 open 不报错、user_version 保持在首次迁移后的 current version。
     let store = open_writer(&temp.db_path).expect("second open");
-    assert_eq!(store.user_version().expect("user_version"), 1);
+    assert_eq!(store.user_version().expect("user_version"), first_version);
 
     // 六表存在性经 store 行为间接验证：六张表任意缺失都会让对应读写报错。
     // 这里显式核对 sqlite_master，锁定 spec 列出的六个表名。

@@ -4,13 +4,12 @@ import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { loadAboutStyles } from "../../../styles/featureStyleLoaders";
 import { getAppSettings } from "../../../services/tauri";
+import { DOGE_NAME, DOGE_REPOSITORY_URL } from "../../../config/brand";
 import {
   applyDockIconPreference,
   DEFAULT_DOCK_ICON_ID,
   resolveDockIconSrc,
 } from "../../theme/utils/dockIcon";
-
-const GITHUB_URL = "https://github.com/zhukunpenglinyutong/desktop-cc-gui";
 
 export function AboutView() {
   const { t } = useTranslation();
@@ -23,7 +22,7 @@ export function AboutView() {
   }, []);
 
   const handleOpenGitHub = () => {
-    void openUrl(GITHUB_URL);
+    void openUrl(DOGE_REPOSITORY_URL);
   };
 
   useEffect(() => {
@@ -74,18 +73,17 @@ export function AboutView() {
     <div className="about">
       <div className="about-card">
         <div className="about-header">
-          <img
-            className="about-icon"
-            src={logoSrc}
-            alt="ccgui icon"
-          />
-          <div className="about-title">ccgui</div>
+          <img className="about-icon" src={logoSrc} alt={`${DOGE_NAME} icon`} />
+          <div className="about-title">{DOGE_NAME}</div>
         </div>
         <div className="about-version">
           {version ? `${t("about.version")} ${version}` : `${t("about.version")} —`}
         </div>
         <div className="about-tagline">
           {t("about.tagline")}
+        </div>
+        <div className="about-story">
+          {t("about.story")}
         </div>
         <div className="about-divider" />
         <div className="about-links">

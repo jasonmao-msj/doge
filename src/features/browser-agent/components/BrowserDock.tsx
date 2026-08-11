@@ -33,7 +33,7 @@ import {
 
 const BROWSER_WEBVIEW_EVENT = "browser-agent://webview-event";
 const BROWSER_OPEN_URL_EVENT = "browser-agent:open-url";
-const PENDING_BROWSER_URL_KEY = "ccgui.browserAgent.pendingUrl";
+const PENDING_BROWSER_URL_KEY = "doge.browserAgent.pendingUrl";
 
 type BrowserDockProps = {
   workspaceId: string;

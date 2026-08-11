@@ -118,11 +118,11 @@ mod drag_drop_bridge_tests {
 }
 
 mod agent_catalog;
+pub mod agent_orchestration;
 mod agents;
 mod app_paths;
 mod backend;
 mod backend_budget;
-mod baidu_tongji;
 mod browser_agent;
 mod claude_commands;
 mod claude_commands_watch;
@@ -177,7 +177,6 @@ mod shared_sessions;
 mod skills;
 mod skills_hub;
 mod snapshot_throttle;
-pub mod agent_orchestration;
 mod startup_guard;
 mod state;
 mod storage;
@@ -253,9 +252,8 @@ pub fn run() {
         })
         .setup(|app| {
             if let Err(error) = app_paths::app_home_dir() {
-                log::warn!("Failed to prepare ccgui home directory: {error}");
+                log::warn!("Failed to prepare doge home directory: {error}");
             }
-            app.manage(baidu_tongji::BaiduTongjiState::load());
             let state = state::AppState::load(&app.handle());
             app.manage(state);
             renderer_stability::spawn_renderer_heartbeat_watchdog(app.handle().clone());
@@ -314,7 +312,7 @@ pub fn run() {
             // in the system browser instead of navigating the webview.
             let mut win_builder =
                 WebviewWindowBuilder::new(app, "main", tauri::WebviewUrl::App("index.html".into()))
-                    .title("ccgui")
+                    .title("doge")
                     .inner_size(1300.0, 800.0)
                     .min_inner_size(800.0, 600.0)
                     .devtools(true);

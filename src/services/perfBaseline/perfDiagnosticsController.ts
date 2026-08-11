@@ -1,7 +1,7 @@
 // 运行时性能诊断开关(与 react-scan overlay 开关平级)。
 //
 // 背景:web-vitals 等基线诊断被 build-time PROD 门禁关死,而用户卡顿的正是打包版。
-// 本控制器提供一个持久化的运行时开关(localStorage `ccgui.perf.diagnostics`),启停
+// 本控制器提供一个持久化的运行时开关(localStorage `doge.perf.diagnostics`),启停
 // rAF 掉帧监视器、longtask 观测与最近交互跟踪。这些采集器底层用 appendRendererDiagnostic
 // (无 build-time 门控),所以打包版同样可用。默认关闭,避免常态开销;用户在设置页打开
 // 后即时生效。

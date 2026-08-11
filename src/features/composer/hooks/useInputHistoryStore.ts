@@ -2,7 +2,7 @@
  * Input history store for autocomplete.
  *
  * Manages history data in memory with async persistence to
- * ~/.ccgui/inputHistory.json via Tauri commands.
+ * ~/.doge/inputHistory.json via Tauri commands.
  *
  * Data format is fully compatible with idea-claude-code-gui,
  * enabling data interoperability between the two applications.
@@ -90,7 +90,7 @@ function syncToLocalStorage(items: string[], counts: Record<string, number>) {
 
 // ─── Change notification ───
 
-const INPUT_HISTORY_CHANGED_EVENT = "ccgui:input-history-changed";
+const INPUT_HISTORY_CHANGED_EVENT = "doge:input-history-changed";
 
 function emitInputHistoryChanged(): void {
   if (typeof window === "undefined") {

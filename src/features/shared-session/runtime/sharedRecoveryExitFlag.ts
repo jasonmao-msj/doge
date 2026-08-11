@@ -2,10 +2,11 @@
  * Shared Recovery Exit Ladder 开关（fix-shared-session-recovery-exit-closure）。
  *
  * 开启时 UI 暴露 Stop / 停止并重建 / 放弃本轮；关闭时回退 Probe+Rebuild 双按钮（旧行为）。
- * 默认 on；localStorage `mossx.sharedRecoveryExitV2` 或 `VITE_MOSSX_SHARED_RECOVERY_EXIT_V2` 可关。
+ * 默认 on；localStorage `doge.sharedRecoveryExitV2` 或 `VITE_DOGE_SHARED_RECOVERY_EXIT_V2` 可关。
  */
 
-export const SHARED_RECOVERY_EXIT_V2_STORAGE_KEY = "mossx.sharedRecoveryExitV2";
+export const SHARED_RECOVERY_EXIT_V2_STORAGE_KEY = "doge.sharedRecoveryExitV2";
+const LEGACY_SHARED_RECOVERY_EXIT_V2_STORAGE_KEY = "mossx.sharedRecoveryExitV2";
 
 function isEnabledFlag(value: unknown) {
   return typeof value === "string" && /^(1|true|yes|on)$/i.test(value.trim());
@@ -42,7 +43,16 @@ export function isSharedRecoveryExitV2Enabled() {
   if (localOverride !== null) {
     return localOverride;
   }
+  const legacyLocalOverride = readStorageFlag(
+    LEGACY_SHARED_RECOVERY_EXIT_V2_STORAGE_KEY,
+  );
+  if (legacyLocalOverride !== null) {
+    return legacyLocalOverride;
+  }
   return (
-    parseBooleanFlag(import.meta.env.VITE_MOSSX_SHARED_RECOVERY_EXIT_V2) ?? true
+    parseBooleanFlag(
+      import.meta.env.VITE_DOGE_SHARED_RECOVERY_EXIT_V2 ??
+        import.meta.env.VITE_MOSSX_SHARED_RECOVERY_EXIT_V2,
+    ) ?? true
   );
 }

@@ -1,5 +1,5 @@
 /**
- * Simplified viewport utility for ccgui (Tauri environment)
+ * Simplified viewport utility for doge (Tauri environment)
  * No JCEF zoom compensation needed.
  */
 export function getAppViewport(): {

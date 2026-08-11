@@ -245,13 +245,13 @@ const workspace = {
     "threads": "थ्रेड्स",
     "deleteWorkspaceTitle": "वर्कस्पेस हटाएं",
     "deleteWorkspaceConfirm": "क्या आप वाकई \"{{name}}\" को हटाना चाहते हैं?",
-    "deleteWorkspaceMessage": "यह वर्कस्पेस को ccgui से हटा देगा।",
+    "deleteWorkspaceMessage": "यह वर्कस्पेस को doge से हटा देगा।",
     "deleteWorkspaceWorktreeWarning": "यह डिस्क पर {{count}} worktree भी हटा देगा।",
     "deleteWorkspaceWorktreeWarning_other": "यह डिस्क पर {{count}} worktrees भी हटा देगा।",
     "deleteWorkspaceBeforeYouConfirm": "जारी रखने से पहले:",
     "deleteWorkspaceWillHappenTitle": "क्या होगा:",
     "deleteWorkspaceWillNotHappenTitle": "क्या नहीं होगा:",
-    "deleteWorkspaceEffectListOnly": "वर्कस्पेस केवल ccgui सूची से हटाया जाएगा।",
+    "deleteWorkspaceEffectListOnly": "वर्कस्पेस केवल doge सूची से हटाया जाएगा।",
     "deleteWorkspaceEffectSessions": "इस वर्कस्पेस के अंतर्गत सक्रिय सत्र (और लिंक किए गए worktrees) बंद हो जाएंगे।",
     "deleteWorkspaceEffectDeleteWorktrees": "डिस्क पर {{count}} लिंक किया गया worktree फ़ोल्डर हटा दिया जाएगा।",
     "deleteWorkspaceEffectDeleteWorktrees_other": "डिस्क पर {{count}} लिंक किए गए worktree फ़ोल्डर हटा दिए जाएंगे।",
@@ -267,7 +267,7 @@ const workspace = {
     "reloadWorkspaceThreadsEffectNoGitWrite": "checkout/merge/rebase या कोई अन्य Git राइट ऑपरेशन नहीं चलाएगा।",
     "deleteWorktreeTitle": "Worktree हटाएं",
     "deleteWorktreeConfirm": "क्या आप वाकई \"{{name}}\" को हटाना चाहते हैं?",
-    "deleteWorktreeMessage": "यह agent को बंद करेगा, इसका worktree हटाएगा, और इसे ccgui से हटा देगा।",
+    "deleteWorktreeMessage": "यह agent को बंद करेगा, इसका worktree हटाएगा, और इसे doge से हटा देगा।",
     "deleteWorktreeFailed": "Worktree हटाना विफल रहा"
   }
 };

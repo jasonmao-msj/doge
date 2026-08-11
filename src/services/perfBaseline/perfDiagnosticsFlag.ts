@@ -1,9 +1,9 @@
-// 性能诊断运行时开关的单一来源(localStorage `ccgui.perf.diagnostics`)。
+// 性能诊断运行时开关的单一来源(localStorage `doge.perf.diagnostics`)。
 //
 // 独立、无其它依赖,供 perfDiagnosticsController(启停采集)与 perfBaseline web-vitals
 // (MON-5 运行时放开)共用,避免两者互相 import 形成循环依赖。
 
-const PERF_DIAGNOSTICS_FLAG_KEY = "ccgui.perf.diagnostics";
+const PERF_DIAGNOSTICS_FLAG_KEY = "doge.perf.diagnostics";
 
 function canUseLocalStorage(): boolean {
   try {

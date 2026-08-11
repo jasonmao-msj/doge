@@ -77,7 +77,7 @@ function extractStartupSnapshot(input) {
     return direct;
   }
   if (isRecord(input)) {
-    for (const key of ["startupPerf", "startupPerfSnapshot", "__CCGUI_STARTUP_PERF__"]) {
+    for (const key of ["startupPerf", "startupPerfSnapshot", "__DOGE_STARTUP_PERF__"]) {
       const nested = normalizeSnapshot(input[key]);
       if (nested) {
         return nested;

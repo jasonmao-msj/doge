@@ -9,7 +9,7 @@ const homeChat = {
     "announcementTag": "Nouveau",
     "announcementText": "Explorez les modèles de landing, les cartes de workflow et les prompts de démarrage",
     "announcementAction": "Découvrir",
-    "title": "L'agent ccgui, pour faciliter le travail",
+    "title": "L'agent doge, pour faciliter le travail",
     "titleLineOne": "Appuyez sur Entrée",
     "titleLineTwo": "Créez des applis plus vite",
     "subtitle": "Gardez le composeur que vous connaissez déjà, ajoutez-y un rythme de landing plus marqué, et passez à une exécution réelle avec moins de friction de configuration.",

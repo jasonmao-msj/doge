@@ -251,7 +251,7 @@ fn apply_provider_to_claude_settings(
 
 /// Represents the ~/.ccgui/config.json file structure shared with idea-claude-code-gui
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub(crate) struct CodemossConfig {
+pub(crate) struct DogeConfig {
     #[serde(default)]
     version: Option<Value>,
     #[serde(default)]
@@ -463,20 +463,20 @@ fn config_path() -> PathBuf {
     app_paths::config_file_path().unwrap_or_else(|_| PathBuf::from("config.json"))
 }
 
-pub(crate) fn read_config() -> Result<CodemossConfig, String> {
+pub(crate) fn read_config() -> Result<DogeConfig, String> {
     let path = config_path();
     if !path.exists() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     let content =
         std::fs::read_to_string(&path).map_err(|e| format!("Failed to read config: {}", e))?;
     if content.trim().is_empty() {
-        return Ok(CodemossConfig::default());
+        return Ok(DogeConfig::default());
     }
     serde_json::from_str(&content).map_err(|e| format!("Failed to parse config: {}", e))
 }
 
-pub(crate) fn write_config(config: &CodemossConfig) -> Result<(), String> {
+pub(crate) fn write_config(config: &DogeConfig) -> Result<(), String> {
     let path = config_path();
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)
@@ -541,7 +541,7 @@ fn sort_codex_providers_by_order(providers: &mut [CodexProviderConfig]) {
     });
 }
 
-fn resolve_provider_name(config: &CodemossConfig, provider_id: &str) -> Option<String> {
+fn resolve_provider_name(config: &DogeConfig, provider_id: &str) -> Option<String> {
     if provider_id == LOCAL_SETTINGS_PROVIDER_ID {
         return Some(LOCAL_SETTINGS_PROVIDER_NAME.to_string());
     }
@@ -1195,7 +1195,7 @@ pub(crate) async fn vendor_reorder_codex_providers(ordered_ids: Vec<String>) -> 
     write_config(&config)
 }
 
-fn apply_codex_provider_sort_order(config: &mut CodemossConfig, ordered_ids: &[String]) {
+fn apply_codex_provider_sort_order(config: &mut DogeConfig, ordered_ids: &[String]) {
     for (index, id) in ordered_ids.iter().enumerate() {
         let Some(Value::Object(provider)) = config.codex.providers.get_mut(id) else {
             continue;
@@ -1464,7 +1464,7 @@ mod tests {
 
     #[test]
     fn apply_codex_provider_sort_order_writes_index_per_id() {
-        let mut config = CodemossConfig::default();
+        let mut config = DogeConfig::default();
         config.codex.providers.insert(
             "a".to_string(),
             json!({ "id": "a", "name": "A", "createdAt": 10 }),

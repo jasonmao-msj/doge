@@ -1,6 +1,7 @@
 import type { ConversationItem } from "../../../types/conversation";
 import {
   isCollabInternalPromptText,
+  isCollabSummaryPromptText,
   stripCollabInternalPrompt,
 } from "./collabPrompt";
 
@@ -184,6 +185,9 @@ function userMessageHasRenderableAttachment(
   if (Array.isArray(item.images) && item.images.some((path) => path.trim().length > 0)) {
     return true;
   }
+  if (Array.isArray(item.deferredImages) && item.deferredImages.length > 0) {
+    return true;
+  }
   if (item.browserContextAttachment) {
     return true;
   }
@@ -265,7 +269,7 @@ export function filterMultiAgentCanvasItems(
       item.kind === "message" &&
       item.role === "assistant" &&
       isCollabInternalPromptText(item.text) &&
-      item.text.includes("[[mossx.collab.summary")
+      isCollabSummaryPromptText(item.text)
     ) {
       continue;
     }

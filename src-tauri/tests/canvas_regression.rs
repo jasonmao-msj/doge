@@ -11,13 +11,13 @@ mod common;
 use std::fs;
 use std::path::PathBuf;
 
-use cc_gui_lib::shared_event_log::canonical::types::{
+use common::TempStoreDir;
+use doge_lib::shared_event_log::canonical::types::{
     CanonicalAssistantBlocks, CanonicalBlock, CanonicalFact, CanonicalUserInput, Outcome,
     OutcomeStatus, TurnCommittedFact, TurnExecutionSnapshot, TurnRequestedFact,
 };
-use cc_gui_lib::shared_event_log::{open, AppendOutcome, OpenOutcome};
-use cc_gui_lib::shared_projection::SharedProjector;
-use common::TempStoreDir;
+use doge_lib::shared_event_log::{open, AppendOutcome, OpenOutcome};
+use doge_lib::shared_projection::SharedProjector;
 
 fn snapshot(engine: &str) -> TurnExecutionSnapshot {
     TurnExecutionSnapshot {
@@ -77,7 +77,7 @@ fn make_turn_committed(attempt_id: &str, engine: &str) -> CanonicalFact {
     })
 }
 
-fn open_writer(temp: &TempStoreDir) -> cc_gui_lib::shared_event_log::SharedEventWriter {
+fn open_writer(temp: &TempStoreDir) -> doge_lib::shared_event_log::SharedEventWriter {
     match open(&temp.db_path).expect("open shared event store") {
         OpenOutcome::Ready(writer) => writer,
         OpenOutcome::ReadOnlyRecovery { .. } => panic!("fresh db must be ready"),

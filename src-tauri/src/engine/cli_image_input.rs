@@ -141,7 +141,7 @@ fn materialize_data_url_to_workspace(raw: &str, workspace_path: &Path) -> Result
     let bytes = STANDARD
         .decode(payload.trim())
         .map_err(|error| format!("invalid base64 data URL: {error}"))?;
-    let dir = workspace_path.join(".mossx").join("image-staging");
+    let dir = workspace_path.join(".doge").join("image-staging");
     std::fs::create_dir_all(&dir).map_err(|error| format!("mkdir staging: {error}"))?;
     let path = dir.join(format!("attach-{}.{}", uuid::Uuid::new_v4(), ext));
     std::fs::write(&path, bytes).map_err(|error| format!("write staging: {error}"))?;
@@ -171,7 +171,9 @@ fn percent_decode_path(input: &str) -> String {
 
 /// Stable marker separating user-visible text from Kimi CLI-only image injection.
 /// The Kimi history loader strips everything from this marker onward.
-pub(crate) const KIMI_IMAGE_INJECTION_MARKER: &str = "\n\n<!-- mossx:kimi-image-attachments -->\n";
+pub(crate) const KIMI_IMAGE_INJECTION_MARKER: &str = "\n\n<!-- doge:kimi-image-attachments -->\n";
+const LEGACY_KIMI_IMAGE_INJECTION_MARKERS: &[&str] =
+    &["\n\n<!-- mossx:kimi-image-attachments -->\n"];
 
 /// Build a Kimi headless prompt that makes attached images reachable.
 ///
@@ -206,13 +208,16 @@ pub(crate) fn build_kimi_prompt_with_images(text: &str, image_paths: &[PathBuf])
 
 /// Split a Kimi wire prompt into user-visible text + image paths for UI/history.
 ///
-/// Returns `(display_text, image_paths)`. When no mossx injection marker is
+/// Returns `(display_text, image_paths)`. When no doge or legacy injection marker is
 /// present, also falls back to detecting the plain-English instruction block
 /// from older builds.
 pub(crate) fn split_kimi_prompt_for_display(text: &str) -> (String, Vec<String>) {
-    if let Some(split_at) = text.find(KIMI_IMAGE_INJECTION_MARKER) {
+    let matched_marker = std::iter::once(KIMI_IMAGE_INJECTION_MARKER)
+        .chain(LEGACY_KIMI_IMAGE_INJECTION_MARKERS.iter().copied())
+        .find_map(|marker| text.find(marker).map(|index| (marker, index)));
+    if let Some((marker, split_at)) = matched_marker {
         let visible = text[..split_at].trim_end().to_string();
-        let injection = &text[split_at + KIMI_IMAGE_INJECTION_MARKER.len()..];
+        let injection = &text[split_at + marker.len()..];
         return (visible, extract_image_paths_from_injection(injection));
     }
 
@@ -348,7 +353,7 @@ mod tests {
         let paths = resolve_existing_image_files(Some(&[data_url.to_string()]), &dir).unwrap();
         assert_eq!(paths.len(), 1);
         assert!(paths[0].exists());
-        assert!(paths[0].starts_with(dir.join(".mossx").join("image-staging")));
+        assert!(paths[0].starts_with(dir.join(".doge").join("image-staging")));
         let _ = std::fs::remove_dir_all(dir);
     }
 }

@@ -50,7 +50,7 @@ function userMessage(id: string, text: string): ConversationItem {
 describe("useSessionRadarFeed incremental refresh", () => {
   beforeEach(() => {
     clientStoreCache.clear();
-    window.localStorage.setItem("ccgui.perf.incrementalDerivation", "1");
+    window.localStorage.setItem("doge.perf.incrementalDerivation", "1");
     __resetRealtimePerfFlagCacheForTests();
   });
 

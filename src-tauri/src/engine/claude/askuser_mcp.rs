@@ -32,8 +32,8 @@ use tokio::net::TcpListener;
 
 use super::ClaudeSessionManager;
 
-/// The tool name the model sees (prefixed by the CLI as `mcp__ccgui__AskUserQuestion`).
-pub const MCP_SERVER_NAME: &str = "ccgui";
+/// The tool name the model sees (prefixed by the CLI as `mcp__doge__AskUserQuestion`).
+pub const MCP_SERVER_NAME: &str = "doge";
 pub const ASK_TOOL_NAME: &str = "AskUserQuestion";
 
 /// Process-global handle to the running server, set once at app startup.
@@ -348,7 +348,7 @@ mod tests {
     fn allowed_tool_name_matches_cli_mcp_prefix() {
         assert_eq!(
             AskUserMcpServer::allowed_tool_name(),
-            "mcp__ccgui__AskUserQuestion"
+            "mcp__doge__AskUserQuestion"
         );
     }
 

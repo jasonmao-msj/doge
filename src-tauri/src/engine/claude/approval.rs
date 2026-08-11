@@ -1,8 +1,8 @@
 use super::*;
 use std::path::{Component, Path, PathBuf};
 
-pub(super) const SYNTHETIC_APPROVAL_RESUME_MARKER_PREFIX: &str = "<ccgui-approval-resume>";
-pub(super) const SYNTHETIC_APPROVAL_RESUME_MARKER_SUFFIX: &str = "</ccgui-approval-resume>";
+pub(super) const SYNTHETIC_APPROVAL_RESUME_MARKER_PREFIX: &str = "<doge-approval-resume>";
+pub(super) const SYNTHETIC_APPROVAL_RESUME_MARKER_SUFFIX: &str = "</doge-approval-resume>";
 const MAX_CLAUDE_APPROVAL_FILE_BYTES: usize = 400_000;
 const CLAUDE_FILE_PATH_KEYS: &[&str] = &[
     "file_path",

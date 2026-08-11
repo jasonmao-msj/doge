@@ -213,7 +213,7 @@ const mockTranslate = (key: string, params?: Record<string, unknown>) => {
           "MCP routing notice: detected `playwright-mcp`, automatically mapped this session to `chrome-devtools`.",
         "threads.claudeMcpRouteUnavailable":
           "MCP routing notice: detected `playwright-mcp`, but this session has not confirmed that tool is visible.",
-        "app.title": "ccgui",
+        "app.title": "doge",
         "app.subtitle": "Orchestrate agents across your local projects.",
         "home.latestAgents": "Latest agents",
         "home.agentReplied": "Agent replied.",
@@ -371,7 +371,7 @@ const mockTranslate = (key: string, params?: Record<string, unknown>) => {
         "settings.openReleaseNotes": "Open release notes",
         "settings.cliValidationTitle": "CLI Validation",
         "settings.cliValidationDescription":
-          "Validate the CLIs used by ccgui, choose the shared execution backend once, and switch diagnostics between Codex and Claude Code.",
+          "Validate the CLIs used by doge, choose the shared execution backend once, and switch diagnostics between Codex and Claude Code.",
         "settings.cliExecutionBackendTitle": "Execution backend",
         "settings.cliExecutionBackendDescription":
           "These transport settings are shared by Codex and Claude Code runtime requests.",
@@ -389,14 +389,14 @@ const mockTranslate = (key: string, params?: Record<string, unknown>) => {
         "settings.runClaudeDoctor": "Run Claude Doctor",
         "settings.defaultClaudePath": "Default Claude Code path",
         "settings.kimiDescription":
-          "Configure Kimi CLI providers and local settings used by ccgui.",
+          "Configure Kimi CLI providers and local settings used by doge.",
         "settings.defaultKimiPath": "Default Kimi CLI path",
         "settings.kimiPlaceholder": "kimi",
         "settings.runKimiDoctor": "Run Kimi Doctor",
         "settings.kimiLooksGood": "Kimi CLI looks good",
         "settings.kimiIssueDetected": "Kimi CLI issue detected",
         "settings.grokDescription":
-          "Configure Grok CLI providers and local settings used by ccgui.",
+          "Configure Grok CLI providers and local settings used by doge.",
         "settings.defaultGrokPath": "Default Grok CLI path",
         "settings.grokPlaceholder": "grok",
         "settings.runGrokDoctor": "Run Grok Doctor",
@@ -715,7 +715,7 @@ const mockTranslate = (key: string, params?: Record<string, unknown>) => {
         "settings.clientUiVisibility.controlDescriptions.bottomActivityCheckpointDetails":
           "Shows summary, validations, file changes, and commit actions in the Overview tab. When off, only basic session info remains.",
         "settings.clientUiVisibility.controlDescriptions.bottomActivityGovernanceEvidence":
-          "Shows repository governance evidence at the top of the Overview tab (aimed at mossx development). Off by default.",
+          "Shows repository governance evidence at the top of the Overview tab (aimed at doge development). Off by default.",
         "settings.clientUiVisibility.controlDescriptions.curtainContextLedger": "Hides the context sources card above the composer without disabling ledger calculations.",
         "settings.clientUiVisibility.controlDescriptions.cornerStatusMessageAnchors": "Hides message anchor dots from the conversation canvas.",
         "settings.showRemainingLimitsDesc": "Display what is left instead of what is used.",
@@ -871,8 +871,8 @@ const mockTranslate = (key: string, params?: Record<string, unknown>) => {
         "settings.preloadGitDiffsDesc": "Make viewing git diff faster.",
         // Codex section
         "settings.codexTitle": "Codex",
-        "settings.claudeDescription": "Configure Claude Code CLI providers and local settings used by ccgui.",
-        "settings.codexDescription": "Configure the Codex CLI used by ccgui and validate the install.",
+        "settings.claudeDescription": "Configure Claude Code CLI providers and local settings used by doge.",
+        "settings.codexDescription": "Configure the Codex CLI used by doge and validate the install.",
         "settings.defaultCodexPath": "Default Codex path",
         "settings.codexPlaceholder": "codex",
         "settings.usePath": "Use PATH",
@@ -921,7 +921,7 @@ const mockTranslate = (key: string, params?: Record<string, unknown>) => {
         "settings.remoteBackendToken": "Token (optional)",
         "settings.remoteBackendHostAriaLabel": "Remote backend host",
         "settings.remoteBackendTokenAriaLabel": "Remote backend token",
-        "settings.remoteBackendDesc": "Start the daemon separately and point ccgui to it (host:port + token).",
+        "settings.remoteBackendDesc": "Start the daemon separately and point doge to it (host:port + token).",
         "settings.globalAgentsMd": "Global AGENTS.md",
         "settings.globalAgentsMdPlaceholder": "Add global instructions for Codex agents…",
         "settings.storedAt": "Stored at",

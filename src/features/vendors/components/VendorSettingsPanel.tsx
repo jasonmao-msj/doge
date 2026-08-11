@@ -1393,7 +1393,7 @@ export function VendorSettingsPanel({
               title="Kimi CLI"
               description={t("settings.kimiDescription", {
                 defaultValue:
-                  "Configure the Kimi CLI providers used by ccgui.",
+                  "Configure the Kimi CLI providers used by doge.",
               })}
               helpLabel={t("settings.vendor.openCliDocs", {
                 defaultValue: "Official docs",
@@ -1470,7 +1470,7 @@ export function VendorSettingsPanel({
               title="Grok CLI"
               description={t("settings.grokDescription", {
                 defaultValue:
-                  "Configure the Grok CLI providers used by ccgui.",
+                  "Configure the Grok CLI providers used by doge.",
               })}
               helpLabel={t("settings.vendor.openCliDocs", {
                 defaultValue: "Official docs",
@@ -1547,7 +1547,7 @@ export function VendorSettingsPanel({
               title="OpenCode CLI"
               description={t("settings.opencodeDescription", {
                 defaultValue:
-                  "Configure the OpenCode CLI providers used by ccgui.",
+                  "Configure the OpenCode CLI providers used by doge.",
               })}
               helpLabel={t("settings.vendor.openCliDocs", {
                 defaultValue: "Official docs",

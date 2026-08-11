@@ -406,7 +406,7 @@ fn parse_messages_from_wire(raw: &str) -> KimiSessionLoadResult {
                 if text.trim().is_empty() {
                     continue;
                 }
-                // Wire prompt may include mossx CLI-only image injection. Split so
+                // Wire prompt may include doge or legacy CLI-only image injection. Split so
                 // the canvas shows user text + image thumbnails, never the
                 // ReadMediaFile instruction block.
                 let (display_text, image_paths) =

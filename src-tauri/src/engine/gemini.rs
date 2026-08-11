@@ -440,7 +440,7 @@ impl GeminiSession {
         extension: &str,
         bytes: &[u8],
     ) -> Option<String> {
-        let inline_dir = workspace_path.join(".moss-x-gemini-inline-images");
+        let inline_dir = workspace_path.join(".doge-gemini-inline-images");
         if let Err(error) = std::fs::create_dir_all(&inline_dir) {
             log::warn!(
                 "Gemini image attachment failed to ensure workspace inline dir {}: {}",

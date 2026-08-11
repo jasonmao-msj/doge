@@ -102,7 +102,7 @@ export function assignPersonasForSquad(
 ): AssignedPersona[] {
   const usedNames = new Set<string>();
   return agentIds.map((agentId) => {
-    let picked = assignPersona(agentId, 0, pool);
+    const picked = assignPersona(agentId, 0, pool);
     if (!usedNames.has(picked.name)) {
       usedNames.add(picked.name);
       return picked;

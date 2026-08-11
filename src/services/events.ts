@@ -12,7 +12,7 @@ import { appendEventBackpressureDiagnostic } from "./rendererDiagnostics";
 
 export type Unsubscribe = () => void;
 export const WEB_SERVICE_RECONNECTED_EVENT =
-  "ccgui:web-service-reconnected" as const;
+  "doge:web-service-reconnected" as const;
 
 export type TerminalOutputEvent = {
   workspaceId: string;

@@ -114,7 +114,7 @@ export function OtherSection({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `ccgui-perf-report-${Date.now()}.txt`;
+      anchor.download = `doge-perf-report-${Date.now()}.txt`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

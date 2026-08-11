@@ -361,7 +361,12 @@ fn default_requires_approval(stage_id: &str, index: usize) -> bool {
     index == 0
 }
 
-fn default_access_mode_for(stage_id: &str, target: &ExecutionTargetInput, index: usize, total: usize) -> String {
+fn default_access_mode_for(
+    stage_id: &str,
+    target: &ExecutionTargetInput,
+    index: usize,
+    total: usize,
+) -> String {
     if let Some(mode) = match AgentStageId::parse(stage_id) {
         Some(AgentStageId::Implement) => Some("current"),
         Some(AgentStageId::Plan) | Some(AgentStageId::Review) => match target.engine {
@@ -425,9 +430,7 @@ pub fn stages_from_bindings(
                 .map(str::trim)
                 .filter(|value| *value == "read-only" || *value == "current")
                 .map(str::to_string)
-                .unwrap_or_else(|| {
-                    default_access_mode_for(&id, &binding.target, index, total)
-                });
+                .unwrap_or_else(|| default_access_mode_for(&id, &binding.target, index, total));
             let persona_agent_id = binding
                 .persona_agent_id
                 .as_deref()
@@ -454,11 +457,7 @@ pub fn stages_from_bindings(
                 .map(str::to_string);
             // 首段默认 full（用户全文）；后续默认 summary
             let upstream_feed_mode = if index == 0 {
-                match binding
-                    .upstream_feed_mode
-                    .as_deref()
-                    .map(str::trim)
-                {
+                match binding.upstream_feed_mode.as_deref().map(str::trim) {
                     Some("summary") => Some("summary".into()),
                     _ => Some("full".into()),
                 }
@@ -476,9 +475,7 @@ pub fn stages_from_bindings(
             AgentStageProjectionV1 {
                 id: id.clone(),
                 title,
-                role: role_prompt
-                    .clone()
-                    .unwrap_or_else(|| format!("stage:{id}")),
+                role: role_prompt.clone().unwrap_or_else(|| format!("stage:{id}")),
                 role_prompt,
                 target: binding.target.clone(),
                 status: AgentStageStatus::Pending,

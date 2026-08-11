@@ -20,7 +20,7 @@ export default {
       "collabRunningLock": "협업 진행 중 — 끝나면 입력 가능"
     },
     "card": {
-      "who": "협업 오케스트레이션 · mossx",
+      "who": "협업 오케스트레이션 · doge",
       "runTitle": "멀티 에이전트 협업",
       "roundTitle": "⚡ 협업 · {{n}}라운드",
       "orchestrationHint": "계획 승인 후 단계가 순차 실행됩니다. 단계 또는 오른쪽 캐러셀에서 전체 스트림을 확인하세요.",

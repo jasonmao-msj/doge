@@ -490,10 +490,9 @@ describe("MessagesRows stream mitigation", () => {
       />,
     );
 
-    // 流式文本变化经 useDeferredValue 拆成两次提交：紧急渲染（复用旧文本）
-    // + deferred 渲染（新文本），诊断 effect 每次提交各触发一次 → 共 3 次。
+    // 同帧渲染不再经 useDeferredValue 提交旧文本中间帧，只产生新文本提交。
     expect(rendererDiagnosticMocks.appendMessageRowRenderBudgetDiagnostic)
-      .toHaveBeenCalledTimes(3);
+      .toHaveBeenCalledTimes(2);
   });
 
   it("uses a plain text live surface for Claude Windows visible-stream mitigation", () => {

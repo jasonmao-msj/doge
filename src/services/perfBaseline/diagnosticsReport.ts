@@ -9,6 +9,7 @@ import {
 } from "../rendererDiagnostics";
 import { getReactScanAttributionState } from "../reactScanController";
 import { SUSPEND_GAP_MS, isLongTaskObservable } from "./frameDropMonitor";
+import { DOGE_NAME } from "../../config/brand";
 
 const REPORT_MAX_ENTRIES = 80;
 const REPORT_LABELS = [
@@ -75,7 +76,7 @@ export function buildDiagnosticsReportText(): string {
   const longTasks = relevant.filter((entry) => entry.label === "perf.longtask");
 
   const headerLines = [
-    "=== CC GUI 性能诊断 / performance report ===",
+    `=== ${DOGE_NAME} 性能诊断 / performance report ===`,
     `generatedAt: ${new Date().toISOString()}`,
     `appVersion: ${getAppVersion()}`,
     `platform: ${getPlatform()}`,

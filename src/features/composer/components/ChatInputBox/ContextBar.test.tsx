@@ -10,8 +10,8 @@ describe("ContextBar live canvas controls visibility", () => {
   });
 
   beforeEach(() => {
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
   });
 
   it("hides live canvas controls in history mode (phase collapse is automatic)", () => {

@@ -112,7 +112,7 @@ export type CodingPlanQuotaSnapshot = {
   balance?: CodingPlanBalanceSnapshot | null;
   /** Sub2API 用量摘要 */
   usageSummary?: CodingPlanUsageSummary | null;
-  /** 中转 origin，如 `https://fufei.mossx.ai`；UI 展示 `{siteOrigin}+sub2api` */
+  /** 中转 origin，如 `https://relay.example.com`；UI 展示 `{siteOrigin}+sub2api` */
   siteOrigin?: string | null;
   queriedAt: number;
 };

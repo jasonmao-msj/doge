@@ -1,3 +1,8 @@
+---
+type: analysis
+status: historical
+---
+
 # Windows 冷启动点击假死 + uiScale 0.8 修复分析
 
 > **日期**：2026-08-07（撰写），2026-08-10（补充 §10 并最终修复）  

@@ -8,7 +8,7 @@ import {
   shouldForceUiScaleIdentity,
 } from "./uiScaleStartupGuard";
 
-const STORAGE_KEY = "ccgui.uiScaleStartupGuard.v1";
+const STORAGE_KEY = "doge.uiScaleStartupGuard.v1";
 
 function flushRaf() {
   vi.runAllTimers();

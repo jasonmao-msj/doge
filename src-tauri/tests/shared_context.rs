@@ -2,20 +2,20 @@
 
 mod common;
 
-use cc_gui_lib::shared_context::{
+use common::TempStoreDir;
+use doge_lib::shared_context::{
     accept_delivery, compile_context, mark_delivery_sent, read_artifact, write_artifact,
     AcceptDeliveryRequest, ArtifactReadRequest, CompileContextRequest, MarkDeliverySentRequest,
     PrepareDeliveryRequest, RuntimeContextCapabilities,
 };
-use cc_gui_lib::shared_event_log::canonical::shadow_v0::{
+use doge_lib::shared_event_log::canonical::shadow_v0::{
     map_v0_turn_to_presentation_only_facts, v0_evidence,
 };
-use cc_gui_lib::shared_event_log::{open, OpenOutcome, SharedEventWriter};
-use cc_gui_lib::shared_session_v2::{
+use doge_lib::shared_event_log::{open, OpenOutcome, SharedEventWriter};
+use doge_lib::shared_session_v2::{
     accept_turn_core, begin_turn_core, commit_turn_core, CommitOutcomeInput, EngineType,
     ExecutionTargetInput,
 };
-use common::TempStoreDir;
 use serde_json::json;
 
 const SESSION: &str = "context-session";
@@ -160,7 +160,7 @@ fn package_artifact_and_two_phase_cursor_close_without_replay_gap() {
     );
     assert!(cross_workspace.is_err());
 
-    cc_gui_lib::shared_context::prepare_delivery(
+    doge_lib::shared_context::prepare_delivery(
         &writer,
         &PrepareDeliveryRequest {
             session_id: SESSION.to_string(),
@@ -194,7 +194,7 @@ fn package_artifact_and_two_phase_cursor_close_without_replay_gap() {
     let prepared_payload: serde_json::Value =
         serde_json::from_str(&prepared_event.payload_json).expect("prepared payload");
     assert_eq!(prepared_payload["type"], prepared_event.fact_type);
-    let duplicate_prepare = cc_gui_lib::shared_context::prepare_delivery(
+    let duplicate_prepare = doge_lib::shared_context::prepare_delivery(
         &writer,
         &PrepareDeliveryRequest {
             session_id: SESSION.to_string(),
@@ -228,7 +228,7 @@ fn package_artifact_and_two_phase_cursor_close_without_replay_gap() {
     .expect("cross-target begin result");
     assert_eq!(
         blocked_other_target.status,
-        cc_gui_lib::shared_session_v2::BeginTurnStatus::RecoveryRequired
+        doge_lib::shared_session_v2::BeginTurnStatus::RecoveryRequired
     );
 
     mark_delivery_sent(

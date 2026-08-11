@@ -45,7 +45,7 @@ function readCostV2Flag() {
       return false;
     }
     return (
-      window.localStorage.getItem("ccgui.flags.statusPanel.costV2") === "1"
+      window.localStorage.getItem("doge.flags.statusPanel.costV2") === "1"
     );
   } catch {
     return false;

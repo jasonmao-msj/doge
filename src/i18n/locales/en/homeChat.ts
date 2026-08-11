@@ -7,7 +7,7 @@ const homeChat = {
     announcementText:
       "Explore landing templates, workflow cards, and starter prompts",
     announcementAction: "Discover",
-    title: "ccgui Agent, make work easier",
+    title: "doge Agent, make work easier",
     titleLineOne: "Press Enter",
     titleLineTwo: "Build Apps Faster",
     subtitle:

@@ -54,13 +54,13 @@ const agentDeltaActions = (dispatch: ReturnType<typeof vi.fn>) =>
 describe("useThreadItemEvents Shared navigation projection", () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     resetLiveAssistantTextChannelForTests();
   });
 
   afterEach(() => {
     resetLiveAssistantTextChannelForTests();
-    window.localStorage.removeItem("ccgui.perf.realtimeBatching");
+    window.localStorage.removeItem("doge.perf.realtimeBatching");
     vi.useRealTimers();
   });
 

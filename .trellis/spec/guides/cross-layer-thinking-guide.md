@@ -1,6 +1,6 @@
 # Cross-Layer Thinking Guide（跨层思考指南）
 
-## mossx 的主链路
+## doge 的主链路
 
 ```text
 React Component

@@ -107,9 +107,9 @@ function deriveProjectName(
 
 function buildNoteCardStorageHintPath(projectName: string) {
   if (isWindowsPlatform()) {
-    return `%USERPROFILE%\\.ccgui\\note_card\\${projectName}\\active | archive`;
+    return `%USERPROFILE%\\.doge\\note_card\\${projectName}\\active | archive`;
   }
-  return `~/.ccgui/note_card/${projectName}/active | archive`;
+  return `~/.doge/note_card/${projectName}/active | archive`;
 }
 
 function areStringArraysEqual(left: readonly string[], right: readonly string[]) {

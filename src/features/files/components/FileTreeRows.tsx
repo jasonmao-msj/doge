@@ -191,7 +191,7 @@ function FileTreeNodeRow({
     }
     const encodedPaths = JSON.stringify(absolutePaths);
     event.dataTransfer.effectAllowed = "copy";
-    event.dataTransfer.setData("application/x-ccgui-file-paths", encodedPaths);
+    event.dataTransfer.setData("application/x-doge-file-paths", encodedPaths);
     event.dataTransfer.setData("text/plain", absolutePaths.join("\n"));
     if (isWindowsDragPreviewRuntime() && typeof event.dataTransfer.setDragImage === "function") {
       const preview = createWindowsFileTreeDragImage(

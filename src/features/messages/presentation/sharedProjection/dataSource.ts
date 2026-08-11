@@ -21,7 +21,8 @@ import { LOCAL_PROVIDER_LABEL } from "../../../../utils/turnBadge";
 import { buildConversationItem } from "../../../../utils/threadItems";
 import { isMultiAgentSettledSummaryItemId } from "../../../multi-agent/utils/canvasItems";
 
-export const SHARED_PROJECTION_STORAGE_KEY = "mossx.sharedProjection";
+export const SHARED_PROJECTION_STORAGE_KEY = "doge.sharedProjection";
+const LEGACY_SHARED_PROJECTION_STORAGE_KEY = "mossx.sharedProjection";
 
 function isEnabledFlag(value: unknown) {
   return typeof value === "string" && /^(1|true|yes|on)$/i.test(value.trim());
@@ -91,12 +92,13 @@ export function isSharedProjectionDataSourceEnabled() {
     return localOverride;
   }
   const buildOverride = parseBooleanFlag(
-    import.meta.env.VITE_MOSSX_SHARED_PROJECTION,
+    import.meta.env.VITE_DOGE_SHARED_PROJECTION ??
+      import.meta.env.VITE_MOSSX_SHARED_PROJECTION,
   );
   if (buildOverride !== null) {
     return buildOverride;
   }
-  return readStorageFlag("ccgui.sharedProjection") ?? true;
+  return readStorageFlag(LEGACY_SHARED_PROJECTION_STORAGE_KEY) ?? true;
 }
 
 function readString(content: Record<string, unknown>, key: string) {

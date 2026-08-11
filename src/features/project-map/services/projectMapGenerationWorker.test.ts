@@ -41,7 +41,7 @@ function baseRun(overrides: Partial<ProjectMapRunMetadata> = {}): ProjectMapRunM
     scope: "global",
     requestScope: { kind: "global", lensIds: [] },
     readSources: [],
-    writePath: ".ccgui/project-map/demo",
+    writePath: ".doge/project-map/demo",
     error: null,
     ...overrides,
   };
@@ -846,7 +846,7 @@ describe("runProjectMapGenerationWorker", () => {
         expect.objectContaining({
           id: "runtime-flow",
           label: "Runtime Script Flow",
-          path: ".ccgui/project-map/demo/diagrams/runtime-flow.md",
+          path: ".doge/project-map/demo/diagrams/runtime-flow.md",
           kind: "flowchart",
         }),
       ]);

@@ -115,6 +115,16 @@ impl SemanticProvider {
 
     fn override_env(self) -> &'static str {
         match self {
+            Self::RustAnalyzer => "DOGE_RUST_ANALYZER_BIN",
+            Self::EclipseJdtLs => "DOGE_JAVA_LANGUAGE_SERVER_BIN",
+            Self::TypeScriptLanguageServer => "DOGE_TYPESCRIPT_LANGUAGE_SERVER_BIN",
+            Self::Pyright => "DOGE_PYRIGHT_LANGUAGE_SERVER_BIN",
+            Self::Gopls => "DOGE_GOPLS_BIN",
+        }
+    }
+
+    fn legacy_override_env(self) -> &'static str {
+        match self {
             Self::RustAnalyzer => "MOSSX_RUST_ANALYZER_BIN",
             Self::EclipseJdtLs => "MOSSX_JAVA_LANGUAGE_SERVER_BIN",
             Self::TypeScriptLanguageServer => "MOSSX_TYPESCRIPT_LANGUAGE_SERVER_BIN",
@@ -245,11 +255,13 @@ struct LspSession {
     _data_owner_lock: Option<DataOwnerLock>,
 }
 
-struct DataOwnerLock(File);
+struct DataOwnerLock(Vec<File>);
 
 impl Drop for DataOwnerLock {
     fn drop(&mut self) {
-        let _ = self.0.unlock();
+        for file in &self.0 {
+            let _ = file.unlock();
+        }
     }
 }
 
@@ -466,7 +478,7 @@ fn query_error_is_fatal(session_alive: bool, error: &str) -> bool {
 
 impl Default for SemanticNavigationRuntime {
     fn default() -> Self {
-        Self::new(std::env::temp_dir().join("ccgui-language-servers"))
+        Self::new(std::env::temp_dir().join("doge-language-servers"))
     }
 }
 
@@ -686,8 +698,9 @@ async fn stop_session(session: &Arc<LspSession>) {
 }
 
 fn resolve_provider_executable(provider: SemanticProvider) -> OsString {
-    let override_executable =
-        std::env::var_os(provider.override_env()).filter(|value| !value.is_empty());
+    let override_executable = [provider.override_env(), provider.legacy_override_env()]
+        .into_iter()
+        .find_map(|env_name| std::env::var_os(env_name).filter(|value| !value.is_empty()));
     if override_executable.is_some() {
         return select_provider_executable(
             provider.default_executable(),
@@ -740,19 +753,23 @@ fn acquire_data_owner_lock(
     };
     std::fs::create_dir_all(&data_dir)
         .map_err(|error| format!("failed to prepare provider data directory: {error}"))?;
-    let lock_file = OpenOptions::new()
-        .create(true)
-        .read(true)
-        .write(true)
-        .open(data_dir.join(".ccgui-owner.lock"))
-        .map_err(|error| format!("failed to open provider data owner lock: {error}"))?;
-    lock_file.try_lock().map_err(|error| {
-        format!(
-            "{} data directory is already owned by another client: {error}",
-            provider.id()
-        )
-    })?;
-    Ok(Some(DataOwnerLock(lock_file)))
+    let mut lock_files = Vec::new();
+    for lock_filename in [".doge-owner.lock", ".ccgui-owner.lock"] {
+        let lock_file = OpenOptions::new()
+            .create(true)
+            .read(true)
+            .write(true)
+            .open(data_dir.join(lock_filename))
+            .map_err(|error| format!("failed to open provider data owner lock: {error}"))?;
+        lock_file.try_lock().map_err(|error| {
+            format!(
+                "{} data directory is already owned by another client: {error}",
+                provider.id()
+            )
+        })?;
+        lock_files.push(lock_file);
+    }
+    Ok(Some(DataOwnerLock(lock_files)))
 }
 
 async fn spawn_language_server(
@@ -820,7 +837,7 @@ async fn spawn_language_server(
             "initialize",
             json!({
                 "processId": Value::Null,
-                "clientInfo": { "name": "ccgui", "version": env!("CARGO_PKG_VERSION") },
+                "clientInfo": { "name": "doge", "version": env!("CARGO_PKG_VERSION") },
                 "rootUri": root_uri,
                 "workspaceFolders": [{ "uri": root_uri, "name": "workspace" }],
                 "initializationOptions": provider.initialization_options(),
@@ -1211,6 +1228,11 @@ mod tests {
         let first =
             acquire_data_owner_lock(SemanticProvider::EclipseJdtLs, &workspace, &cache_root)
                 .unwrap();
+        let data_dir = SemanticProvider::EclipseJdtLs
+            .data_dir(&workspace, &cache_root)
+            .expect("java provider data dir");
+        assert!(data_dir.join(".doge-owner.lock").exists());
+        assert!(data_dir.join(".ccgui-owner.lock").exists());
         assert!(
             acquire_data_owner_lock(SemanticProvider::EclipseJdtLs, &workspace, &cache_root,)
                 .is_err()
@@ -1298,7 +1320,13 @@ mod tests {
 
     #[test]
     fn installed_java_provider_is_discovered_from_extended_cli_paths_when_available() {
-        if std::env::var_os(SemanticProvider::EclipseJdtLs.override_env()).is_some() {
+        if [
+            SemanticProvider::EclipseJdtLs.override_env(),
+            SemanticProvider::EclipseJdtLs.legacy_override_env(),
+        ]
+        .into_iter()
+        .any(|env_name| std::env::var_os(env_name).is_some())
+        {
             return;
         }
         let Some(discovered) =
@@ -1315,7 +1343,13 @@ mod tests {
 
     #[test]
     fn installed_python_provider_is_discovered_from_extended_cli_paths_when_available() {
-        if std::env::var_os(SemanticProvider::Pyright.override_env()).is_some() {
+        if [
+            SemanticProvider::Pyright.override_env(),
+            SemanticProvider::Pyright.legacy_override_env(),
+        ]
+        .into_iter()
+        .any(|env_name| std::env::var_os(env_name).is_some())
+        {
             return;
         }
         let Some(discovered) =
@@ -1375,6 +1409,10 @@ mod tests {
         );
         assert_eq!(
             SemanticProvider::Pyright.override_env(),
+            "DOGE_PYRIGHT_LANGUAGE_SERVER_BIN"
+        );
+        assert_eq!(
+            SemanticProvider::Pyright.legacy_override_env(),
             "MOSSX_PYRIGHT_LANGUAGE_SERVER_BIN"
         );
         assert_eq!(SemanticProvider::Gopls.id(), "gopls");
@@ -1383,7 +1421,11 @@ mod tests {
             "go"
         );
         assert_eq!(SemanticProvider::Gopls.default_executable(), "gopls");
-        assert_eq!(SemanticProvider::Gopls.override_env(), "MOSSX_GOPLS_BIN");
+        assert_eq!(SemanticProvider::Gopls.override_env(), "DOGE_GOPLS_BIN");
+        assert_eq!(
+            SemanticProvider::Gopls.legacy_override_env(),
+            "MOSSX_GOPLS_BIN"
+        );
     }
 
     #[test]

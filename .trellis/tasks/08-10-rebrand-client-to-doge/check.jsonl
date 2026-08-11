@@ -1,0 +1,6 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Required rebrand verification contract"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required rebrand verification contract"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Required rebrand verification contract"}
+{"file": "openspec/changes/rebrand-client-to-doge/tasks.md", "reason": "Required rebrand verification contract"}

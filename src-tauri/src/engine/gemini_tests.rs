@@ -896,7 +896,7 @@ fn unix_process_exists(pid: u32) -> bool {
 
 #[cfg(unix)]
 async fn wait_for_process_exit(pid: u32) -> bool {
-    for _ in 0..100 {
+    for _ in 0..500 {
         if !unix_process_exists(pid) {
             return true;
         }
@@ -907,7 +907,7 @@ async fn wait_for_process_exit(pid: u32) -> bool {
 
 #[cfg(unix)]
 async fn wait_for_pid_file(path: &Path) -> u32 {
-    for _ in 0..100 {
+    for _ in 0..500 {
         if let Ok(value) = std::fs::read_to_string(path) {
             if let Ok(pid) = value.trim().parse::<u32>() {
                 return pid;

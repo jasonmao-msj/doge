@@ -44,7 +44,7 @@ describe("promptUsage", () => {
 
     recordPromptUsage("prompt:legacy", 200);
 
-    expect(JSON.parse(window.localStorage.getItem("ccgui.promptUsage.v1") ?? "{}")).toEqual({
+    expect(JSON.parse(window.localStorage.getItem("doge.promptUsage.v1") ?? "{}")).toEqual({
       "prompt:legacy": {
         count: 4,
         lastUsedAt: 200,

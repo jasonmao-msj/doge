@@ -83,7 +83,7 @@ function McpsDetailPanelInner({ row, engineLabel, pendingRowId, onToggleConfig, 
     row.kind === "config"
       ? row.source === "claude_json"
         ? t("extensions.mcps.detail.sourceClaude")
-        : t("extensions.mcps.detail.sourceCcgui")
+        : t("extensions.mcps.detail.sourceDoge")
       : t("extensions.mcps.groups.runtime");
 
   const statusLabel =

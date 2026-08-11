@@ -5,7 +5,7 @@ import {
   type RenderScheduleTier,
 } from "./renderSchedulingPolicy";
 
-const FLAG_PREFIX = "ccgui.perf.";
+const FLAG_PREFIX = "doge.perf.";
 const REALTIME_PERF_FLAG_IDS = [
   "realtimeBatching",
   "appServerEventBatch",
@@ -89,7 +89,7 @@ const PERF_FLAG_DEFINITIONS: readonly RealtimePerfFlagDefinition[] = [
     // A4 流式正文外部化（docs/perf/a4-live-text-externalization-plan.md）：
     // 流式正文 delta 只写 liveAssistantTextChannel（订阅行小树渲染），不再
     // 逐条 dispatch 进根 reducer。2026-07-08 人工验收「卡顿大幅优化」后默认
-    // 开启；异常时 localStorage 置 ccgui.perf.liveTextExternalization=0 回退。
+    // 开启；异常时 localStorage 置 doge.perf.liveTextExternalization=0 回退。
     id: "liveTextExternalization",
     defaultValue: true,
     testDefaultValue: false,
@@ -252,7 +252,7 @@ export function getActiveRealtimePerfFlags(): Record<
   ) as Record<RealtimePerfFlagId, ActiveRealtimePerfFlag>;
 }
 
-export const TOOL_OUTPUT_TAIL_GATE_FLAG_KEY = "ccgui.perf.toolOutputTailGate";
+export const TOOL_OUTPUT_TAIL_GATE_FLAG_KEY = "doge.perf.toolOutputTailGate";
 const TOOL_OUTPUT_TAIL_GATE_DEFAULT = true;
 const TOOL_OUTPUT_TAIL_GATE_TEST_DEFAULT = true;
 

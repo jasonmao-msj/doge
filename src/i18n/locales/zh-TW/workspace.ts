@@ -245,13 +245,13 @@ const workspace = {
     "threads": "對話串",
     "deleteWorkspaceTitle": "移除工作區",
     "deleteWorkspaceConfirm": "確定要移除「{{name}}」嗎？",
-    "deleteWorkspaceMessage": "這會將此工作區從 ccgui 中移除。",
+    "deleteWorkspaceMessage": "這會將此工作區從 doge 中移除。",
     "deleteWorkspaceWorktreeWarning": "這也會刪除磁碟上的 {{count}} 個 Worktree。",
     "deleteWorkspaceWorktreeWarning_other": "這也會刪除磁碟上的 {{count}} 個 Worktree。",
     "deleteWorkspaceBeforeYouConfirm": "在你繼續之前：",
     "deleteWorkspaceWillHappenTitle": "將會發生的事：",
     "deleteWorkspaceWillNotHappenTitle": "不會發生的事：",
-    "deleteWorkspaceEffectListOnly": "僅會將工作區從 ccgui 清單中移除。",
+    "deleteWorkspaceEffectListOnly": "僅會將工作區從 doge 清單中移除。",
     "deleteWorkspaceEffectSessions": "此工作區（及關聯 Worktree）下的作用中工作階段將被關閉。",
     "deleteWorkspaceEffectDeleteWorktrees": "磁碟上 {{count}} 個關聯的 Worktree 資料夾將被刪除。",
     "deleteWorkspaceEffectDeleteWorktrees_other": "磁碟上 {{count}} 個關聯的 Worktree 資料夾將被刪除。",
@@ -267,7 +267,7 @@ const workspace = {
     "reloadWorkspaceThreadsEffectNoGitWrite": "不執行 checkout／merge／rebase 或任何其他 Git 寫入操作。",
     "deleteWorktreeTitle": "刪除 Worktree",
     "deleteWorktreeConfirm": "確定要刪除「{{name}}」嗎？",
-    "deleteWorktreeMessage": "這會關閉該 Agent、移除其 Worktree，並將它從 ccgui 中刪除。",
+    "deleteWorktreeMessage": "這會關閉該 Agent、移除其 Worktree，並將它從 doge 中刪除。",
     "deleteWorktreeFailed": "刪除 Worktree 失敗"
   }
 };

@@ -67,7 +67,7 @@ describe("streamLatencyDiagnostics", () => {
     vi.stubGlobal("window", {
       localStorage: {
         getItem: (key: string) =>
-          key === "ccgui.debug.turnTrace.enabled" ? "1" : null,
+          key === "doge.debug.turnTrace.enabled" ? "1" : null,
       },
     });
 
@@ -97,7 +97,7 @@ describe("streamLatencyDiagnostics", () => {
     vi.stubGlobal("window", {
       localStorage: {
         getItem: (key: string) =>
-          key === "ccgui.debug.turnTrace.enabled" ? "1" : null,
+          key === "doge.debug.turnTrace.enabled" ? "1" : null,
       },
     });
 
@@ -139,7 +139,7 @@ describe("streamLatencyDiagnostics", () => {
     vi.stubGlobal("window", {
       localStorage: {
         getItem: (key: string) =>
-          key === "ccgui.debug.turnTrace.enabled" ? "1" : null,
+          key === "doge.debug.turnTrace.enabled" ? "1" : null,
       },
     });
 
@@ -327,9 +327,9 @@ describe("streamLatencyDiagnostics", () => {
   it("records first visible latency before render amplification", async () => {
     mocks.isWindowsPlatform.mockReturnValue(true);
     const getItem = vi.fn((key: string) =>
-      key === "ccgui.debug.streamLatency.firstVisibleLatencyMs"
+      key === "doge.debug.streamLatency.firstVisibleLatencyMs"
         ? "80"
-        : key === "ccgui.debug.streamLatency.renderAmplificationMs"
+        : key === "doge.debug.streamLatency.renderAmplificationMs"
           ? "200"
           : null,
     );
@@ -375,9 +375,9 @@ describe("streamLatencyDiagnostics", () => {
   it("ignores blank debug threshold values instead of treating them as zero", async () => {
     mocks.isWindowsPlatform.mockReturnValue(true);
     const getItem = vi.fn((key: string) =>
-      key === "ccgui.debug.streamLatency.firstVisibleLatencyMs"
+      key === "doge.debug.streamLatency.firstVisibleLatencyMs"
         ? "   "
-        : key === "ccgui.debug.streamLatency.renderAmplificationMs"
+        : key === "doge.debug.streamLatency.renderAmplificationMs"
           ? "200"
           : null,
     );
@@ -413,9 +413,9 @@ describe("streamLatencyDiagnostics", () => {
   it("does not report first visible latency for an empty visible render", async () => {
     mocks.isWindowsPlatform.mockReturnValue(true);
     const getItem = vi.fn((key: string) =>
-      key === "ccgui.debug.streamLatency.firstVisibleLatencyMs"
+      key === "doge.debug.streamLatency.firstVisibleLatencyMs"
         ? "80"
-        : key === "ccgui.debug.streamLatency.renderAmplificationMs"
+        : key === "doge.debug.streamLatency.renderAmplificationMs"
           ? "200"
           : null,
     );
@@ -1259,7 +1259,7 @@ describe("streamLatencyDiagnostics", () => {
 
   it("keeps diagnostics while the rollback flag suppresses the active mitigation profile", async () => {
     const getItem = vi.fn((key: string) =>
-      key === "ccgui.debug.streamMitigation.disabled" ? "true" : null,
+      key === "doge.debug.streamMitigation.disabled" ? "true" : null,
     );
     vi.stubGlobal("window", {
       localStorage: { getItem },
@@ -1529,7 +1529,7 @@ describe("streamLatencyDiagnostics", () => {
     expect(mocks.appendRendererDiagnostic).not.toHaveBeenCalled();
 
     const getItem = vi.fn((key: string) =>
-      key === "ccgui.debug.streamLatencyTrace" ? "1" : null,
+      key === "doge.debug.streamLatencyTrace" ? "1" : null,
     );
     vi.stubGlobal("window", {
       localStorage: { getItem },
@@ -1667,7 +1667,7 @@ describe("streamLatencyDiagnostics", () => {
     vi.stubGlobal("window", {
       localStorage: {
         getItem: vi.fn((key: string) =>
-          key === "ccgui.debug.streamLatencyTrace" ? "1" : null,
+          key === "doge.debug.streamLatencyTrace" ? "1" : null,
         ),
       },
     });
@@ -1718,7 +1718,7 @@ describe("streamLatencyDiagnostics", () => {
     vi.stubGlobal("window", {
       localStorage: {
         getItem: vi.fn((key: string) =>
-          key === "ccgui.debug.streamLatencyTrace" ? "1" : null,
+          key === "doge.debug.streamLatencyTrace" ? "1" : null,
         ),
       },
     });
@@ -1754,7 +1754,7 @@ describe("streamLatencyDiagnostics", () => {
     vi.stubGlobal("window", {
       localStorage: {
         getItem: vi.fn((key: string) =>
-          key === "ccgui.debug.streamLatencyTrace" ? "1" : null,
+          key === "doge.debug.streamLatencyTrace" ? "1" : null,
         ),
       },
     });

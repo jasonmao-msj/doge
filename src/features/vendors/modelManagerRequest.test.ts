@@ -41,7 +41,7 @@ describe("modelManagerRequest", () => {
 
   it("defaults target to claude for unsupported payload", () => {
     window.sessionStorage.setItem(
-      "ccgui.vendor.model-manager-request",
+      "doge.vendor.model-manager-request",
       JSON.stringify({ target: "other", addMode: 0 }),
     );
 

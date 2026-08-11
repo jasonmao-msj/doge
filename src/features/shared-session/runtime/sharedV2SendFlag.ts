@@ -5,10 +5,11 @@
  * durable-first 编排）。Phase 2 完成后默认开启；显式 negative flag 回滚 V0。
  *
  * 形态沿用 `sharedProjection/dataSource.ts` 的 flag 惯例：
- * build flag（`VITE_MOSSX_SHARED_V2_SEND`）或 localStorage override 任一开启即生效。
+ * build flag（`VITE_DOGE_SHARED_V2_SEND`）或 localStorage override 任一开启即生效。
  */
 
-export const SHARED_V2_SEND_STORAGE_KEY = "mossx.sharedV2Send";
+export const SHARED_V2_SEND_STORAGE_KEY = "doge.sharedV2Send";
+const LEGACY_SHARED_V2_SEND_STORAGE_KEY = "mossx.sharedV2Send";
 
 function isEnabledFlag(value: unknown) {
   return typeof value === "string" && /^(1|true|yes|on)$/i.test(value.trim());
@@ -79,5 +80,14 @@ export function isSharedV2SendEnabled() {
   if (localOverride !== null) {
     return localOverride;
   }
-  return parseBooleanFlag(import.meta.env.VITE_MOSSX_SHARED_V2_SEND) ?? true;
+  const legacyLocalOverride = readStorageFlag(LEGACY_SHARED_V2_SEND_STORAGE_KEY);
+  if (legacyLocalOverride !== null) {
+    return legacyLocalOverride;
+  }
+  return (
+    parseBooleanFlag(
+      import.meta.env.VITE_DOGE_SHARED_V2_SEND ??
+        import.meta.env.VITE_MOSSX_SHARED_V2_SEND,
+    ) ?? true
+  );
 }

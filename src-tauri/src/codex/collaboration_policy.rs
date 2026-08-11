@@ -2,10 +2,11 @@ use std::env;
 
 use serde_json::{json, Value};
 
-pub(crate) const COLLABORATION_POLICY_VERSION: &str = "ccgui-collaboration-policy/v1";
+pub(crate) const COLLABORATION_POLICY_VERSION: &str = "doge-collaboration-policy/v1";
 
 const DEFAULT_EFFECTIVE_MODE: &str = "code";
-const COLLABORATION_PROFILE_ENV: &str = "MOSSX_CODEX_COLLABORATION_PROFILE";
+const COLLABORATION_PROFILE_ENV: &str = "DOGE_CODEX_COLLABORATION_PROFILE";
+const LEGACY_COLLABORATION_PROFILE_ENV: &str = "MOSSX_CODEX_COLLABORATION_PROFILE";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum CollaborationProfile {
@@ -89,7 +90,10 @@ pub(crate) fn resolve_collaboration_profile_from_raw(raw: Option<&str>) -> Colla
 }
 
 pub(crate) fn resolve_collaboration_profile() -> CollaborationProfile {
-    resolve_collaboration_profile_from_raw(env::var(COLLABORATION_PROFILE_ENV).ok().as_deref())
+    let configured = env::var(COLLABORATION_PROFILE_ENV)
+        .or_else(|_| env::var(LEGACY_COLLABORATION_PROFILE_ENV))
+        .ok();
+    resolve_collaboration_profile_from_raw(configured.as_deref())
 }
 
 pub(crate) fn strict_local_collaboration_profile_enabled() -> bool {
@@ -230,7 +234,7 @@ pub(crate) fn apply_policy_to_collaboration_mode_with_extra_directives(
         settings.insert("developer_instructions".to_string(), Value::String(merged));
     }
     settings.insert(
-        "_mossx_runtime".to_string(),
+        "_doge_runtime".to_string(),
         json!({
             "selected_mode": policy.selected_mode.clone().unwrap_or_else(|| "missing".to_string()),
             "effective_mode": policy.effective_mode,
@@ -394,11 +398,11 @@ mod tests {
         assert_eq!(enriched["policyVersion"], COLLABORATION_POLICY_VERSION);
         assert_eq!(enriched["fallbackReason"], serde_json::Value::Null);
         assert_eq!(
-            enriched["settings"]["_mossx_runtime"]["request_user_input_policy"],
+            enriched["settings"]["_doge_runtime"]["request_user_input_policy"],
             "allow"
         );
         assert_eq!(
-            enriched["settings"]["_mossx_runtime"]["collaboration_profile"],
+            enriched["settings"]["_doge_runtime"]["collaboration_profile"],
             "official-compatible"
         );
         let merged_instructions = enriched["settings"]["developer_instructions"]

@@ -308,7 +308,7 @@ export function formatMoneyTwoDecimals(raw: string): string {
 
 /**
  * 供应商展示：`{真实站点 origin} {source}`（空格分隔，两边都是变量）
- * 例：`https://fufei.mossx.ai sub2api` / `https://ai.td.ee new_api`
+ * 例：`https://relay.example.com sub2api` / `https://ai.example.com new_api`
  * 禁止写死「站点接口」/「sub2api」文案，禁止用 `+` 连接。
  */
 export function formatRelayProviderLabel(

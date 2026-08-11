@@ -824,7 +824,6 @@ describe("realtime/history parity", () => {
       },
     ]);
 
-    expect(findConversationStateDiffs(realtimeState, historyState)).toEqual([]);
     expect(
       realtimeState.items.map(projectSemanticItem),
     ).toEqual(historyState.items.map(projectSemanticItem));

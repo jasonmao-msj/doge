@@ -5,13 +5,13 @@
 const about = {
   "about": {
     "version": "버전",
-    "tagline": "차세대 VibeCoding 에디터",
+    "tagline": "복잡한 일을 물어와, 끝까지 해냅니다.",
+    "story": "컴퓨터에 사는 작은 AI 시바견이 흩어진 파일, 작업, 아이디어를 한곳으로 가져옵니다.",
     "checkForUpdates": "업데이트 확인",
     "releaseNotes": "릴리스 노트",
     "reportIssue": "이슈 신고",
     "website": "웹사이트",
-    "github": "GitHub",
-    "wechatGroupTitle": "스캔하여 WeChat 그룹 참여"
+    "github": "GitHub"
   }
 };
 

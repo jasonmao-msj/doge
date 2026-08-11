@@ -1,10 +1,10 @@
 mod common;
 
-use cc_gui_lib::shared_event_log::{
+use common::TempStoreDir;
+use doge_lib::shared_event_log::{
     open, MutationLeaseAction, MutationLeaseOutcome, MutationLeaseRequest, OpenOutcome,
     SharedEventWriter,
 };
-use common::TempStoreDir;
 
 fn writer(store: &TempStoreDir) -> SharedEventWriter {
     match open(&store.db_path).expect("open store") {

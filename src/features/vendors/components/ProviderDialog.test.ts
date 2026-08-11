@@ -54,11 +54,11 @@ describe("ProviderDialog defaultConfigJson", () => {
     const enDialog = enSettings.settings.vendor.dialog;
     const zhDialog = zhSettings.settings.vendor.dialog;
 
-    expect(enDialog.addDescription).toContain("stored separately in desktop-cc-gui");
+    expect(enDialog.addDescription).toContain("stored separately in doge");
     expect(enDialog.editDescription).toContain(
       "~/.claude/settings.json is not modified",
     );
-    expect(zhDialog.addDescription).toContain("独立存储在 desktop-cc-gui");
+    expect(zhDialog.addDescription).toContain("独立存储在 doge");
     expect(zhDialog.editDescription).toContain(
       "不会修改 ~/.claude/settings.json",
     );

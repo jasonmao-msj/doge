@@ -283,14 +283,14 @@ const workspace = {
     threads: "个线程",
     deleteWorkspaceTitle: "移出工作区",
     deleteWorkspaceConfirm: '确定要移出 "{{name}}" 吗？',
-    deleteWorkspaceMessage: "这将从 ccgui 中移出该工作区。",
+    deleteWorkspaceMessage: "这将从 doge 中移出该工作区。",
     deleteWorkspaceWorktreeWarning: "同时还将删除磁盘上的 {{count}} 个工作树。",
     deleteWorkspaceWorktreeWarning_other:
       "同时还将删除磁盘上的 {{count}} 个工作树。",
     deleteWorkspaceBeforeYouConfirm: "执行前请确认：",
     deleteWorkspaceWillHappenTitle: "将会发生：",
     deleteWorkspaceWillNotHappenTitle: "不会发生：",
-    deleteWorkspaceEffectListOnly: "仅从 ccgui 列表中移出该工作区。",
+    deleteWorkspaceEffectListOnly: "仅从 doge 列表中移出该工作区。",
     deleteWorkspaceEffectSessions: "会关闭该工作区及其关联工作树的活跃会话。",
     deleteWorkspaceEffectDeleteWorktrees:
       "会删除磁盘上的 {{count}} 个关联工作树目录。",
@@ -313,7 +313,7 @@ const workspace = {
       "不会执行 checkout/merge/rebase 等 Git 写操作。",
     deleteWorktreeTitle: "删除工作树",
     deleteWorktreeConfirm: '确定要删除 "{{name}}" 吗？',
-    deleteWorktreeMessage: "这将关闭代理、移除工作树，并从 ccgui 中删除它。",
+    deleteWorktreeMessage: "这将关闭代理、移除工作树，并从 doge 中删除它。",
     deleteWorktreeFailed: "删除工作树失败",
   },
 };

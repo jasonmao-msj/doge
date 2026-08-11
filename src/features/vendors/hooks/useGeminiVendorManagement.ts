@@ -24,7 +24,7 @@ const GEMINI_ENV_KEYS = {
   model: "GEMINI_MODEL",
 } as const;
 
-const GEMINI_VENDOR_UPDATED_EVENT = "ccgui:gemini-vendor-updated";
+const GEMINI_VENDOR_UPDATED_EVENT = "doge:gemini-vendor-updated";
 
 type GeminiImportantValues = Omit<GeminiVendorDraft, "enabled" | "envText" | "authMode">;
 

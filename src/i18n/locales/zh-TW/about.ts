@@ -5,13 +5,13 @@
 const about = {
   "about": {
     "version": "版本",
-    "tagline": "新世代 VibeCoding 編輯器",
+    "tagline": "把複雜的事，叼回來做好。",
+    "story": "一隻住在電腦裡的 AI 小柴犬，把散落的檔案、任務和靈感一件件叼回來。",
     "checkForUpdates": "檢查更新",
     "releaseNotes": "版本說明",
     "reportIssue": "回報問題",
     "website": "官方網站",
-    "github": "GitHub",
-    "wechatGroupTitle": "掃碼加入微信群"
+    "github": "GitHub"
   }
 };
 

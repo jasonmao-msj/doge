@@ -8,7 +8,7 @@ const MAX_TOTAL_CHARS = 400_000;
 const MAX_ENTRIES = 48;
 const MAX_ACTIVE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_SETTLED_AGE_MS = 24 * 60 * 60 * 1000;
-const RECOVERY_DISABLED_KEY = "ccgui.recovery.liveAssistantShadowTranscript.disabled";
+const RECOVERY_DISABLED_KEY = "doge.recovery.liveAssistantShadowTranscript.disabled";
 
 export type LiveAssistantShadowTranscriptEntry = {
   id: string;

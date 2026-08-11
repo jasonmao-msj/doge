@@ -3,7 +3,7 @@
  * MCP Tool Block Component - for displaying MCP tool calls
  * 统一 Marker 风格折叠行：灰色描边图标 + 工具名 + 摘要 + 靠右状态图标
  *
- * AskUserQuestion (mcp__ccgui__ / "Mcp Ccgui Askuserquestion") 单独打磨：
+ * AskUserQuestion（doge/legacy MCP variants）单独打磨：
  * 不用 raw QUESTIONS / _input JSON，展示本地化标题 + 问题摘要 + 可读答案。
  */
 import { memo, useMemo, useState } from 'react';

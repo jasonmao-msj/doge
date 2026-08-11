@@ -195,7 +195,7 @@ export function useAppShellKanbanComposerSection(
 
       try {
         const resolvedHome = normalizePath(await homeDir());
-        const defaultWorkspacePath = `${resolvedHome}/.ccgui/workspace`;
+        const defaultWorkspacePath = `${resolvedHome}/.doge/workspace`;
         await ensureWorkspacePathDir(defaultWorkspacePath);
         const normalizedDefaultPath = normalizePath(defaultWorkspacePath);
         return (

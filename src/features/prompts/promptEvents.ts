@@ -22,8 +22,8 @@ export type CustomPromptsRefreshHandler = (
   options?: CustomPromptsRefreshOptions,
 ) => Promise<CustomPromptOption[] | void>;
 
-const CUSTOM_PROMPTS_CHANGED_EVENT = "ccgui:custom-prompts-changed";
-const PROMPT_CREATION_REQUEST_EVENT = "ccgui:prompt-creation-request";
+const CUSTOM_PROMPTS_CHANGED_EVENT = "doge:custom-prompts-changed";
+const PROMPT_CREATION_REQUEST_EVENT = "doge:prompt-creation-request";
 
 let pendingPromptCreationRequest: PromptCreationRequest | null = null;
 const customPromptsRefreshHandlers = new Set<CustomPromptsRefreshHandler>();

@@ -30,7 +30,7 @@ export function subscribeProviderContinuationDialogRequests(
 
 /** 用户取消续接时：通知 Picker 丢掉 destination 渠道预览覆盖，回到 source。 */
 export const PROVIDER_CONTINUATION_UI_ROLLBACK_EVENT =
-  "mossx:provider-continuation-ui-rollback";
+  "doge:provider-continuation-ui-rollback";
 
 export type ProviderContinuationUiRollbackDetail = {
   engine: string;

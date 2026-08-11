@@ -9,7 +9,7 @@ const homeChat = {
     "announcementTag": "新",
     "announcementText": "探索著陸頁範本、工作流程卡片與入門提示",
     "announcementAction": "探索",
-    "title": "ccgui Agent，讓工作更輕鬆",
+    "title": "doge Agent，讓工作更輕鬆",
     "titleLineOne": "按下 Enter",
     "titleLineTwo": "更快打造應用程式",
     "subtitle": "保留你熟悉的輸入框，為它加上更強的著陸節奏，並以更少的設定阻力進入實際執行。",

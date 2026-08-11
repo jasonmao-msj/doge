@@ -542,10 +542,10 @@ fn attach_codex_timing_to_event(
         json!(timing.methods_before_first_text_delta),
     );
 
-    match params.get_mut("ccguiTiming").and_then(Value::as_object_mut) {
+    match params.get_mut("dogeTiming").and_then(Value::as_object_mut) {
         Some(existing) => existing.extend(payload),
         None => {
-            params.insert("ccguiTiming".to_string(), Value::Object(payload));
+            params.insert("dogeTiming".to_string(), Value::Object(payload));
         }
     }
 }

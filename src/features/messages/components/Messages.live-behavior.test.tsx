@@ -38,9 +38,11 @@ const notifyContentResized = () => {
 // 新跟随模型的 RO/followSignal 追底统一由 pinIfFollowing 合并到下一 rAF 落位，
 // 断言 scrollTop 前需要先推进一帧（fake timers 用例内请改用 advanceTimersByTime）。
 const flushFollowFrame = async () => {
-  await act(async () => {
-    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-  });
+  for (let frame = 0; frame < 3; frame += 1) {
+    await act(async () => {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    });
+  }
 };
 
 describe("Messages live behavior", () => {
@@ -50,9 +52,9 @@ describe("Messages live behavior", () => {
   });
 
   beforeEach(() => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
     vi.stubGlobal(
       "ResizeObserver",
       class {
@@ -183,7 +185,7 @@ describe("Messages live behavior", () => {
 
     act(() => {
       document.dispatchEvent(
-        new CustomEvent<string>("ccgui:jump-to-message", {
+        new CustomEvent<string>("doge:jump-to-message", {
           detail: "u2",
         }),
       );
@@ -280,7 +282,7 @@ describe("Messages live behavior", () => {
 
     act(() => {
       document.dispatchEvent(
-        new CustomEvent<string>("ccgui:jump-to-message", {
+        new CustomEvent<string>("doge:jump-to-message", {
           detail: "u1",
         }),
       );
@@ -887,7 +889,7 @@ describe("Messages live behavior", () => {
   );
 
   it("disables auto-follow scrolling when live auto-follow toggle is off", () => {
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "0");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "0");
     const { container, rerender } = render(
       <Messages
         items={[
@@ -939,7 +941,7 @@ describe("Messages live behavior", () => {
   });
 
   it("forces send but not settle to the bottom after user scroll-away with live auto-follow off", () => {
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "0");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "0");
     const renderWith = (thinking: boolean) => (
       <Messages
         items={[
@@ -990,7 +992,7 @@ describe("Messages live behavior", () => {
   });
 
   it("forces a queued user message to the bottom while the current turn stays working", () => {
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "0");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "0");
     const renderWith = (includeQueuedUser: boolean) => (
       <Messages
         items={[
@@ -1078,7 +1080,7 @@ describe("Messages live behavior", () => {
   });
 
   it("stops auto-follow after the user scrolls up, then resumes at the bottom", async () => {
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const renderWith = (extraChunk: boolean) => (
       <Messages
         items={[
@@ -1129,6 +1131,7 @@ describe("Messages live behavior", () => {
     await flushFollowFrame();
 
     rerender(renderWith(true));
+    await flushFollowFrame();
     scrollHeight = 2500;
     notifyContentResized();
     await flushFollowFrame();
@@ -1182,7 +1185,7 @@ describe("Messages live behavior", () => {
   });
 
   it("re-arms auto-follow and returns to the bottom when focus follow is re-enabled", async () => {
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "0");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "0");
     const renderWith = (extraChunk: boolean) => (
       <Messages
         items={[
@@ -1239,7 +1242,7 @@ describe("Messages live behavior", () => {
   it("cancels pending live rechecks when focus follow is disabled", () => {
     vi.useFakeTimers();
     try {
-      window.localStorage.setItem("ccgui.messages.live.autoFollow", "0");
+      window.localStorage.setItem("doge.messages.live.autoFollow", "0");
       const { container } = render(
         <Messages
           items={[
@@ -1292,7 +1295,7 @@ describe("Messages live behavior", () => {
 
   it("does not thrash scrollTop when focus follow chases a fast-growing stream", async () => {
     // 快流：scrollKey + 连续 Resize 不得 cancel/restart 整条收敛；应复用 active run + 有限次写底。
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const { container } = render(
       <Messages
         items={[
@@ -1338,7 +1341,7 @@ describe("Messages live behavior", () => {
   it("keeps stick-to-bottom after settle when focus follow is on and content grows late", () => {
     // 回合结束后思考折叠 / full markdown / 虚拟化 remeasure 会继续改 scrollHeight。
     // 焦点跟随 + 仍停在底部时，必须越过 isWorking 门槛继续追真实底部。
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     vi.useFakeTimers();
     try {
       const renderWith = (thinking: boolean) => (
@@ -1379,7 +1382,7 @@ describe("Messages live behavior", () => {
       // 回合结束：settle 钉底（pinIfFollowing 合并到下一 rAF，fake timers 推进一帧）。
       rerender(renderWith(false));
       act(() => {
-        vi.advanceTimersByTime(20);
+        vi.advanceTimersByTime(50);
       });
       expect(scroller.scrollTop).toBe(scrollHeight - 720);
 
@@ -1399,7 +1402,7 @@ describe("Messages live behavior", () => {
   it("chases height growth via ResizeObserver while still armed at bottom", () => {
     // jetbrains P0：在底就 RO 一直跟。高度阶跃后不要先 fire 假 scroll 解绑；
     // 只靠 RO 把视口追到新真底。
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     vi.useFakeTimers();
     try {
       const renderWith = (thinking: boolean) => (
@@ -1439,7 +1442,7 @@ describe("Messages live behavior", () => {
 
       rerender(renderWith(false));
       act(() => {
-        vi.advanceTimersByTime(20);
+        vi.advanceTimersByTime(50);
       });
       expect(scroller.scrollTop).toBe(scrollHeight - 720);
 
@@ -1498,7 +1501,7 @@ describe("Messages live behavior", () => {
       // settle：先钉到当时的底（rAF 落位）
       rerender(renderWith(false));
       act(() => {
-        vi.advanceTimersByTime(20);
+        vi.advanceTimersByTime(50);
       });
       expect(scroller.scrollTop).toBe(scrollHeight - 720);
 
@@ -1517,7 +1520,7 @@ describe("Messages live behavior", () => {
   });
 
   it("does not chase late idle growth when the user has scrolled away from the bottom", () => {
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     vi.useFakeTimers();
     try {
       const { container } = render(
@@ -1612,7 +1615,7 @@ describe("Messages live behavior", () => {
   it("finishes history placement on late geometry via ResizeObserver while follow stays armed", async () => {
     // 迟到测高只靠 RO 通道（无定时 recheck）；RO 的 pinIfFollowing 要求跟随武装
     // （liveAutoFollow 开 && 在底部 && 未暂停），因此本场景保持 follow 开启。
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const renderWith = (items: ConversationItem[], loading: boolean) => (
       <Messages
         items={items}
@@ -1730,7 +1733,7 @@ describe("Messages live behavior", () => {
       rerender(renderWith("thread-reopen", historyItems));
       notifyContentResized();
       act(() => {
-        vi.advanceTimersByTime(20);
+        vi.advanceTimersByTime(50);
       });
       expect(scroller.scrollTop).toBe(2_400 - 720);
 
@@ -1998,7 +2001,7 @@ describe("Messages live behavior", () => {
     // scope 切换重置跟随状态并由 history-open 重新武装钉底；随后用户上滚
     // （wheel 或 scrollTop 上移）释放跟随。高度阶跃假离底不得解绑，故此处用
     // 明确的上滚意图。
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const scrollSpy = vi
       .spyOn(HTMLElement.prototype, "scrollIntoView")
       .mockImplementation(() => {});
@@ -2066,7 +2069,7 @@ describe("Messages live behavior", () => {
     // 预置新会话的 message jump，使 history-open 明确让位给 pending anchor。
     act(() => {
       document.dispatchEvent(
-        new CustomEvent<string>("ccgui:jump-to-message", {
+        new CustomEvent<string>("doge:jump-to-message", {
           detail: "scope-idle-user",
         }),
       );
@@ -2078,7 +2081,7 @@ describe("Messages live behavior", () => {
   });
 
   it("re-pins to the bottom after the conversation settles and the timeline back-fills", async () => {
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const scrollSpy = vi
       .spyOn(HTMLElement.prototype, "scrollIntoView")
       .mockImplementation(() => {});
@@ -2137,7 +2140,7 @@ describe("Messages live behavior", () => {
 
   it("does not re-pin on settle back-fill when the user scrolled up during streaming", async () => {
     // settleFollow：仅 userPaused（wheel 上滚）时不强制回底；back-fill 也不追。
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const scrollSpy = vi
       .spyOn(HTMLElement.prototype, "scrollIntoView")
       .mockImplementation(() => {});
@@ -2200,7 +2203,7 @@ describe("Messages live behavior", () => {
   });
 
   it("re-pins after every settlement across multiple turns", async () => {
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const renderWith = (thinking: boolean, turnCount: number) => (
       <Messages
         items={Array.from({ length: turnCount + 1 }, (_, index) => ({
@@ -2237,7 +2240,7 @@ describe("Messages live behavior", () => {
   });
 
   it("ignores duplicate live auto-follow enabled events", async () => {
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const scrollSpy = vi
       .spyOn(HTMLElement.prototype, "scrollIntoView")
       .mockImplementation(() => {});
@@ -2280,7 +2283,7 @@ describe("Messages live behavior", () => {
   it("does not auto-follow static history item changes when the user has scrolled away", async () => {
     // 对齐 jetbrains：在底部时 messages 变化会追底；用户已离底则不得追。
     // （旧断言「静态历史增量完全不 scrollIntoView」与 jetbrains 模型冲突。）
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const scrollSpy = vi
       .spyOn(HTMLElement.prototype, "scrollIntoView")
       .mockImplementation(() => {});
@@ -2341,7 +2344,7 @@ describe("Messages live behavior", () => {
 
   it("pins to the bottom after a long streaming tail restores full history", async () => {
     // 新契约：settle 钉底走 pinIfFollowing，要求跟随武装（liveAutoFollow 开）。
-    window.localStorage.setItem("ccgui.messages.live.autoFollow", "1");
+    window.localStorage.setItem("doge.messages.live.autoFollow", "1");
     const scrollSpy = vi
       .spyOn(HTMLElement.prototype, "scrollIntoView")
       .mockImplementation(() => {});

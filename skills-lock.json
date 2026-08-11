@@ -22,7 +22,7 @@
       "metadataPath": "resources/curated-skills/lazy-senior-dev/metadata.json",
       "computedHash": "5bf2cef79dcc91d95892060330eabd8555a0dc580499a881eb6621f31370044c",
       "tokenEstimate": 1100,
-      "minClientVersion": "0.5.14"
+      "minClientVersion": "0.1.0"
     },
     "caveman": {
       "kind": "curated",
@@ -32,7 +32,7 @@
       "metadataPath": "resources/curated-skills/caveman/metadata.json",
       "computedHash": "12d16c4e8ad70d5c14a3f090581dc725b24658bf0caaf2b9e3aab17b47aa50bc",
       "tokenEstimate": 1400,
-      "minClientVersion": "0.5.14"
+      "minClientVersion": "0.1.0"
     },
     "vercel-cli-with-tokens": {
       "source": "vercel-labs/agent-skills",

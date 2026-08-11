@@ -234,11 +234,9 @@ describe("GitMultiRepositoryChanges", () => {
       />,
     );
 
-    const previewButton = document.querySelector<HTMLButtonElement>(
-      '.diff-row[data-path="pom.xml"] .diff-row-action--preview-modal',
-    );
-    expect(previewButton).toBeTruthy();
-    fireEvent.click(previewButton as HTMLButtonElement);
+    const row = document.querySelector<HTMLElement>('.diff-row[data-path="pom.xml"]');
+    expect(row).toBeTruthy();
+    fireEvent.click(row as HTMLElement);
 
     expect(onOpenFilePreview).toHaveBeenCalledWith(
       "services/api",
@@ -269,8 +267,9 @@ describe("GitMultiRepositoryChanges", () => {
     expect(onOpenInlinePreview).toHaveBeenCalledWith("services/api", "pom.xml");
   });
 
-  it("forwards direct file-row opens with repository identity", () => {
+  it("forwards direct file-row previews with repository identity", () => {
     const onOpenFile = vi.fn();
+    const onOpenFilePreview = vi.fn();
     render(
       <GitMultiRepositoryChanges
         workspaceId="ws-1"
@@ -279,6 +278,7 @@ describe("GitMultiRepositoryChanges", () => {
         commitMessage=""
         commitLoading={false}
         onOpenFile={onOpenFile}
+        onOpenFilePreview={onOpenFilePreview}
       />,
     );
 
@@ -288,12 +288,28 @@ describe("GitMultiRepositoryChanges", () => {
     fireEvent.click(rows[1] as HTMLElement);
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "Enter" });
 
-    expect(onOpenFile).toHaveBeenNthCalledWith(1, "repo-a", "pom.xml");
-    expect(onOpenFile).toHaveBeenNthCalledWith(2, "repo-b", "pom.xml");
-    expect(onOpenFile).toHaveBeenNthCalledWith(3, "repo-b", "pom.xml");
+    expect(onOpenFile).not.toHaveBeenCalled();
+    expect(onOpenFilePreview).toHaveBeenNthCalledWith(
+      1,
+      "repo-a",
+      expect.objectContaining({ path: "pom.xml", status: "M" }),
+      "unstaged",
+    );
+    expect(onOpenFilePreview).toHaveBeenNthCalledWith(
+      2,
+      "repo-b",
+      expect.objectContaining({ path: "pom.xml", status: "M" }),
+      "unstaged",
+    );
+    expect(onOpenFilePreview).toHaveBeenNthCalledWith(
+      3,
+      "repo-b",
+      expect.objectContaining({ path: "pom.xml", status: "M" }),
+      "unstaged",
+    );
   });
 
-  it("opens repository-scoped rename destinations on click and Enter", () => {
+  it("previews repository-scoped rename destinations on click and Enter", () => {
     const status = repositoryStatus("services/api");
     status.unstagedFiles = [{
       path: "archive/spec.md",
@@ -322,21 +338,27 @@ describe("GitMultiRepositoryChanges", () => {
     fireEvent.click(row);
     fireEvent.keyDown(row, { key: "Enter" });
 
-    expect(onOpenFile).toHaveBeenNthCalledWith(
+    expect(onOpenFile).not.toHaveBeenCalled();
+    expect(onOpenFilePreview).toHaveBeenNthCalledWith(
       1,
       "services/api",
-      "archive/spec.md",
+      expect.objectContaining({
+        path: "archive/spec.md",
+        oldPath: "changes/spec.md",
+        status: "R",
+      }),
+      "unstaged",
     );
-    expect(onOpenFile).toHaveBeenNthCalledWith(
+    expect(onOpenFilePreview).toHaveBeenNthCalledWith(
       2,
       "services/api",
-      "archive/spec.md",
+      expect.objectContaining({
+        path: "archive/spec.md",
+        oldPath: "changes/spec.md",
+        status: "R",
+      }),
+      "unstaged",
     );
-    expect(onOpenFile).not.toHaveBeenCalledWith(
-      "services/api",
-      "changes/spec.md",
-    );
-    expect(onOpenFilePreview).not.toHaveBeenCalled();
   });
 
   it("routes repository-scoped deleted rows to preview on click and Enter", () => {

@@ -133,7 +133,7 @@ for i in $(seq 0 $TOTAL_SAMPLES); do
   if [[ $i -eq 0 ]]; then
     echo "" | tee -a "$REPORT_FILE"
     echo "Hint: 在 webview DevTools console 跑:" | tee -a "$REPORT_FILE"
-    echo "  Object.keys(localStorage).filter(k => k.startsWith('ccgui.perf.'))" | tee -a "$REPORT_FILE"
+    echo "  Object.keys(localStorage).filter(k => k.startsWith('doge.perf.'))" | tee -a "$REPORT_FILE"
     echo "  performance.measureUserAgentSpecificMemory().then(r => console.log(r))" | tee -a "$REPORT_FILE"
     echo "" | tee -a "$REPORT_FILE"
   fi

@@ -33,7 +33,7 @@ export function useWorkspaceRestore({
     }
     // Cold-start: only restore the active workspace thread list.
     // Expanding every non-collapsed workspace here dual-scanned first-paint
-    // (mossx + 内容分析) and blocked the active path for multi-seconds.
+    // (doge + 内容分析) and blocked the active path for multi-seconds.
     // Non-active workspaces hydrate after startup-gate via idle prewarm / focus.
     const pending = workspaces.filter((workspace) => {
       if (restoredWorkspaces.current.has(workspace.id)) {

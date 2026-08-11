@@ -211,7 +211,10 @@ fn validate_squad_plan_value(
         .map(str::trim)
         .unwrap_or("");
     if summary.is_empty() {
-        return Err(FactValidationError::new(ctx, "plan.summary must be non-empty"));
+        return Err(FactValidationError::new(
+            ctx,
+            "plan.summary must be non-empty",
+        ));
     }
     let has_markdown = plan
         .get("markdown")

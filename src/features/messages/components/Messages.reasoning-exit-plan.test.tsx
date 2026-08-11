@@ -16,9 +16,9 @@ describe("Messages reasoning visibility and exit plan handoff", () => {
   });
 
   beforeEach(() => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "0");
-    window.localStorage.removeItem("ccgui.messages.live.autoFollow");
-    window.localStorage.setItem("ccgui.messages.live.collapseMiddleSteps", "0");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "0");
+    window.localStorage.removeItem("doge.messages.live.autoFollow");
+    window.localStorage.setItem("doge.messages.live.collapseMiddleSteps", "0");
   });
 
   beforeAll(() => {
@@ -50,7 +50,7 @@ describe("Messages reasoning visibility and exit plan handoff", () => {
   };
 
   it("renders Claude reasoning inline by default when no legacy dock flag is set", () => {
-    window.localStorage.removeItem("ccgui.claude.hideReasoningModule");
+    window.localStorage.removeItem("doge.claude.hideReasoningModule");
 
     const items: ConversationItem[] = [
       {
@@ -85,6 +85,9 @@ describe("Messages reasoning visibility and exit plan handoff", () => {
       />,
     );
 
+    fireEvent.click(
+      container.querySelector(".messages-process-phase-toggle") as HTMLElement,
+    );
     const reasoningBlock = container.querySelector(".thinking-block");
     const assistantMessage = container.querySelector(".message.assistant");
     expect(reasoningBlock).toBeTruthy();
@@ -99,7 +102,7 @@ describe("Messages reasoning visibility and exit plan handoff", () => {
   });
 
   it("hides Claude reasoning when explicit thinking visibility is disabled", () => {
-    window.localStorage.removeItem("ccgui.claude.hideReasoningModule");
+    window.localStorage.removeItem("doge.claude.hideReasoningModule");
 
     const items: ConversationItem[] = [
       {
@@ -141,7 +144,7 @@ describe("Messages reasoning visibility and exit plan handoff", () => {
   });
 
   it("lets explicit Claude thinking visibility override the legacy hide flag", () => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "1");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "1");
 
     const items: ConversationItem[] = [
       {
@@ -197,7 +200,7 @@ describe("Messages reasoning visibility and exit plan handoff", () => {
   });
 
   it("does not apply the legacy Claude reasoning dock flag to Codex reasoning", () => {
-    window.localStorage.setItem("ccgui.claude.hideReasoningModule", "1");
+    window.localStorage.setItem("doge.claude.hideReasoningModule", "1");
 
     const items: ConversationItem[] = [
       {

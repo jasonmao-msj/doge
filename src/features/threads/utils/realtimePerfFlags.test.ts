@@ -23,9 +23,9 @@ describe("realtimePerfFlags background scheduling rollback flags", () => {
   });
 
   it("allows each background scheduling layer to be disabled independently", () => {
-    window.localStorage.setItem("ccgui.perf.backgroundRenderGating", "off");
-    window.localStorage.setItem("ccgui.perf.backgroundBufferedFlush", "false");
-    window.localStorage.setItem("ccgui.perf.stagedHydration", "0");
+    window.localStorage.setItem("doge.perf.backgroundRenderGating", "off");
+    window.localStorage.setItem("doge.perf.backgroundBufferedFlush", "false");
+    window.localStorage.setItem("doge.perf.stagedHydration", "0");
 
     expect(isBackgroundRenderGatingEnabled()).toBe(false);
     expect(isBackgroundBufferedFlushEnabled()).toBe(false);
@@ -33,14 +33,14 @@ describe("realtimePerfFlags background scheduling rollback flags", () => {
   });
 
   it("reports all active flag values with source metadata", () => {
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "0");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "0");
 
     const flags = getActiveRealtimePerfFlags();
 
     expect(Object.keys(flags)).toHaveLength(9);
     expect(flags.realtimeBatching.value).toBe(false);
     expect(flags.realtimeBatching.source).toBe("localStorage");
-    expect(flags.realtimeBatching.storageKey).toBe("ccgui.perf.realtimeBatching");
+    expect(flags.realtimeBatching.storageKey).toBe("doge.perf.realtimeBatching");
     expect(flags.appServerEventBatch.source).toBe("default");
     expect(flags.appServerEventBatch.defaultValue).toBe(true);
     expect(flags.appServerEventBatch.testDefaultValue).toBe(false);
@@ -50,8 +50,8 @@ describe("realtimePerfFlags background scheduling rollback flags", () => {
   });
 
   it("resets known localStorage overrides and clears the cache", () => {
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "0");
-    window.localStorage.setItem("ccgui.perf.backgroundRenderGating", "off");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "0");
+    window.localStorage.setItem("doge.perf.backgroundRenderGating", "off");
 
     expect(isRealtimeBatchingEnabled()).toBe(false);
     expect(isBackgroundRenderGatingEnabled()).toBe(false);
@@ -59,11 +59,11 @@ describe("realtimePerfFlags background scheduling rollback flags", () => {
     const removed = resetRealtimePerfFlags();
 
     expect(removed).toEqual([
-      "ccgui.perf.realtimeBatching",
-      "ccgui.perf.backgroundRenderGating",
+      "doge.perf.realtimeBatching",
+      "doge.perf.backgroundRenderGating",
     ]);
-    expect(window.localStorage.getItem("ccgui.perf.realtimeBatching")).toBeNull();
-    expect(window.localStorage.getItem("ccgui.perf.backgroundRenderGating")).toBeNull();
+    expect(window.localStorage.getItem("doge.perf.realtimeBatching")).toBeNull();
+    expect(window.localStorage.getItem("doge.perf.backgroundRenderGating")).toBeNull();
     expect(isRealtimeBatchingEnabled()).toBe(false);
     expect(isBackgroundRenderGatingEnabled()).toBe(true);
   });

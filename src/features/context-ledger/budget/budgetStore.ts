@@ -38,8 +38,8 @@ export type MonthlyBudgetStore = {
   degraded(): boolean;
 };
 
-const MONTHLY_BUDGET_STORAGE_KEY = "ccgui.statusPanel.monthlyBudget.v1";
-const MONTHLY_BUDGET_CHANGE_EVENT = "ccgui:status-panel-monthly-budget-change";
+const MONTHLY_BUDGET_STORAGE_KEY = "doge.statusPanel.monthlyBudget.v1";
+const MONTHLY_BUDGET_CHANGE_EVENT = "doge:status-panel-monthly-budget-change";
 
 const DEFAULT_MONTHLY_BUDGET: MonthlyBudgetConfig = {
   currency: "USD",

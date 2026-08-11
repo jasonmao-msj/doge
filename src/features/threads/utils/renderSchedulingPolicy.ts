@@ -17,7 +17,7 @@ export type RenderScheduleTier = (typeof RENDER_SCHEDULE_TIER_VALUES)[number];
 
 export const RENDER_SCHEDULE_TIER_DEFAULT: RenderScheduleTier = "guarded";
 
-export const RENDER_TIER_FLAG_KEY = "ccgui.perf.streamingScheduleTier";
+export const RENDER_TIER_FLAG_KEY = "doge.perf.streamingScheduleTier";
 
 export type DispatchSchedule = {
   /** Whether to wrap the dispatch in React `startTransition`. */

@@ -95,7 +95,7 @@ function buildPills(
   return pills;
 }
 
-const CHROME_OPEN_STORAGE_KEY = "ccgui.composer.runStatusChromeOpen";
+const CHROME_OPEN_STORAGE_KEY = "doge.composer.runStatusChromeOpen";
 
 function readChromeOpenPreference(): boolean {
   if (typeof window === "undefined") return true;

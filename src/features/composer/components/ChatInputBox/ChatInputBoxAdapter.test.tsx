@@ -169,7 +169,7 @@ describe('ChatInputBoxAdapter toggle bridge', () => {
     act(() => {
       latest.onStreamingEnabledChange?.(false);
     });
-    expect(window.localStorage.getItem('ccgui.composer.streaming-enabled')).toBe('0');
+    expect(window.localStorage.getItem('doge.composer.streaming-enabled')).toBe('0');
   });
 
   it('reports resolved Claude thinking state to parent surfaces', async () => {
@@ -244,7 +244,7 @@ describe('ChatInputBoxAdapter toggle bridge', () => {
   });
 
   it('forces codex thinking and streaming to stay enabled and skips claude setting reads', async () => {
-    window.localStorage.setItem('ccgui.composer.streaming-enabled', '0');
+    window.localStorage.setItem('doge.composer.streaming-enabled', '0');
 
     renderAdapter({
       selectedEngine: 'codex',

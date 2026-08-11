@@ -710,7 +710,7 @@ const projectMap = {
       "{{nodes}} nodes · {{stale}} stale · {{candidates}} candidates",
     emptyTitle: "No persisted project map yet",
     emptyDescription:
-      "Collect confirms engine / model first, then writes under the user's .ccgui/project-map/<project-key> by default. You can switch to project-local mode.",
+      "Collect confirms engine / model first, then writes under the user's .doge/project-map/<project-key> by default. You can switch to project-local mode.",
     loadErrorTitle: "Project map load failed",
     retryLoad: "Retry load",
     emptyInspector: "Select a node to inspect details.",
@@ -1063,8 +1063,8 @@ const projectMap = {
       scope: "Scope",
       organizerScope: "Organize {{count}} unassigned discoveries",
       storageLocation: "Storage location",
-      storageLocationGlobal: "Global (.ccgui) - default",
-      storageLocationProject: "Current project (.ccgui/project-map)",
+      storageLocationGlobal: "Global (.doge) - default",
+      storageLocationProject: "Current project (.doge/project-map)",
       writePath: "Write path",
       readSources: "Read sources",
       noReadSources:

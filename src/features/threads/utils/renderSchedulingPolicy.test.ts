@@ -20,7 +20,7 @@ describe("renderSchedulingPolicy (v2 naming)", () => {
 
   it("exports the v2 tier defaults and storage key", () => {
     expect(RENDER_SCHEDULE_TIER_DEFAULT).toBe("guarded");
-    expect(RENDER_TIER_FLAG_KEY).toBe("ccgui.perf.streamingScheduleTier");
+    expect(RENDER_TIER_FLAG_KEY).toBe("doge.perf.streamingScheduleTier");
   });
 
   it("falls back to guarded for null, undefined, and unknown strings", () => {

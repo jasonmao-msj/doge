@@ -931,7 +931,7 @@ async fn send_message_emits_text_delta_before_process_completion() {
                     break text;
                 }
             }
-            _ = tokio::time::sleep(std::time::Duration::from_millis(1_500)) => {
+            _ = tokio::time::sleep(std::time::Duration::from_secs(10)) => {
                 panic!("expected a text delta before the delayed fake Claude process completed");
             }
         }

@@ -2093,7 +2093,7 @@ pub(crate) async fn respond_to_server_request(
     let provider_profile_id = normalize_control_identity(provider_profile_id.as_deref());
     let is_local_plan_prompt = request_id
         .as_str()
-        .map(|value| value.starts_with("ccgui-plan-"))
+        .map(|value| value.starts_with("doge-plan-") || value.starts_with("ccgui-plan-"))
         .unwrap_or(false);
     let has_shared_identity =
         shared_attempt_id.is_some() || shared_thread_id.is_some() || provider_runtime_key.is_some();

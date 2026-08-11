@@ -859,6 +859,7 @@ export function useThreadActions({
         const opencodeSessionsPromise = includeOpenCodeSessions
           ? getOpenCodeSessionListService(workspace.id, {
               timeoutMs: OPENCODE_FULL_CATALOG_FETCH_TIMEOUT_MS,
+              timeoutResult: "null",
             })
           : Promise.resolve(
               [] as Awaited<ReturnType<typeof getOpenCodeSessionListService>>,
@@ -937,7 +938,7 @@ export function useThreadActions({
               label: "thread/list claude timeout",
               payload: {
                 workspaceId: workspace.id,
-                timeoutMs: NATIVE_SESSION_LIST_FETCH_TIMEOUT_MS,
+                timeoutMs: OPENCODE_FULL_CATALOG_FETCH_TIMEOUT_MS,
               },
             });
             // 在 partial-source merge 之前先 seed last-good Claude 条目，

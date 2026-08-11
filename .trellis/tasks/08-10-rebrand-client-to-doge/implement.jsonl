@@ -1,0 +1,21 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/backend/linux-native-baidu-analytics.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/backend/web-assets-package-contract.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Required rebrand implementation contract"}
+{"file": ".trellis/spec/guides/project-instruction-layering-guide.md", "reason": "Required rebrand implementation contract"}
+{"file": "openspec/changes/rebrand-client-to-doge/proposal.md", "reason": "Required rebrand implementation contract"}
+{"file": "openspec/changes/rebrand-client-to-doge/design.md", "reason": "Required rebrand implementation contract"}
+{"file": "openspec/changes/rebrand-client-to-doge/tasks.md", "reason": "Required rebrand implementation contract"}

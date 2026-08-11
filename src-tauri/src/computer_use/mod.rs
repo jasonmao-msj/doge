@@ -24,7 +24,8 @@ use plist_helpers::{plist_array_strings, plist_string};
 
 const COMPUTER_USE_BRIDGE_ENABLED: bool = true;
 const COMPUTER_USE_ACTIVATION_ENABLED: bool = true;
-const COMPUTER_USE_ACTIVATION_DISABLED_ENV: &str = "MOSSX_DISABLE_COMPUTER_USE_ACTIVATION";
+const COMPUTER_USE_ACTIVATION_DISABLED_ENV: &str = "DOGE_DISABLE_COMPUTER_USE_ACTIVATION";
+const LEGACY_COMPUTER_USE_ACTIVATION_DISABLED_ENV: &str = "MOSSX_DISABLE_COMPUTER_USE_ACTIVATION";
 const COMPUTER_USE_PLUGIN_ID: &str = "computer-use@openai-bundled";
 const COMPUTER_USE_PLUGIN_NAME: &str = "computer-use";
 const COMPUTER_USE_MCP_SERVER_NAME: &str = "computer-use";
@@ -790,7 +791,11 @@ fn is_activation_probe_eligible(status: &ComputerUseBridgeStatus) -> bool {
 
 fn computer_use_activation_enabled() -> bool {
     COMPUTER_USE_ACTIVATION_ENABLED
-        && !activation_disabled_env_value(std::env::var(COMPUTER_USE_ACTIVATION_DISABLED_ENV).ok())
+        && !activation_disabled_env_value(
+            std::env::var(COMPUTER_USE_ACTIVATION_DISABLED_ENV)
+                .or_else(|_| std::env::var(LEGACY_COMPUTER_USE_ACTIVATION_DISABLED_ENV))
+                .ok(),
+        )
 }
 
 fn activation_disabled_env_value(value: Option<String>) -> bool {
@@ -1135,7 +1140,7 @@ fn discover_official_parent_handoff(
             } else {
                 "medium".to_string()
             },
-            notes: "MCP descriptor is treated as a Codex CLI/plugin handoff candidate. This is evidence only and was not launched by ccgui."
+            notes: "MCP descriptor is treated as a Codex CLI/plugin handoff candidate. This is evidence only and was not launched by doge."
                 .to_string(),
         });
     }
@@ -1498,7 +1503,7 @@ async fn run_helper_bridge_probe(
             succeeded: true,
             failure_kind: None,
             diagnostic_message:
-                "Codex CLI Computer Use plugin cache launch contract verified. ccgui did not direct-exec the helper; Codex CLI remains the supported parent."
+                "Codex CLI Computer Use plugin cache launch contract verified. doge did not direct-exec the helper; Codex CLI remains the supported parent."
                     .to_string(),
             stderr_snippet: None,
             exit_code: None,

@@ -137,7 +137,7 @@ export function extractToolName(title: unknown): string {
     return (parts[parts.length - 1] ?? cleanTitle).trim();
   }
 
-  // Display-formatted MCP titles: "Mcp Ccgui Askuserquestion" → Askuserquestion
+  // Display-formatted MCP titles: "Mcp doge Askuserquestion" → Askuserquestion
   const mcpSpacedMatch = cleanTitle.match(/^mcp\s+\S+\s+(.+)$/i);
   if (mcpSpacedMatch?.[1]) {
     return mcpSpacedMatch[1].trim();
@@ -146,7 +146,7 @@ export function extractToolName(title: unknown): string {
   return cleanTitle.toLowerCase();
 }
 
-/** AskUserQuestion (native or mcp__ccgui__ / "Mcp Ccgui Askuserquestion"). */
+/** AskUserQuestion (native or doge/legacy MCP variants). */
 export function isAskUserQuestionToolName(
   toolName: string,
   title?: string,

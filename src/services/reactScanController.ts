@@ -9,9 +9,9 @@ import { recordReactScanRender } from "./perfBaseline/reactScanRenderLog";
 
 type ReactScanModule = typeof import("react-scan");
 
-const REACT_SCAN_FLAG_KEY = "ccgui.perf.reactScan";
+const REACT_SCAN_FLAG_KEY = "doge.perf.reactScan";
 const REACT_SCAN_UPDATE_DEPTH_RECOVERY_KEY =
-  "ccgui.perf.reactScan.updateDepthRecoveryAttempted";
+  "doge.perf.reactScan.updateDepthRecoveryAttempted";
 // react-scan 自己的 options 持久化键。它会把 enabled 落盘并在每次 start() 时 restore,
 // 覆盖 scan({enabled:true}) 传入的值;一旦盘上残留 enabled:false(点过工具条暂停键),
 // instrumentation.isPaused 恒为 true,options.onRender 被 shouldFullyAbort 闸门跳过,

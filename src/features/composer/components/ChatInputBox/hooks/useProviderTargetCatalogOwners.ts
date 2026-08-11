@@ -762,7 +762,7 @@ export function invalidateProviderTargetCatalogForRuntime(): void {
 }
 
 export const PROVIDER_TARGET_CATALOG_INVALIDATED_EVENT =
-  "ccgui:provider-target-catalog-invalidated";
+  "doge:provider-target-catalog-invalidated";
 
 /**
  * 供应商增删改/切换/导入成功后调用：失效模块级缓存并通知挂载中的

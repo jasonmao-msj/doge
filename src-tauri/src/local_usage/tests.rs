@@ -1999,7 +1999,7 @@ fn parse_codex_session_summary_prefers_originator_over_vscode_source() {
         .expect("parse summary")
         .expect("summary exists");
 
-    assert_eq!(summary.source.as_deref(), Some("ccgui"));
+    assert_eq!(summary.source.as_deref(), Some("doge"));
     assert_eq!(summary.provider.as_deref(), Some("openai"));
 }
 
@@ -2024,7 +2024,7 @@ fn parse_codex_session_summary_normalizes_legacy_mossx_originator() {
         .expect("parse summary")
         .expect("summary exists");
 
-    assert_eq!(summary.source.as_deref(), Some("ccgui"));
+    assert_eq!(summary.source.as_deref(), Some("doge"));
     assert_eq!(summary.provider.as_deref(), Some("openai"));
 }
 

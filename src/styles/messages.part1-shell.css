@@ -157,7 +157,7 @@
 
 /* 流式期间时间线走静态流（虚拟化被刻意关闭）。2026-08 起此处不再使用
    content-visibility 屏外跳过：占位→真实高度跳变是「视口上跳卡中部」的根因
-   （见 .message 规则注释与 jetbrains-cc-gui 事故记录）。 */
+   （见 .message 规则注释与 reference desktop client 事故记录）。 */
 
 /* jetbrains messagesEndRef 哨兵：无高度，只作 scrollIntoView 锚点。 */
 .messages-end-sentinel {

@@ -91,7 +91,7 @@ vi.mock("../../../services/globalRuntimeNotices", async () => {
   return actual;
 });
 
-const NEVER_RESOLVES = () => new Promise<never>(() => {});
+const RESOLVES_TIMEOUT_SIGNAL = () => Promise.resolve(null);
 
 function makeCachedClaudeSummary(idSuffix: string, updatedAt: number) {
   return {
@@ -211,7 +211,7 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
   });
 
   it("case 1: claude listing timeout still keeps last-good claude entries when codex returns a session", async () => {
-    vi.mocked(listClaudeSessions).mockImplementation(NEVER_RESOLVES);
+    vi.mocked(listClaudeSessions).mockImplementation(RESOLVES_TIMEOUT_SIGNAL);
     vi.mocked(listWorkspaceSessions).mockResolvedValue({
       data: [
         {
@@ -245,14 +245,9 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
       },
     });
 
-    vi.useFakeTimers();
     const promise = result.current.listThreadsForWorkspace(workspace, {
       preserveState: true,
     });
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(30_001);
-    });
-    vi.useRealTimers();
     await act(async () => {
       await promise;
     });
@@ -330,7 +325,7 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
   });
 
   it("case 2: consecutive claude timeouts do not progressively drop more claude sessions", async () => {
-    vi.mocked(listClaudeSessions).mockImplementation(NEVER_RESOLVES);
+    vi.mocked(listClaudeSessions).mockImplementation(RESOLVES_TIMEOUT_SIGNAL);
     vi.mocked(listWorkspaceSessions).mockResolvedValue({
       data: [
         {
@@ -361,14 +356,9 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
     const { result, dispatch, rerenderWithThreadState } =
       renderActionsWithMutableThreadState(initialThreadsByWorkspace);
 
-    vi.useFakeTimers();
     const firstRun = result.current.listThreadsForWorkspace(workspace, {
       preserveState: true,
     });
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(30_001);
-    });
-    vi.useRealTimers();
     await act(async () => {
       await firstRun;
     });
@@ -392,14 +382,9 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
       })),
     });
 
-    vi.useFakeTimers();
     const secondRun = result.current.listThreadsForWorkspace(workspace, {
       preserveState: true,
     });
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(30_001);
-    });
-    vi.useRealTimers();
     await act(async () => {
       await secondRun;
     });
@@ -418,7 +403,7 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
   }, 20_000);
 
   it("case 3: partial-source diagnostic remains observable after timeout-driven fallback", async () => {
-    vi.mocked(listClaudeSessions).mockImplementation(NEVER_RESOLVES);
+    vi.mocked(listClaudeSessions).mockImplementation(RESOLVES_TIMEOUT_SIGNAL);
 
     const debugEvents: Array<{ label?: string; payload?: any }> = [];
     const { result } = renderActions({
@@ -430,14 +415,9 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
       },
     });
 
-    vi.useFakeTimers();
     const run = result.current.listThreadsForWorkspace(workspace, {
       preserveState: true,
     });
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(30_001);
-    });
-    vi.useRealTimers();
     await act(async () => {
       await run;
     });
@@ -499,7 +479,7 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
   }, 20_000);
 
   it("skips mixed-engine degraded current state and falls back to the clean previous snapshot", async () => {
-    vi.mocked(listClaudeSessions).mockImplementation(NEVER_RESOLVES);
+    vi.mocked(listClaudeSessions).mockImplementation(RESOLVES_TIMEOUT_SIGNAL);
     vi.mocked(listWorkspaceSessions).mockResolvedValue({
       data: [],
       nextCursor: null,
@@ -536,14 +516,9 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
       ],
     });
 
-    vi.useFakeTimers();
     const run = result.current.listThreadsForWorkspace(workspace, {
       preserveState: true,
     });
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(30_001);
-    });
-    vi.useRealTimers();
     await act(async () => {
       await run;
     });
@@ -747,7 +722,7 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
   });
 
   it("case 4: archived last-good claude entries are not resurrected by seed", async () => {
-    vi.mocked(listClaudeSessions).mockImplementation(NEVER_RESOLVES);
+    vi.mocked(listClaudeSessions).mockImplementation(RESOLVES_TIMEOUT_SIGNAL);
     vi.mocked(listWorkspaceSessions).mockResolvedValue({
       data: [
         {
@@ -780,14 +755,9 @@ describe("useThreadActions sidebar listing timeout fallback", () => {
       },
     });
 
-    vi.useFakeTimers();
     const run = result.current.listThreadsForWorkspace(workspace, {
       preserveState: true,
     });
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(30_001);
-    });
-    vi.useRealTimers();
     await act(async () => {
       await run;
     });

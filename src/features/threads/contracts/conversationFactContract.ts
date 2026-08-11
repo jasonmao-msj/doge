@@ -58,6 +58,7 @@ export type ConversationObservation = {
 };
 
 const HIDDEN_CONTROL_MARKERS = [
+  "<doge-approval-resume>",
   "<ccgui-approval-resume>",
   "No response requested.",
   "queue bookkeeping",
@@ -103,7 +104,10 @@ function isDeveloperInstructionsControlObservation(observation: ConversationObse
 }
 
 function isHiddenControlObservation(observation: ConversationObservation, rawProbeLower: string) {
-  if (rawProbeLower.includes("<ccgui-approval-resume>")) {
+  if (
+    rawProbeLower.includes("<doge-approval-resume>") ||
+    rawProbeLower.includes("<ccgui-approval-resume>")
+  ) {
     return true;
   }
   if (isDeveloperInstructionsControlObservation(observation)) {

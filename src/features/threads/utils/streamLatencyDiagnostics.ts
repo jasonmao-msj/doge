@@ -101,14 +101,14 @@ const DEFAULT_VISIBLE_OUTPUT_STALL_THRESHOLD_MS = 700;
 const CODEX_INGRESS_GAP_DIAGNOSTIC_MS = 2_000;
 const LARGE_INGRESS_TEXT_DIAGNOSTIC_CHARS = 1_000;
 const LONG_LIVE_ROW_DIAGNOSTIC_CHARS = 20_000;
-const STREAM_MITIGATION_DISABLE_FLAG_KEY = "ccgui.debug.streamMitigation.disabled";
-const STREAM_LATENCY_TRACE_FLAG_KEY = "ccgui.debug.streamLatencyTrace";
+const STREAM_MITIGATION_DISABLE_FLAG_KEY = "doge.debug.streamMitigation.disabled";
+const STREAM_LATENCY_TRACE_FLAG_KEY = "doge.debug.streamLatencyTrace";
 const STREAM_LATENCY_FIRST_VISIBLE_THRESHOLD_KEY =
-  "ccgui.debug.streamLatency.firstVisibleLatencyMs";
+  "doge.debug.streamLatency.firstVisibleLatencyMs";
 const STREAM_LATENCY_RENDER_AMPLIFICATION_THRESHOLD_KEY =
-  "ccgui.debug.streamLatency.renderAmplificationMs";
+  "doge.debug.streamLatency.renderAmplificationMs";
 const STREAM_LATENCY_VISIBLE_OUTPUT_STALL_THRESHOLD_KEY =
-  "ccgui.debug.streamLatency.visibleOutputStallMs";
+  "doge.debug.streamLatency.visibleOutputStallMs";
 
 const STREAM_MITIGATION_PROFILES: Readonly<Record<StreamMitigationProfileId, StreamMitigationProfile>> = {
   "claude-qwen-windows-render-safe": {
@@ -758,7 +758,7 @@ export function noteThreadAppServerEventReceived(input: {
   if (!params) {
     return;
   }
-  const timing = asRecord(params.ccguiTiming);
+  const timing = asRecord(params.dogeTiming) ?? asRecord(params.ccguiTiming);
   if (!timing) {
     return;
   }

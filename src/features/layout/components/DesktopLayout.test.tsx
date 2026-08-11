@@ -197,7 +197,8 @@ describe("DesktopLayout", () => {
     expect(chatLayer?.contains(getByText("messages"))).toBe(true);
     expect(chatLayer?.contains(composer)).toBe(true);
     expect(editorLayer?.contains(getByText("file-viewer"))).toBe(true);
-    expect(composer.parentElement).toBe(chatLayer);
+    expect(composer.parentElement?.classList.contains("subagent-chat-split-main")).toBe(true);
+    expect(composer.closest(".content-layer")).toBe(chatLayer);
   });
 
   it("uses Project Map as the editor split companion for evidence file navigation", () => {

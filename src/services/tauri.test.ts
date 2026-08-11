@@ -158,8 +158,8 @@ function authorizationContinuity() {
     diagnosticMessage:
       "current host matches the last successful authorization host",
     currentHost: {
-      displayName: "ccgui.app",
-      executablePath: "/Applications/ccgui.app/Contents/MacOS/cc-gui",
+      displayName: "doge.app",
+      executablePath: "/Applications/doge.app/Contents/MacOS/cc-gui",
       identifier: "com.codex.ccgui",
       teamIdentifier: "TEAM123",
       backendMode: "local",
@@ -168,8 +168,8 @@ function authorizationContinuity() {
       signingSummary: "Authority=Developer ID Application: Demo",
     },
     lastSuccessfulHost: {
-      displayName: "ccgui.app",
-      executablePath: "/Applications/ccgui.app/Contents/MacOS/cc-gui",
+      displayName: "doge.app",
+      executablePath: "/Applications/doge.app/Contents/MacOS/cc-gui",
       identifier: "com.codex.ccgui",
       teamIdentifier: "TEAM123",
       backendMode: "local",
@@ -1646,11 +1646,11 @@ describe("tauri invoke wrappers", () => {
     const invokeMock = vi.mocked(invoke);
     invokeMock.mockResolvedValueOnce(undefined);
 
-    await setGlobalMcpServerEnabled("github", "ccgui_config", false);
+    await setGlobalMcpServerEnabled("github", "doge_config", false);
 
     expect(invokeMock).toHaveBeenCalledWith("set_global_mcp_server_enabled", {
       name: "github",
-      source: "ccgui_config",
+      source: "doge_config",
       enabled: false,
     });
   });

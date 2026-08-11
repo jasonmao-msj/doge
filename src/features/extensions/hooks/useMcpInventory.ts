@@ -22,7 +22,7 @@ export type McpInventory = {
 };
 
 /**
- * 拓展 → Mcps 的数据源：全局配置清单（claude_json / ccgui_config）+ codex
+ * 拓展 → Mcps 的数据源：全局配置清单（claude_json / doge_config）+ codex
  * 运行时清单 + claude 运行时快照。防竞态沿用旧设置面板的
  * mountedRef + loadSequenceRef 模式（旧 McpSection.loadMcp）。
  */
@@ -77,7 +77,7 @@ export function useMcpInventory(workspaceId: string | null): McpInventory {
         setCodexServers([]);
       }
 
-      // Claude 的运行时 MCP 服务（含内置 AskUserQuestion "ccgui" 服务）通过 init
+      // Claude 的运行时 MCP 服务（含内置 AskUserQuestion "doge" 服务）通过 init
       // 事件上报并记录在本地快照里——这是"是否连上"的准确信号；配置清单看不到
       // spawn 时通过 --mcp-config 注入的服务。
       if (canCommit()) {

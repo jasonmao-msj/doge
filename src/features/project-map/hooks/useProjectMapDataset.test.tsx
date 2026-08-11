@@ -127,7 +127,7 @@ describe("useProjectMapDataset", () => {
       dataset: null,
       response: emptyReadResponse(
         springKey,
-        `/repo/springboot-demo/.ccgui/project-map/${springKey}`,
+        `/repo/springboot-demo/.doge/project-map/${springKey}`,
       ),
     });
 
@@ -153,7 +153,7 @@ describe("useProjectMapDataset", () => {
     await waitFor(() => {
       expect(result.current.status).toBe("empty");
       expect(result.current.storageDir).toBe(
-        `/repo/springboot-demo/.ccgui/project-map/${springKey}`,
+        `/repo/springboot-demo/.doge/project-map/${springKey}`,
       );
     });
   });
@@ -177,7 +177,7 @@ describe("useProjectMapDataset", () => {
     });
     const springResponse = {
       dataset: null,
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     };
     let resolveMossxRead: (value: Awaited<ReturnType<typeof readProjectMapDataset>>) => void =
       () => {};
@@ -212,12 +212,12 @@ describe("useProjectMapDataset", () => {
     await act(async () => {
       resolveMossxRead({
         dataset: null,
-        response: emptyReadResponse(mossxKey, `/repo/mossx/.ccgui/project-map/${mossxKey}`),
+        response: emptyReadResponse(mossxKey, `/repo/mossx/.doge/project-map/${mossxKey}`),
       });
     });
 
     expect(result.current.dataset.manifest.storageKey).toBe(springKey);
-    expect(result.current.storageDir).toBe(`/repo/springboot-demo/.ccgui/project-map/${springKey}`);
+    expect(result.current.storageDir).toBe(`/repo/springboot-demo/.doge/project-map/${springKey}`);
   });
 
   it("defaults new requests to global storage even when project path dataset exists", async () => {
@@ -233,7 +233,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: null,
-      response: emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
     });
 
     const { result } = renderHook(() => useProjectMapDataset(spring));
@@ -251,7 +251,7 @@ describe("useProjectMapDataset", () => {
 
     expect(result.current.pendingRequest).toMatchObject({
       storageLocation: "global",
-      writePath: `/home/user/.ccgui/project-map/${springKey}`,
+      writePath: `/home/user/.doge/project-map/${springKey}`,
     });
   });
 
@@ -268,7 +268,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: null,
-      response: emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
     });
 
     const { result } = renderHook(() =>
@@ -293,7 +293,7 @@ describe("useProjectMapDataset", () => {
       generationIntent: "global",
       preferredLanguage: "zh",
       storageLocation: "global",
-      writePath: `/home/user/.ccgui/project-map/${springKey}`,
+      writePath: `/home/user/.doge/project-map/${springKey}`,
     });
   });
 
@@ -320,7 +320,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: persistedDataset,
       response: {
-        ...emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -390,7 +390,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -467,7 +467,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -532,7 +532,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -586,7 +586,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -702,7 +702,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -747,7 +747,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -800,7 +800,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -849,7 +849,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -895,7 +895,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -946,7 +946,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset,
       response: {
-        ...emptyReadResponse(springKey, `/home/user/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/home/user/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -982,8 +982,8 @@ describe("useProjectMapDataset", () => {
       workspacePath: spring.path,
       workspaceId: spring.id,
     });
-    const globalDir = `/home/user/.ccgui/project-map/${springKey}`;
-    const projectDir = `/repo/springboot-demo/.ccgui/project-map/${springKey}`;
+    const globalDir = `/home/user/.doge/project-map/${springKey}`;
+    const projectDir = `/repo/springboot-demo/.doge/project-map/${springKey}`;
 
     vi.mocked(readProjectMapDataset).mockImplementation(({ storageMode }) =>
       Promise.resolve({
@@ -1034,8 +1034,8 @@ describe("useProjectMapDataset", () => {
       workspacePath: spring.path,
       workspaceId: spring.id,
     });
-    const globalDir = `/home/user/.ccgui/project-map/${springKey}`;
-    const projectDir = `/repo/springboot-demo/.ccgui/project-map/${springKey}`;
+    const globalDir = `/home/user/.doge/project-map/${springKey}`;
+    const projectDir = `/repo/springboot-demo/.doge/project-map/${springKey}`;
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: null,
       response: emptyReadResponse(springKey, globalDir),
@@ -1078,8 +1078,8 @@ describe("useProjectMapDataset", () => {
       workspacePath: spring.path,
       workspaceId: spring.id,
     });
-    const globalDir = `/home/user/.ccgui/project-map/${springKey}`;
-    const projectDir = `/repo/springboot-demo/.ccgui/project-map/${springKey}`;
+    const globalDir = `/home/user/.doge/project-map/${springKey}`;
+    const projectDir = `/repo/springboot-demo/.doge/project-map/${springKey}`;
     const projectDataset = createEmptyProjectMapDataset({
       identity: {
         projectName: spring.name,
@@ -1133,7 +1133,7 @@ describe("useProjectMapDataset", () => {
       dataset: null,
       response: emptyReadResponse(
         springKey,
-        `C:\\repo\\springboot-demo\\.ccgui\\project-map\\${springKey}`,
+        `C:\\repo\\springboot-demo\\.doge\\project-map\\${springKey}`,
       ),
     });
 
@@ -1147,7 +1147,7 @@ describe("useProjectMapDataset", () => {
 
     expect(result.current.pendingRequest).toMatchObject({
       storageLocation: "global",
-      writePath: `.ccgui/project-map/${springKey}`,
+      writePath: `.doge/project-map/${springKey}`,
     });
   });
 
@@ -1164,7 +1164,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: null,
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
     vi.mocked(writeProjectMapDataset).mockImplementationOnce(() => new Promise(() => {}));
 
@@ -1206,7 +1206,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: null,
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
     vi.mocked(writeProjectMapDataset).mockRejectedValueOnce(new Error("write failed"));
 
@@ -1251,7 +1251,7 @@ describe("useProjectMapDataset", () => {
         engine: "claude",
         model: "claude-sonnet-4-5",
       }),
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
     vi.mocked(projectMemoryList).mockResolvedValue({
       items: [projectMemory()],
@@ -1309,7 +1309,7 @@ describe("useProjectMapDataset", () => {
         interval: 1440,
         lastCheckedAt: new Date().toISOString(),
       }),
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
 
     const { result } = renderHook(() => useProjectMapDataset(spring));
@@ -1331,7 +1331,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: datasetWithAutoIngestion({ workspace: spring, storageKey: springKey }),
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
     vi.mocked(projectMemoryList).mockResolvedValue({
       items: [projectMemory()],
@@ -1362,7 +1362,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: datasetWithAutoIngestion({ workspace: spring, storageKey: springKey }),
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
     vi.mocked(projectMemoryList).mockResolvedValue({
       items: [projectMemory()],
@@ -1398,7 +1398,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: null,
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
     vi.mocked(writeProjectMapDataset)
       .mockResolvedValueOnce(undefined)
@@ -1444,7 +1444,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: null,
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
     vi.mocked(writeProjectMapDataset).mockResolvedValue(undefined);
 
@@ -1515,14 +1515,14 @@ describe("useProjectMapDataset", () => {
       if (workspaceId === mossx.id) {
         return Promise.resolve({
           dataset: null,
-          response: emptyReadResponse(mossxKey, `/repo/mossx/.ccgui/project-map/${mossxKey}`),
+          response: emptyReadResponse(mossxKey, `/repo/mossx/.doge/project-map/${mossxKey}`),
         });
       }
       return Promise.resolve({
         dataset: null,
         response: emptyReadResponse(
           springKey,
-          `/repo/springboot-demo/.ccgui/project-map/${springKey}`,
+          `/repo/springboot-demo/.doge/project-map/${springKey}`,
         ),
       });
     });
@@ -1689,8 +1689,8 @@ describe("useProjectMapDataset", () => {
         },
       ],
     };
-    const globalDir = `/home/user/.ccgui/project-map/${springKey}`;
-    const projectDir = `/repo/springboot-demo/.ccgui/project-map/${springKey}`;
+    const globalDir = `/home/user/.doge/project-map/${springKey}`;
+    const projectDir = `/repo/springboot-demo/.doge/project-map/${springKey}`;
     vi.mocked(readProjectMapDataset).mockImplementation(({ storageMode }) =>
       Promise.resolve({
         dataset: storageMode === "project" ? projectDataset : globalDataset,
@@ -1840,7 +1840,7 @@ describe("useProjectMapDataset", () => {
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: datasetWithRunningRun,
       response: {
-        ...emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+        ...emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
         exists: true,
       },
     });
@@ -1871,7 +1871,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: null,
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
     vi.mocked(writeProjectMapDataset).mockResolvedValue(undefined);
     vi.mocked(runProjectMapGenerationWorker).mockImplementation(() => new Promise(() => {}));
@@ -1947,7 +1947,7 @@ describe("useProjectMapDataset", () => {
     });
     vi.mocked(readProjectMapDataset).mockResolvedValue({
       dataset: null,
-      response: emptyReadResponse(springKey, `/repo/springboot-demo/.ccgui/project-map/${springKey}`),
+      response: emptyReadResponse(springKey, `/repo/springboot-demo/.doge/project-map/${springKey}`),
     });
     vi.mocked(writeProjectMapDataset).mockResolvedValue(undefined);
     let resolveWorker: (() => void) | null = null;

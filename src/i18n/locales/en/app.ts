@@ -1,7 +1,7 @@
 // app — English UI strings
 const app = {
   app: {
-    title: "ccgui",
+    title: "doge",
     subtitle: "Orchestrate agents across your local projects.",
   },
 };

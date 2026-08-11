@@ -134,6 +134,7 @@ fn spawn_test_runtime_process() -> (tokio::process::Child, String) {
         command.stdin(Stdio::piped());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
+        WorkspaceSession::configure_spawn_command(&mut command);
         let child = command
             .spawn()
             .unwrap_or_else(|error| panic!("failed to spawn {command_path}: {error}"));
@@ -147,6 +148,7 @@ fn spawn_test_runtime_process() -> (tokio::process::Child, String) {
         command.stdin(Stdio::piped());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
+        WorkspaceSession::configure_spawn_command(&mut command);
         let child = command
             .spawn()
             .unwrap_or_else(|error| panic!("failed to spawn {command_path}: {error}"));
@@ -231,7 +233,7 @@ async fn send_provider_turn_and_capture(
     effort: &str,
     runtime_turn_id: &str,
 ) -> (Value, Value) {
-    let send_task = tokio::spawn({
+    let mut send_task = tokio::spawn({
         let sessions = Arc::clone(sessions);
         let workspace_id = workspace_id.to_string();
         let provider_profile_id = provider_profile_id.to_string();
@@ -257,11 +259,17 @@ async fn send_provider_turn_and_capture(
             .await
         }
     });
-    let line = tokio::time::timeout(Duration::from_secs(2), lines.next_line())
-        .await
-        .expect("request reached expected provider runtime before timeout")
-        .expect("read provider request")
-        .expect("provider request line");
+    let line = tokio::select! {
+        result = &mut send_task => {
+            panic!("provider send settled before emitting a runtime request: {result:?}");
+        }
+        result = tokio::time::timeout(Duration::from_secs(2), lines.next_line()) => {
+            result
+                .expect("request reached expected provider runtime before timeout")
+                .expect("read provider request")
+                .expect("provider request line")
+        }
+    };
     let request: Value = serde_json::from_str(&line).expect("valid provider request");
     settle_echoed_test_request(
         session,
@@ -273,6 +281,12 @@ async fn send_provider_turn_and_capture(
         .await
         .expect("provider send task")
         .expect("provider send succeeds");
+    // The production terminal path releases this reservation. This focused
+    // routing test settles only the JSON-RPC ACK, so mirror terminal cleanup
+    // before sending the next turn on the same provider runtime.
+    session
+        .release_codex_user_dispatch_reservation("shared-native-1")
+        .await;
     (request, response)
 }
 
@@ -339,12 +353,12 @@ async fn native_custom_model_without_effort_uses_transport_compatibility_fallbac
     assert_eq!(request["params"]["model"], "gpt-5.3-codex-spark");
     assert!(request["params"]["effort"].is_null());
     assert_eq!(request["params"]["reasoning"]["effort"], "low");
-    assert!(response["mossxDispatchReceipt"]["providerProfileId"].is_null());
+    assert!(response["dogeDispatchReceipt"]["providerProfileId"].is_null());
     assert_eq!(
-        response["mossxDispatchReceipt"]["model"],
+        response["dogeDispatchReceipt"]["model"],
         "gpt-5.3-codex-spark"
     );
-    assert!(response["mossxDispatchReceipt"]["reasoningEffort"].is_null());
+    assert!(response["dogeDispatchReceipt"]["reasoningEffort"].is_null());
 
     dispose_workspace_session(&session).await;
 }
@@ -555,11 +569,11 @@ async fn provider_scoped_turn_start_routes_a_b_a_to_real_runtime_sessions() {
         (&response_a2, "provider-a", runtime_key_a.as_str()),
     ] {
         assert_eq!(
-            response["mossxDispatchReceipt"]["providerProfileId"],
+            response["dogeDispatchReceipt"]["providerProfileId"],
             provider
         );
         assert_eq!(
-            response["mossxDispatchReceipt"]["providerRuntimeKey"],
+            response["dogeDispatchReceipt"]["providerRuntimeKey"],
             runtime_key
         );
     }
@@ -1214,7 +1228,7 @@ async fn enrich_codex_turn_timing_attaches_content_safe_first_delta_fields() {
 
     session.enrich_codex_turn_timing(&mut event, 1_720).await;
 
-    let timing = &event["params"]["ccguiTiming"];
+    let timing = &event["params"]["dogeTiming"];
     assert_eq!(timing["source"], "codex-app-server");
     assert_eq!(timing["turnStartRequestStartedAtMs"], 1_000);
     assert_eq!(timing["turnStartResponseReceivedAtMs"], 1_120);
@@ -1289,7 +1303,7 @@ async fn enrich_codex_turn_timing_accepts_supported_text_delta_aliases() {
         });
         session.enrich_codex_turn_timing(&mut event, 1_350).await;
 
-        let timing = &event["params"]["ccguiTiming"];
+        let timing = &event["params"]["dogeTiming"];
         assert_eq!(timing["firstAgentMessageEventReceivedAtMs"], 1_350);
         assert_eq!(timing["firstTextDeltaReceivedAtMs"], 1_350);
         assert_eq!(timing["firstAgentMessageEventMethod"], method);
@@ -1327,7 +1341,7 @@ async fn enrich_codex_turn_timing_keeps_reasoning_and_tool_events_before_first_t
         .enrich_codex_turn_timing(&mut reasoning_event, 1_300)
         .await;
 
-    let reasoning_timing = &reasoning_event["params"]["ccguiTiming"];
+    let reasoning_timing = &reasoning_event["params"]["dogeTiming"];
     assert_eq!(reasoning_timing["firstRuntimeEventReceivedAtMs"], 1_300);
     assert_eq!(reasoning_timing["firstReasoningEventReceivedAtMs"], 1_300);
     assert_eq!(reasoning_timing["firstTextDeltaReceivedAtMs"], Value::Null);
@@ -1382,7 +1396,7 @@ async fn enrich_codex_turn_timing_keeps_reasoning_and_tool_events_before_first_t
         .enrich_codex_turn_timing(&mut agent_event, 1_900)
         .await;
 
-    let timing = &agent_event["params"]["ccguiTiming"];
+    let timing = &agent_event["params"]["dogeTiming"];
     assert_eq!(timing["firstRuntimeEventReceivedAtMs"], 1_300);
     assert_eq!(timing["firstReasoningEventReceivedAtMs"], 1_300);
     assert_eq!(timing["firstToolEventReceivedAtMs"], 1_450);
@@ -1441,7 +1455,7 @@ async fn enrich_codex_turn_timing_clears_state_on_terminal_event() {
     session.enrich_codex_turn_timing(&mut event, 2_800).await;
 
     assert_eq!(
-        event["params"]["ccguiTiming"]["turnStartResponseToThisEventMs"],
+        event["params"]["dogeTiming"]["turnStartResponseToThisEventMs"],
         750
     );
     assert!(session.codex_turn_timing.lock().await.is_empty());
@@ -1482,7 +1496,7 @@ async fn enrich_codex_turn_timing_does_not_treat_terminal_completion_as_first_te
 
     session.enrich_codex_turn_timing(&mut event, 2_800).await;
 
-    let timing = &event["params"]["ccguiTiming"];
+    let timing = &event["params"]["dogeTiming"];
     assert_eq!(timing["firstRuntimeEventReceivedAtMs"], 2_200);
     assert_eq!(timing["firstReasoningEventReceivedAtMs"], 2_200);
     assert_eq!(timing["firstTextDeltaReceivedAtMs"], Value::Null);

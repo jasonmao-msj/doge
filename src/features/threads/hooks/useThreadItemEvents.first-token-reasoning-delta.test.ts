@@ -67,11 +67,11 @@ function reasoningDelta(delta: string, eventId: string): NormalizedThreadEvent {
 describe("useThreadItemEvents first-token reasoning dispatch", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    window.localStorage.removeItem("ccgui.perf.realtimeBatching");
+    window.localStorage.removeItem("doge.perf.realtimeBatching");
   });
 
   it("dispatches the first reasoning content delta urgently", () => {
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const queuedTransitions: Array<() => void> = [];
     const { result, dispatch, markProcessing, safeMessageActivity } = makeOptions({
       scheduleRealtimeDispatch: (callback) => {
@@ -100,7 +100,7 @@ describe("useThreadItemEvents first-token reasoning dispatch", () => {
 
   it("keeps steady-state reasoning content deltas batched", () => {
     vi.useFakeTimers();
-    window.localStorage.setItem("ccgui.perf.realtimeBatching", "1");
+    window.localStorage.setItem("doge.perf.realtimeBatching", "1");
     const queuedTransitions: Array<() => void> = [];
     const { result, dispatch, safeMessageActivity } = makeOptions({
       scheduleRealtimeDispatch: (callback) => {

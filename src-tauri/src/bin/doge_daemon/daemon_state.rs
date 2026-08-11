@@ -1476,7 +1476,7 @@ impl DaemonState {
                 }
                 // Always pass an explicit --model: a broken default model in
                 // the user's opencode.json must not fail GUI turns. Managed
-                // providers resolve through the injected `ccgui/<model>` refs.
+                // providers resolve through the injected `doge/<model>` refs.
                 let model_for_send = if provider_launch_profile.binding.is_some() {
                     sanitized_model
                         .or_else(|| provider_launch_profile.default_model.clone())
@@ -1741,10 +1741,8 @@ impl DaemonState {
                             // Always emit agentMessage item/completed (Claude-parity) so
                             // project-memory fusion runs after TextDelta streaming.
                             if !completed_text.trim().is_empty() {
-                                let completion_item_id = gemini_agent_completion_item_id(
-                                    &render_state,
-                                    &item_id_clone,
-                                );
+                                let completion_item_id =
+                                    gemini_agent_completion_item_id(&render_state, &item_id_clone);
                                 event_sink.emit_app_server_event(AppServerEvent {
                                     workspace_id: event.workspace_id().to_string(),
                                     message: json!({
@@ -1996,10 +1994,8 @@ impl DaemonState {
                             // Always emit agentMessage item/completed (Claude-parity) so
                             // project-memory fusion runs after TextDelta streaming.
                             if !completed_text.trim().is_empty() {
-                                let completion_item_id = gemini_agent_completion_item_id(
-                                    &render_state,
-                                    &item_id_clone,
-                                );
+                                let completion_item_id =
+                                    gemini_agent_completion_item_id(&render_state, &item_id_clone);
                                 event_sink.emit_app_server_event(AppServerEvent {
                                     workspace_id: event.workspace_id().to_string(),
                                     message: json!({
@@ -2242,10 +2238,8 @@ impl DaemonState {
                             // Always emit agentMessage item/completed (Claude-parity) so
                             // project-memory fusion runs after TextDelta streaming.
                             if !completed_text.trim().is_empty() {
-                                let completion_item_id = gemini_agent_completion_item_id(
-                                    &render_state,
-                                    &item_id_clone,
-                                );
+                                let completion_item_id =
+                                    gemini_agent_completion_item_id(&render_state, &item_id_clone);
                                 event_sink.emit_app_server_event(AppServerEvent {
                                     workspace_id: event.workspace_id().to_string(),
                                     message: json!({

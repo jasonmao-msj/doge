@@ -5,7 +5,7 @@ use std::collections::HashSet;
 pub(crate) const CLAUDE_SUMMARY_LARGE_LINE_BYTE_BUDGET: usize = 512 * 1024;
 pub(crate) const CLAUDE_EAGER_IMAGE_BASE64_BYTE_BUDGET: usize = 256 * 1024;
 pub(crate) const CLAUDE_HYDRATED_IMAGE_BASE64_BYTE_BUDGET: usize = 16 * 1024 * 1024;
-const CLAUDE_OMITTED_IMAGE_DATA_SENTINEL: &str = "__ccgui_omitted_large_claude_image__";
+const CLAUDE_OMITTED_IMAGE_DATA_SENTINEL: &str = "__doge_omitted_large_claude_image__";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]

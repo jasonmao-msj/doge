@@ -1148,7 +1148,7 @@ function buildDiagramArtifactPath(input: {
   relativePath: string;
 }): string {
   const storageRoot = asTrimmedString(input.run.writePath) ||
-    `.ccgui/project-map/${input.dataset.manifest.storageKey}`;
+    `.doge/project-map/${input.dataset.manifest.storageKey}`;
   const separator = storageRoot.includes("\\") ? "\\" : "/";
   return `${storageRoot.replace(/[\\/]+$/g, "")}${separator}${input.relativePath.replace(/\//g, separator)}`;
 }

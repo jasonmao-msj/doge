@@ -26,7 +26,7 @@ const BROWSER_RENDERER_WEBVIEW_LABEL: &str = "browser-agent-webview-main";
 const BROWSER_RENDERER_WINDOW_LABEL: &str = "browser-agent-window";
 const BROWSER_DOCK_WINDOW_LABEL: &str = "browser-agent-dock";
 const BROWSER_CAPTURE_BRIDGE_HOST: &str = "browser-agent-capture.invalid";
-const BROWSER_CAPTURE_BRIDGE_PATH: &str = "/__mossx_capture__";
+const BROWSER_CAPTURE_BRIDGE_PATH: &str = "/__doge_capture__";
 const BROWSER_CAPTURE_CHUNK_SIZE: usize = 1_600;
 const BROWSER_CAPTURE_WAIT_ATTEMPTS: usize = 80;
 

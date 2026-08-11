@@ -53,7 +53,13 @@ describe("file view visual contracts", () => {
   });
 
   it("does not draw an accent underline under the active file tab", () => {
-    expect(getCssRuleBlock(fileViewPanelShellCss, ".fvp-tab.is-active::after")).toBe("");
+    const activeTabUnderline = getCssRuleBlock(
+      fileViewPanelShellCss,
+      ".fvp-tab.is-active::after",
+    );
+
+    expect(activeTabUnderline).toContain("background: var(--fvp-reader-surface);");
+    expect(activeTabUnderline).not.toContain("var(--border-accent)");
   });
 
   it("hides file tab scrollbar chrome without disabling horizontal overflow", () => {

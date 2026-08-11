@@ -11,6 +11,7 @@
 
 | Change | Progress | Current gate | Artifacts |
 | ------ | -------: | ------------ | --------- |
+| [`rebrand-client-to-doge`](rebrand-client-to-doge/proposal.md) | artifacts ready / await apply | Fork、Git topology、dev dependencies 与原版启动 baseline 已完成；doge identity/service isolation/storage migration/i18n/visual/release/docs specs 与 tasks 已就绪，待 implementation | [proposal](rebrand-client-to-doge/proposal.md) · [design](rebrand-client-to-doge/design.md) · [tasks](rebrand-client-to-doge/tasks.md) · [specs](rebrand-client-to-doge/specs/) |
 | [`fix-custom-prompts-stale-empty-cache`](fix-custom-prompts-stale-empty-cache/proposal.md) | implemented / await human check | `!` 提示词 soft-failure 永久空态：soft-cancel 保留缓存 + 空态 on-demand revalidate；vitest 70+19 绿；**不 commit，交用户验收** | [proposal](fix-custom-prompts-stale-empty-cache/proposal.md) · [design](fix-custom-prompts-stale-empty-cache/design.md) · [tasks](fix-custom-prompts-stale-empty-cache/tasks.md) · [specs](fix-custom-prompts-stale-empty-cache/specs/) |
 | [`add-sub2api-relay-quota`](add-sub2api-relay-quota/proposal.md) | implemented / no commit | 未知中转走 Sub2API `GET /v1/usage`；余额+可选窗+planLabel；**不 commit，交用户验收** | [proposal](add-sub2api-relay-quota/proposal.md) · [design](add-sub2api-relay-quota/design.md) · [tasks](add-sub2api-relay-quota/tasks.md) · [specs](add-sub2api-relay-quota/specs/) |
 | [`fix-runtime-workspace-switch-main-thread-stall`](fix-runtime-workspace-switch-main-thread-stall/proposal.md) | implementing / verify no commit | 跨项目 shared 切换 UI 假死：list soft-ignore 协作式早退；**不 commit，先验证** | [proposal](fix-runtime-workspace-switch-main-thread-stall/proposal.md) · [design](fix-runtime-workspace-switch-main-thread-stall/design.md) · [tasks](fix-runtime-workspace-switch-main-thread-stall/tasks.md) · [specs](fix-runtime-workspace-switch-main-thread-stall/specs/) |
@@ -36,6 +37,7 @@
 
 ## Active backlog notes（2026-08-08）
 
+- **新增** `rebrand-client-to-doge`：建立 doge 独立产品/分发/存储 identity，切断 upstream updater/analytics/service，保留 developer-only upstream sync 与 legacy copy-forward；artifacts 齐，待 apply。
 - **已归档** `add-local-html-open-in-builtin-browser` → `archive/2026-08-08-add-local-html-open-in-builtin-browser`：本地 HTML 内置 Browser Agent；三入口 + 全局 toast i18n；main specs 已同步。
 - **已提交** `add-windows-sidebar-quick-switcher-and-collapse`：Win 侧栏补 Quick Switcher（Ctrl+E）与设置菜单「隐藏对话侧边栏」；mac titlebar 互斥；手测通过。
 - **新增** `add-collab-stage-upstream-feed-mode`：协作模板第 2 段起配置上游吃摘要/全文；运行时与 Inspector 对齐；代码已落地待手测。

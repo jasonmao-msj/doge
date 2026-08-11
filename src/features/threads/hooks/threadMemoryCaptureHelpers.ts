@@ -36,7 +36,7 @@ export function buildMemoryTurnKey(threadId: string, turnId: string | null | und
   return `${threadId}::${normalizedTurnId}`;
 }
 
-const MEMORY_DEBUG_FLAG_KEY = "ccgui:memory-debug";
+const MEMORY_DEBUG_FLAG_KEY = "doge:memory-debug";
 const MEMORY_PARAGRAPH_BREAK_SPLIT_REGEX = /\r?\n[^\S\r\n]*\r?\n+/;
 const MEMORY_SENTENCE_BOUNDARY_CHARS = new Set([
   "。",

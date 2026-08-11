@@ -18,7 +18,7 @@
  *   session only. The stored user setting is never rewritten.
  */
 
-const STORAGE_KEY = "ccgui.uiScaleStartupGuard.v1";
+const STORAGE_KEY = "doge.uiScaleStartupGuard.v1";
 const HEALTHY_CONFIRM_DELAY_MS = 8_000;
 
 export type UiScaleStartupGuardRecord = {

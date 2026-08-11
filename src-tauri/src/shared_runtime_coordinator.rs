@@ -68,7 +68,7 @@ pub(crate) struct SharedRuntimeContextMarker {
 impl SharedRuntimeContextMarker {
     fn wire_marker(&self) -> String {
         format!(
-            "MOSSX_CONTEXT_PACKAGE:{}:{}",
+            "DOGE_CONTEXT_PACKAGE:{}:{}",
             self.package_id, self.source_checksum
         )
     }
@@ -2332,7 +2332,7 @@ fn extract_claude_replay_echo(data: &Value) -> Option<String> {
     }
     let mut echo = String::new();
     collect_text(data.get("message").unwrap_or(data), &mut echo);
-    echo.contains("MOSSX_CONTEXT_PACKAGE:")
+    (echo.contains("DOGE_CONTEXT_PACKAGE:") || echo.contains("MOSSX_CONTEXT_PACKAGE:"))
         .then_some(echo)
         .filter(|value| !value.is_empty())
 }
@@ -2959,7 +2959,6 @@ mod tests {
         );
     }
 
-    #[test]
     #[test]
     fn codex_command_execution_argv_array_is_joined_into_summary() {
         let coordinator = SharedRuntimeCoordinator::default();
@@ -4142,7 +4141,7 @@ mod tests {
                 "isReplay": true,
                 "message": {
                     "role": "user",
-                    "content": "MOSSX_CONTEXT_PACKAGE:package-1:checksum-1"
+                    "content": "DOGE_CONTEXT_PACKAGE:package-1:checksum-1"
                 }
             }),
         };
@@ -4199,7 +4198,7 @@ mod tests {
                     "isReplay": true,
                     "message": {
                         "role": "user",
-                        "content": "MOSSX_CONTEXT_PACKAGE:package-barrier:checksum-barrier"
+                        "content": "DOGE_CONTEXT_PACKAGE:package-barrier:checksum-barrier"
                     }
                 }),
             },

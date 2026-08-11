@@ -1,13 +1,13 @@
 //! Grok CLI vendor/provider management.
 //!
-//! Provider definitions live in ccgui's `config.json` under the `grok` section
+//! Provider definitions live in doge's `config.json` under the `grok` section
 //! (same pattern as claude/codex/kimi providers). Switching a provider
 //! materializes it into `~/.grok/config.toml` under namespaced keys so
 //! user-managed entries stay untouched:
 //!
-//! - `model."ccgui/<model>"` with `model` / `base_url` / `name` / `api_key` /
+//! - `model."doge/<model>"` with `model` / `base_url` / `name` / `api_key` /
 //!   `api_backend` / `context_window`
-//! - `models.default = "ccgui/<model>"`
+//! - `models.default = "doge/<model>"`
 //!
 //! The special `__local_config_toml__` provider means "leave config.toml alone".
 
@@ -30,7 +30,8 @@ use crate::engine::grok_provider_profile::{
 const LOCAL_GROK_PROVIDER_ID: &str = GROK_LOCAL_PROVIDER_PROFILE_ID;
 const LOCAL_GROK_PROVIDER_NAME: &str = "Local config.toml";
 const LOCAL_GROK_PROVIDER_REMARK: &str = "Use configuration directly from ~/.grok/config.toml";
-const GROK_MODEL_TOML_PREFIX: &str = "ccgui/";
+const GROK_MODEL_TOML_PREFIX: &str = "doge/";
+const LEGACY_GROK_MODEL_TOML_PREFIXES: &[&str] = &["ccgui/"];
 
 fn grok_config_toml_path() -> Result<PathBuf, String> {
     if let Some(home) = std::env::var_os("GROK_HOME").filter(|value| !value.is_empty()) {
@@ -117,7 +118,7 @@ fn apply_provider_to_grok_config(provider: &GrokProviderConfig) -> Result<(), St
     materialize_grok_provider_at(provider, &path, true)
 }
 
-/// Remove the provider's `ccgui/`-namespaced model entry (and a dangling
+/// Remove the provider's doge and legacy namespaced model entries (and a dangling
 /// `[models].default` pointing at it) while keeping durable provider deletion
 /// independent from external config cleanup.
 fn cleanup_provider_from_grok_config(provider: &GrokProviderConfig) -> Result<(), String> {
@@ -150,11 +151,16 @@ fn cleanup_provider_from_grok_config_at(
     if model.is_empty() {
         return Ok(());
     }
-    let model_toml_alias = format!("{}{}", GROK_MODEL_TOML_PREFIX, model);
+    let model_toml_aliases = std::iter::once(GROK_MODEL_TOML_PREFIX)
+        .chain(LEGACY_GROK_MODEL_TOML_PREFIXES.iter().copied())
+        .map(|prefix| format!("{prefix}{model}"))
+        .collect::<Vec<_>>();
     let mut dirty = false;
 
     if let Some(models) = doc.get_mut("model").and_then(|v| v.as_table_mut()) {
-        dirty |= models.remove(&model_toml_alias).is_some();
+        for model_toml_alias in &model_toml_aliases {
+            dirty |= models.remove(model_toml_alias).is_some();
+        }
     }
 
     let default_is_dangling = doc
@@ -162,7 +168,7 @@ fn cleanup_provider_from_grok_config_at(
         .and_then(|v| v.as_table())
         .and_then(|models| models.get("default"))
         .and_then(|v| v.as_str())
-        == Some(model_toml_alias.as_str());
+        .is_some_and(|value| model_toml_aliases.iter().any(|alias| alias == value));
     if default_is_dangling {
         if let Some(models) = doc.get_mut("models").and_then(|v| v.as_table_mut()) {
             models.remove("default");
@@ -305,10 +311,7 @@ pub(crate) fn extract_base_url_api_key_from_grok_toml(doc: &toml::Table) -> (Str
 
     // 1) 精确键：model.<default>
     if !default_model.is_empty() {
-        if let Some(table) = model_table
-            .get(&default_model)
-            .and_then(|v| v.as_table())
-        {
+        if let Some(table) = model_table.get(&default_model).and_then(|v| v.as_table()) {
             if model_entry_has_credentials(table) {
                 return extract_base_url_api_key_from_model_table(table);
             }
@@ -348,9 +351,9 @@ pub(crate) fn read_local_grok_base_url_and_key() -> Result<(String, String), Str
     let path = grok_config_toml_path()?;
     let (status, doc, diagnostic) = read_grok_config_document(&path);
     if status == "io-error" || status == "malformed" {
-        return Err(diagnostic.unwrap_or_else(|| {
-            format!("Failed to read Grok config.toml ({status})")
-        }));
+        return Err(
+            diagnostic.unwrap_or_else(|| format!("Failed to read Grok config.toml ({status})"))
+        );
     }
     if status == "missing" {
         return Ok((String::new(), String::new()));
@@ -432,11 +435,7 @@ pub(crate) async fn vendor_read_grok_config_toml() -> Result<String, String> {
     match std::fs::read_to_string(&path) {
         Ok(content) => Ok(content),
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(String::new()),
-        Err(error) => Err(format!(
-            "Failed to read {}: {}",
-            path.display(),
-            error
-        )),
+        Err(error) => Err(format!("Failed to read {}: {}", path.display(), error)),
     }
 }
 
@@ -445,23 +444,20 @@ pub(crate) async fn vendor_read_grok_config_toml() -> Result<String, String> {
 pub(crate) async fn vendor_save_grok_config_toml(content: String) -> Result<(), String> {
     let path = grok_config_toml_path()?;
     if !content.trim().is_empty() {
-        toml::from_str::<toml::Table>(&content).map_err(|error| {
-            format!("Invalid TOML in {}: {error}", path.display())
-        })?;
+        toml::from_str::<toml::Table>(&content)
+            .map_err(|error| format!("Invalid TOML in {}: {error}", path.display()))?;
     }
     atomic_write_text_file(&path, &content, "toml")
 }
 
 fn atomic_write_text_file(path: &Path, content: &str, tmp_ext: &str) -> Result<(), String> {
     if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent).map_err(|error| {
-            format!("Failed to create {}: {error}", parent.display())
-        })?;
+        std::fs::create_dir_all(parent)
+            .map_err(|error| format!("Failed to create {}: {error}", parent.display()))?;
     }
     let tmp_path = path.with_extension(format!("{tmp_ext}.tmp"));
-    std::fs::write(&tmp_path, content).map_err(|error| {
-        format!("Failed to write temp file {}: {error}", tmp_path.display())
-    })?;
+    std::fs::write(&tmp_path, content)
+        .map_err(|error| format!("Failed to write temp file {}: {error}", tmp_path.display()))?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -747,13 +743,13 @@ default = "grok-4.5"
 
 [model."grok-4.5"]
 model = "grok-4.5"
-base_url = "https://fufei.mossx.ai/v1"
+base_url = "https://relay.example.com/v1"
 api_key = "sk-relay-test"
 "#,
         )
         .expect("parse");
         let (base, key) = extract_base_url_api_key_from_grok_toml(&doc);
-        assert_eq!(base, "https://fufei.mossx.ai/v1");
+        assert_eq!(base, "https://relay.example.com/v1");
         assert_eq!(key, "sk-relay-test");
     }
 
@@ -767,14 +763,14 @@ default = "grok-4.5"
 
 [model.grok]
 model = "grok-4.5"
-base_url = "https://fufei.mossx.ai/v1"
+base_url = "https://relay.example.com/v1"
 api_key = "sk-relay-test"
 api_backend = "responses"
 "#,
         )
         .expect("parse");
         let (base, key) = extract_base_url_api_key_from_grok_toml(&doc);
-        assert_eq!(base, "https://fufei.mossx.ai/v1");
+        assert_eq!(base, "https://relay.example.com/v1");
         assert_eq!(key, "sk-relay-test");
     }
 

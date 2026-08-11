@@ -7,12 +7,12 @@ status: implemented
 > [!IMPORTANT]
 > **Lifecycle: Active architecture reference with historical execution sections.** Foundation decisions 仍被 current specs 使用；implementation checklist 与 wave 状态只保留历史证据。Current contract 以 [OpenSpec main specs](../../openspec/specs/README.md) 与代码为准。
 
-# mossx 多 CLI × 多 Provider 会话基石设计
+# doge 多 CLI × 多 Provider 会话基石设计
 
 > 内容类型：Architecture Decision Record
 > 生命周期：accepted / implemented in slices；原始 A–D 路线已归档，后续修复与收口 change 独立演进
 > 初始日期：2026-07-27
-> 最近校准：2026-08-08 · Composer Run Status Strip 数据面：Shared/协作合成 **主 items ∪ agent-canvas ∪ child threads**（`collectRunStatusSourceItems`），禁止仅依赖根 props 空 items；协作写文件变更可在输入框上方「已编辑」汇总
+> 最近校准：2026-08-10 · `rebrand-client-to-doge`：Context/ACK/dispatch producers 统一写 `DOGE_*` / `dogeDispatchReceipt`，历史 `MOSSX_*` / `mossxDispatchReceipt` 保持 dual-read 或 exact legacy round-trip；fresh storage/runtime temporary paths 只写 doge namespace
 > 适用范围：Native Session、Shared Session、Provider Runtime、Session Catalog、Sidebar Projection、未来 Plugin / Orchestration
 > 核心决策：Native Session 保持原生身份；Shared Session 承担跨 CLI、跨 Provider 的逐 Turn 切换
 
@@ -20,7 +20,7 @@ status: implemented
 
 ## 零、当前实现校准
 
-本文继续作为多 CLI 会话的 ADR。原始 Change A1–A3、B、C、D 已归档；截至 2026-08-06，Native/Shared 的后续修复、兼容、Phase 5 Squad 与 multi-agent collab 以 [OpenSpec main specs](../../openspec/specs/README.md)、对应 change 与代码为准，不应回写成「原路线未实现」。
+本文继续作为多 CLI 会话的 ADR。原始 Change A1–A3、B、C、D 已归档；截至 2026-08-10，Native/Shared 的后续修复、兼容、Phase 5 Squad、multi-agent collab 与 doge namespace migration 以 [OpenSpec main specs](../../openspec/specs/README.md)、对应 change 与代码为准，不应回写成「原路线未实现」。
 
 | 契约面 | 当前代码事实 | 事实源 |
 |--------|--------------|--------|
@@ -32,11 +32,12 @@ status: implemented
 | Shared send UI 状态机 | 九态 + Recovery Exit Ladder（Probe/Stop/停止并重建/放弃本轮） | `sendStateMachine.ts`、`SharedSendStatusBar.tsx`、`shared_session_v2.rs` |
 | Recovery Exit Closure | **设计见 §14.5.7**；已实现并收口（OpenSpec `fix-shared-session-recovery-exit-closure`） | abandon durable + stop-before-rebuild + fuse disabled reasons |
 | Shared 上下文续接 integrity | native 不可信时禁止假设 history 已在 native 内；zero-transfer 不等于可 rematerialize；`empty-context-handoff` 为一等 recovery 错误类别 | OpenSpec `fix-shared-context-resume-integrity`、`shared_context/compiler.rs`、`recoveryErrorMap.ts` |
+| doge Context / ACK namespace | Fresh compiler、native continuation、Runtime echo 与 dispatch receipt 只写 `DOGE_CONTEXT_PACKAGE`、`DOGE_*_CONTEXT_V1`、`dogeDispatchReceipt`；readers 继续接受历史 `MOSSX_*` / `mossxDispatchReceipt`；只有输入 package 本身为 legacy 时才允许 exact legacy round-trip | `src/utils/contextProtocol.ts`、`src-tauri/src/shared_context/compiler.rs`、`src-tauri/src/native_continuation/commands.rs`、`src-tauri/src/shared_session_v2.rs`、OpenSpec `rebrand-client-to-doge` |
 | Atomic 模型↔思考强度联动 | reasoning options / effort 由 **target 模型 capability** 驱动，禁止用全局 `activeEngine` 档位冒充；Shared 初始化禁止回落 Native 思考档位 | `atomicModelReasoning.ts`、`initialTarget.ts`、OpenSpec `fix-shared-atomic-model-reasoning-linkage` |
 | 用户附图 canonical 投影 | 用户附图单气泡投影，Shared 历史不丢图 | `shared_projection/projector.rs`、OpenSpec `fix-shared-user-image-bubble-projection` |
 | create-session 默认目标 | create-session Atomic picker 为全部 Atomic 引擎（含 Grok/Kimi/OpenCode）seed 默认 ExecutionTarget，不仅 claude/codex | `resolveDefaultCreationExecutionTarget.ts` |
 | Agent Squad V1 入口与形态 | 仅 Shared Session 显示 send 左侧 one-shot `Squad` button；plan/run card 留在 conversation，详情复用 SubAgent 右侧 full-height inspector host | `src/features/composer/components/Composer.tsx`、`src/features/squad-orchestration/**`、`ConversationInspectorSplit.tsx` |
-| Squad control authority | Lead 只提出 structured Dynamic DAG；mossx validator、Canonical Fact、durable projection 与 command boundary 决定可否执行；同一 Shared Session 最多一个 active run | `src-tauri/src/squad_orchestration/{types,validator,projection,commands,plan_commands}.rs`、OpenSpec `add-shared-squad-control-plane` |
+| Squad control authority | Lead 只提出 structured Dynamic DAG；doge validator、Canonical Fact、durable projection 与 command boundary 决定可否执行；同一 Shared Session 最多一个 active run | `src-tauri/src/squad_orchestration/{types,validator,projection,commands,plan_commands}.rs`、OpenSpec `add-shared-squad-control-plane` |
 | Squad execution boundary | V1 为 Parallel Analyze + Single Writer；全部 Worker seal 到 Composer 当前 exact target。Codex 可执行完整 DAG；Claude 仅 pure read-only DAG；Kimi/Grok/OpenCode 因缺少可验证 hard read-only mode 在 Lead side effect 前 fail closed | `src-tauri/src/squad_orchestration/{scheduler,support}.rs`、`shared_session_v2.rs`、OpenSpec `add-shared-squad-worker-execution` |
 | Squad mutation/recovery | workspace UUID + canonical root 双重归一；durable lease 无 time-based expiry；Git dirty baseline + Change Fence；Stop 先写 cancel intent，再 best-effort interrupt exact owner；禁止自动 rollback/reset/stash | `src-tauri/src/squad_orchestration/{scope,stop_commands}.rs`、`shared_event_log/writer.rs`、OpenSpec `harden-shared-squad-recovery` |
 | Squad conversation projection | 所有 Worker turn（含 Synthesize）保持 nested-only；只有 successful `SquadRunSettled` 投影一次 top-level final；checkpoint incremental replay 不泄漏 Worker message | `src-tauri/src/shared_projection/projector.rs`、`src/features/squad-orchestration/runtime/squadConversationBridge.ts` |
@@ -45,7 +46,7 @@ status: implemented
 | Multi-agent Inspector 流式与隔离 | 右栏 **禁止** `extractRealtimeTextDelta` 旁路；`agent-canvas:{shared}:{attemptId}` + 主幕同源 adapter / liveAssistantTextChannel；**幕布仅当前 attempt**；settle 只信本 stage `fullOutcome`；徽章 **强制对齐 stage.target**；activeTurn 查询用 **shared:** key 非 agent-canvas key | `useAppServerEvents.ts`、`agentCanvasThread.ts`、`useAgentStageTranscript.ts` |
 | Composer Run Status Strip 数据源 | 输入框上方 pills（todo/subagent/plan/**已编辑**）对 Shared 普通与协作均生效；源 items = 当前会话主时间线 ∪ `agent-canvas:{shared}:*` ∪ parent=active 子会话；**不**把全量 items 绑回 AppShell 根 props（ActiveCanvas 隔离不变） | `collectRunStatusSourceItems.ts`、`Composer.tsx`、`ComposerRunStatusStrip.tsx`、OpenSpec `wire-shared-composer-run-status-strip` |
 | Multi-agent 模板智能体 | 环节可选客户端智能体（`agentProvider` 同源）；persona 字段进 stageBindings；Inspector 头展示「· 智能体 {name}」；注入目前为 rolePrompt 前缀（非 Composer 全量 AGENT_PROMPT 协议） | `StageAgentPicker.tsx`、`templates/types.ts`、`AgentInspectorDrawer` |
-| Shared Sidebar hidden binding | Shared 内部 native binding **永不**作为用户顶层会话展示；hide set（fresh∪outer）+ control-plane 标题闸双闸。**侧栏 title**：行首 `MOSSX_*`（兼容 `previewThreadName` 50 字截断）∪ 严格 classify ∪ collab worker；**幕布 transcript**：仍仅严格 `classifyContextProtocolText`（禁止 `includes("MOSSX")`） | `isMossxProgramControlTitle`、`isSharedControlPlaneSpawnTitle`、`stripHiddenSharedBindingSummaries`、merge 预过滤、`list_shared_sessions.nativeThreadIds`、OpenSpec `fix-shared-collab-context-and-sidebar-spawn` §follow-up 2026-08-07 |
+| Shared Sidebar hidden binding | Shared 内部 native binding **永不**作为用户顶层会话展示；hide set（fresh∪outer）+ control-plane 标题闸双闸。**侧栏 title**：行首 current `DOGE_*` 或 legacy `MOSSX_*`（兼容 `previewThreadName` 50 字截断）∪ 严格 classify ∪ collab worker；**幕布 transcript**：仍仅严格 `classifyContextProtocolText`，禁止 broad `includes` | `isDogeProgramControlTitle`、`isSharedControlPlaneSpawnTitle`、`stripHiddenSharedBindingSummaries`、merge 预过滤、`list_shared_sessions.nativeThreadIds`、OpenSpec `rebrand-client-to-doge` |
 
 本文中的 `RuntimeDeliveryAdapter`、`Canonical Fact`、`ContextPackage` 等名称既包含实现合同，也包含 ADR 概念层语言。读者需要复制代码或接新 CLI 时，必须同时使用 [Engine Onboarding Guide](./mossx-new-cli-onboarding-guide.md) 的「当前注册面」清单，不能只按概念接口猜文件名。
 
@@ -53,7 +54,7 @@ status: implemented
 
 ## 一、Executive Summary
 
-mossx 的长期基石不应是“把多个 CLI 放进同一个下拉框”，而应是一个稳定的多 Runtime 会话系统：
+doge 的长期基石不应是“把多个 CLI 放进同一个下拉框”，而应是一个稳定的多 Runtime 会话系统：
 
 ```text
 Native Session

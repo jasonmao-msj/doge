@@ -104,11 +104,11 @@ export function parseCodexMcpServers(raw: unknown): CodexMcpServer[] {
 }
 
 /** 内置 AskUserQuestion 服务由 app 在 spawn 时注入 claude 运行时。 */
-const BUILT_IN_CLAUDE_SERVER = "ccgui";
+const BUILT_IN_CLAUDE_SERVER = "doge";
 
 /**
  * 把 hook 返回的原始清单整理成当前引擎的行模型：配置来源按引擎过滤
- * （claude → claude_json，codex → ccgui_config），运行时来源 codex 走
+ * （claude → claude_json，codex → doge_config；兼容旧 ccgui_config），运行时来源 codex 走
  * listMcpServerStatus 结果、claude 走 init 事件快照。
  */
 export function buildEngineRows({
@@ -122,10 +122,12 @@ export function buildEngineRows({
   codexServers: CodexMcpServer[];
   claudeRuntimeServers: ClaudeRuntimeServer[];
 }): McpServerRow[] {
-  const configSource: GlobalMcpServerEntry["source"] =
-    engine === "claude" ? "claude_json" : "ccgui_config";
   const configRows: McpConfigRow[] = globalServers
-    .filter((server) => server.source === configSource)
+    .filter((server) =>
+      engine === "claude"
+        ? server.source === "claude_json"
+        : server.source === "doge_config" || server.source === "ccgui_config",
+    )
     .map((server) => ({
       kind: "config",
       id: `config:${server.name}`,

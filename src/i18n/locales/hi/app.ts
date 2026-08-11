@@ -4,7 +4,7 @@
 // Machine translation of src/i18n/locales/en/app.ts; keys mirror the English source.
 const app = {
   "app": {
-    "title": "ccgui",
+    "title": "doge",
     "subtitle": "अपने स्थानीय प्रोजेक्ट्स में agents को ऑर्केस्ट्रेट करें।"
   }
 };

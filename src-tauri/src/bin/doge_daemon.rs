@@ -27,9 +27,9 @@ mod codex_launch_profile;
 mod codex_rewind;
 #[path = "../codex/thread_mode_state.rs"]
 mod codex_thread_mode_state;
-#[path = "cc_gui_daemon/daemon_state.rs"]
+#[path = "doge_daemon/daemon_state.rs"]
 mod daemon_state;
-#[path = "cc_gui_daemon/engine_bridge.rs"]
+#[path = "doge_daemon/engine_bridge.rs"]
 mod engine;
 #[path = "../engine_policy.rs"]
 mod engine_policy;
@@ -44,7 +44,7 @@ mod git_pr_range_gate;
 #[allow(dead_code)]
 #[path = "../git_utils.rs"]
 mod git_utils;
-#[path = "cc_gui_daemon/rpc_params.rs"]
+#[path = "doge_daemon/rpc_params.rs"]
 mod rpc_params;
 #[path = "../snapshot_throttle.rs"]
 mod snapshot_throttle;
@@ -310,9 +310,9 @@ mod text_encoding;
 mod types;
 #[path = "../utils.rs"]
 mod utils;
-#[path = "cc_gui_daemon/web_service_runtime.rs"]
+#[path = "doge_daemon/web_service_runtime.rs"]
 mod web_service_runtime;
-#[path = "cc_gui_daemon/workspace_io.rs"]
+#[path = "doge_daemon/workspace_io.rs"]
 mod workspace_io;
 #[path = "../workspaces/settings.rs"]
 mod workspace_settings;
@@ -598,10 +598,7 @@ fn next_gemini_routed_item_id(
 
 /// Prefer the last text-lane item id so synthetic `item/completed` upserts the
 /// same assistant bubble as streamed TextDelta (Claude-parity; avoids double bubbles).
-fn gemini_agent_completion_item_id(
-    state: &GeminiRenderRoutingState,
-    base_item_id: &str,
-) -> String {
+fn gemini_agent_completion_item_id(state: &GeminiRenderRoutingState, base_item_id: &str) -> String {
     if let Some(id) = state.active_text_item_id.as_ref() {
         return id.clone();
     }
@@ -680,33 +677,62 @@ struct DaemonState {
     runtime_manager: Arc<runtime::RuntimeManager>,
 }
 
-fn default_data_dir() -> PathBuf {
-    if cfg!(windows) {
-        if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
-            let trimmed = local_app_data.trim();
-            if !trimmed.is_empty() {
-                return PathBuf::from(trimmed).join("cc_gui_daemon");
-            }
+fn default_data_dir_from_sources(
+    is_windows: bool,
+    local_app_data: Option<&str>,
+    xdg_data_home: Option<&str>,
+    home: Option<&str>,
+) -> PathBuf {
+    if is_windows {
+        if let Some(local_app_data) = local_app_data
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        {
+            return PathBuf::from(local_app_data).join("doge_daemon");
         }
     }
 
-    if let Ok(xdg) = env::var("XDG_DATA_HOME") {
-        let trimmed = xdg.trim();
-        if !trimmed.is_empty() {
-            return PathBuf::from(trimmed).join("cc_gui_daemon");
-        }
+    if let Some(xdg_data_home) = xdg_data_home
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        return PathBuf::from(xdg_data_home).join("doge_daemon");
     }
-    let home = env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home)
+
+    PathBuf::from(home.unwrap_or("."))
         .join(".local")
         .join("share")
-        .join("cc_gui_daemon")
+        .join("doge_daemon")
+}
+
+fn default_data_dir() -> PathBuf {
+    let local_app_data = env::var("LOCALAPPDATA").ok();
+    let xdg_data_home = env::var("XDG_DATA_HOME").ok();
+    let home = env::var("HOME").ok();
+    default_data_dir_from_sources(
+        cfg!(windows),
+        local_app_data.as_deref(),
+        xdg_data_home.as_deref(),
+        home.as_deref(),
+    )
+}
+
+fn select_daemon_token(
+    doge_token: Option<String>,
+    legacy_cc_gui_token: Option<String>,
+    legacy_moss_x_token: Option<String>,
+) -> Option<String> {
+    [doge_token, legacy_cc_gui_token, legacy_moss_x_token]
+        .into_iter()
+        .flatten()
+        .map(|value| value.trim().to_string())
+        .find(|value| !value.is_empty())
 }
 
 fn usage() -> String {
     format!(
         "\
-USAGE:\n  cc_gui_daemon [--listen <addr>] [--data-dir <path>] [--token <token> | --insecure-no-auth]\n\n\
+USAGE:\n  doge_daemon [--listen <addr>] [--data-dir <path>] [--token <token> | --insecure-no-auth]\n\n\
 OPTIONS:\n  --listen <addr>        Bind address (default: {DEFAULT_LISTEN_ADDR})\n  --data-dir <path>      Data dir holding workspaces.json/settings.json\n  --token <token>        Shared token required by clients\n  --insecure-no-auth      Disable auth (dev only)\n  -h, --help             Show this help\n"
     )
 }
@@ -715,11 +741,11 @@ fn parse_args() -> Result<DaemonConfig, String> {
     let mut listen = DEFAULT_LISTEN_ADDR
         .parse::<SocketAddr>()
         .map_err(|err| err.to_string())?;
-    let mut token = env::var("CC_GUI_DAEMON_TOKEN")
-        .ok()
-        .or_else(|| env::var("MOSS_X_DAEMON_TOKEN").ok())
-        .map(|value| value.trim().to_string())
-        .filter(|value| !value.is_empty());
+    let mut token = select_daemon_token(
+        env::var("DOGE_DAEMON_TOKEN").ok(),
+        env::var("CC_GUI_DAEMON_TOKEN").ok(),
+        env::var("MOSS_X_DAEMON_TOKEN").ok(),
+    );
     let mut insecure_no_auth = false;
     let mut data_dir: Option<PathBuf> = None;
 
@@ -760,7 +786,7 @@ fn parse_args() -> Result<DaemonConfig, String> {
 
     if token.is_none() && !insecure_no_auth {
         return Err(
-            "Missing --token (or set CC_GUI_DAEMON_TOKEN). Use --insecure-no-auth for local dev only."
+            "Missing --token (or set DOGE_DAEMON_TOKEN). Use --insecure-no-auth for local dev only."
                 .to_string(),
         );
     }
@@ -2721,7 +2747,7 @@ fn main() {
             .await
             .unwrap_or_else(|err| panic!("failed to bind {}: {err}", config.listen));
         eprintln!(
-            "cc_gui_daemon listening on {} (data dir: {})",
+            "doge_daemon listening on {} (data dir: {})",
             config.listen,
             state
                 .storage_path
@@ -2736,8 +2762,8 @@ fn main() {
             tokio::select! {
                 shutdown_result = &mut shutdown_signal => {
                     match shutdown_result {
-                        Ok(signal) => eprintln!("cc_gui_daemon received {signal}; shutting down"),
-                        Err(error) => eprintln!("cc_gui_daemon shutdown signal error: {error}"),
+                        Ok(signal) => eprintln!("doge_daemon received {signal}; shutting down"),
+                        Err(error) => eprintln!("doge_daemon shutdown signal error: {error}"),
                     }
                     break;
                 }
@@ -2756,7 +2782,7 @@ fn main() {
                 }
                 Some(join_result) = client_tasks.join_next(), if !client_tasks.is_empty() => {
                     if let Err(error) = join_result {
-                        eprintln!("cc_gui_daemon client task failed: {error}");
+                        eprintln!("doge_daemon client task failed: {error}");
                     }
                 }
             }
@@ -2767,10 +2793,10 @@ fn main() {
         state.runtime_manager.begin_shutdown();
         state.engine_manager.claude_manager.interrupt_all().await;
         if let Err(error) = state.engine_manager.shutdown_gemini_sessions().await {
-            eprintln!("cc_gui_daemon Gemini shutdown failed: {error}");
+            eprintln!("doge_daemon Gemini shutdown failed: {error}");
         }
         if let Err(error) = state.engine_manager.shutdown_kimi_sessions().await {
-            eprintln!("cc_gui_daemon Kimi shutdown failed: {error}");
+            eprintln!("doge_daemon Kimi shutdown failed: {error}");
         }
         let codex_sessions = {
             let mut sessions = state.sessions.lock().await;
@@ -2789,7 +2815,7 @@ fn main() {
             .await
             {
                 eprintln!(
-                    "cc_gui_daemon Codex shutdown failed for workspace {workspace_id}: {error}"
+                    "doge_daemon Codex shutdown failed for workspace {workspace_id}: {error}"
                 );
             }
         }
@@ -2798,13 +2824,72 @@ fn main() {
 }
 
 #[cfg(test)]
-mod ccgui_repair_regression_tests {
+mod daemon_regression_tests {
+    use super::{default_data_dir_from_sources, select_daemon_token, usage};
+    use std::path::Path;
+
     #[test]
     fn daemon_dispatch_exposes_codex_history_loader() {
-        let daemon_dispatch = include_str!("cc_gui_daemon.rs");
+        let daemon_dispatch = include_str!("doge_daemon.rs");
         assert!(
             daemon_dispatch.contains("\"load_codex_session\" =>"),
             "daemon dispatch is missing load_codex_session"
         );
+    }
+
+    #[test]
+    fn doge_token_precedes_legacy_compatibility_reads() {
+        assert_eq!(
+            select_daemon_token(
+                Some(" doge-current ".to_string()),
+                Some("cc-gui-legacy".to_string()),
+                Some("moss-x-legacy".to_string()),
+            )
+            .as_deref(),
+            Some("doge-current")
+        );
+        assert_eq!(
+            select_daemon_token(
+                Some("  ".to_string()),
+                Some(" cc-gui-legacy ".to_string()),
+                Some("moss-x-legacy".to_string()),
+            )
+            .as_deref(),
+            Some("cc-gui-legacy")
+        );
+    }
+
+    #[test]
+    fn daemon_data_directories_only_write_doge_namespace() {
+        assert_eq!(
+            default_data_dir_from_sources(
+                true,
+                Some(" C:/Users/test/AppData/Local "),
+                Some("/ignored/xdg"),
+                Some("/ignored/home"),
+            ),
+            Path::new("C:/Users/test/AppData/Local/doge_daemon")
+        );
+        assert_eq!(
+            default_data_dir_from_sources(
+                false,
+                Some("/ignored/local-app-data"),
+                Some(" /tmp/xdg "),
+                Some("/ignored/home"),
+            ),
+            Path::new("/tmp/xdg/doge_daemon")
+        );
+        assert_eq!(
+            default_data_dir_from_sources(false, None, None, Some("/Users/test")),
+            Path::new("/Users/test/.local/share/doge_daemon")
+        );
+    }
+
+    #[test]
+    fn daemon_help_only_advertises_current_identity() {
+        let help = usage();
+        assert!(help.contains("doge_daemon"));
+        assert!(!help.contains("cc_gui_daemon"));
+        assert!(!help.contains("moss_x_daemon"));
     }
 }

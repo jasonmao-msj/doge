@@ -168,7 +168,7 @@ export function isMcpTool(title: unknown): boolean {
   return (
     name.includes('mcp__') ||
     name.includes('mcp_') ||
-    // Display-formatted titles from formatMcpToolName: "Mcp Ccgui Askuserquestion"
+    // Display-formatted titles from formatMcpToolName: "Mcp doge Askuserquestion"
     /^mcp\s+\S+/i.test(name.replace(/^tool:\s*/i, ''))
   );
 }

@@ -37,7 +37,7 @@ export function deriveProjectMapStorageKey(input: {
 
 export function buildProjectMapRelativePath(storageKey: string, pathSegments: string[]): string {
   const safeSegments = pathSegments.map((segment) => segment.trim()).filter(Boolean);
-  return [".ccgui", "project-map", storageKey, ...safeSegments].join("/");
+  return [".doge", "project-map", storageKey, ...safeSegments].join("/");
 }
 
 export function isProjectMapRelativePath(path: string, storageKey: string): boolean {
