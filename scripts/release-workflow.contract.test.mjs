@@ -15,6 +15,37 @@ function workflowJob(workflow, jobName) {
   return nextJob === -1 ? remainder : remainder.slice(0, nextJob);
 }
 
+function workflowInput(workflow, inputName) {
+  const header = `      ${inputName}:\n`;
+  const start = workflow.indexOf(header);
+  assert.notEqual(start, -1, `missing workflow input: ${inputName}`);
+  const remainder = workflow.slice(start + header.length);
+  const nextInput = remainder.search(/^      [a-zA-Z_][a-zA-Z0-9_]*:\n/m);
+  return nextInput === -1 ? remainder : remainder.slice(0, nextInput);
+}
+
+test("manual installer dispatch defaults to one combined macOS and Windows run", () => {
+  const workflow = read(".github/workflows/release.yml");
+  const windowsInput = workflowInput(workflow, "windows_artifact_only");
+  const macosInput = workflowInput(workflow, "macos_artifact_only");
+  const preflight = workflowJob(workflow, "release_preflight");
+
+  assert.match(windowsInput, /default: true/);
+  assert.match(macosInput, /default: true/);
+  assert.match(windowsInput, /enabled by default with macOS/);
+  assert.match(macosInput, /enabled by default with Windows/);
+  assert.match(
+    workflowJob(workflow, "build_windows_artifact"),
+    /inputs\.windows_artifact_only == true/,
+  );
+  assert.match(
+    workflowJob(workflow, "build_macos_artifact"),
+    /inputs\.macos_artifact_only == true/,
+  );
+  assert.match(preflight, /inputs\.windows_artifact_only != true/);
+  assert.match(preflight, /inputs\.macos_artifact_only != true/);
+});
+
 test("release stays fail-closed until the independent doge updater trust chain exists", () => {
   const workflow = read(".github/workflows/release.yml");
   const preflight = workflowJob(workflow, "release_preflight");

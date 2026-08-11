@@ -54,6 +54,25 @@ The release workflow MUST build doge-named artifacts for configured macOS, Windo
 - **THEN** the workflow MUST NOT advertise the missing platform as available
 - **AND** release readiness MUST remain failed until the matrix is coherent
 
+#### Scenario: Maintainer accepts the default internal packaging dispatch
+
+- **WHEN** an authorized maintainer manually starts the Release workflow without changing artifact inputs
+- **THEN** `windows_artifact_only` and `macos_artifact_only` MUST both default to `true`
+- **AND** the same workflow run MUST build macOS Apple Silicon / Intel DMGs and the Windows x64 NSIS installer in parallel
+- **AND** signed release preflight and publishing jobs MUST remain skipped
+
+#### Scenario: Maintainer requests a targeted platform-only rebuild
+
+- **WHEN** the maintainer explicitly disables one artifact-only input because only one platform was requested or needs retry
+- **THEN** only the remaining enabled platform artifact jobs MAY run
+- **AND** this platform-only result MUST NOT be represented as the default complete internal installer set
+
+#### Scenario: Maintainer explicitly requests the signed release lane
+
+- **WHEN** both artifact-only inputs are explicitly set to `false`
+- **THEN** the workflow MUST enter release preflight
+- **AND** missing signing material or updater trust MUST still fail closed before platform release builds
+
 #### Scenario: Maintainer requests an internal Windows test installer
 
 - **WHEN** an authorized maintainer manually dispatches `windows_artifact_only=true`
