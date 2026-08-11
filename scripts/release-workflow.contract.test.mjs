@@ -21,6 +21,7 @@ test("release stays fail-closed until the independent doge updater trust chain e
   const release = workflowJob(workflow, "release");
 
   assert.match(preflight, /environment: release/);
+  assert.match(preflight, /inputs\.windows_artifact_only != true/);
   assert.match(preflight, /TAURI_SIGNING_PRIVATE_KEY_B64/);
   assert.match(preflight, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
   assert.match(preflight, /createUpdaterArtifacts/);
@@ -45,6 +46,29 @@ test("release stays fail-closed until the independent doge updater trust chain e
   assert.match(release, /release-artifacts\/latest\.json/);
   assert.match(release, /Missing Linux updater signature/);
   assert.match(release, /Missing Windows updater signature/);
+});
+
+test("Windows artifact-only dispatch cannot publish or access release secrets", () => {
+  const workflow = read(".github/workflows/release.yml");
+  const artifactJob = workflowJob(workflow, "build_windows_artifact");
+
+  assert.match(workflow, /windows_artifact_only:/);
+  assert.match(artifactJob, /inputs\.windows_artifact_only == true/);
+  assert.match(artifactJob, /runs-on: windows-latest/);
+  assert.match(artifactJob, /permissions:\n\s+contents: read/);
+  assert.match(
+    artifactJob,
+    /build --config src-tauri\/tauri\.windows\.conf\.json --bundles nsis/,
+  );
+  assert.match(artifactJob, /doge_\*-setup\.exe/);
+  assert.match(artifactJob, /Get-FileHash -Algorithm SHA256/);
+  assert.match(artifactJob, /name: doge-windows-x64-unsigned/);
+  assert.match(artifactJob, /if-no-files-found: error/);
+  assert.doesNotMatch(artifactJob, /environment: release/);
+  assert.doesNotMatch(
+    artifactJob,
+    /secrets\.|TAURI_SIGNING|\.sig|latest\.json|gh release/,
+  );
 });
 
 test("shipping updater config remains disabled without a doge public key", () => {

@@ -2,6 +2,12 @@ name: doge Release
 
 on:
   workflow_dispatch:
+    inputs:
+      windows_artifact_only:
+        description: Build an unsigned Windows installer artifact without publishing a release
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -10,6 +16,7 @@ permissions:
 jobs:
   release_preflight:
     name: updater release preflight
+    if: ${{ inputs.windows_artifact_only != true }}
     runs-on: ubuntu-latest
     environment: release
     env:
@@ -54,6 +61,83 @@ jobs:
           if errors:
               raise SystemExit("Release is fail-closed:\n- " + "\n- ".join(errors))
           PY
+
+  build_windows_artifact:
+    name: doge windows artifact-only (x64)
+    if: ${{ inputs.windows_artifact_only == true }}
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          cache-bin: false
+          shared-key: v1-win-x64-artifact-rust
+          cache-on-failure: true
+
+      - name: Configure sccache environment
+        shell: pwsh
+        run: |
+          "RUSTC_WRAPPER=sccache" >> $env:GITHUB_ENV
+          "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
+          "SCCACHE_DIR=$env:LOCALAPPDATA\sccache" >> $env:GITHUB_ENV
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify doge branding
+        run: npm run check:branding
+
+      - name: Build unsigned Windows NSIS installer
+        shell: pwsh
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
+        run: |
+          $ErrorActionPreference = "Stop"
+          npm run tauri -- build --config src-tauri/tauri.windows.conf.json --bundles nsis
+
+      - name: Stage installer and checksum
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $installers = @(Get-ChildItem "src-tauri/target/release/bundle/nsis" -Filter "doge_*-setup.exe")
+          if ($installers.Count -ne 1) {
+            throw "Expected exactly one doge NSIS installer, found $($installers.Count)"
+          }
+
+          New-Item -ItemType Directory -Force "release-artifacts" | Out-Null
+          $installer = $installers[0]
+          $target = Join-Path "release-artifacts" $installer.Name
+          Copy-Item $installer.FullName $target
+          $hash = (Get-FileHash -Algorithm SHA256 $target).Hash.ToLowerInvariant()
+          "$hash  $($installer.Name)" | Set-Content -Encoding ascii "$target.sha256"
+
+      - name: Upload Windows installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: doge-windows-x64-unsigned
+          path: |
+            release-artifacts/doge_*-setup.exe
+            release-artifacts/doge_*-setup.exe.sha256
+          if-no-files-found: error
+          retention-days: 14
 
   build_web_assets:
     name: doge web assets
@@ -160,7 +244,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
           cache-bin: false
           shared-key: v1-macos-${{ matrix.arch == 'aarch64' && 'arm64' || 'x64' }}-rust
           cache-on-failure: true
@@ -330,7 +414,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
           cache-bin: false
           shared-key: v1-linux-x64-rust
           cache-on-failure: true
@@ -420,7 +504,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
           cache-bin: false
           shared-key: v1-win-x64-rust
           cache-on-failure: true

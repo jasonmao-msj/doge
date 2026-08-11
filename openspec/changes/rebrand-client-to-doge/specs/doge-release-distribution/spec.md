@@ -54,6 +54,14 @@ The release workflow MUST build doge-named artifacts for configured macOS, Windo
 - **THEN** the workflow MUST NOT advertise the missing platform as available
 - **AND** release readiness MUST remain failed until the matrix is coherent
 
+#### Scenario: Maintainer requests an internal Windows test installer
+
+- **WHEN** an authorized maintainer manually dispatches `windows_artifact_only=true`
+- **THEN** a Windows runner MAY build and upload a doge-named unsigned NSIS installer plus SHA-256 as a short-lived Actions artifact
+- **AND** the job MUST use read-only repository permission and MUST NOT access release secrets or the release environment
+- **AND** it MUST NOT create a GitHub Release, updater signature or `latest.json`
+- **AND** the resulting installer MUST remain explicitly classified as internal/unsigned rather than release-ready
+
 ### Requirement: Core doge operation MUST not require an application server
 
 Application startup, local workspace use and update discovery MUST not depend on a doge-owned application server. GitHub Releases MAY serve static installers and update metadata; configured third-party AI providers retain their own service boundaries.
