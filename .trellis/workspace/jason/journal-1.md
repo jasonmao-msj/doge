@@ -182,3 +182,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: 实现每日诗词轮换提示
+
+**Date**: 2026-08-10
+**Task**: 实现每日诗词轮换提示
+**Branch**: `feat/daily-poetry-composer-banner`
+
+### Summary
+
+将输入框开源提示替换为带作者和篇名的每日中国古诗词；内置 30 条固定池，按本地日期确定性轮换，连续 30 天不重复并在第 31 天开启新循环；支持当天关闭、次日恢复，补齐组件、存储、轮换单元测试与 OpenSpec/Trellis 文档。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c8eb452db` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
