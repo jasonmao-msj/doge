@@ -248,3 +248,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: 合并并行 main 进展
+
+**Date**: 2026-08-10
+**Task**: 合并并行 main 进展
+**Branch**: `ci/macos-artifact-only`
+
+### Summary
+
+语义合并每日诗词 PR 与 macOS artifact-only 分支的 Trellis 记录，保留双方 session history，并复跑发布契约、typecheck、docs 与 OpenSpec。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8b462e062` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
