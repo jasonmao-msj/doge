@@ -8,6 +8,11 @@ on:
         required: true
         default: false
         type: boolean
+      macos_artifact_only:
+        description: Build unsigned macOS DMG artifacts without publishing a release
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -16,7 +21,11 @@ permissions:
 jobs:
   release_preflight:
     name: updater release preflight
-    if: ${{ inputs.windows_artifact_only != true }}
+    if: >-
+      ${{
+        inputs.windows_artifact_only != true &&
+        inputs.macos_artifact_only != true
+      }}
     runs-on: ubuntu-latest
     environment: release
     env:
@@ -136,6 +145,110 @@ jobs:
           path: |
             release-artifacts/doge_*-setup.exe
             release-artifacts/doge_*-setup.exe.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  build_macos_artifact:
+    name: doge macos artifact-only (${{ matrix.arch }})
+    if: ${{ inputs.macos_artifact_only == true }}
+    runs-on: ${{ matrix.platform }}
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            arch: aarch64
+            rust_target: aarch64-apple-darwin
+            build_script: build:mac-arm64
+          - platform: macos-15-intel
+            arch: x86_64
+            rust_target: x86_64-apple-darwin
+            build_script: build:mac-x64
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "10.13"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          cache-bin: false
+          shared-key: v1-macos-${{ matrix.arch }}-artifact-rust
+          cache-on-failure: true
+
+      - name: Configure sccache environment
+        run: |
+          set -euo pipefail
+          echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
+          echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+          echo "SCCACHE_DIR=$HOME/.cache/sccache" >> "$GITHUB_ENV"
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
+
+      - name: Install native dependencies
+        run: brew install cmake openssl@3
+
+      - name: Prepare Intel OpenSSL compatibility path
+        if: ${{ matrix.arch == 'x86_64' }}
+        run: |
+          set -euo pipefail
+          test ! -e /tmp/openssl-x86_64
+          ln -s "$(brew --prefix openssl@3)" /tmp/openssl-x86_64
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify doge branding
+        run: npm run check:branding
+
+      - name: Build unsigned macOS DMG
+        env:
+          NODE_OPTIONS: "--max-old-space-size=8192"
+        run: |
+          set -euo pipefail
+          npm run "${{ matrix.build_script }}" -- --skip-sign --skip-notarize
+
+      - name: Verify and stage DMG
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          ARCH="${{ matrix.arch }}"
+          DMGS=(release-local/doge_*_${ARCH}.dmg)
+          if [ "${#DMGS[@]}" -ne 1 ]; then
+            echo "Expected exactly one doge ${ARCH} DMG, found ${#DMGS[@]}" >&2
+            exit 1
+          fi
+
+          DMG="${DMGS[0]}"
+          hdiutil verify "$DMG"
+          mkdir -p release-artifacts
+          TARGET="release-artifacts/$(basename "$DMG")"
+          cp "$DMG" "$TARGET"
+          shasum -a 256 "$TARGET" > "$TARGET.sha256"
+
+      - name: Upload macOS installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: doge-macos-${{ matrix.arch }}-unsigned
+          path: |
+            release-artifacts/doge_*_${{ matrix.arch }}.dmg
+            release-artifacts/doge_*_${{ matrix.arch }}.dmg.sha256
           if-no-files-found: error
           retention-days: 14
 

@@ -22,6 +22,7 @@ test("release stays fail-closed until the independent doge updater trust chain e
 
   assert.match(preflight, /environment: release/);
   assert.match(preflight, /inputs\.windows_artifact_only != true/);
+  assert.match(preflight, /inputs\.macos_artifact_only != true/);
   assert.match(preflight, /TAURI_SIGNING_PRIVATE_KEY_B64/);
   assert.match(preflight, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
   assert.match(preflight, /createUpdaterArtifacts/);
@@ -68,6 +69,31 @@ test("Windows artifact-only dispatch cannot publish or access release secrets", 
   assert.doesNotMatch(
     artifactJob,
     /secrets\.|TAURI_SIGNING|\.sig|latest\.json|gh release/,
+  );
+});
+
+test("macOS artifact-only dispatch produces checksummed unsigned DMGs without release authority", () => {
+  const workflow = read(".github/workflows/release.yml");
+  const artifactJob = workflowJob(workflow, "build_macos_artifact");
+
+  assert.match(workflow, /macos_artifact_only:/);
+  assert.match(artifactJob, /inputs\.macos_artifact_only == true/);
+  assert.match(artifactJob, /platform: macos-latest/);
+  assert.match(artifactJob, /platform: macos-15-intel/);
+  assert.match(artifactJob, /arch: aarch64/);
+  assert.match(artifactJob, /arch: x86_64/);
+  assert.match(artifactJob, /permissions:\n\s+contents: read/);
+  assert.match(artifactJob, /build:mac-arm64/);
+  assert.match(artifactJob, /build:mac-x64/);
+  assert.match(artifactJob, /--skip-sign --skip-notarize/);
+  assert.match(artifactJob, /hdiutil verify/);
+  assert.match(artifactJob, /shasum -a 256/);
+  assert.match(artifactJob, /name: doge-macos-\$\{\{ matrix\.arch \}\}-unsigned/);
+  assert.match(artifactJob, /if-no-files-found: error/);
+  assert.doesNotMatch(artifactJob, /environment: release/);
+  assert.doesNotMatch(
+    artifactJob,
+    /secrets\.|TAURI_SIGNING|\.sig|latest\.json|gh release|notarytool|codesign/,
   );
 });
 
