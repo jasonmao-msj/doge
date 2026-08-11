@@ -62,6 +62,15 @@ The release workflow MUST build doge-named artifacts for configured macOS, Windo
 - **AND** it MUST NOT create a GitHub Release, updater signature or `latest.json`
 - **AND** the resulting installer MUST remain explicitly classified as internal/unsigned rather than release-ready
 
+#### Scenario: Maintainer requests internal macOS test disk images
+
+- **WHEN** an authorized maintainer manually dispatches `macos_artifact_only=true`
+- **THEN** macOS Apple Silicon and Intel runners MAY build doge-named unsigned DMG installers plus SHA-256 files as short-lived Actions artifacts
+- **AND** both jobs MUST use read-only repository permission and MUST NOT access release secrets or the release environment
+- **AND** each DMG MUST pass `hdiutil verify` before upload
+- **AND** the jobs MUST NOT sign, notarize, create a GitHub Release, updater signature or `latest.json`
+- **AND** the resulting DMGs MUST remain explicitly classified as internal/unsigned rather than release-ready
+
 ### Requirement: Core doge operation MUST not require an application server
 
 Application startup, local workspace use and update discovery MUST not depend on a doge-owned application server. GitHub Releases MAY serve static installers and update metadata; configured third-party AI providers retain their own service boundaries.
