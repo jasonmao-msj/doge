@@ -182,3 +182,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: macOS 内部安装包工作流
+
+**Date**: 2026-08-10
+**Task**: macOS 内部安装包工作流
+**Branch**: `ci/macos-artifact-only`
+
+### Summary
+
+新增 Apple Silicon 与 Intel 无签名 DMG artifact-only workflow；保持正式发布 fail-closed，并补齐 release contract、Trellis 规范与 OpenSpec delta。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8b1a5bc13` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
