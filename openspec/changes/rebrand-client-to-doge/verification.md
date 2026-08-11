@@ -122,6 +122,16 @@ Static contracts verify that:
 
 The updater is deliberately **not enabled** by this evidence. It proves the disabled state fails closed.
 
+### Windows x64 internal installer artifact
+
+- GitHub Actions run [`31449894326`](https://github.com/jasonmao-msj/doge/actions/runs/31449894326) executed commit `1b15c72060b4dc972823164d033000b65f801764` from `chore/rebrand-client-to-doge` with `windows_artifact_only=true`.
+- Only `doge windows artifact-only (x64)` ran; updater preflight, signed release matrix, metadata generation and GitHub Release publishing were skipped. The Windows job completed successfully in 37m52s.
+- Actions artifact `doge-windows-x64-unsigned` (artifact id `9086537783`) contains the NSIS installer and SHA-256 file and expires on 2026-08-25.
+- Local download: `release-local/windows/doge_0.1.0_x64-setup.exe`, 27,981,697 bytes.
+- SHA-256: `859b683d2aabf8ed4813750901e1d385d25d840b7413dd0ec37ad8f278691bce`; checksum verification passed after normalizing the checksum file's Windows CRLF line ending for macOS `shasum`.
+- `file` identifies the result as a Windows GUI PE / Nullsoft self-extracting installer. It was built on `windows-latest` using the doge Windows Tauri config and NSIS target.
+- This artifact is explicitly unsigned and intended for internal installation smoke only. No Windows launch test, Authenticode signature or updater signature has been claimed, so task 9.7 remains open.
+
 ## Known repository-wide validation blockers
 
 - `openspec validate --all --strict --no-interactive` currently reports 533 passing changes and 4 failures outside this change: `add-sub2api-relay-quota`, `fix-ui-scale-native-zoom-freeze-all-platforms`, `fix-windows-cold-start-freeze-residual`, and `retire-canvas-subagent-squad-grid`.
@@ -134,7 +144,7 @@ The following claims must not be treated as complete until their tasks have dire
 
 - Developer ID signed/notarized macOS ARM64 production bundle and final code-signature inspection;
 - replacement README product screenshots captured from a running doge build;
-- Windows and Linux GitHub Actions artifacts and launch smoke;
+- Windows launch smoke plus signed installer verification, and Linux GitHub Actions artifact/launch smoke;
 - doge updater key generation, GitHub secret configuration, signed draft release, `latest.json`, and two-version update smoke;
 - invalid-signature updater rejection in the final enabled configuration.
 
