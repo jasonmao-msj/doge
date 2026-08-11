@@ -14,6 +14,7 @@
 - Updater state：`bundle.createUpdaterArtifacts=false` and no updater plugin until doge key exists。
 - Release preflight inputs：`TAURI_SIGNING_PRIVATE_KEY_B64`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` plus enabled updater config/public key/canonical endpoint。
 - Internal artifact inputs：`workflow_dispatch.inputs.windows_artifact_only: boolean` 与 `workflow_dispatch.inputs.macos_artifact_only: boolean`；true 时只允许对应平台的 unsigned installer artifact build。
+- Default manual packaging：上述两个 input MUST both default to `true`，因此未改参数的 `workflow_dispatch` MUST 在同一个 workflow run 内并行产出 macOS 与 Windows internal artifacts。Agent MUST prefer this combined default；只有用户明确要求单平台，或某个平台失败后做 targeted retry，才 MAY 把另一平台 input 设为 `false`。正式 signed release MUST 显式把两个 input 都设为 `false`，并继续通过 release preflight。
 - External provider contract：user-supplied custom base URL remains supported；no upstream managed relay default。
 
 ### 3. Contracts
@@ -37,6 +38,9 @@
 | updater disabled/no key | release preflight fail before builds | publish unsigned metadata |
 | `windows_artifact_only=true` | Windows runner builds unsigned NSIS and uploads EXE/checksum artifact | access secrets、publish Release/update feed、silently treat as signed release |
 | `macos_artifact_only=true` | macOS ARM64 / Intel runners build unsigned DMGs and upload DMG/checksum artifacts | access secrets、sign/notarize、publish Release/update feed、silently treat as signed release |
+| manual dispatch accepts defaults | one run builds macOS ARM64 / Intel DMGs and Windows x64 NSIS in parallel | split routine packaging into separate runs、enter signed release lane |
+| explicit single-platform retry | only the requested/retried artifact job runs | silently treat platform-only output as the default complete set |
+| both artifact inputs explicitly `false` | enter signed release preflight | bypass trust-chain validation or publish unsigned metadata |
 | some platform signature missing | metadata job fail | omit platform and publish partial feed |
 | custom provider URL | accept through generic path | replace with removed relay |
 | removed analytics token returns in shipping source | exact negative test fail | allowlist runtime service |
@@ -46,13 +50,16 @@
 - Good：developers fetch upstream into a sync branch, perform semantic merge, then pass doge isolation gates。
 - Good：developer manually dispatches `windows_artifact_only=true` to obtain an explicitly unsigned internal Windows installer without weakening the signed release lane。
 - Good：developer manually dispatches `macos_artifact_only=true` to obtain checksummed Apple Silicon and Intel test DMGs without weakening the signed release lane。
+- Good：routine internal packaging keeps both default inputs enabled and obtains Mac + Windows artifacts from one traceable workflow run。
+- Base：single-platform mode is an explicit operator choice for targeted retry or a user-requested platform-only package。
 - Base：normal client distribution uses GitHub Releases and needs no custom cloud server。
+- Bad：agent routinely starts separate Mac and Windows runs even though the combined default is available。
 - Bad：reuse upstream updater public key、Apple identity、analytics endpoint or managed relay。
 
 ### 6. Tests Required
 
 - `npx vitest run src/features/brand/contracts/upstreamServiceIsolation.test.ts src/features/brand/contracts/externalServiceContracts.test.ts src/features/brand/contracts/productLinks.test.tsx`
-- `node --test scripts/upstream-sync-audit.test.mjs scripts/release-workflow.contract.test.mjs`；release contract MUST assert artifact-only job has read-only permissions and no secret/signature/publish surface。
+- `node --test scripts/upstream-sync-audit.test.mjs scripts/release-workflow.contract.test.mjs`；release contract MUST assert both artifact inputs default to `true`、combined dispatch reaches both platform jobs、artifact-only jobs have read-only permissions and no secret/signature/publish surface。
 - `npm run check:upstream-sync && npm run check:branding && npm run check:docs`
 - Release/draft smoke remains manual until doge-owned signing material exists。
 

@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       windows_artifact_only:
-        description: Build an unsigned Windows installer artifact without publishing a release
+        description: Build unsigned Windows installer (enabled by default with macOS)
         required: true
-        default: false
+        default: true
         type: boolean
       macos_artifact_only:
-        description: Build unsigned macOS DMG artifacts without publishing a release
+        description: Build unsigned macOS DMGs (enabled by default with Windows)
         required: true
-        default: false
+        default: true
         type: boolean
 
 permissions:
