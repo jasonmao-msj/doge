@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 6
+- **Total Sessions**: 7
 - **Last Active**: 2026-08-10
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~217 | Active |
+| `journal-1.md` | ~250 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,7 +29,8 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
-| 6 | 2026-08-10 | macOS 内部安装包工作流 | `8b1a5bc13` | `ci/macos-artifact-only` |
+| 7 | 2026-08-10 | macOS 内部安装包工作流 | `8b1a5bc13` | `ci/macos-artifact-only` |
+| 6 | 2026-08-10 | 实现每日诗词轮换提示 | `c8eb452db` | `feat/daily-poetry-composer-banner` |
 | 5 | 2026-08-10 | 产出并校验 Windows NSIS 安装包 | `15a51b01a` | `chore/rebrand-client-to-doge` |
 | 4 | 2026-08-10 | 增加 Windows artifact-only 构建通道 | `21b3f251c` | `chore/rebrand-client-to-doge` |
 | 3 | 2026-08-10 | Computer Use 完成 doge 实机品牌验收 | `de0aa7f47` | `chore/rebrand-client-to-doge` |

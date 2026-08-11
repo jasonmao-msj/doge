@@ -92,7 +92,6 @@ const chat = {
     noMatchingCommands: "无匹配命令",
     noMatchingHistory: "无匹配历史",
     noAvailableAgents: "无可用智能体",
-    openSourceBanner: "本项目保证100%开源（谨防盗版项目）",
     sdkNotInstalled: "{{provider}} SDK 尚未安装，请先安装 SDK 才能开始对话",
     sdkStatusLoading: "正在检查 SDK 状态...",
     goInstallSdk: "前往安装",

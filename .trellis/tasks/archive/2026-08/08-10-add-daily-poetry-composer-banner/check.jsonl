@@ -1,0 +1,11 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Feature-local helper and colocated test placement"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Composer rendering, i18n, accessibility, and component contracts"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Daily dismissal persistence through sanitized clientStorage state"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Focused test and frontend quality gates"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Strict TypeScript helper and props contract"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Feature-local pure helper reuse assessment"}
+{"file": "openspec/changes/add-daily-poetry-composer-banner/specs/composer-daily-poetry-banner/spec.md", "reason": "Normative daily rotation and dismissal behavior"}
+{"file": "src/features/composer/components/ChatInputBox/ChatInputBox.tsx", "reason": "Existing banner state and integration surface"}
+{"file": "src/features/composer/components/ChatInputBox/ChatInputBoxHeader.tsx", "reason": "Existing banner DOM and interaction contract"}

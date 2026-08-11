@@ -92,7 +92,6 @@ const chat = {
     "noMatchingCommands": "一致するコマンドがありません",
     "noMatchingHistory": "一致する履歴がありません",
     "noAvailableAgents": "利用可能なエージェントがありません",
-    "openSourceBanner": "このプロジェクトは 100% オープンソースであることが保証されています（海賊版プロジェクトにご注意ください）",
     "sdkNotInstalled": "{{provider}} SDK がインストールされていません。チャットを開始するには SDK をインストールしてください。",
     "sdkStatusLoading": "SDK のステータスを確認中...",
     "goInstallSdk": "インストールへ",

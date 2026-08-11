@@ -92,7 +92,6 @@ const chat = {
     "noMatchingCommands": "Нет подходящих команд",
     "noMatchingHistory": "Нет подходящей истории",
     "noAvailableAgents": "Нет доступных агентов",
-    "openSourceBanner": "Этот проект гарантированно на 100% с открытым исходным кодом (остерегайтесь пиратских проектов)",
     "sdkNotInstalled": "SDK {{provider}} не установлен. Пожалуйста, установите SDK, чтобы начать общение.",
     "sdkStatusLoading": "Проверка статуса SDK...",
     "goInstallSdk": "Перейти к установке",

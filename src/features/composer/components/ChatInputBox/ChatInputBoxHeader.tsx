@@ -3,6 +3,24 @@ import type { Attachment, QueuedMessage } from './types.js';
 import { AttachmentList } from './AttachmentList.js';
 import { MessageQueue } from './MessageQueue.js';
 
+type ChatInputBoxHeaderProps = {
+  sdkInstalled: boolean;
+  sdkStatusLoading: boolean;
+  currentProvider: string;
+  onInstallSdk?: () => void;
+  t: TFunction;
+  attachments: Attachment[];
+  onRemoveAttachment: (id: string) => void;
+  messageQueue?: QueuedMessage[];
+  onRemoveFromQueue?: (id: string) => void;
+  onFuseFromQueue?: (id: string) => void;
+  canFuseFromQueue?: boolean;
+  fuseDisabledReasonKey?: string | null;
+  fusingQueueMessageId?: string | null;
+  dailyPoetryText?: string | null;
+  onDismissDailyPoetry?: () => void;
+};
+
 export function ChatInputBoxHeader({
   sdkStatusLoading,
   sdkInstalled,
@@ -17,28 +35,13 @@ export function ChatInputBoxHeader({
   canFuseFromQueue = false,
   fuseDisabledReasonKey = null,
   fusingQueueMessageId = null,
-  showOpenSourceBanner,
-  onDismissOpenSourceBanner,
-}: {
-  sdkInstalled: boolean;
-  sdkStatusLoading: boolean;
-  currentProvider: string;
-  onInstallSdk?: () => void;
-  t: TFunction;
-  attachments: Attachment[];
-  onRemoveAttachment: (id: string) => void;
-  messageQueue?: QueuedMessage[];
-  onRemoveFromQueue?: (id: string) => void;
-  onFuseFromQueue?: (id: string) => void;
-  canFuseFromQueue?: boolean;
-  fuseDisabledReasonKey?: string | null;
-  fusingQueueMessageId?: string | null;
-  showOpenSourceBanner?: boolean;
-  onDismissOpenSourceBanner?: () => void;
-}) {
+  dailyPoetryText,
+  onDismissDailyPoetry,
+}: ChatInputBoxHeaderProps) {
+  const hasDailyPoetry = typeof dailyPoetryText === 'string' && dailyPoetryText.length > 0;
   // Check if there's any content to render
   const hasContent =
-    showOpenSourceBanner ||
+    hasDailyPoetry ||
     sdkStatusLoading ||
     !sdkInstalled ||
     (messageQueue && messageQueue.length > 0) ||
@@ -50,16 +53,17 @@ export function ChatInputBoxHeader({
 
   return (
     <>
-      {/* Open source banner */}
-      {showOpenSourceBanner && (
-        <div className="open-source-banner">
-          <span className="banner-text">{t('chat.openSourceBanner')}</span>
+      {/* Daily classical Chinese poetry banner */}
+      {hasDailyPoetry && (
+        <div className="daily-poetry-banner">
+          <span className="banner-text">{dailyPoetryText}</span>
           <button
             className="banner-close"
-            aria-label="Close"
+            aria-label={t('common.close')}
+            title={t('common.close')}
             onClick={(e) => {
               e.stopPropagation();
-              onDismissOpenSourceBanner?.();
+              onDismissDailyPoetry?.();
             }}
           >
             &#x2715;

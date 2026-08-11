@@ -578,3 +578,83 @@ return {
   <span className={`codicon ${currentMode.icon} selector-button-mode-icon`} />
 </button>
 ```
+
+## Scenario: Composer Daily Poetry Banner
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `ChatInputBox` / `ChatInputBoxHeader` 顶部诗词 banner、`dailyPoetry.ts`、`dailyPoetryBannerStorage.ts`、banner dismissal persistence 或相关 CSS selector。
+- 目标：每天展示稳定且有出处的经典中国诗词，30 天完整循环且循环内不重复，同时不向 Composer hot render path 增加 timer / polling / listener。
+
+### 2. Signatures
+
+- 内容池：`DAILY_POETRY_EXCERPTS: readonly DailyPoetryExcerpt[]`
+- 日期 identity：`getLocalDateKey(date: Date): string`
+- 每日选择：`getDailyPoetry(date: Date): DailyPoetryExcerpt`
+- pure snapshot：`createDailyPoetryBannerSnapshot(date, dismissedDateValue)`
+- persistence adapter：
+  - `readDailyPoetryBannerSnapshot(date?: Date): DailyPoetryBannerSnapshot`
+  - `dismissDailyPoetryBannerForDate(date?: Date): void`
+- client store：`app / composer.dailyPoetryBannerDismissedDate`
+
+### 3. Contracts
+
+- 诗词池 MUST 正好包含 30 条 unique excerpt；每条 MUST 有 `text`、`author`、`title`，display text MUST 保留作者与篇名。
+- 每日选择 MUST 使用本地 calendar date，不能直接用 UTC day，也不能用 `Math.random()` 让同一天重复打开出现不同内容。
+- 选择顺序 MUST 来自 fixed seeded permutation + local day ordinal cursor；任意连续 30 个日期 MUST 无重复，第 31 天进入新一轮，rotation boundary 相邻两天也不得相同。
+- dismissal MUST 写 `clientStorage` 的当天 `YYYY-MM-DD`；missing、non-string、malformed 或非当天值 MUST fail open 并展示 banner。
+- 旧 `localStorage.openSourceBannerDismissed` 表达已废弃的永久关闭语义，MUST NOT 再作为新 banner 的 source of truth。
+- 点击关闭时 MUST 以 click-time `new Date()` 记录日期，不能复用 mount-time date；否则跨午夜未关闭应用会把 dismissal 写到昨天。
+- banner 文本是不可翻译的 curated 中文经典原文；交互 copy（如 close accessible name）MUST 走 `common.close` i18n。
+- 每日 snapshot 只在 component mount 初始化；MUST NOT 为装饰内容新增午夜 timer、streaming subscription 或 polling。
+
+### 4. Validation & Error Matrix
+
+| 场景 | 必须行为 | 禁止行为 |
+|---|---|---|
+| 同一本地日期不同时间 | 同一 excerpt | 每次 mount 纯随机 |
+| 任意连续 30 天 | 30 条各出现一次 | cycle 重洗导致短期重复 |
+| persisted value = today | 初始隐藏 | 永久关闭所有未来日期 |
+| persisted value malformed / yesterday | 展示当天内容 | malformed value 驱动 layout |
+| 跨午夜后点击 close | 写点击当天 date key | 写 mount 时的旧 date key |
+| conversation streaming | banner state 不随 event 更新 | listener / timer 打 Composer render |
+
+### 5. Good / Base / Bad Cases
+
+- Good：`ChatInputBox` 用 `useState(readDailyPoetryBannerSnapshot)` 只创建一次 mount snapshot，close handler 调 `dismissDailyPoetryBannerForDate()` 后做 guarded local state update。
+- Good：`ChatInputBoxHeader` 接收已经格式化的 `dailyPoetryText`，只负责 render 与 close callback，并用 `t("common.close")` 提供 accessible name。
+- Base：用户修改系统日期后，下一次 mount 按新的本地日期展示；不维护跨日期历史 ledger。
+- Bad：`DAILY_POETRY_EXCERPTS[Math.floor(Math.random() * length)]`，可能同日变化或连续重复。
+- Bad：继续写 `localStorage.setItem("openSourceBannerDismissed", "true")`，导致新功能对存量用户永久不可见。
+- Bad：用 `setInterval` 等待午夜刷新诗词，把装饰内容接入 Composer hot state path。
+
+### 6. Tests Required
+
+- `dailyPoetry.test.ts` MUST 覆盖 pool size / unique text / attribution、same-local-day、任意 full-pool interval、rotation boundary、invalid `Date` 与 dismissal sanitize。
+- `dailyPoetryBannerStorage.test.ts` MUST 覆盖 exact store/key read、malformed fail-open 与 click-time local date write。
+- `ChatInputBoxHeader.test.tsx` MUST 覆盖 attributed text、localized close accessible name/callback，以及与 SDK warning 至少一个既有 header surface 共存。
+- 修改后 MUST 运行 focused Vitest、`npm run typecheck`、target ESLint；删除旧 i18n key 时追加 `rg openSourceBanner src` negative scan。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+const quote = POEMS[Math.floor(Math.random() * POEMS.length)];
+localStorage.setItem("openSourceBannerDismissed", "true");
+```
+
+#### Correct
+
+```typescript
+const [dailyPoetryBanner, setDailyPoetryBanner] = useState(
+  readDailyPoetryBannerSnapshot,
+);
+
+const dismiss = () => {
+  dismissDailyPoetryBannerForDate();
+  setDailyPoetryBanner((current) =>
+    current.isVisible ? { ...current, isVisible: false } : current,
+  );
+};
+```
