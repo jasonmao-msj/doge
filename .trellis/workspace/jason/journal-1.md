@@ -281,3 +281,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: 默认合并构建桌面安装包
+
+**Date**: 2026-08-10
+**Task**: 默认合并构建桌面安装包
+**Branch**: `ci/default-combined-installers`
+
+### Summary
+
+将手动 Release workflow 默认设置为同一 run 并行构建 macOS 与 Windows internal artifacts；单平台仅用于明确请求或 targeted retry，并用 Trellis/OpenSpec 与 contract 固化规则。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2b78bee46` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
