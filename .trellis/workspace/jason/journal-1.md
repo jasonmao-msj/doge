@@ -116,3 +116,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 增加 Windows artifact-only 构建通道
+
+**Date**: 2026-08-10
+**Task**: 增加 Windows artifact-only 构建通道
+**Branch**: `chore/rebrand-client-to-doge`
+
+### Summary
+
+为现有 Release workflow 增加 windows_artifact_only 手动模式：Windows runner 生成 unsigned doge NSIS 与 SHA-256，只读权限且不访问 release secrets、不发布 Release/latest.json；补 workflow contract 与 OpenSpec/Trellis release isolation 规范。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `21b3f251c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
