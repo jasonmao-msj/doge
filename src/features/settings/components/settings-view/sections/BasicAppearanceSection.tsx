@@ -1,12 +1,9 @@
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Activity from "lucide-react/dist/esm/icons/activity";
 import AppWindow from "lucide-react/dist/esm/icons/app-window";
 import Bot from "lucide-react/dist/esm/icons/bot";
 import BookOpen from "lucide-react/dist/esm/icons/book-open";
-import ChevronLeft from "lucide-react/dist/esm/icons/chevron-left";
-import ChevronRight from "lucide-react/dist/esm/icons/chevron-right";
 import Construction from "lucide-react/dist/esm/icons/construction";
 import Eye from "lucide-react/dist/esm/icons/eye";
 import FileEdit from "lucide-react/dist/esm/icons/file-edit";
@@ -59,11 +56,6 @@ import {
   listUiScaleSelectOptions,
   UI_SCALE_DEFAULT,
 } from "../../../../../utils/uiScale";
-import {
-  DOCK_ICON_OPTIONS,
-  sanitizeDockIconId,
-  type DockIconId,
-} from "../../../../theme/utils/dockIcon";
 import { LanguageSelector } from "../../LanguageSelector";
 import { SyntaxAndDiffPreview } from "./SyntaxAndDiffPreview";
 
@@ -166,127 +158,6 @@ function ClientUiVisibilityIcon({
   );
 }
 
-const DOCK_ICON_SCROLL_STEP_PX = 160;
-
-type DockIconPickerProps = {
-  selectedDockIconId: DockIconId;
-  onSelect: (iconId: DockIconId) => void;
-  groupLabel: string;
-  prevLabel: string;
-  nextLabel: string;
-};
-
-/** Single-row icon rail: no visible scrollbar, chevrons for overflow. */
-function DockIconPicker({
-  selectedDockIconId,
-  onSelect,
-  groupLabel,
-  prevLabel,
-  nextLabel,
-}: DockIconPickerProps) {
-  const { t } = useTranslation();
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
-
-  const syncScrollEdges = useCallback(() => {
-    const node = scrollerRef.current;
-    if (!node) {
-      setCanScrollPrev(false);
-      setCanScrollNext(false);
-      return;
-    }
-    const maxScroll = Math.max(0, node.scrollWidth - node.clientWidth);
-    const left = node.scrollLeft;
-    // 1px tolerance for sub-pixel scroll widths
-    setCanScrollPrev(left > 1);
-    setCanScrollNext(left < maxScroll - 1);
-  }, []);
-
-  useEffect(() => {
-    const node = scrollerRef.current;
-    if (!node) {
-      return;
-    }
-    syncScrollEdges();
-    // Images load async; re-measure once layout settles so chevrons enable correctly.
-    const rafId = window.requestAnimationFrame(() => syncScrollEdges());
-    const onScroll = () => syncScrollEdges();
-    node.addEventListener("scroll", onScroll, { passive: true });
-    const resizeObserver =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => syncScrollEdges())
-        : null;
-    resizeObserver?.observe(node);
-    window.addEventListener("resize", syncScrollEdges);
-    return () => {
-      window.cancelAnimationFrame(rafId);
-      node.removeEventListener("scroll", onScroll);
-      resizeObserver?.disconnect();
-      window.removeEventListener("resize", syncScrollEdges);
-    };
-  }, [syncScrollEdges]);
-
-  const scrollByStep = (direction: -1 | 1) => {
-    const node = scrollerRef.current;
-    if (!node) {
-      return;
-    }
-    node.scrollBy({
-      left: direction * DOCK_ICON_SCROLL_STEP_PX,
-      behavior: "smooth",
-    });
-  };
-
-  return (
-    <div className="settings-dock-icon-picker-wrap">
-      <button
-        type="button"
-        className="settings-dock-icon-nav"
-        aria-label={prevLabel}
-        disabled={!canScrollPrev}
-        onClick={() => scrollByStep(-1)}
-      >
-        <ChevronLeft size={16} strokeWidth={2.25} aria-hidden />
-      </button>
-      <div
-        ref={scrollerRef}
-        className="settings-dock-icon-picker"
-        role="radiogroup"
-        aria-label={groupLabel}
-      >
-        {DOCK_ICON_OPTIONS.map((option) => {
-          const isActive = option.id === selectedDockIconId;
-          const optionLabel = t(option.labelKey);
-          return (
-            <button
-              key={option.id}
-              type="button"
-              role="radio"
-              aria-checked={isActive}
-              aria-label={optionLabel}
-              title={optionLabel}
-              className={`settings-dock-icon-option${isActive ? " is-active" : ""}`}
-              onClick={() => onSelect(option.id)}
-            >
-              <img src={option.src} alt="" draggable={false} />
-            </button>
-          );
-        })}
-      </div>
-      <button
-        type="button"
-        className="settings-dock-icon-nav"
-        aria-label={nextLabel}
-        disabled={!canScrollNext}
-        onClick={() => scrollByStep(1)}
-      >
-        <ChevronRight size={16} strokeWidth={2.25} aria-hidden />
-      </button>
-    </div>
-  );
-}
-
 export function BasicAppearanceSection({
   appSettings,
   onUpdateAppSettings,
@@ -329,7 +200,6 @@ export function BasicAppearanceSection({
   const { t } = useTranslation();
   const clientUiVisibility = useClientUiVisibility();
   const selectedOpenAppIconSrc = resolveSelectedOpenAppIconSrc(appSettings);
-  const selectedDockIconId = sanitizeDockIconId(appSettings.dockIconId);
   const resolvedAppearanceLabel = t(
     resolvedAppearanceTheme === "light" ? "settings.themeLight" : "settings.themeDark",
   );
@@ -339,16 +209,6 @@ export function BasicAppearanceSection({
       : appSettings.theme === "system"
         ? t("settings.themeModeHintSystem", { appearance: resolvedAppearanceLabel })
         : t("settings.themeModeHintFixed", { appearance: resolvedAppearanceLabel });
-
-  const handleDockIconSelect = (iconId: DockIconId) => {
-    if (iconId === selectedDockIconId) {
-      return;
-    }
-    void onUpdateAppSettings({
-      ...appSettings,
-      dockIconId: iconId,
-    });
-  };
 
   return (
     <div className="settings-basic-appearance settings-basic-surface">
@@ -465,24 +325,6 @@ export function BasicAppearanceSection({
             </div>
           </div>
         ) : null}
-
-        <div className="settings-pref-row settings-pref-row--dock-icon">
-          <div className="settings-pref-meta">
-            <div className="settings-pref-title">{t("settings.dockIcon")}</div>
-            <div className="settings-pref-desc">{t("settings.dockIconDesc")}</div>
-          </div>
-          <DockIconPicker
-            selectedDockIconId={selectedDockIconId}
-            onSelect={handleDockIconSelect}
-            groupLabel={t("settings.dockIcon")}
-            prevLabel={t("settings.dockIconScrollPrev", {
-              defaultValue: "Previous icons",
-            })}
-            nextLabel={t("settings.dockIconScrollNext", {
-              defaultValue: "Next icons",
-            })}
-          />
-        </div>
 
         <SyntaxAndDiffPreview appearance={resolvedAppearanceTheme} />
 

@@ -177,7 +177,7 @@ describe("useAppSettings", () => {
     );
   });
 
-  it("replays a persisted custom Dock icon but skips the bundled default", async () => {
+  it("normalizes a persisted legacy Dock icon without replaying it", async () => {
     getAppSettingsMock.mockResolvedValue({
       dockIconId: "multi-orbit-hub",
     } as AppSettings);
@@ -185,11 +185,8 @@ describe("useAppSettings", () => {
     const { result } = renderHook(() => useAppSettings());
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    await waitFor(() =>
-      expect(applyDockIconPreferenceMock).toHaveBeenCalledWith(
-        "multi-orbit-hub",
-      ),
-    );
+    expect(result.current.settings.dockIconId).toBe("default");
+    expect(applyDockIconPreferenceMock).not.toHaveBeenCalled();
   });
 
   it("normalizes persisted disabled CLI engines", async () => {

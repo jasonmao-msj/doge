@@ -14,6 +14,7 @@
 - Surface inventory：`config/brand-surfaces.json`。
 - Static gate：`scanRepository(root, includePaths, allowlist)` 与 `verifyCanonicalIdentity(root)`。
 - App links：About/Settings/Error/update surfaces MUST consume canonical doge URLs。
+- App icon boundary：`sanitizeDockIconId(input): DockIconId`、`resolveDockIconSrc(input): string`、`applyDockIconPreference(input): Promise<void>`。
 
 ### 3. Contracts
 
@@ -25,6 +26,7 @@
 - `scripts/check-branding.mjs` MUST scan renderer、Rust、Info.plist/InfoPlist.strings、release workflow、shipping scripts/configs 与 current README。
 - Allowlist entry MUST contain exact path/line/token category、reason、removal condition；catch-all allowlist forbidden。
 - Platform icons MUST derive from `brand.visual.appIconSource`；README icon、DMG、ICNS/ICO、Windows/iOS/Android matrix MUST remain present and dimension-checked。
+- Settings MUST NOT expose an alternate app/Dock icon selector；doge ships one canonical visual identity。Persisted legacy `dockIconId` values MAY remain accepted as compatibility input, but MUST normalize to `default` and MUST NOT select or bundle a legacy runtime icon。
 
 ### 4. Validation & Error Matrix
 
@@ -36,12 +38,16 @@
 | locale 缺 brand key/placeholder | locale inventory test fail | fallback 到旧 copy |
 | compatibility reader 含旧 token | narrow allowlist + legacy fixture | 当作新写入继续扩散 |
 | icon matrix 缺文件/尺寸错误 | icon contract fail | 发布时临时复用旧图标 |
+| Appearance settings 渲染备用应用图标选择器 | SettingsView regression fail | 允许用户恢复上游视觉身份 |
 
 ### 5. Good / Base / Bad Cases
 
 - Good：About title 用 `DOGE_NAME`，链接用 `DOGE_REPOSITORY_URL`，tagline/story 走当前 locale。
+- Good：`resolveDockIconSrc("multi-orbit-hub")` 与 `resolveDockIconSrc("default")` 返回同一 canonical doge asset；native refresh 只发送 `iconId: "default"`。
 - Base：历史 localStorage key 仍可读，但 migration 后只写 `doge.*`。
+- Base：旧版本写入的 `dockIconId` 仍可由启动兼容层读取，但 Appearance 不渲染选择器。
 - Bad：在组件、Info.plist、release workflow 中重新硬编码旧品牌或上游 repository。
+- Bad：按 persisted `dockIconId` 重新 import、render 或 apply `src/assets/dock-icons/**` 中的历史图标。
 - Bad：保留上游作者公众号、微信群二维码或类似 support asset，因为普通字符串品牌扫描无法识别其 ownership。
 
 ### 6. Tests Required
@@ -50,6 +56,8 @@
 - `CommunitySection.test.tsx` MUST assert localized doge story、canonical repository/issues clicks、no QR image and no upstream support copy；`userVisibleBrandInventory.test.ts` MUST scan all 10 locales for prohibited upstream support terms。
 - `node --test scripts/lib/brandingChecker.test.mjs scripts/icon-assets.contract.test.mjs`
 - `npm run check:branding && npm run typecheck && npm run lint`
+- `npx vitest run src/features/settings/components/SettingsView.test.tsx`
+- `npx vitest run src/features/theme/utils/dockIcon.test.ts src/features/settings/hooks/useAppSettings.test.ts`
 - Icon assertion points：master/source RGBA、1024/512/32/128、ICNS/ICO、Square/iOS/Android、DMG 1x/2x、README reference。
 
 ### 7. Wrong vs Correct
@@ -66,4 +74,19 @@
 import { DOGE_REPOSITORY_URL } from "../../../config/brand";
 
 <button onClick={() => openUrl(DOGE_REPOSITORY_URL)}>{t("about.github")}</button>
+```
+
+#### Wrong: persisted preference restores a legacy visual identity
+
+```ts
+const src = legacyIconById[sanitizeDockIconId(settings.dockIconId)];
+await setDockIcon({ iconId: settings.dockIconId, pngBytes: await load(src) });
+```
+
+#### Correct: compatibility input collapses to the canonical doge icon
+
+```ts
+const iconId = sanitizeDockIconId(settings.dockIconId); // always "default"
+const src = resolveDockIconSrc(iconId); // canonical doge appIconSource
+await setDockIcon({ iconId, pngBytes: await load(src) });
 ```

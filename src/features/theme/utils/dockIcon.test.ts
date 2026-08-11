@@ -1,8 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import {
   DEFAULT_DOCK_ICON_ID,
-  DOCK_ICON_OPTIONS,
-  isDockIconId,
   resolveDockIconSrc,
   sanitizeDockIconId,
   applyDockIconPreference,
@@ -24,29 +22,20 @@ describe("dockIcon", () => {
     vi.mocked(setDockIcon).mockClear();
   });
 
-  it("keeps default as the first catalog option", () => {
-    expect(DOCK_ICON_OPTIONS[0]?.id).toBe(DEFAULT_DOCK_ICON_ID);
-    expect(DOCK_ICON_OPTIONS).toHaveLength(9);
-  });
-
-  it("sanitizes unknown ids to default", () => {
+  it("normalizes legacy and unknown settings to the doge default", () => {
     expect(sanitizeDockIconId(undefined)).toBe("default");
     expect(sanitizeDockIconId("not-real")).toBe("default");
-    expect(sanitizeDockIconId("multi-orbit-hub")).toBe("multi-orbit-hub");
-    expect(isDockIconId("triadic-router")).toBe(true);
-    expect(isDockIconId("")).toBe(false);
+    expect(sanitizeDockIconId("multi-orbit-hub")).toBe(DEFAULT_DOCK_ICON_ID);
   });
 
-  it("resolves a stable src for every catalog id", () => {
-    for (const option of DOCK_ICON_OPTIONS) {
-      const src = resolveDockIconSrc(option.id);
-      expect(typeof src).toBe("string");
-      expect(src.length).toBeGreaterThan(0);
-    }
-    expect(resolveDockIconSrc("bogus")).toBe(resolveDockIconSrc("default"));
+  it("resolves the canonical doge asset for current, legacy, and invalid ids", () => {
+    const canonicalSrc = resolveDockIconSrc(DEFAULT_DOCK_ICON_ID);
+    expect(canonicalSrc).toMatch(/app-icon-source\.png/);
+    expect(resolveDockIconSrc("multi-orbit-hub")).toBe(canonicalSrc);
+    expect(resolveDockIconSrc("bogus")).toBe(canonicalSrc);
   });
 
-  it("loads Uint8Array png bytes for every catalog id including default", async () => {
+  it("loads canonical png bytes and sends only the default doge identity", async () => {
     // Valid PNG magic + padding so assertPngBytes accepts the payload.
     const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2]);
     vi.stubGlobal(
@@ -66,9 +55,9 @@ describe("dockIcon", () => {
 
     vi.mocked(setDockIcon).mockClear();
     await applyDockIconPreference("multi-orbit-hub");
-    const customCall = vi.mocked(setDockIcon).mock.calls[0]?.[0];
-    expect(customCall?.iconId).toBe("multi-orbit-hub");
-    expect(customCall?.pngBytes).toBeInstanceOf(Uint8Array);
+    const legacyCall = vi.mocked(setDockIcon).mock.calls[0]?.[0];
+    expect(legacyCall?.iconId).toBe(DEFAULT_DOCK_ICON_ID);
+    expect(legacyCall?.pngBytes).toBeInstanceOf(Uint8Array);
 
     vi.unstubAllGlobals();
   });
@@ -118,7 +107,7 @@ describe("dockIcon", () => {
     await applyDockIconPreference("multi-orbit-hub");
     expect(setDockIcon).toHaveBeenCalledTimes(1);
     expect(vi.mocked(setDockIcon).mock.calls[0]?.[0]?.iconId).toBe(
-      "multi-orbit-hub",
+      DEFAULT_DOCK_ICON_ID,
     );
 
     // Complete the first fetch; its apply must be skipped.
