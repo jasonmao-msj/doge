@@ -9,6 +9,8 @@ use tauri::{DragDropEvent, Emitter, Manager, Webview, WebviewEvent};
 #[cfg(target_os = "macos")]
 use tauri::{RunEvent, WindowEvent};
 
+mod account;
+
 const MAIN_WINDOW_DRAG_DROP_FORWARD_EVENT: &str = "main-window://drag-drop";
 
 /// Stores paths that were passed to the app on launch (via drag-drop or CLI)

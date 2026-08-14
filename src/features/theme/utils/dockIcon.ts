@@ -1,4 +1,3 @@
-import defaultDockIcon from "../../../assets/dock-icons/default.png";
 import multiOrbitHubIcon from "../../../assets/dock-icons/orbit-routing/multi-orbit-hub.png";
 import openStarRingIcon from "../../../assets/dock-icons/orbit-routing/open-star-ring.png";
 import gravitationalCoreIcon from "../../../assets/dock-icons/orbit-routing/gravitational-core.png";
@@ -8,6 +7,7 @@ import fourPortRouterIcon from "../../../assets/dock-icons/orbit-routing/four-po
 import adaptiveRoutingFabricIcon from "../../../assets/dock-icons/orbit-routing/adaptive-routing-fabric.png";
 import triadicRouterIcon from "../../../assets/dock-icons/orbit-routing/triadic-router.png";
 import { setDockIcon } from "../../../services/tauri/settings";
+import { DOGE_PRODUCT_ICON_SRC } from "../../brand/runtime/productIcon";
 
 /** Dock / app logo preference id. `default` is the shipping product icon. */
 export type DockIconId =
@@ -33,7 +33,7 @@ export const DEFAULT_DOCK_ICON_ID: DockIconId = "default";
 export const DOCK_ICON_OPTIONS: readonly DockIconOption[] = [
   {
     id: "default",
-    src: defaultDockIcon,
+    src: DOGE_PRODUCT_ICON_SRC,
     labelKey: "settings.dockIconDefault",
   },
   {

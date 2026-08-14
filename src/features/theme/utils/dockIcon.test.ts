@@ -26,6 +26,7 @@ describe("dockIcon", () => {
 
   it("keeps default as the first catalog option", () => {
     expect(DOCK_ICON_OPTIONS[0]?.id).toBe(DEFAULT_DOCK_ICON_ID);
+    expect(DOCK_ICON_OPTIONS[0]?.src).toBe("/app-icon.png");
     expect(DOCK_ICON_OPTIONS).toHaveLength(9);
   });
 

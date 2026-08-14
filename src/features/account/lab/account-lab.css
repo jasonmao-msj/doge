@@ -1,0 +1,240 @@
+.account-lab {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 24px;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  color: var(--text-primary, #1d2530);
+  background: var(--surface-primary, #f5f7f9);
+}
+
+.account-lab-header,
+.account-lab-consumer,
+.account-lab-panel {
+  width: min(100%, 1040px);
+  margin-inline: auto;
+  box-sizing: border-box;
+  border: 1px solid var(--border-subtle, #d8dee6);
+  border-radius: 14px;
+  background: var(--surface-secondary, #ffffff);
+}
+
+.account-lab-header,
+.account-lab-consumer {
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.account-lab-header h1,
+.account-lab-consumer h2,
+.account-lab-panel h2 {
+  margin: 0;
+  color: var(--text-emphasis, #101722);
+}
+
+.account-lab-header p,
+.account-lab-consumer p {
+  margin: 6px 0 0;
+  color: var(--text-muted, #677384);
+  line-height: 1.5;
+}
+
+.account-lab-eyebrow {
+  margin: 0 0 4px !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.account-lab-local-mode,
+.account-lab-contract,
+.account-lab-panel-heading output {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 9px;
+  color: var(--text-emphasis, #173423);
+  background: var(--surface-success-subtle, #e8f5ed);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.account-lab-panel {
+  overflow: hidden;
+}
+
+.account-lab-panel-heading {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-subtle, #e0e5eb);
+}
+
+.account-lab-controls,
+.account-lab-status-grid,
+.account-lab-actions,
+.account-lab-next-operation {
+  padding: 14px 18px;
+}
+
+.account-lab-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(180px, 1fr);
+  gap: 12px;
+}
+
+.account-lab-controls label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted, #677384);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.account-lab-controls select,
+.account-lab-actions button {
+  min-height: 36px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-subtle, #cfd6de);
+  border-radius: 9px;
+  color: var(--text-primary, #1d2530);
+  background: var(--surface-primary, #ffffff);
+  font: inherit;
+}
+
+.account-lab-controls select {
+  width: 100%;
+  padding: 0 10px;
+}
+
+.account-lab-status-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border-subtle, #e0e5eb);
+}
+
+.account-lab-status-grid div {
+  min-width: 0;
+  padding: 12px;
+  background: var(--surface-secondary, #ffffff);
+}
+
+.account-lab-status-grid dt {
+  color: var(--text-muted, #677384);
+  font-size: 11px;
+}
+
+.account-lab-status-grid dd {
+  margin: 4px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.account-lab-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px solid var(--border-subtle, #e0e5eb);
+}
+
+.account-lab-actions button {
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.account-lab-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.account-lab-controls select:focus-visible,
+.account-lab-actions button:focus-visible {
+  outline: 2px solid var(--focus-ring, #3975d7);
+  outline-offset: 2px;
+}
+
+.account-lab-next-operation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--border-subtle, #e0e5eb);
+  color: var(--text-muted, #677384);
+  font-size: 12px;
+}
+
+.account-lab-next-operation code {
+  color: var(--text-emphasis, #101722);
+}
+
+.account-lab-history {
+  max-height: 360px;
+  margin: 0;
+  padding: 8px 18px 18px;
+  overflow: auto;
+  list-style: none;
+}
+
+.account-lab-history li {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: 72px 150px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-subtle, #e8ecf0);
+  font-size: 12px;
+}
+
+.account-lab-history time,
+.account-lab-history small {
+  color: var(--text-muted, #677384);
+}
+
+.account-lab-history code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-lab--closed {
+  place-content: center;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .account-lab {
+    padding: 12px;
+  }
+
+  .account-lab-header,
+  .account-lab-consumer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .account-lab-controls,
+  .account-lab-status-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-lab-history li {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .account-lab-history li span,
+  .account-lab-history li small {
+    display: none;
+  }
+}

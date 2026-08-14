@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -107,6 +108,7 @@ impl CodexProviderProfile {
 pub(crate) struct MaterializedCodexProviderProfile {
     pub(crate) codex_home: Option<PathBuf>,
     pub(crate) codex_args_override: Option<String>,
+    pub(crate) launch_env: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -405,6 +407,7 @@ fn materialize_codex_provider_profile_in_root(
         CodexProviderProfile::Disk => Ok(MaterializedCodexProviderProfile {
             codex_home: None,
             codex_args_override: None,
+            launch_env: BTreeMap::new(),
         }),
         CodexProviderProfile::Managed {
             id,
@@ -446,6 +449,7 @@ fn materialize_codex_provider_profile_in_root(
             Ok(MaterializedCodexProviderProfile {
                 codex_home: Some(provider_home),
                 codex_args_override,
+                launch_env: BTreeMap::new(),
             })
         }
     }

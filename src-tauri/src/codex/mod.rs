@@ -406,6 +406,7 @@ pub(crate) async fn spawn_workspace_session(
         codex_home,
         provider_runtime_key,
         CodexAppServerLaunchOptions::primary(),
+        std::collections::BTreeMap::new(),
     )
     .await
 }
@@ -418,6 +419,7 @@ pub(crate) async fn spawn_workspace_session_with_launch_options(
     codex_home: Option<PathBuf>,
     provider_runtime_key: String,
     launch_options: CodexAppServerLaunchOptions,
+    launch_env: std::collections::BTreeMap<String, String>,
 ) -> Result<Arc<WorkspaceSession>, String> {
     let client_version = app_handle.package_info().version.to_string();
     let app_settings_snapshot = {
@@ -442,6 +444,7 @@ pub(crate) async fn spawn_workspace_session_with_launch_options(
         launch_options,
         provider_runtime_key,
         app_settings_snapshot,
+        launch_env,
     )
     .await
 }

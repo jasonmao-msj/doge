@@ -1,6 +1,9 @@
 pub(crate) fn invoke_handler(
 ) -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
+        crate::account::runtime_ipc::account_v1_context,
+        crate::account::runtime_ipc::account_v1_prepare_mutation,
+        crate::account::runtime_ipc::account_v1_execute,
         // Settings
         crate::settings::get_app_settings,
         crate::settings::take_settings_recovery_notice,

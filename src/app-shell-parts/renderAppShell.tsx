@@ -1,10 +1,20 @@
-import { cloneElement, isValidElement, Suspense } from "react";
+import { cloneElement, isValidElement, lazy, Suspense } from "react";
 import type * as React from "react";
 import { AppLayout } from "../features/app/components/AppLayout";
 import { AppModals } from "../features/app/components/AppModals";
 import { LockScreenOverlay } from "../features/app/components/LockScreenOverlay";
 import { resolveDockIconSrc } from "../features/theme/utils/dockIcon";
 import { RuntimeConsoleDock } from "../features/app/components/RuntimeConsoleDock";
+import { AccountConfigurationBubbleHost } from "../features/account/components/AccountConfigurationBubbleHost";
+import { isAccountConvenienceV1Enabled } from "../features/account/runtime/featureFlag";
+import { ACCOUNT_UI_PREVIEW_V1_ENABLED } from "../features/account/runtime/uiPreviewFlag";
+
+const AccountPreviewConfigurationBubbleHost = ACCOUNT_UI_PREVIEW_V1_ENABLED
+  ? lazy(async () => {
+      const module = await import("../features/account/components/AccountPreviewConfigurationBubbleHost");
+      return { default: module.AccountPreviewConfigurationBubbleHost };
+    })
+  : null;
 import { VendorModelManagerDialogHost } from "../features/vendors/components/VendorModelManagerDialogHost";
 import {
   GlobalSearchTitlebarButton,
@@ -36,6 +46,8 @@ import type {
   RenderAppShellContext,
   RenderAppShellFlattenedContext,
 } from "./renderAppShellTypes";
+
+const accountConvenienceV1Enabled = isAccountConvenienceV1Enabled();
 
 const RENDER_APP_SHELL_DOMAIN_NAMES = [
   "workspaceNavigationContext",
@@ -226,6 +238,7 @@ export function renderAppShell(ctx: RenderAppShellContext) {
     onRightPanelResizeStart,
     onSidebarResizeStart,
     openAppIconById,
+    openSettings,
     planPanelHeight,
     planPanelNode,
     queueSaveSettings,
@@ -697,6 +710,15 @@ export function renderAppShell(ctx: RenderAppShellContext) {
         liveSessions={lockLiveSessions}
         logoSrc={resolveDockIconSrc(appSettings?.dockIconId)}
       />
+      {accountConvenienceV1Enabled ? (
+        AccountPreviewConfigurationBubbleHost ? (
+          <Suspense fallback={null}>
+            <AccountPreviewConfigurationBubbleHost onOpenAccount={() => openSettings("account")} />
+          </Suspense>
+        ) : (
+          <AccountConfigurationBubbleHost onOpenAccount={() => openSettings("account")} />
+        )
+      ) : null}
       {isSearchPaletteOpen ? (
         <Suspense fallback={null}>
           <SearchPalette
