@@ -27,6 +27,7 @@
 - Release workflow MUST stop before matrix build when signing secrets or enabled doge updater trust chain are incomplete；MUST NOT publish partial `latest.json`。
 - `windows_artifact_only=true` MAY bypass release preflight only for an internal test installer job；该 job MUST use `contents: read`、MUST NOT reference release environment/secrets、MUST NOT generate `.sig`/`latest.json` or call `gh release`，且只能上传 NSIS EXE + SHA-256 Actions artifact。
 - Credential helper MUST NOT export、encode、persist or print password/private key/certificate content。
+- `codesign --verify --deep --strict` 只是静态完整性 gate，不是启动成功证明。macOS artifact acceptance MUST 从最终 DMG 内启动 exact app、让 bundled dylib 完成一次真实加载，并确认 smoke window 内没有新增 DiagnosticReports crash；ad-hoc 与 Developer ID signing lane 不得共享 hardened-runtime 参数。
 
 ### 4. Validation & Error Matrix
 
@@ -53,6 +54,7 @@
 - `npx vitest run src/features/brand/contracts/upstreamServiceIsolation.test.ts src/features/brand/contracts/externalServiceContracts.test.ts src/features/brand/contracts/productLinks.test.tsx`
 - `node --test scripts/upstream-sync-audit.test.mjs scripts/release-workflow.contract.test.mjs`；release contract MUST assert artifact-only job has read-only permissions and no secret/signature/publish surface。
 - `node --test scripts/build-platform.contract.test.mjs` MUST assert ad-hoc lane 与 `--skip-sign`/Developer ID lane互斥，且 ad-hoc codesign args 不含 `--options runtime` / `--timestamp`。
+- macOS exact-artifact smoke：`hdiutil verify` → read-only mount → `codesign --verify --deep --strict` → 从 mount 内启动 `doge.app/Contents/MacOS/doge` 并稳定存活 → 确认未新增 `~/Library/Logs/DiagnosticReports/doge-*.ips`；最后才生成 SHA-256。
 - `npm run check:upstream-sync && npm run check:branding && npm run check:docs`
 - Release/draft smoke remains manual until doge-owned signing material exists。
 
