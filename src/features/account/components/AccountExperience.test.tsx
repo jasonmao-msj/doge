@@ -201,6 +201,30 @@ describe("AccountExperience", () => {
     expect(screen.queryByDisplayValue("synthetic-password")).toBeNull();
   });
 
+  it("keeps failure codes behind progressive disclosure and shows actionable login copy", async () => {
+    renderScenarioV1("login.credentials-rejected");
+    await screen.findByRole("heading", { name: "Doge 账号" });
+    fireEvent.change(screen.getByLabelText("邮箱"), {
+      target: { value: "user@example.invalid" },
+    });
+    fireEvent.change(screen.getByLabelText("密码"), {
+      target: { value: "synthetic-password" },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "登录" }));
+    });
+
+    expect(await screen.findByText("邮箱或密码不正确。")).toBeTruthy();
+    expect(screen.queryByText("credentialsRejected")).toBeNull();
+    const diagnostic = screen.getByRole("button", { name: "诊断代码" });
+    fireEvent.focus(diagnostic);
+    await waitFor(() => {
+      expect(document.querySelector('[data-slot="tooltip-popup"]')?.textContent).toContain(
+        "诊断代码：credentialsRejected",
+      );
+    });
+  });
+
   it("buffers an early recovery event and resets the password inside Doge", async () => {
     const { gateway } = renderScenarioV1("password-reset.request-and-return");
     const inspectIntent = vi.spyOn(gateway.auth, "inspectExternalIntent");

@@ -493,10 +493,8 @@
   font-size: 12px;
 }
 
-.account-safe-failure code {
+.account-safe-failure .account-help-trigger {
   margin-left: auto;
-  color: var(--text-secondary);
-  font-size: 10px;
 }
 
 .account-experience-state {

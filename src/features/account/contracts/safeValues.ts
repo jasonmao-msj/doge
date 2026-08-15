@@ -62,6 +62,8 @@ export type SafePresentedValueV1 = SafePresentedValueInputV1 & {
 export type ValidatedSafePresentedValueV1 = SafePresentedValueV1;
 
 const SAFE_LABEL_PATTERN_V1 = /^[\p{L}\p{N}][\p{L}\p{N} ._()/:+-]{0,79}$/u;
+const PRIMARY_EMAIL_LABEL_PATTERN_V1 =
+  /^[\p{L}\p{N}][\p{L}\p{N} ._()@*+-]{0,79}$/u;
 const ONE_TIME_TOTP_PATTERN_V1 = /^(?:totp-svg|totp-manual)~[A-Za-z0-9_-]{8,128}$/;
 const URI_SCHEME_PREFIX_V1 = /^[a-z][a-z0-9+.-]*:/i;
 
@@ -74,17 +76,17 @@ export function validateSafeLabelForFieldV1(
   value: unknown,
 ): SchemaValidationV1<SafeLabelV1> {
   const issues: SchemaIssueV1[] = [];
+  const pattern = field === "primaryEmailLabel"
+    ? PRIMARY_EMAIL_LABEL_PATTERN_V1
+    : SAFE_LABEL_PATTERN_V1;
   if (
     typeof value !== "string" ||
-    !SAFE_LABEL_PATTERN_V1.test(value) ||
+    !pattern.test(value) ||
     URI_SCHEME_PREFIX_V1.test(value) ||
     isForbiddenAccountValueV1(value) ||
     isForbiddenAccountFieldV1(value)
   ) {
     issues.push(issueV1("$", "forbidden", "value is not an allowlisted safe label"));
-  }
-  if (typeof value === "string" && field === "primaryEmailLabel" && !/^[\p{L}\p{N} ._()@*+-]+$/u.test(value)) {
-    issues.push(issueV1("$", "format", "invalid masked primary email label"));
   }
   return validationV1(value as SafeLabelV1, issues);
 }

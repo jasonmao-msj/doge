@@ -1,0 +1,8 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "账号 IPC 错误需 fail closed 且不泄露 secret"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "跨层 contract 修复需回归测试"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Rust response 到 TypeScript validator 的跨层一致性"}
+{"file": "src/features/account/contracts/safeValues.ts", "reason": "SafeLabel field-specific validation 责任层"}
+{"file": "src/features/account/contracts/accountContracts.test.ts", "reason": "现有 Account IPC contract 回归测试入口"}

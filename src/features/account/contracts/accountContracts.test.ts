@@ -137,6 +137,39 @@ describe("Good/Base/Bad executable schema fixtures", () => {
     ).ok).toBe(true);
   });
 
+  it("accepts the masked primary email label returned by a successful native login", () => {
+    const requestId = transportRequestIdV1("request_loginmasked0001");
+    const operationId = brokerOperationIdV1("operation_loginmasked0001");
+    const result = validateAccountIpcResponseV1({
+      contractId: "doge-account-ipc",
+      contractVersion: "1.0.0",
+      requestId,
+      operation: "auth.login",
+      processGeneration: 1,
+      accountEpoch: 1,
+      operationId,
+      ok: true,
+      value: {
+        next: "authenticated",
+        session: {
+          status: "authenticated",
+          accountEpoch: 1,
+          sessionCapability: "persistent",
+          profileLabel: "Token Matrix",
+          primaryEmailLabel: "a***@token-matrix.com",
+        },
+      },
+    }, {
+      ...ACCOUNT_GOOD_IPC_RESPONSE_CONTEXT_V1,
+      expectedKind: "mutation",
+      expectedOperation: "auth.login",
+      expectedRequestId: requestId,
+      expectedOperationId: operationId,
+    });
+
+    expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues)).toBe(true);
+  });
+
   it.each([
     ["duplicate manifest id", ACCOUNT_BAD_CONTRACT_FIXTURES_V1.manifestDuplicateId],
     ["missing required manifest field", ACCOUNT_BAD_CONTRACT_FIXTURES_V1.manifestMissingRequiredField],

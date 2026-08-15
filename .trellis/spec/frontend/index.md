@@ -14,6 +14,7 @@
 |---|---|---|
 | [Directory Structure](./directory-structure.md) | 模块目录与文件落位规则 | Active |
 | [doge Product Identity Contract](./doge-product-identity.md) | canonical manifest、UI/i18n、链接、品牌门禁与视觉资产 contract | Active |
+| [Account Authority IPC Contract](./account-authority-ipc-contract.md) | Authority/Rust success envelope、field-scoped SafeLabel、masked email 与 progressive diagnostic contract | Active |
 | [Component Guidelines](./component-guidelines.md) | 组件设计、props、样式与 i18n 规范 | Active |
 | [Preference Settings UI / UX Guide](../../../docs/ui-ux/preference-settings-ui-guide.md) | 设置/偏好面板视觉与交互基线（克制 preference list） | Active |
 | [Parallel Conversation Runtime Residuals](./parallel-conversation-runtime-residuals.md) | 多 session 并行实时对话的 7 条根因诊断 + 修复 + 回归契约 | Active |
@@ -53,6 +54,7 @@
 - 涉及 UI -> service -> tauri/rust 的跨层变更，额外读：
   - `../guides/cross-layer-thinking-guide.md`
   - `../guides/code-reuse-thinking-guide.md`
+- 涉及 Account Gateway、Authority/Rust response、`primaryEmailLabel` 或 Account safe artifact validator 时，额外读 [Account Authority IPC Contract](./account-authority-ipc-contract.md)。
 - 涉及 analytics、managed provider default、About/Issue/Release URL 或 updater 时，额外读 [Upstream Service and Release Isolation](../backend/upstream-service-isolation.md)。
 - 涉及 Web Service assets 检测/安装状态或启动 gate 时，额外读 `../backend/web-assets-package-contract.md`。
 - 涉及 Claude 上下文用量窗体、`ThreadTokenUsage` 或 token indicator 时，额外读 [Claude Context Usage Display](./claude-context-usage-display.md)。

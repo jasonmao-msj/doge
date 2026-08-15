@@ -73,14 +73,38 @@ export function AccountExperience() {
       {controller.failure ? (
         <div className="account-safe-failure" role="alert">
           <CircleAlert size={16} aria-hidden />
-          <span>{copy.safeFailure}</span>
-          <code>{controller.failure.code}</code>
+          <span>{accountFailureMessage(controller.failure.code, copy)}</span>
+          <AccountHelpTooltip label={copy.diagnosticCode} side="left">
+            {`${copy.diagnosticCode}：${controller.failure.code}`}
+          </AccountHelpTooltip>
         </div>
       ) : null}
 
       <ConfigurationAssistant controller={controller} />
     </div>
   );
+}
+
+function accountFailureMessage(
+  code: string,
+  copy: ReturnType<typeof useAccountExperienceCopyV1>,
+) {
+  switch (code) {
+    case "credentialsRejected":
+      return copy.credentialsRejectedFailure;
+    case "rateLimited":
+      return copy.rateLimitedFailure;
+    case "serviceUnavailable":
+      return copy.serviceUnavailableFailure;
+    case "vaultLocked":
+    case "vaultUnavailable":
+    case "vaultInconsistent":
+      return copy.vaultUnavailableFailure;
+    case "protocolMismatch":
+      return copy.protocolMismatchFailure;
+    default:
+      return copy.safeFailure;
+  }
 }
 
 function AccountLocalModeStatus() {
