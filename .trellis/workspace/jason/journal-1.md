@@ -249,3 +249,37 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: 修复账号登录成功响应误判并重打双端包
+
+**Date**: 2026-08-14
+**Task**: 修复账号登录成功响应误判并重打双端包
+**Branch**: `release/doge-account-trial-20260814`
+
+### Summary
+
+AWS production evidence confirmed HTTP 200 and native durable auth success. Fixed field-specific masked-email SafeLabel validation without widening the generic schema, added localized progressive diagnostics plus contract/UI regression tests, updated OpenSpec/Trellis contracts, and rebuilt verified macOS arm64 and Windows x64 internal artifacts. Validation passed: focused 128 account tests, full 1094 Vitest files, typecheck, lint with zero errors, runtime contracts, doctor strict, OpenSpec strict validation, macOS DMG/codesign/arm64/rpath checks, and both artifact SHA-256 checks. Exact macOS launch smoke remains pending until the old installed Doge instance is closed.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `173be6600` | (see git log) |
+| `5054562bc` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

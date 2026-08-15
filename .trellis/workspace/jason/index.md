@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 7
+- **Total Sessions**: 8
 - **Last Active**: 2026-08-14
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~251 | Active |
+| `journal-1.md` | ~285 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 8 | 2026-08-14 | 修复账号登录成功响应误判并重打双端包 | `173be6600`, `5054562bc` | `release/doge-account-trial-20260814` |
 | 7 | 2026-08-14 | 修复 macOS 内部包动态库签名崩溃 | `ddde534d4`, `f90599bc1` | `release/doge-account-trial-20260814` |
 | 6 | 2026-08-10 | 实现每日诗词轮换提示 | `c8eb452db` | `feat/daily-poetry-composer-banner` |
 | 5 | 2026-08-10 | 产出并校验 Windows NSIS 安装包 | `15a51b01a` | `chore/rebrand-client-to-doge` |
