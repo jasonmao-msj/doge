@@ -70,6 +70,11 @@ React Component
 22. reattachment cleanup 必须带 exact owner compare-and-clear。旧 Runtime terminal
     可以为自己的 identity 安装 ledger barrier，但不能用 thread-level cleanup 清掉新
     Attempt 的 processing、active owner 或 frozen Target。
+23. Native mutation 已 durable success、renderer 却报 `protocolMismatch` 时，先沿
+    operation ledger / persistence receipt → Rust response → IPC correlation → field-specific
+    presentation validator 反向定位；不要只查远端 API，也不要放宽全局 schema。任何
+    SafeLabel/SafeText 特例都必须有包含真实展示字符的完整 success-envelope fixture。
+    Account 具体执行契约见 `../frontend/account-authority-ipc-contract.md`。
 
 ## 常见失败模式
 
