@@ -113,3 +113,23 @@ test("unsigned macOS artifacts still bundle portable OpenSSL libraries", () => {
   assert.match(fixOpenSsl, /Bundled OpenSSL dylibs without code signing/);
   assert.match(fixOpenSsl, /install_name_tool -change/);
 });
+
+test("local ad-hoc macOS signing avoids hardened runtime library validation", () => {
+  const build = read("scripts/build-platform.mjs");
+  const fixOpenSsl = read("scripts/macos-fix-openssl.sh");
+
+  assert.match(build, /--adhoc-sign/);
+  assert.match(build, /ADHOC_CODESIGN=1/);
+  assert.match(build, /skipSign && adhocSign/);
+  assert.match(fixOpenSsl, /adhoc_codesign="\$\{ADHOC_CODESIGN:-0\}"/);
+  assert.match(fixOpenSsl, /codesign_args=\(--force --sign -\)/);
+  assert.match(fixOpenSsl, /flags=\.\*runtime/);
+  assert.match(fixOpenSsl, /codesign --verify --deep --strict/);
+
+  const adhocBranch = sourceSection(
+    fixOpenSsl,
+    'if [[ "${adhoc_codesign}" == "1" ]]; then\n  # Ad-hoc signatures',
+    "else\n  codesign_args=",
+  );
+  assert.doesNotMatch(adhocBranch, /--options runtime|--timestamp/);
+});

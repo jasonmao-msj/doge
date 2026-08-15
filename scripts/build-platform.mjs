@@ -17,6 +17,7 @@
  * Options:
  *   --skip-notarize  - Skip notarization (macOS only)
  *   --skip-sign      - Skip code signing (macOS only)
+ *   --adhoc-sign     - Ad-hoc sign a local-only macOS build
  */
 
 import { execSync, spawn } from "child_process";
@@ -110,12 +111,16 @@ function ensureReleaseDir() {
 
 // Build macOS app
 async function buildMacOS(arch, options = {}) {
-  const { skipSign = false, skipNotarize = false } = options;
+  const { skipSign = false, adhocSign = false, skipNotarize = false } = options;
   const version = getVersion();
 
-  if (!skipSign && !CONFIG.codesignIdentity) {
+  if (skipSign && adhocSign) {
+    throw new Error("--skip-sign and --adhoc-sign cannot be used together.");
+  }
+
+  if (!skipSign && !adhocSign && !CONFIG.codesignIdentity) {
     throw new Error(
-      "CODESIGN_IDENTITY is required for signed macOS builds; use --skip-sign for a local unsigned build.",
+      "CODESIGN_IDENTITY is required for signed macOS builds; use --adhoc-sign for a local-only build or --skip-sign for an unsigned build.",
     );
   }
 
@@ -219,7 +224,13 @@ async function buildMacOS(arch, options = {}) {
 
   // Bundle OpenSSL for both signed and unsigned artifacts. `--skip-sign`
   // must not leave host-local Homebrew paths in an otherwise valid app.
-  console.log(skipSign ? "\nBundling OpenSSL without signing..." : "\nBundling OpenSSL and signing...");
+  console.log(
+    skipSign
+      ? "\nBundling OpenSSL without signing..."
+      : adhocSign
+        ? "\nBundling OpenSSL and applying a local-only ad-hoc signature..."
+        : "\nBundling OpenSSL and signing...",
+  );
 
   if (arch === "universal") {
       // Create universal OpenSSL dylibs
@@ -253,17 +264,22 @@ async function buildMacOS(arch, options = {}) {
       // Sign all components
       const identity = CONFIG.codesignIdentity;
       const entitlements = CONFIG.entitlements;
-      exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${frameworksPath}/libcrypto.3.dylib"`);
-      exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${frameworksPath}/libssl.3.dylib"`);
-      exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/doge"`);
-      exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/doge_daemon"`);
-      exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}"`);
+      const codesignArgs = adhocSign
+        ? "--force --sign -"
+        : `--force --options runtime --sign "${identity}" --timestamp`;
+      exec(`codesign ${codesignArgs} --entitlements "${entitlements}" "${frameworksPath}/libcrypto.3.dylib"`);
+      exec(`codesign ${codesignArgs} --entitlements "${entitlements}" "${frameworksPath}/libssl.3.dylib"`);
+      exec(`codesign ${codesignArgs} --entitlements "${entitlements}" "${bundlePath}/Contents/MacOS/doge"`);
+      exec(`codesign ${codesignArgs} --entitlements "${entitlements}" "${bundlePath}/Contents/MacOS/doge_daemon"`);
+      exec(`codesign ${codesignArgs} --entitlements "${entitlements}" "${bundlePath}"`);
     }
   } else {
     // Use the shared single-arch fixup; signing remains an explicit second phase.
     const signingEnv = skipSign
       ? "SKIP_CODESIGN=1"
-      : `CODESIGN_IDENTITY="${CONFIG.codesignIdentity}"`;
+      : adhocSign
+        ? "ADHOC_CODESIGN=1"
+        : `CODESIGN_IDENTITY="${CONFIG.codesignIdentity}"`;
     exec(`${signingEnv} scripts/macos-fix-openssl.sh "${bundlePath}"`);
   }
 
@@ -273,7 +289,7 @@ async function buildMacOS(arch, options = {}) {
   exec(`bash "${createDmgScript}" "${bundlePath}" "${RELEASE_DIR}/${dmgName}" "doge"`);
 
   // Notarize
-  if (!skipNotarize && !skipSign) {
+  if (!skipNotarize && !skipSign && !adhocSign) {
     console.log("\nNotarizing...");
     exec(`xcrun notarytool submit "${RELEASE_DIR}/${dmgName}" --keychain-profile "${CONFIG.notaryProfile}" --wait`);
     exec(`xcrun stapler staple "${RELEASE_DIR}/${dmgName}"`);
@@ -409,6 +425,7 @@ const args = process.argv.slice(2);
 const platform = args[0];
 const options = {
   skipSign: args.includes("--skip-sign"),
+  adhocSign: args.includes("--adhoc-sign"),
   skipNotarize: args.includes("--skip-notarize"),
 };
 
@@ -430,10 +447,12 @@ Platforms:
 
 Options:
   --skip-sign      - Skip code signing (macOS only)
+  --adhoc-sign     - Ad-hoc sign a local-only macOS build
   --skip-notarize  - Skip notarization (macOS only)
 
 Examples:
   npm run build:mac-arm64
+  npm run build:mac-arm64 -- --adhoc-sign --skip-notarize
   npm run build:mac-universal -- --skip-notarize
   npm run build:all
 `);

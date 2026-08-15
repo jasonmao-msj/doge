@@ -14,6 +14,7 @@
 - Updater state：`bundle.createUpdaterArtifacts=false` and no updater plugin until doge key exists。
 - Release preflight inputs：`TAURI_SIGNING_PRIVATE_KEY_B64`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` plus enabled updater config/public key/canonical endpoint。
 - Internal Windows artifact input：`workflow_dispatch.inputs.windows_artifact_only: boolean`；true 时只允许 unsigned NSIS artifact build。
+- Internal macOS local artifact input：`scripts/build-platform.mjs --adhoc-sign --skip-notarize`；只允许 local-only ad-hoc signing，不得启用 hardened runtime / notarization。
 - External provider contract：user-supplied custom base URL remains supported；no upstream managed relay default。
 
 ### 3. Contracts
@@ -35,6 +36,7 @@
 | upstream push enabled/wrong URL | audit fail | auto-repair silently |
 | updater disabled/no key | release preflight fail before builds | publish unsigned metadata |
 | `windows_artifact_only=true` | Windows runner builds unsigned NSIS and uploads EXE/checksum artifact | access secrets、publish Release/update feed、silently treat as signed release |
+| `--adhoc-sign --skip-notarize` | 所有 bundled components 使用 ad-hoc signature，主程序不启用 hardened runtime，并完成 exact-app launch smoke | 给 ad-hoc app 加 `--options runtime` 后只做静态 `codesign` 验证 |
 | some platform signature missing | metadata job fail | omit platform and publish partial feed |
 | custom provider URL | accept through generic path | replace with removed relay |
 | removed analytics token returns in shipping source | exact negative test fail | allowlist runtime service |
@@ -50,6 +52,7 @@
 
 - `npx vitest run src/features/brand/contracts/upstreamServiceIsolation.test.ts src/features/brand/contracts/externalServiceContracts.test.ts src/features/brand/contracts/productLinks.test.tsx`
 - `node --test scripts/upstream-sync-audit.test.mjs scripts/release-workflow.contract.test.mjs`；release contract MUST assert artifact-only job has read-only permissions and no secret/signature/publish surface。
+- `node --test scripts/build-platform.contract.test.mjs` MUST assert ad-hoc lane 与 `--skip-sign`/Developer ID lane互斥，且 ad-hoc codesign args 不含 `--options runtime` / `--timestamp`。
 - `npm run check:upstream-sync && npm run check:branding && npm run check:docs`
 - Release/draft smoke remains manual until doge-owned signing material exists。
 

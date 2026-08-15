@@ -4,11 +4,18 @@ set -euo pipefail
 app_path="${1:-src-tauri/target/release/bundle/macos/doge.app}"
 identity="${CODESIGN_IDENTITY:-}"
 skip_codesign="${SKIP_CODESIGN:-0}"
+adhoc_codesign="${ADHOC_CODESIGN:-0}"
 entitlements_path="${ENTITLEMENTS_PATH:-src-tauri/Entitlements.plist}"
 
-if [[ "${skip_codesign}" != "1" && -z "${identity}" ]]; then
+if [[ "${skip_codesign}" == "1" && "${adhoc_codesign}" == "1" ]]; then
+  echo "SKIP_CODESIGN and ADHOC_CODESIGN cannot both be enabled."
+  exit 1
+fi
+
+if [[ "${skip_codesign}" != "1" && "${adhoc_codesign}" != "1" && -z "${identity}" ]]; then
   echo "CODESIGN_IDENTITY is required. Example:"
   echo "  CODESIGN_IDENTITY='Developer ID Application: Your Name (TEAMID)' $0"
+  echo "For an internal local-only build, use ADHOC_CODESIGN=1."
   exit 1
 fi
 
@@ -119,12 +126,29 @@ if [[ "${skip_codesign}" == "1" ]]; then
   exit 0
 fi
 
-codesign --force --options runtime --timestamp --sign "${identity}" "${frameworks_dir}/libcrypto.3.dylib"
-codesign --force --options runtime --timestamp --sign "${identity}" "${frameworks_dir}/libssl.3.dylib"
-codesign --force --options runtime --timestamp --sign "${identity}" "${codesign_entitlements[@]}" "${bin_path}"
-if [[ -f "${daemon_path}" ]]; then
-  codesign --force --options runtime --timestamp --sign "${identity}" "${codesign_entitlements[@]}" "${daemon_path}"
+if [[ "${adhoc_codesign}" == "1" ]]; then
+  # Ad-hoc signatures have no shared Team ID. Enabling hardened runtime here
+  # makes dyld reject the bundled OpenSSL libraries before main() is reached.
+  codesign_args=(--force --sign -)
+else
+  codesign_args=(--force --options runtime --timestamp --sign "${identity}")
 fi
-codesign --force --options runtime --timestamp --sign "${identity}" "${codesign_entitlements[@]}" "${app_path}"
 
-echo "Bundled OpenSSL dylibs and re-signed ${app_path}"
+codesign "${codesign_args[@]}" "${frameworks_dir}/libcrypto.3.dylib"
+codesign "${codesign_args[@]}" "${frameworks_dir}/libssl.3.dylib"
+codesign "${codesign_args[@]}" "${codesign_entitlements[@]}" "${bin_path}"
+if [[ -f "${daemon_path}" ]]; then
+  codesign "${codesign_args[@]}" "${codesign_entitlements[@]}" "${daemon_path}"
+fi
+codesign "${codesign_args[@]}" "${codesign_entitlements[@]}" "${app_path}"
+codesign --verify --deep --strict --verbose=2 "${app_path}"
+
+if [[ "${adhoc_codesign}" == "1" ]]; then
+  if codesign -dv --verbose=4 "${app_path}" 2>&1 | grep -q 'flags=.*runtime'; then
+    echo "ERROR: Ad-hoc app unexpectedly enables hardened runtime library validation."
+    exit 1
+  fi
+  echo "Bundled OpenSSL dylibs and ad-hoc signed local-only app: ${app_path}"
+else
+  echo "Bundled OpenSSL dylibs and re-signed ${app_path}"
+fi
