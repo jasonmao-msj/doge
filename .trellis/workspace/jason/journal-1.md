@@ -215,3 +215,37 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: 修复 macOS 内部包动态库签名崩溃
+
+**Date**: 2026-08-14
+**Task**: 修复 macOS 内部包动态库签名崩溃
+**Branch**: `release/doge-account-trial-20260814`
+
+### Summary
+
+根据用户实际安装后的 dyld crash report，移除 ad-hoc lane 的 hardened runtime，保留 Developer ID lane；新增构建契约与最终 DMG exact-app 启动验收。修复包从只读 DMG 启动稳定存活且未新增 crash report，SHA-256 校验通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ddde534d4` | (see git log) |
+| `f90599bc1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
