@@ -94,6 +94,9 @@ test("Windows artifact-only dispatch cannot publish or access release secrets", 
   );
   assert.match(artifactJob, /doge_\*-setup\.exe/);
   assert.match(artifactJob, /Get-FileHash -Algorithm SHA256/);
+  assert.match(artifactJob, /\[System\.IO\.File\]::WriteAllText/);
+  assert.match(artifactJob, /`n/);
+  assert.doesNotMatch(artifactJob, /Set-Content/);
   assert.match(artifactJob, /name: doge-windows-x64-unsigned/);
   assert.match(artifactJob, /if-no-files-found: error/);
   assert.doesNotMatch(artifactJob, /environment: release/);
