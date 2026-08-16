@@ -122,6 +122,29 @@ jobs:
           $ErrorActionPreference = "Stop"
           npm run tauri -- build --config src-tauri/tauri.windows.conf.json --bundles nsis
 
+      - name: Smoke Windows application startup
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $executable = (Resolve-Path "src-tauri/target/release/doge.exe").Path
+          $process = Start-Process -FilePath $executable -PassThru
+          try {
+            Start-Sleep -Seconds 8
+            $process.Refresh()
+            if ($process.HasExited) {
+              throw "doge.exe exited during startup smoke with code $($process.ExitCode)"
+            }
+            Write-Output "windows_launch_smoke=alive pid=$($process.Id)"
+          }
+          finally {
+            $process.Refresh()
+            if (-not $process.HasExited) {
+              Stop-Process -Id $process.Id -Force
+              Wait-Process -Id $process.Id -ErrorAction SilentlyContinue
+            }
+            Get-Process doge_daemon -ErrorAction SilentlyContinue | Stop-Process -Force
+          }
+
       - name: Stage installer and checksum
         shell: pwsh
         run: |
