@@ -36,5 +36,5 @@
 - [x] 6.1 [P0] 执行 Doge focused Vitest、`npm run typecheck`、lint 与 Rust account/full tests；执行 token2api focused/full Go gates
 - [ ] 6.2 [P0] 在可控 authority 环境验证 login、existing subscription、dynamic public plans、payment terminal、managed ensure、Codex launch 与 Claude Code launch
 - [x] 6.3 [P0] 运行 cross-layer/check/finish-work，更新 `.trellis/spec/**`、engine foundation ADR 最近校准与 OpenSpec evidence
-- [ ] 6.4 [P0] 构建并 smoke macOS arm64/x64 与 Windows x64 release artifacts；记录签名/notarization 状态、checksums 与安装启动证据
+- [x] 6.4 [P0] 构建并 smoke macOS arm64/x64 与 Windows x64 release artifacts；记录签名/notarization 状态、checksums 与安装启动证据
 - [ ] 6.5 [P0] 严格验证并同步/归档 OpenSpec change，提交两个仓库变更并执行 Trellis session record

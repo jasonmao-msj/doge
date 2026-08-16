@@ -545,3 +545,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: 记录跨平台发布证据
+
+**Date**: 2026-08-16
+**Task**: 记录跨平台发布证据
+**Branch**: `codex/account-release-evidence`
+
+### Summary
+
+记录最终 macOS arm64/x86_64 与 Windows x64 GitHub runs、checksums、架构、签名、依赖和启动 smoke；保留 controlled-account 与人工视觉 gate 未完成事实。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2693045ae` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
