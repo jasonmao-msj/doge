@@ -39,3 +39,4 @@
 - [x] 6.4 [P0] 构建并 smoke macOS arm64/x64 与 Windows x64 release artifacts；记录签名/notarization 状态、checksums 与安装启动证据
 - [ ] 6.5 [P0] 严格验证并同步/归档 OpenSpec change，提交两个仓库变更并执行 Trellis session record
 - [x] 6.6 [P0] 修复 signed-in cold restore 对 masked `primaryEmailLabel` 的 SafeLabel 误判；增加 exact IPC bootstrap regression test，并用本地 macOS release package 验证恢复登录后进入 engine catalog
+- [x] 6.7 [P0] 为 recovered checkout 增加“返回套餐”与“退出登录”闭环；实现 account/device/checkout-scoped local checkpoint abandon、focused cross-layer tests 与本地 macOS package smoke

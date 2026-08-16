@@ -91,13 +91,30 @@ fn engine_checkout_checkpoint_survives_restart_without_payment_action_data() {
     let text = String::from_utf8_lossy(&bytes);
     assert!(!text.contains("pay.example"));
     assert!(!text.contains("wxpay"));
-    reopened
-        .clear_engine_checkout(
+    assert!(!reopened
+        .clear_engine_checkout_if_matches(
+            &record.authority_origin_id,
+            &record.account_link_id,
+            &record.device_id,
+            78,
+        )
+        .expect("reject mismatched checkout"));
+    assert!(reopened
+        .read_engine_checkout(
             &record.authority_origin_id,
             &record.account_link_id,
             &record.device_id,
         )
-        .expect("clear checkout");
+        .expect("read checkout after mismatch")
+        .is_some());
+    assert!(reopened
+        .clear_engine_checkout_if_matches(
+            &record.authority_origin_id,
+            &record.account_link_id,
+            &record.device_id,
+            record.checkout_id,
+        )
+        .expect("clear matching checkout"));
     assert!(reopened
         .read_engine_checkout(
             &record.authority_origin_id,
@@ -106,6 +123,14 @@ fn engine_checkout_checkpoint_survives_restart_without_payment_action_data() {
         )
         .expect("read cleared checkout")
         .is_none());
+    assert!(!reopened
+        .clear_engine_checkout_if_matches(
+            &record.authority_origin_id,
+            &record.account_link_id,
+            &record.device_id,
+            record.checkout_id,
+        )
+        .expect("repeat clear is idempotent"));
     let _ = std::fs::remove_file(path);
 }
 

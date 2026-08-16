@@ -81,12 +81,15 @@ function AccountAppGateInner({
 }) {
   const controller = useAccountExperienceControllerV1({ loadAuthenticatedExtras: false });
   const copy = useAccountExperienceCopyV1();
+  const accountBusy = controller.busy;
+  const accountLogout = controller.logout;
   const [phase, setPhase] = useState<GatePhase>("catalog");
   const [engines, setEngines] = useState<readonly ManagedEngineViewV1[]>([]);
   const [selectedEngine, setSelectedEngine] = useState<ManagedEngineIdV1 | null>(null);
   const [plans, setPlans] = useState<EnginePlansViewV1 | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanViewV1 | null>(null);
   const [checkout, setCheckout] = useState<CheckoutViewV1 | null>(null);
+  const [checkoutActionBusy, setCheckoutActionBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const catalogGeneration = useRef(0);
 
@@ -141,6 +144,30 @@ function AccountAppGateInner({
     // AppShell is mounted.
     await prepare(engine.id);
   }, [openPlans, prepare]);
+
+  const returnToPlans = useCallback(async () => {
+    if (selectedEngine === null || checkout === null || checkoutActionBusy) return;
+    setCheckoutActionBusy(true);
+    setFailure(null);
+    const result = await client.abandonCheckout(checkout.checkoutId);
+    if (!result.ok) {
+      setFailure(result.error.code);
+      setCheckoutActionBusy(false);
+      return;
+    }
+    setCheckout(null);
+    setSelectedPlan(null);
+    await openPlans(selectedEngine);
+    setCheckoutActionBusy(false);
+  }, [checkout, checkoutActionBusy, client, openPlans, selectedEngine]);
+
+  const logoutFromCheckout = useCallback(async () => {
+    if (checkoutActionBusy || accountBusy) return;
+    setCheckoutActionBusy(true);
+    setFailure(null);
+    await accountLogout("thisDevice");
+    setCheckoutActionBusy(false);
+  }, [accountBusy, accountLogout, checkoutActionBusy]);
 
   const loadCatalog = useCallback(async () => {
     const generation = catalogGeneration.current + 1;
@@ -329,25 +356,42 @@ function AccountAppGateInner({
     const terminal = ["cancelled", "expired", "failed"].includes(checkout.status);
     return (
       <GateFrame>
-        <GateStepBack copy={copy} onClick={() => setPhase("plans")} />
         <div className="account-gate-centered" role="status">
           {terminal ? <CircleAlert aria-hidden /> : <LoaderCircle className="account-gate-spin" aria-hidden />}
           <h1>{terminal ? copy.gatePaymentFailed : copy.gateWaitingPayment}</h1>
           {checkout.action?.kind === "show_qr" && checkout.action.data ? (
             <CheckoutQrCode copy={copy} value={checkout.action.data} />
           ) : null}
-          {!terminal && checkout.action?.kind === "open_url" && checkout.action.url ? (
-            <button
-              className="account-gate-secondary"
-              type="button"
-              onClick={() => void openCheckoutAction(checkout, setFailure)}
-            >
-              {copy.gateReopenPayment}
-            </button>
-          ) : null}
-          {terminal ? (
-            <button className="account-gate-primary" type="button" onClick={() => setPhase("plans")}>{copy.gateChooseAgain}</button>
-          ) : null}
+          <div className="account-gate-checkout-actions">
+            {!terminal && checkout.action?.kind === "open_url" && checkout.action.url ? (
+              <button
+                className="account-gate-secondary"
+                type="button"
+                disabled={checkoutActionBusy}
+                onClick={() => void openCheckoutAction(checkout, setFailure)}
+              >
+                {copy.gateReopenPayment}
+              </button>
+            ) : null}
+            <div className="account-gate-checkout-exits">
+              <button
+                className="account-gate-text-button"
+                type="button"
+                disabled={checkoutActionBusy}
+                onClick={() => void returnToPlans()}
+              >
+                {copy.gateBackToPlans}
+              </button>
+              <button
+                className="account-gate-text-button"
+                type="button"
+                disabled={checkoutActionBusy || accountBusy}
+                onClick={() => void logoutFromCheckout()}
+              >
+                {copy.logout}
+              </button>
+            </div>
+          </div>
           {failure ? <GateInlineFailure copy={copy} code={failure} /> : null}
         </div>
       </GateFrame>

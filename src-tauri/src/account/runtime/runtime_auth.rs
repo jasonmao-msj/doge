@@ -623,6 +623,13 @@ impl AccountRuntime {
             .as_ref()
             .and_then(|metadata| metadata.vault_scope.clone());
         if let Some(repository) = &self.repository {
+            if let Some((account_link_id, device_id)) =
+                super::runtime_engine::checkout_identity(state, self.device_id.as_deref())
+            {
+                repository
+                    .clear_engine_checkout(AUTHORITY_ORIGIN_ID, account_link_id, device_id)
+                    .map_err(|_| persistence_failure())?;
+            }
             if clear_managed_key {
                 repository.clear_session(&rfc3339_now())
             } else {

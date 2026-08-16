@@ -122,6 +122,19 @@ pub(crate) async fn account_engine_v1_pending_checkout(
 }
 
 #[tauri::command]
+pub(crate) async fn account_engine_v1_abandon_checkout(
+    checkout_id: i64,
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state
+        .account_runtime
+        .engine_checkout_abandon(checkout_id)
+        .await)
+}
+
+#[tauri::command]
 pub(crate) async fn account_engine_v1_readiness(
     engine_id: String,
     state: State<'_, crate::state::AppState>,

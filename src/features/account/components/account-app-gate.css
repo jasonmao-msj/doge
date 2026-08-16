@@ -108,6 +108,7 @@
 .account-gate-methods button:focus-visible,
 .account-gate-primary:focus-visible,
 .account-gate-secondary:focus-visible,
+.account-gate-text-button:focus-visible,
 .account-gate-back:focus-visible {
   outline: 2px solid var(--ring, var(--gate-accent));
   outline-offset: 3px;
@@ -179,6 +180,41 @@
 }
 .account-gate-primary { color: white; background: var(--gate-accent); }
 .account-gate-secondary { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
+
+.account-gate-checkout-actions {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.account-gate-checkout-exits {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.account-gate-text-button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-gate-text-button:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover, var(--accent));
+}
+
+.account-gate-secondary:disabled,
+.account-gate-text-button:disabled {
+  cursor: default;
+  opacity: .55;
+}
 
 .account-gate-back {
   position: absolute;

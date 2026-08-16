@@ -636,6 +636,25 @@ impl AccountRepository {
         Ok(())
     }
 
+    pub(crate) fn clear_engine_checkout_if_matches(
+        &self,
+        authority_origin_id: &str,
+        account_link_id: &str,
+        device_id: &str,
+        checkout_id: i64,
+    ) -> Result<bool, String> {
+        let connection = self.connect()?;
+        let changed = connection
+            .execute(
+                "DELETE FROM account_engine_checkout
+                 WHERE authority_origin_id = ?1 AND account_link_id = ?2
+                   AND device_id = ?3 AND checkout_id = ?4",
+                params![authority_origin_id, account_link_id, device_id, checkout_id],
+            )
+            .map_err(|error| format!("failed to abandon Account engine checkout: {error}"))?;
+        Ok(changed == 1)
+    }
+
     pub(crate) fn save_session(&self, metadata: &AccountMetadata) -> Result<(), String> {
         validate_metadata(metadata)?;
         let connection = self.connect()?;

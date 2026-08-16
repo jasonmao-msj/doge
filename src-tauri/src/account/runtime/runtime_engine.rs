@@ -13,7 +13,6 @@ struct EngineReadinessView<'a> {
 impl AccountRuntime {
     pub(crate) async fn engine_catalog_snapshot(&self) -> Value {
         let mut state = self.state.lock().await;
-        self.initialize_session(&mut state).await;
         if let Err(error) = self
             .require_authority_capability(
                 &mut state,
@@ -250,6 +249,45 @@ impl AccountRuntime {
         }))
     }
 
+    pub(crate) async fn engine_checkout_abandon(&self, checkout_id: i64) -> Value {
+        if checkout_id <= 0 {
+            return engine_failure(code_failure("validationRejected", "checkout", "retry"));
+        }
+        // This is a local recovery mutation. The authenticated metadata is
+        // loaded with AccountRuntime and must not trigger refresh/network IO.
+        let state = self.state.lock().await;
+        let Some((account_link_id, device_id)) =
+            checkout_identity(&state, self.device_id.as_deref())
+        else {
+            return engine_failure(session_failure());
+        };
+        let Some(repository) = self.repository.as_ref() else {
+            return engine_failure(persistence_failure());
+        };
+        let record = match repository.read_engine_checkout(
+            AUTHORITY_ORIGIN_ID,
+            account_link_id,
+            device_id,
+        ) {
+            Ok(Some(record)) => record,
+            Ok(None) => return engine_success(Value::Null),
+            Err(_) => return engine_failure(persistence_failure()),
+        };
+        if record.checkout_id != checkout_id {
+            return engine_failure(code_failure("concurrentEdit", "checkout", "retry"));
+        }
+        match repository.clear_engine_checkout_if_matches(
+            AUTHORITY_ORIGIN_ID,
+            account_link_id,
+            device_id,
+            checkout_id,
+        ) {
+            Ok(true) => engine_success(Value::Null),
+            Ok(false) => engine_failure(code_failure("concurrentEdit", "checkout", "retry")),
+            Err(_) => engine_failure(persistence_failure()),
+        }
+    }
+
     pub(crate) async fn engine_readiness_snapshot(&self, engine_id: &str) -> Value {
         if !valid_managed_engine(engine_id) {
             return engine_failure(code_failure(
@@ -449,7 +487,7 @@ impl AccountRuntime {
     }
 }
 
-fn checkout_identity<'a>(
+pub(super) fn checkout_identity<'a>(
     state: &'a RuntimeState,
     device_id: Option<&'a str>,
 ) -> Option<(&'a str, &'a str)> {

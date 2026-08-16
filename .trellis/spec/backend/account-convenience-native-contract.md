@@ -246,3 +246,76 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 - TypeScript/React：unknown engine/protocol fail closed、exact server plans/no billing fallback、AppShell pre-ready absence、paid auto prepare、pending checkout restart recovery、internal reason 不直出。
 
 异常、恢复与latency scenario由`AccountLab`/Vitest选择；产品页面只呈现用户任务和自然交互。
+
+## Scenario: Recovered checkout exit and local abandonment
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `AccountAppGate` 的 pending/processing checkout recovery、checkout SQLite checkpoint、Account logout 或 checkout IPC。
+- 目标：恢复支付不能形成无出口页面；离开流程时必须处理 durable local checkpoint，不能只切 React phase 后在下次启动再次恢复同一记录。
+
+### 2. Signatures
+
+- Native command：`account_engine_v1_abandon_checkout(checkout_id: i64) -> { ok, value | error }`。
+- Runtime：`AccountRuntime::engine_checkout_abandon(checkout_id: i64) -> Value`。
+- Repository：`clear_engine_checkout_if_matches(authority_origin_id, account_link_id, device_id, checkout_id) -> Result<bool, String>`。
+- Frontend client：`AccountEngineOnboardingClientV1.abandonCheckout(checkoutId) -> EngineOnboardingResultV1<null>`。
+- UI exits：`gateBackToPlans` 与既有 `logout`；等待支付页不得依赖 icon-only back 作为唯一退出路径。
+
+### 3. Contracts
+
+- abandon 是 local-only recovery mutation：MUST 只删除当前 authenticated `authority + account + device + checkout_id` 对应的 SQLite checkpoint；MUST NOT 调用 token2api cancel、声称 remote order cancelled、删除订阅或进入 balance fallback。
+- `checkout_id <= 0` MUST `validationRejected`；当前记录属于另一个 checkout id 或 compare-and-delete 失败 MUST `concurrentEdit`；无记录 MUST 作为幂等 success 返回 `value:null`。
+- compare-and-delete MUST 在 SQL `DELETE ... AND checkout_id = ?` 中完成；禁止 read 后使用不带 checkout id 的宽删除覆盖并发新订单。
+- “返回套餐” MUST 先成功 abandon，再读取当前 engine plans；abandon 失败时保留 checkout 页面并展示 safe recovery error，不得只改 React phase。
+- “退出登录” MUST 清除当前 account/device checkout checkpoint 后提交 signed-out session；UI 随后返回登录页。Remote logout 仍遵循既有 best-effort typed-truth contract。
+- waiting/processing reconciliation effect MUST 在 phase 离开或 session signed out 后 cleanup；迟到 read 不得重建已 abandon 的 checkpoint。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Native 结果 | UI 结果 |
+|---|---|---|
+| matching active checkpoint | conditional delete，`ok:true,value:null` | authoritative 读取当前 engine plans |
+| checkpoint 已不存在 | idempotent success | 正常返回套餐 |
+| 同 account/device 已换成新 checkout id | `concurrentEdit`，不删除新记录 | 留在恢复页并提示重试 |
+| SQLite unavailable | `persistenceUnavailable` | 留在恢复页，不制造“已返回”假象 |
+| 点击退出登录 | checkout clear + signed-out commit | 显示 login/register，不再恢复旧 checkout |
+| provider 远端订单稍后完成 | 本命令不声明 cancel | 后续 entitlement authoritative read 决定可用性 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：显式“返回套餐”调用 `abandonCheckout(checkoutId)`；Native 用 isolation tuple + exact checkout id conditional delete，成功后再 `plans(engineId)`。
+- Base：terminal checkout 已由 reconciliation 清除 checkpoint；用户返回套餐时 abandon 幂等成功。
+- Bad：`setPhase("plans")` 直接离开页面但保留 SQLite row，导致 restart 再次强制进入支付。
+- Bad：把 local abandon 命名/投影为 cancel order，误导用户认为 provider-owned order 已取消。
+- Bad：只按 account/device 宽删除，使迟到的旧 UI action 可以删除并发创建的新 checkout。
+
+### 6. Tests Required
+
+- `AccountAppGate.test.tsx` MUST 覆盖 recovered checkout 同时存在“重新打开支付 / 返回套餐 / 退出登录”，返回时 exact checkout id abandon 后读取 plans，失败时留在原页，退出时调用 `auth.logout(thisDevice)` 并离开等待页。
+- `engineOnboardingClient.test.ts` MUST 只接受 `value:null` acknowledgement，拒绝 expanded success payload。
+- `src/services/tauri/accountEngine.test.ts` MUST 断言 command name 与 `{ checkoutId }` camelCase mapping。
+- Rust persistence test MUST 证明 mismatched id 不删除、matching id 删除、重复删除幂等。
+- Cross-layer gate MUST 搜索 `command_registry.rs` 注册与 runtime IPC method；required commands：focused Vitest、`cargo test ... account:: --lib`、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+<button onClick={() => setPhase("plans")}>返回套餐</button>
+```
+
+#### Correct
+
+```tsx
+const abandoned = await client.abandonCheckout(checkout.checkoutId);
+if (!abandoned.ok) return keepCheckoutRecoveryVisible(abandoned.error);
+await openPlans(selectedEngine);
+```
+
+```sql
+DELETE FROM account_engine_checkout
+WHERE authority_origin_id = ?1 AND account_link_id = ?2
+  AND device_id = ?3 AND checkout_id = ?4;
+```

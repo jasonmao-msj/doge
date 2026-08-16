@@ -1,4 +1,5 @@
 import {
+  abandonAccountEngineCheckoutV1,
   createAccountEngineCheckoutV1,
   prepareAccountEngineV1,
   readAccountEngineCatalogV1,
@@ -89,6 +90,7 @@ export type AccountEngineOnboardingClientV1 = {
   ) => Promise<EngineOnboardingResultV1<CheckoutViewV1>>;
   readonly readCheckout: (checkoutId: number) => Promise<EngineOnboardingResultV1<CheckoutViewV1>>;
   readonly resumeCheckout: () => Promise<EngineOnboardingResultV1<PendingEngineCheckoutViewV1 | null>>;
+  readonly abandonCheckout: (checkoutId: number) => Promise<EngineOnboardingResultV1<null>>;
   readonly prepare: (engineId: ManagedEngineIdV1) => Promise<EngineOnboardingResultV1<EngineReadinessViewV1>>;
 };
 
@@ -111,10 +113,19 @@ export function createAccountEngineOnboardingClientV1(): AccountEngineOnboarding
     resumeCheckout: async () => parsePendingCheckout(
       await readPendingAccountEngineCheckoutV1(),
     ),
+    abandonCheckout: async (checkoutId) => parseAcknowledgement(
+      await abandonAccountEngineCheckoutV1(checkoutId),
+    ),
     prepare: async (engineId) => parseReadiness(
       await prepareAccountEngineV1(engineId, newOperationId()),
     ),
   };
+}
+
+function parseAcknowledgement(value: unknown): EngineOnboardingResultV1<null> {
+  const envelope = readEnvelope(value);
+  if (!envelope.ok) return envelope;
+  return envelope.value === null ? { ok: true, value: null } : protocolFailure();
 }
 
 function parsePendingCheckout(

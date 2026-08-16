@@ -1,4 +1,5 @@
 export {
+  abandonAccountEngineCheckoutV1,
   createAccountEngineCheckoutV1,
   prepareAccountEngineV1,
   readAccountEngineCatalogV1,

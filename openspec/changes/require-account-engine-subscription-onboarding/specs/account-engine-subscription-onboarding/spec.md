@@ -68,6 +68,11 @@
 - **WHEN** checkout 处于 pending 或 processing
 - **THEN** React SHALL 只在 pre-AppShell AccountGate 内执行有 absolute expiry 的 bounded authoritative read，不得在 AppShell/root hook 中建立秒级 polling
 
+#### Scenario: User leaves a recovered checkout
+- **WHEN** App 恢复 pending/processing checkout 并展示等待支付页面
+- **THEN** 页面 SHALL 同时提供“返回套餐”与“退出登录”；返回套餐 MUST 先清除当前账号、设备和 checkout id 对应的 local durable checkpoint，再读取当前 engine 的 authoritative plan catalog，退出登录 MUST 进入登录页且不得把用户困在支付恢复状态
+- **AND** local checkpoint abandon MUST NOT 声称已取消 provider-owned remote order，也不得调用 balance/pay-as-you-go fallback
+
 ### Requirement: Managed engine access SHALL be idempotent and secret isolated
 token2api SHALL 在 active subscription 验证后按 `user + device + engine` 幂等 ensure 一个 active managed binding；raw credential MUST 只存在于 token2api one-time response、Doge Rust memory 与 OS vault 写入路径。
 

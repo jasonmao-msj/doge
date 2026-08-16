@@ -80,8 +80,74 @@ describe("AccountAppGate", () => {
 
     expect(await screen.findByText("等待完成支付")).toBeTruthy();
     expect(screen.getByRole("button", { name: "重新打开支付" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "返回套餐" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "退出登录" })).toBeTruthy();
     expect(client.plans).not.toHaveBeenCalled();
     expect(screen.queryByText("主应用已挂载")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "返回套餐" }));
+
+    await waitFor(() => expect(client.abandonCheckout).toHaveBeenCalledWith(88));
+    expect(client.plans).toHaveBeenCalledWith("codex");
+    expect(await screen.findByRole("button", { name: /Starter/ })).toBeTruthy();
+  });
+
+  it("leaves a recovered checkout by signing out", async () => {
+    const client = engineClient({ codexEntitled: false });
+    vi.mocked(client.resumeCheckout).mockResolvedValue({
+      ok: true,
+      value: {
+        engineId: "codex",
+        checkout: {
+          checkoutId: 88,
+          status: "pending",
+          expiresAt: "2030-01-01T00:00:00Z",
+          action: null,
+        },
+      },
+    });
+    const gateway = authenticatedGateway();
+    const logout = vi.spyOn(gateway.auth, "logout").mockResolvedValue({
+      ok: true,
+      value: { localSessionCleared: true, remoteRevocation: "unconfirmed" },
+    });
+
+    render(<AccountAppGate gateway={gateway} engineClient={client} engineActivator={async () => undefined} readyContent={<div>主应用已挂载</div>} />);
+    fireEvent.click(await screen.findByRole("button", { name: "退出登录" }));
+
+    await waitFor(() => expect(logout).toHaveBeenCalledWith(
+      { scope: "thisDevice" },
+      expect.any(Object),
+    ));
+    await waitFor(() => expect(screen.queryByText("等待完成支付")).toBeNull());
+  });
+
+  it("keeps checkout recovery visible when the local checkpoint cannot be abandoned", async () => {
+    const client = engineClient({ codexEntitled: false });
+    vi.mocked(client.resumeCheckout).mockResolvedValue({
+      ok: true,
+      value: {
+        engineId: "codex",
+        checkout: {
+          checkoutId: 88,
+          status: "pending",
+          expiresAt: "2030-01-01T00:00:00Z",
+          action: null,
+        },
+      },
+    });
+    vi.mocked(client.abandonCheckout).mockResolvedValue({
+      ok: false,
+      error: { code: "persistenceUnavailable" },
+    });
+
+    render(<AccountAppGate gateway={authenticatedGateway()} engineClient={client} engineActivator={async () => undefined} />);
+    fireEvent.click(await screen.findByRole("button", { name: "返回套餐" }));
+
+    await waitFor(() => expect(client.abandonCheckout).toHaveBeenCalledWith(88));
+    expect(client.plans).not.toHaveBeenCalled();
+    expect(screen.getByText("等待完成支付")).toBeTruthy();
+    expect(screen.getByRole("alert")).toBeTruthy();
   });
 
   it("removes the app immediately when the account session signs out", async () => {
@@ -171,6 +237,7 @@ function engineClient({ codexEntitled }: { readonly codexEntitled: boolean }): A
       value: { checkoutId: 77, status: "pending" as const, expiresAt: "2030-01-01T00:00:00Z", action: null },
     })),
     resumeCheckout: vi.fn(async () => ({ ok: true as const, value: null })),
+    abandonCheckout: vi.fn(async () => ({ ok: true as const, value: null })),
     prepare: vi.fn(async (engineId) => ({ ok: true as const, value: { engineId, status: "ready" as const } })),
   };
 }

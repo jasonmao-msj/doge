@@ -25,6 +25,10 @@ export function readPendingAccountEngineCheckoutV1(): Promise<unknown> {
   return invoke("account_engine_v1_pending_checkout");
 }
 
+export function abandonAccountEngineCheckoutV1(checkoutId: number): Promise<unknown> {
+  return invoke("account_engine_v1_abandon_checkout", { checkoutId });
+}
+
 export function readAccountEngineReadinessV1(engineId: string): Promise<unknown> {
   return invoke("account_engine_v1_readiness", { engineId });
 }

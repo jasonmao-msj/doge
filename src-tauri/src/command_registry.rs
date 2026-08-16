@@ -9,6 +9,7 @@ pub(crate) fn invoke_handler(
         crate::account::runtime_ipc::account_engine_v1_create_checkout,
         crate::account::runtime_ipc::account_engine_v1_checkout,
         crate::account::runtime_ipc::account_engine_v1_pending_checkout,
+        crate::account::runtime_ipc::account_engine_v1_abandon_checkout,
         crate::account::runtime_ipc::account_engine_v1_readiness,
         crate::account::runtime_ipc::account_engine_v1_prepare,
         // Settings
