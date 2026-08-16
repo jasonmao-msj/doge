@@ -94,6 +94,11 @@ test("Windows artifact-only dispatch cannot publish or access release secrets", 
   );
   assert.match(artifactJob, /doge_\*-setup\.exe/);
   assert.match(artifactJob, /Get-FileHash -Algorithm SHA256/);
+  assert.match(artifactJob, /Smoke Windows application startup/);
+  assert.match(artifactJob, /Start-Process -FilePath \$executable -PassThru/);
+  assert.match(artifactJob, /Start-Sleep -Seconds 8/);
+  assert.match(artifactJob, /windows_launch_smoke=alive/);
+  assert.match(artifactJob, /Stop-Process -Id \$process\.Id -Force/);
   assert.match(artifactJob, /\[System\.IO\.File\]::WriteAllText/);
   assert.match(artifactJob, /`n/);
   assert.doesNotMatch(artifactJob, /Set-Content/);

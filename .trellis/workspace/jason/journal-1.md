@@ -512,3 +512,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: 验证 Windows 应用启动
+
+**Date**: 2026-08-16
+**Task**: 验证 Windows 应用启动
+**Branch**: `codex/windows-launch-smoke`
+
+### Summary
+
+在 Windows artifact-only job 中启动 doge.exe 8 秒、断言进程存活并清理主进程与 daemon；加入 release workflow contract。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7a9d9b3cb` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
