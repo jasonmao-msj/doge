@@ -479,3 +479,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: 修复 macOS 嵌套签名顺序
+
+**Date**: 2026-08-16
+**Task**: 修复 macOS 嵌套签名顺序
+**Branch**: `codex/macos-sign-nested-first`
+
+### Summary
+
+根据 Intel CI 失败日志，将 OpenSSL dylib、daemon、main、App 的签名顺序固定为由内到外；同时覆盖 ad-hoc 与 Developer ID 路径，并加入顺序 contract。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2f672fc67` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
