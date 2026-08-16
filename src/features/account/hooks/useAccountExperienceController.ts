@@ -76,6 +76,7 @@ export function useAccountExperienceControllerV1(
     INITIAL_CONFIGURATION_SURFACE_V1,
   );
   const generationRef = useRef(0);
+  const loadingGenerationRef = useRef<number | null>(null);
   const bootstrapRetryInFlightRef = useRef(false);
   const oauthWakeupsRef = useRef(new OAuthWakeupCoordinatorV1());
   const readOAuthAttemptRef = useRef<(attempt: OAuthAttemptHandleV1) => void>(() => undefined);
@@ -195,11 +196,17 @@ export function useAccountExperienceControllerV1(
     const generation = generationRef.current + 1;
     generationRef.current = generation;
     const indicateLoading = options.indicateLoading !== false;
-    if (indicateLoading) setLoading(true);
+    if (indicateLoading) {
+      loadingGenerationRef.current = generation;
+      setLoading(true);
+    }
     setFailure(null);
     const result = await gateway.bootstrap({});
+    if (indicateLoading && loadingGenerationRef.current === generation) {
+      loadingGenerationRef.current = null;
+      setLoading(false);
+    }
     if (generationRef.current !== generation) return;
-    if (indicateLoading) setLoading(false);
     if (!result.ok) {
       setFailure(result.error);
       return;
@@ -555,6 +562,8 @@ export function useAccountExperienceControllerV1(
       return false;
     }
     generationRef.current += 1;
+    loadingGenerationRef.current = null;
+    setLoading(false);
     setBootstrap((current) => current ? { ...current, session: { status: "signedOut" } } : current);
     setProfile(null);
     setUsage(null);
@@ -620,6 +629,8 @@ export function useAccountExperienceControllerV1(
       return;
     }
     generationRef.current += 1;
+    loadingGenerationRef.current = null;
+    setLoading(false);
     setBootstrap((current) => current ? { ...current, session: { status: "signedOut" } } : current);
     setProfile(null);
     setUsage(null);

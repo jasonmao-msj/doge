@@ -135,6 +135,11 @@ account gate SHALL 每屏只呈现一个主要决策；说明性内容 SHALL 收
 - **THEN** 页面 SHALL 始终提供可见的“退出登录”动作；成功后 MUST 回到登录/注册页，使没有目标订阅的用户可以切换账号
 - **AND** logout pending 期间该动作 MUST 防止重复提交，失败时 MUST 留在当前页面并展示可重试的用户文案
 
+#### Scenario: Logout races with a session event bootstrap
+- **WHEN** `logout(thisDevice)` 清除本地 session 并在 mutation 返回前触发 `sessionChanged`，使 controller 启动新的 account bootstrap
+- **THEN** logout 成功 SHALL 作废旧账号 bootstrap，并在有限时间内回到登录/注册页
+- **AND** 被作废的 stale bootstrap MUST 释放自己拥有的 loading state，不得让页面永久停留在“正在连接”
+
 ### Requirement: Account and checkout recovery SHALL be durable and bounded
 系统 SHALL 持久化 credential-free session/checkpoint/receipt，并为 checkout、managed binding 与 configuration 提供 crash-safe recovery；reconciliation MUST 有 absolute expiry 与 bounded backoff。
 

@@ -63,6 +63,24 @@ describe("AccountAppGate", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: /Starter/ })).toBeNull());
   });
 
+  it("settles on login when logout races with a session bootstrap", async () => {
+    const client = engineClient({ codexEntitled: false });
+    const { gateway, settleLogout, settleEventBootstrap } = logoutBootstrapRaceGateway();
+    render(<AccountAppGate gateway={gateway} engineClient={client} engineActivator={async () => undefined} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Codex/ }));
+    expect(await screen.findByRole("button", { name: /Starter/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "退出登录" }));
+
+    expect(await screen.findByText("正在连接")).toBeTruthy();
+    act(() => settleLogout());
+    await act(async () => Promise.resolve());
+    expect(screen.queryByText("正在连接")).toBeNull();
+    expect(screen.getByRole("tab", { name: "登录" })).toBeTruthy();
+    await act(async () => settleEventBootstrap());
+    expect(screen.getByRole("tab", { name: "登录" })).toBeTruthy();
+  });
+
   it("keeps the plan gate recoverable and blocks duplicate sign-out submissions", async () => {
     const client = engineClient({ codexEntitled: false });
     const gateway = authenticatedGateway();
@@ -293,6 +311,77 @@ function expiringGateway(): {
         eventSeq: 1,
         accountEpoch: 2,
       });
+    },
+  };
+}
+
+function logoutBootstrapRaceGateway(): {
+  readonly gateway: AccountGatewayV1;
+  readonly settleLogout: () => void;
+  readonly settleEventBootstrap: () => Promise<void>;
+} {
+  const base = authenticatedGateway();
+  const originalBootstrap = base.bootstrap.bind(base);
+  type BootstrapResult = Awaited<ReturnType<AccountGatewayV1["bootstrap"]>>;
+  type LogoutResult = Awaited<ReturnType<AccountGatewayV1["auth"]["logout"]>>;
+  let bootstrapCalls = 0;
+  let listener: ((event: AccountGatewayEventV1) => void) | null = null;
+  let resolveEventBootstrap: (result: BootstrapResult) => void = () => undefined;
+  const eventBootstrap = new Promise<BootstrapResult>((resolve) => {
+    resolveEventBootstrap = resolve;
+  });
+  let resolveLogout: (result: LogoutResult) => void = () => undefined;
+  const logoutResult = new Promise<LogoutResult>((resolve) => {
+    resolveLogout = resolve;
+  });
+  const bootstrapWithAuth = async (context: Parameters<AccountGatewayV1["bootstrap"]>[0]) => {
+    const result = await originalBootstrap(context);
+    if (!result.ok) return result;
+    return {
+      ...result,
+      value: {
+        ...result.value,
+        capabilities: {
+          ...result.value.capabilities,
+          entries: {
+            ...result.value.capabilities.entries,
+            "auth.emailPasswordLogin": { status: "enabled" as const },
+            "auth.registration": { status: "enabled" as const },
+          },
+        },
+      },
+    };
+  };
+  const gateway = Object.create(base) as AccountGatewayV1;
+  gateway.bootstrap = (context) => {
+    bootstrapCalls += 1;
+    return bootstrapCalls === 1 ? bootstrapWithAuth(context) : eventBootstrap;
+  };
+  gateway.subscribe = (next) => {
+    listener = next;
+    return () => { listener = null; };
+  };
+  gateway.auth.logout = vi.fn(() => {
+    if (!listener) throw new Error("account event listener is unavailable");
+    listener({
+      kind: "sessionChanged",
+      eventId: "event_test_logout_race_0001",
+      emittedAt: "2030-01-01T00:00:00Z",
+      processGeneration: 1,
+      eventSeq: 1,
+      accountEpoch: 2,
+    });
+    return logoutResult;
+  });
+  return {
+    gateway,
+    settleLogout: () => resolveLogout({
+      ok: true,
+      value: { localSessionCleared: true, remoteRevocation: "unconfirmed" },
+    }),
+    settleEventBootstrap: async () => {
+      resolveEventBootstrap(await bootstrapWithAuth({}));
+      await eventBootstrap;
     },
   };
 }

@@ -340,6 +340,7 @@ WHERE authority_origin_id = ?1 AND account_link_id = ?2
 - logout pending MUST 同时设置 `disabled` 与 `aria-busy=true`，重复点击不得产生第二个 mutation。
 - logout failure MUST 返回 `false`，Gate 留在当前 phase 并显示 mapped safe copy；禁止裸露 Native/protocol enum。
 - successful logout MUST invalidate in-flight catalog generation；迟到 catalog result 不得继续 `resumeCheckout`、打开支付 action 或恢复旧 engine path。
+- account bootstrap 的 `loading` MUST 由 exact generation owner 管理。`sessionChanged` 触发的 bootstrap 与 logout/change-password signed-out commit 竞态时，signed-out commit MUST 同步 invalidate generation、撤销旧 loading owner 并清除 loading；迟到 bootstrap 只允许静默 settle，不得恢复旧 session 或把 gate 永久留在“正在连接”。
 - checkout-local “返回套餐”继续负责 exact checkpoint abandon；全局“退出登录”不得替代该 local recovery contract。
 
 ### 4. Validation & Error Matrix
@@ -352,6 +353,7 @@ WHERE authority_origin_id = ?1 AND account_link_id = ?2
 | preparing / prepare failure | shared logout | 不挂载 AppShell，返回登录 |
 | logout pending | disabled + `aria-busy` | duplicate click 零新增 mutation |
 | logout failure | `false` + safe failure | 原 phase 与原主要动作仍可用 |
+| logout success 与 `sessionChanged` bootstrap 并发 | signed-out commit 取消旧 loading owner | 立即显示 login/register；stale bootstrap 迟到无可见副作用 |
 | signedOut / ready | 不渲染 gate logout | 登录页或 AppShell 各自拥有自己的账号入口 |
 
 ### 5. Good / Base / Bad Cases
@@ -361,12 +363,14 @@ WHERE authority_origin_id = ?1 AND account_link_id = ?2
 - Bad：只在 `phase === "checkout"` 内写 logout button，导致 plans/empty/failure 仍无出口。
 - Bad：logout 失败后清空 plans 或跳回 loading，使用户既未退出又丢失当前恢复动作。
 - Bad：catalog promise 在 logout 成功后继续调用 `resumeCheckout()`，重新打开已退出账号的支付流程。
+- Bad：bootstrap 在 stale generation 分支先 `return`，把自己设置的 `loading=true` 永久遗留；或旧 generation settle 时无条件清 loading，误清除更新 generation 的 pending UI。
 
 ### 6. Tests Required
 
 - `AccountAppGate.test.tsx` MUST 覆盖无订阅套餐页 visible logout、`auth.logout({scope:"thisDevice"})` exact call、成功后计划页消失。
 - 使用 deferred logout 覆盖 pending disabled、duplicate click only once、failure safe alert、plan list 保持可用。
 - 使用 deferred catalog 覆盖 catalog loading 中退出成功后迟到 response 不调用 `resumeCheckout`。
+- 使用 deferred `sessionChanged` bootstrap 覆盖 logout mutation 先发 event、后返回 success：signed-out commit 后必须立即离开 connecting，迟到 bootstrap settle 后仍保持登录页。
 - Existing checkout tests MUST 继续覆盖“返回套餐”与 shared logout；测试点击前先等待目标 phase，避免误点 catalog-loading 的同名 global action。
 - Gates：focused Vitest、`npm run typecheck`、target ESLint、full `npm run test`、`npm run lint`。
 
@@ -391,4 +395,17 @@ const accountExit = {
 };
 
 return <GateFrame accountExit={accountExit}>{phaseContent}</GateFrame>;
+```
+
+bootstrap loading 的 owner MUST 与 generation 绑定：
+
+```ts
+loadingGenerationRef.current = generation;
+setLoading(true);
+const result = await gateway.bootstrap({});
+if (loadingGenerationRef.current === generation) {
+  loadingGenerationRef.current = null;
+  setLoading(false);
+}
+if (generationRef.current !== generation) return;
 ```
