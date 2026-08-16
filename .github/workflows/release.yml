@@ -245,7 +245,8 @@ jobs:
           mkdir -p release-artifacts
           TARGET="release-artifacts/$(basename "$DMG")"
           cp "$DMG" "$TARGET"
-          shasum -a 256 "$TARGET" > "$TARGET.sha256"
+          BASENAME="$(basename "$TARGET")"
+          (cd release-artifacts && shasum -a 256 "$BASENAME" > "$BASENAME.sha256")
           printf 'signature=adhoc\nnotarization=not-submitted\narchitecture=%s\n' \
             "$ARCH" > "$TARGET.build-status.txt"
 

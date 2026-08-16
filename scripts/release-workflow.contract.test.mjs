@@ -121,7 +121,11 @@ test("macOS artifact-only dispatch is ad-hoc signed, verified, and cannot publis
   assert.match(artifactJob, /build:mac-x64/);
   assert.match(artifactJob, /--skip-sign --skip-notarize/);
   assert.match(artifactJob, /hdiutil verify/);
-  assert.match(artifactJob, /shasum -a 256/);
+  assert.match(
+    artifactJob,
+    /\(cd release-artifacts && shasum -a 256 "\$BASENAME" > "\$BASENAME\.sha256"\)/,
+  );
+  assert.doesNotMatch(artifactJob, /shasum -a 256 "\$TARGET"/);
   assert.match(artifactJob, /signature=adhoc/);
   assert.match(artifactJob, /notarization=not-submitted/);
   assert.match(artifactJob, /name: doge-macos-\$\{\{ matrix\.arch \}\}-adhoc/);
