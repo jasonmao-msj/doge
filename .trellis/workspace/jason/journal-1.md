@@ -380,3 +380,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - GitHub PR 与 macOS/Windows artifact-only CI
+
+
+## Session 12: 移除按量付费用户心智
+
+**Date**: 2026-08-16
+**Task**: 移除按量付费用户心智
+**Branch**: `codex/remove-payg-mental-model`
+
+### Summary
+
+删除账号套餐提示中的按量付费概念，只保留服务端实时套餐事实，并加入中英文产品文案防回归测试。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b46a202bf` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
