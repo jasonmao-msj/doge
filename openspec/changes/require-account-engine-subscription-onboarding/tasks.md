@@ -41,4 +41,4 @@
 - [x] 6.6 [P0] 修复 signed-in cold restore 对 masked `primaryEmailLabel` 的 SafeLabel 误判；增加 exact IPC bootstrap regression test，并用本地 macOS release package 验证恢复登录后进入 engine catalog
 - [x] 6.7 [P0] 为 recovered checkout 增加“返回套餐”与“退出登录”闭环；实现 account/device/checkout-scoped local checkpoint abandon、focused cross-layer tests 与本地 macOS package smoke
 - [x] 6.8 [P0] 将“退出登录”提升为所有 authenticated pre-AppShell blocking states 的固定逃生口；覆盖无订阅套餐、空套餐、加载/异常/支付/准备状态，补齐失败回归并重新生成 macOS 本地包
-- [ ] 6.9 [P0] 修复 logout 与 `sessionChanged` bootstrap 的 generation race；用 deferred event regression 证明 stale request 释放 loading，并生成 macOS arm64 / Windows x64 本地试用包
+- [x] 6.9 [P0] 修复 logout 与 `sessionChanged` bootstrap 的 generation race；用 deferred event regression 证明 stale request 释放 loading，并生成 macOS arm64 / Windows x64 本地试用包
