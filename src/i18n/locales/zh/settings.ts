@@ -470,6 +470,8 @@ const settings = {
     projectsSubsectionDescription: "将项目分配到分组并调整顺序。",
     ungroupedTitle: "未分组",
     sidebarBasic: "基础设置",
+    sidebarAccount: "账号",
+    accountDescription: "可选登录、主动查看额度，并一键配置 Codex；本地模式始终完整可用。",
     sidebarShortcuts: "快捷键",
     sidebarProviders: "CLI配置管理",
     sidebarMcp: "MCP 服务器",

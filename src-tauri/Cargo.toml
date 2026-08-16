@@ -18,6 +18,8 @@ path = "src/bin/doge_daemon.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+default = ["account-convenience"]
+account-convenience = []
 custom-protocol = ["tauri/custom-protocol"]
 
 [lib]
@@ -49,7 +51,9 @@ base64 = "0.22"
 fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 ignore = "0.4.25"
 portable-pty = "0.8"
-reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "json"] }
+keyring = "4.1.6"
+zeroize = "1"
 zip = { version = "4.6.1", default-features = false, features = ["deflate-flate2"] }
 # flate2 1.1.8 requires an explicit backend; zip pulls it in with default-features off,
 # so select rust_backend (miniz_oxide, no system zlib) here for the target build.

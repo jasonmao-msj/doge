@@ -1174,8 +1174,14 @@ async fn execute_claude(
         .normalized_provider()
         .ok_or_else(|| "destination provider identity is required".to_string())?;
     validate_claude_continuation_model(destination, &provider_profile_id)?;
-    let provider_launch_profile =
-        crate::engine::claude::resolve_claude_provider_launch_profile(Some(&provider_profile_id))?;
+    let provider_launch_profile = state
+        .account_runtime
+        .hydrate_managed_claude_launch_profile(
+            crate::engine::claude::resolve_claude_provider_launch_profile(Some(
+                &provider_profile_id,
+            ))?,
+        )
+        .await?;
     let workspace_path = workspace_path(state, workspace_id).await?;
     let session = state
         .engine_manager

@@ -29,6 +29,49 @@
 - 图标按钮 tooltip 激活后必须能关闭，禁止留下悬浮残影。
 - 动态创建 Tauri `WebviewWindow` 时，window label pattern 必须同步覆盖 `src-tauri/capabilities/*.json`，并用 contract test 锁定；DOM `data-tauri-drag-region` 只解决命中区域，不会自动授予动态窗口权限。
 
+## Scenario: Interactive Feedback Must Be Behavior-Tested
+
+### 1. Scope / Trigger
+
+- Trigger：新增或修改 tooltip、retry、refresh、submit、expand/collapse 等可操作 UI。
+- 目标：测试必须证明用户完成了动作并看到了反馈，不能只证明 DOM 中存在按钮或 copy。
+
+### 2. Signatures
+
+- Async action state：至少能区分 `idle | pending | settled`；具体名称可按 domain 收敛。
+- Tooltip trigger：semantic `<button type="button" aria-label="...">` + shared `Tooltip` / `TooltipContent`。
+- Retry handler：返回可 await 的 `Promise<void>`，并在 in-flight 期间拒绝重复触发。
+
+### 3. Contracts
+
+- Tooltip MUST 通过 pointer hover 与 keyboard focus 可达；测试 MUST 激活 trigger 并断言 portal 内的实际说明内容，`getByRole("button")` 只算结构检查。
+- Retry / refresh MUST 在请求期间显示 pending feedback，并在快速失败后留下可见的 settled feedback；禁止依赖可能被 React batching 合并掉的瞬时 loading frame。
+- 测试 async feedback 时 MUST 使用 deferred Promise 锁住 pending phase，分别断言 pending 与 settled；禁止只断言 gateway mock 被调用。
+- Icon help trigger MUST 保持独立 icon-button 样式；父状态容器不得用 `.state button` 一类 broad selector 覆盖其尺寸、border 或 background。
+- App manual QA MUST 核对正在运行的 bundle identifier / product flavor，避免把旧安装包当成当前 source 或新 bundle 验收。
+
+### 4. Validation Matrix
+
+| 场景 | 必须断言 | 禁止的替代证明 |
+|---|---|---|
+| pointer hover help | visible tooltip popup + expected copy | trigger 存在 |
+| keyboard focus help | visible tooltip popup + expected copy | 只有 `aria-label` |
+| async retry pending | disabled / `aria-busy` + pending label | gateway spy called |
+| async retry settled failure | retryable settled label / state | 页面仍长得一样 |
+| packaged App QA | 当前 flavor 的新布局与真实交互 | 旧 bundle 的 screenshot |
+
+### 5. Good/Base/Bad Cases
+
+- Good：deferred gateway 让测试稳定停在 pending，随后 resolve 并断言 `再次重试`；pointer 与 focus 都打开 shared tooltip。
+- Base：请求立即失败时，settled label 仍发生可见变化，用户知道点击已生效。
+- Bad：测试只写 `expect(button).toBeTruthy()`；实现只在同一 batched turn 内 `setLoading(true)` / `setLoading(false)`；父容器 selector 同时命中 retry 与 help button。
+
+### 6. Tests Required
+
+- Component test：pointer hover、keyboard focus、pending、settled 四个行为断言。
+- Visual contract：锁定紧凑布局关键 selector，并证明 help trigger 不落入 broad action-button selector。
+- 至少一次 exact packaged App manual QA：记录 flavor/path，并实际触发 tooltip 与 retry。
+
 ## Scenario: Renderer Error Feedback Must Not Use Native Alert
 
 ### 1. Scope / Trigger

@@ -1,0 +1,9 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/backend/account-convenience-native-contract.md", "reason": "Native account broker/vault/IPC contract"}
+{"file": ".trellis/spec/backend/codex-provider-scoped-runtime.md", "reason": "Codex provider-scoped runtime"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Account gate UI composition"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Account controller hook boundaries"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Process-lifetime account state"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-repo IPC/HTTP/config dataflow"}

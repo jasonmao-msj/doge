@@ -1269,6 +1269,7 @@ mod tests {
         let mut workspaces = std::collections::HashMap::new();
         workspaces.insert(id.to_string(), test_workspace_entry(id, repo_root));
         crate::state::AppState {
+            account_runtime: crate::account::AccountRuntime::load(&data_dir),
             workspaces: tokio::sync::Mutex::new(workspaces),
             sessions: tokio::sync::Mutex::new(std::collections::HashMap::new()),
             terminal_sessions: tokio::sync::Mutex::new(std::collections::HashMap::new()),

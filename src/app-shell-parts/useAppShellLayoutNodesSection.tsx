@@ -8,6 +8,7 @@ import { useModuleViewShortcuts } from "../features/app/hooks/useModuleViewShort
 import { GIT_GRAPH_TAB_ID } from "../features/git-history/types";
 import { WorkspaceAliasPrompt } from "../features/workspaces/components/WorkspaceAliasPrompt";
 import { useClientUiVisibility } from "../features/client-ui-visibility/hooks/useClientUiVisibility";
+import { isAccountConvenienceV1Enabled } from "../features/account/runtime/featureFlag";
 import { useProjectMapDataset } from "../features/project-map/hooks/useProjectMapDataset";
 import {
   buildIntentCanvasContextAttachment,
@@ -63,6 +64,8 @@ import {
   type AppShellDomainContextName,
   type AppShellDomainContexts,
 } from "./appShellDomainContexts";
+
+const accountConvenienceV1Enabled = isAccountConvenienceV1Enabled();
 
 type AppShellLayoutNodesContext = Record<string, any>;
 
@@ -964,6 +967,7 @@ export function useAppShellLayoutNodesSection(
       alertError(error instanceof Error ? error.message : String(error));
     });
   }, [activeWorkspace?.name, activeWorkspaceId, alertError]);
+  const handleOpenAccount = useEventCallback(() => openSettings("account"));
   const mainHeaderActions = useMainHeaderActionItems({
     isCompact,
     rightPanelCollapsed,
@@ -991,6 +995,8 @@ export function useAppShellLayoutNodesSection(
     showFileCompareButton: !isCompact,
     isFileCompareActive: centerMode === "fileCompare",
     onOpenFileCompare: handleOpenScratchFileCompare,
+    showAccountButton: !isCompact && accountConvenienceV1Enabled,
+    onOpenAccount: accountConvenienceV1Enabled ? handleOpenAccount : undefined,
   });
   const handleCloseBrowserDock = useCallback(() => {
     // Browser Agent now lives in its own tool window.

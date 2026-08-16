@@ -140,4 +140,31 @@ describe("useMainHeaderActionItems", () => {
     action?.onSelect();
     expect(onOpenFileCompare).toHaveBeenCalledTimes(1);
   });
+
+  it("opens the shared Settings account surface from the optional header action", () => {
+    const onOpenAccount = vi.fn();
+    const { result } = renderHook(() =>
+      useMainHeaderActionItems({
+        isCompact: false,
+        rightPanelCollapsed: false,
+        sidebarToggleProps: {
+          isCompact: false,
+          sidebarCollapsed: false,
+          rightPanelCollapsed: false,
+          rightPanelAvailable: false,
+          onCollapseSidebar: vi.fn(),
+          onExpandSidebar: vi.fn(),
+          onCollapseRightPanel: vi.fn(),
+          onExpandRightPanel: vi.fn(),
+        },
+        showAccountButton: true,
+        onOpenAccount,
+      }),
+    );
+
+    const action = result.current.find((item) => item.id === "account");
+    expect(action?.label).toBe("settings.sidebarAccount");
+    action?.onSelect();
+    expect(onOpenAccount).toHaveBeenCalledTimes(1);
+  });
 });

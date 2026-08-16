@@ -1,0 +1,323 @@
+.account-config-dialog {
+  width: min(620px, calc(100vw - 32px)) !important;
+  max-width: none !important;
+  max-height: min(760px, calc(100vh - 32px));
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0 !important;
+  overflow: hidden;
+  padding: 0 !important;
+  border-color: var(--border-strong) !important;
+  border-radius: 14px !important;
+  color: var(--popover-foreground) !important;
+  background: var(--popover) !important;
+  opacity: 1 !important;
+  overscroll-behavior: contain;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 34%) !important;
+}
+
+.account-config-header {
+  min-height: 60px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px !important;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left !important;
+}
+
+.account-config-heading [data-slot="dialog-title"] {
+  font-size: 17px;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.account-icon-button {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.account-icon-button svg {
+  width: 17px;
+}
+
+.account-config-body {
+  overflow: auto;
+  padding: 20px;
+  background: var(--popover);
+}
+
+.account-config-footer {
+  flex-direction: row !important;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 16px !important;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--popover);
+}
+
+.account-config-offer {
+  min-height: 180px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+}
+
+.account-config-offer svg {
+  color: var(--text-primary);
+}
+
+.account-api-key-loading,
+.account-api-key-empty {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 14px;
+  padding-block: 18px;
+  color: var(--text-secondary);
+}
+
+.account-api-key-loading {
+  grid-template-columns: auto auto;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.account-api-key-empty > svg {
+  width: 30px;
+  height: 30px;
+  color: var(--text-tertiary);
+}
+
+.account-api-key-empty .account-inline-actions {
+  justify-content: center;
+}
+
+.account-api-key-empty button,
+.account-api-key-toolbar button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  color: var(--text-primary);
+  background: var(--surface-control, var(--background));
+}
+
+.account-api-key-toolbar {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.account-api-key-toolbar button {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.account-api-key-list {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.account-api-key-list > button {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  background: transparent;
+  text-align: left;
+}
+
+.account-api-key-list > button:hover:not(:disabled) {
+  background: var(--surface-hover, var(--accent));
+}
+
+.account-api-key-list > button > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.account-api-key-list strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-api-key-list small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.account-api-key-radio {
+  width: 15px;
+  height: 15px;
+  box-sizing: border-box;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+}
+
+.account-api-key-list > button.is-selected .account-api-key-radio {
+  border: 4px solid var(--primary);
+}
+
+.account-config-plan > .account-title-with-help {
+  margin-bottom: 12px;
+}
+
+.account-config-plan h3 {
+  font-size: 12px;
+}
+
+.account-config-plan ul,
+.account-config-result ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account-config-plan li {
+  overflow: hidden;
+  border-block: 1px solid var(--border-subtle);
+}
+
+.account-config-plan li + li {
+  border-top: 0;
+}
+
+.account-config-plan li > button {
+  width: 100%;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 10px;
+  border: 0;
+  color: var(--text-primary);
+  background: var(--popover);
+  text-align: left;
+}
+
+.account-config-plan li > button:hover {
+  background: var(--surface-hover, var(--accent));
+}
+
+.account-config-plan li > button > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.account-config-plan li > button strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.account-config-plan li > button small {
+  color: var(--text-tertiary);
+  font-size: 10px;
+}
+
+.account-file-detail {
+  padding: 14px 10px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--muted);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.account-file-detail h4 {
+  font-size: 11px;
+}
+
+.account-diff-entry {
+  margin-top: 10px;
+}
+
+.account-diff-entry > strong {
+  font-size: 11px;
+}
+
+.account-diff-entry dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 8px 0 0;
+  border: 1px solid var(--border-subtle);
+  background: var(--border-subtle);
+}
+
+.account-diff-entry dl div {
+  min-width: 0;
+  padding: 9px;
+  background: var(--popover);
+}
+
+.account-diff-entry dt {
+  color: var(--text-tertiary);
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.account-diff-entry dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.account-config-result ul {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.account-config-result li {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+
+.account-config-result li strong {
+  color: var(--status-success, var(--success));
+}
+
+.account-empty-state {
+  margin: 18px 0 0;
+  padding: 24px 0;
+  border-block: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  text-align: center;
+  font-size: 12px;
+}

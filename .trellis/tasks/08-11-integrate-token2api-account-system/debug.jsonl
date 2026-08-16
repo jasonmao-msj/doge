@@ -1,0 +1,12 @@
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": "AGENTS.md", "reason": "Global safety and merge guardrails"}
+{"file": "openspec/changes/integrate-token2api-account-system/design.md", "reason": "Frozen lifecycle and recovery semantics"}
+{"file": "openspec/changes/integrate-token2api-account-system/tasks.md", "reason": "Owning lane and required regression gate"}
+{"file": "openspec/changes/integrate-token2api-account-system/specs/token2api-account-convenience/spec.md", "reason": "Expected behavior during diagnosis"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/v1-contract-freeze-review.md", "reason": "Illegal state and mapping diagnostics"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/token2api-modification-verdict.md", "reason": "Known upstream correctness and security blockers"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer root cause and sibling-path audit"}
+{"file": ".trellis/spec/guides/native-webview-api-risk-gate.md", "reason": "Platform recovery and fail-closed audit"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Boundary narrowing and illegal-state diagnostics"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Backend failure propagation diagnostics"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-safe debugging constraints"}

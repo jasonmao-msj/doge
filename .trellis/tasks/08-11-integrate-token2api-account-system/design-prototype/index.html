@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:," />
+  <title>Doge 登录与订阅交互原型</title>
+  <!--
+    设计假设：
+    - 目标用户不理解 API Key，也不需要理解配置过程。
+    - 首次登录后选择引擎；后续恢复上次引擎。
+    - Codex 演示缺少权益的购买路径；Claude Code 演示已有权益路径。
+    - 套餐名与价格是明确标注的演示数据，不代表正式售价。
+    - 原型不发网络请求、不写文件、不调用 Tauri。
+  -->
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", system-ui, sans-serif;
+      --canvas: #e8e8eb;
+      --window: #ffffff;
+      --surface: #ffffff;
+      --surface-soft: #f4f4f5;
+      --surface-hover: #eeeeef;
+      --surface-strong: #18181b;
+      --text: #18181b;
+      --text-strong: #09090b;
+      --muted: #71717a;
+      --faint: #a1a1aa;
+      --border: rgba(24, 24, 27, 0.1);
+      --border-strong: rgba(24, 24, 27, 0.2);
+      --primary: #18181b;
+      --primary-text: #ffffff;
+      --success: #16976c;
+      --warning: #b76b15;
+      --danger: #d72d2d;
+      --focus: #5d8ee8;
+      --shadow: 0 28px 90px rgba(20, 20, 25, 0.2), 0 0 0 1px rgba(0,0,0,.08);
+      --engine-tile: #ffffff;
+      --sidebar: #f4f4f5;
+    }
+
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --canvas: #08090b;
+      --window: #111216;
+      --surface: #18191e;
+      --surface-soft: #202126;
+      --surface-hover: #292a30;
+      --surface-strong: #f4f4f5;
+      --text: #e6e7ea;
+      --text-strong: #ffffff;
+      --muted: #a1a1aa;
+      --faint: #71717a;
+      --border: rgba(255,255,255,.1);
+      --border-strong: rgba(255,255,255,.2);
+      --primary: #f4f4f5;
+      --primary-text: #18181b;
+      --success: #78ebbe;
+      --warning: #ffaf55;
+      --danger: #ff6e6e;
+      --focus: #7ba6ff;
+      --shadow: 0 30px 100px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08);
+      --engine-tile: #18191e;
+      --sidebar: #18191e;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      min-width: 980px;
+      min-height: 720px;
+      color: var(--text);
+      background: var(--canvas);
+      -webkit-font-smoothing: antialiased;
+      transition: background-color 180ms ease, color 180ms ease;
+    }
+
+    button, input { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .prototype-stage {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: 54px minmax(0, 1fr);
+      padding: 0 24px 24px;
+    }
+
+    .prototype-bar {
+      max-width: 1480px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .prototype-meta,
+    .prototype-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .prototype-badge {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--surface) 78%, transparent);
+    }
+
+    .prototype-action {
+      min-height: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: var(--surface);
+      cursor: pointer;
+    }
+
+    .prototype-action:hover { background: var(--surface-hover); }
+    .prototype-action--pay {
+      border-color: var(--primary);
+      color: var(--primary-text);
+      background: var(--primary);
+      font-weight: 650;
+    }
+
+    .mac-window {
+      position: relative;
+      width: min(1480px, calc(100vw - 48px));
+      height: min(860px, calc(100vh - 78px));
+      min-height: 640px;
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 14px;
+      color: var(--text);
+      background: var(--window);
+      box-shadow: var(--shadow);
+    }
+
+    .titlebar {
+      position: absolute;
+      inset: 0 0 auto 0;
+      z-index: 20;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in srgb, var(--window) 96%, transparent);
+    }
+
+    .traffic-lights { display: flex; gap: 8px; }
+    .traffic-light { width: 12px; height: 12px; border-radius: 50%; }
+    .traffic-light:nth-child(1) { background: #ff5f57; }
+    .traffic-light:nth-child(2) { background: #febc2e; }
+    .traffic-light:nth-child(3) { background: #28c840; }
+    .titlebar-name {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .app-root { position: absolute; inset: 46px 0 0; }
+    .screen {
+      min-height: 100%;
+      display: grid;
+      align-items: center;
+      justify-items: center;
+      padding: 52px 64px;
+      animation: screen-in 220ms cubic-bezier(.2,.7,.2,1) both;
+    }
+
+    @keyframes screen-in {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .top-action {
+      position: absolute;
+      top: 24px;
+      z-index: 4;
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 8px;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .top-action:hover { color: var(--text); background: var(--surface-hover); }
+    .top-action--left { left: 28px; }
+    .top-action--right { right: 28px; }
+
+    .auth-card { width: min(410px, 100%); }
+    .brand-lockup {
+      display: grid;
+      justify-items: center;
+      gap: 12px;
+      margin-bottom: 34px;
+    }
+
+    .doge-mark {
+      width: 66px;
+      height: 66px;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 18px rgba(223, 133, 25, .15));
+    }
+
+    .brand-lockup h1,
+    .screen-heading h1,
+    .focused-state h1 {
+      margin: 0;
+      color: var(--text-strong);
+      font-size: 27px;
+      font-weight: 690;
+      line-height: 1.2;
+      letter-spacing: -.025em;
+      text-wrap: balance;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      min-height: 44px;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .tab:hover { color: var(--text); }
+    .tab[aria-selected="true"] {
+      border-bottom-color: var(--text-strong);
+      color: var(--text-strong);
+      font-weight: 650;
+    }
+
+    .form { display: grid; gap: 14px; margin-top: 24px; }
+    .field { display: grid; gap: 7px; }
+    .field-label { color: var(--text); font-size: 13px; font-weight: 620; }
+    .field input {
+      width: 100%;
+      height: 46px;
+      padding: 0 13px;
+      border: 1px solid var(--border-strong);
+      border-radius: 9px;
+      color: var(--text);
+      background: var(--surface-soft);
+    }
+    .field input:hover { border-color: var(--faint); }
+
+    .primary-button,
+    .secondary-button {
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 9px;
+      cursor: pointer;
+    }
+
+    .primary-button {
+      border: 1px solid var(--primary);
+      color: var(--primary-text);
+      background: var(--primary);
+      font-weight: 660;
+    }
+    .primary-button:hover { filter: brightness(.96); }
+    .secondary-button {
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      font-weight: 620;
+    }
+    .secondary-button:hover { background: var(--surface-hover); }
+
+    .text-button {
+      width: max-content;
+      padding: 5px 2px;
+      border: 0;
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .text-button:hover { color: var(--text); }
+    .text-button--right { justify-self: end; }
+
+    .screen-heading {
+      display: grid;
+      justify-items: center;
+      gap: 10px;
+      margin-bottom: 36px;
+      text-align: center;
+    }
+
+    .heading-row { display: flex; align-items: center; gap: 8px; }
+    .help {
+      position: relative;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 7px;
+      color: var(--muted);
+      background: transparent;
+      cursor: help;
+    }
+    .help:hover, .help:focus-visible { color: var(--text); background: var(--surface-hover); }
+    .help::before {
+      content: "?";
+      width: 16px;
+      height: 16px;
+      display: grid;
+      place-items: center;
+      border: 1.5px solid currentColor;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .help::after {
+      content: attr(data-tip);
+      position: absolute;
+      z-index: 30;
+      left: 50%;
+      bottom: calc(100% + 9px);
+      width: max-content;
+      max-width: min(420px, calc(100vw - 48px));
+      height: auto;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      background: var(--surface);
+      box-shadow: 0 12px 32px rgba(0,0,0,.16);
+      font-size: 12px;
+      font-weight: 450;
+      line-height: 1.55;
+      text-align: left;
+      white-space: normal;
+      text-wrap: pretty;
+      transform: translate(-50%, 4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease, transform 120ms ease;
+    }
+    .help:hover::after, .help:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+
+    .engine-shell { width: min(600px, 100%); }
+    .engine-grid {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .engine-card {
+      min-height: 174px;
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      gap: 18px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text-strong);
+      background: var(--engine-tile);
+      cursor: pointer;
+      transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+    }
+    .engine-card:hover { border-color: var(--border-strong); background: var(--surface-soft); transform: translateY(-2px); }
+    .engine-logo-wrap {
+      width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 13px;
+      background: #ffffff;
+    }
+    .engine-logo { width: 34px; height: 34px; object-fit: contain; }
+    .engine-name { font-size: 16px; font-weight: 660; }
+
+    .plans-shell { width: min(940px, 100%); }
+    .plan-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .plan-card {
+      position: relative;
+      min-height: 292px;
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 18px;
+      padding: 24px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--surface);
+      cursor: pointer;
+      text-align: left;
+      transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+    }
+    .plan-card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+    .plan-card[aria-checked="true"] {
+      border-color: var(--text-strong);
+      box-shadow: inset 0 0 0 1px var(--text-strong);
+    }
+    .plan-badge {
+      position: absolute;
+      top: -10px;
+      right: 18px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: var(--primary-text);
+      background: var(--primary);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .plan-name { font-size: 15px; font-weight: 680; }
+    .plan-price { color: var(--text-strong); font-size: 30px; font-weight: 720; letter-spacing: -.035em; }
+    .plan-price small { color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: 0; }
+    .plan-features { display: grid; align-content: start; gap: 10px; margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 12px; }
+    .plan-features li { display: flex; gap: 8px; line-height: 1.45; }
+    .plan-features li::before { content: "✓"; color: var(--success); font-weight: 750; }
+    .plan-select { color: var(--muted); font-size: 12px; font-weight: 600; }
+    .plan-card[aria-checked="true"] .plan-select { color: var(--text); }
+    .plans-action { width: min(380px, 100%); display: grid; gap: 8px; margin: 26px auto 0; }
+
+    .focused-state {
+      width: min(460px, 100%);
+      display: grid;
+      justify-items: center;
+      gap: 18px;
+      text-align: center;
+    }
+    .focused-state .doge-mark { width: 76px; height: 76px; }
+    .status-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border-strong);
+      border-radius: 50%;
+      color: var(--text-strong);
+      font-size: 23px;
+      font-weight: 650;
+    }
+    .status-icon--success { border-color: color-mix(in srgb, var(--success) 45%, transparent); color: var(--success); }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--text-strong);
+      border-radius: 50%;
+      animation: spin .78s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .focused-actions { width: min(320px, 100%); display: grid; gap: 8px; margin-top: 8px; }
+    .waiting-dots { display: flex; gap: 5px; }
+    .waiting-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--faint); animation: pulse 1.2s ease-in-out infinite; }
+    .waiting-dots i:nth-child(2) { animation-delay: .16s; }
+    .waiting-dots i:nth-child(3) { animation-delay: .32s; }
+    @keyframes pulse { 0%, 80%, 100% { opacity: .35; transform: scale(.85); } 40% { opacity: 1; transform: scale(1); } }
+
+    .payment-summary {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 4px 0 2px;
+      padding: 14px 0;
+      border-block: 1px solid var(--border);
+      font-size: 13px;
+      text-align: left;
+    }
+    .payment-summary strong { font-size: 16px; }
+
+    .workspace {
+      min-height: 100%;
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      background: var(--window);
+      animation: screen-in 240ms ease both;
+    }
+    .workspace-sidebar {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 18px 12px 14px;
+      border-right: 1px solid var(--border);
+      background: var(--sidebar);
+    }
+    .workspace-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 20px; font-weight: 680; }
+    .workspace-brand img { width: 30px; height: 30px; object-fit: contain; }
+    .workspace-projects { display: grid; align-content: start; gap: 4px; }
+    .workspace-project-label { padding: 10px 9px 6px; color: var(--faint); font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .08em; }
+    .workspace-project {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+    }
+    .workspace-project:hover, .workspace-project--active { background: var(--surface-hover); }
+    .workspace-account { display: flex; align-items: center; gap: 9px; padding: 10px 8px 0; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+    .avatar { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--primary-text); background: var(--primary); font-weight: 700; }
+    .workspace-main { position: relative; display: grid; grid-template-rows: 46px minmax(0,1fr); }
+    .workspace-header { display: flex; align-items: center; justify-content: space-between; padding: 0 18px; border-bottom: 1px solid var(--border); }
+    .engine-pill { min-height: 30px; display: inline-flex; align-items: center; gap: 8px; padding: 0 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); font-size: 12px; font-weight: 620; }
+    .engine-pill img { width: 17px; height: 17px; object-fit: contain; }
+    .workspace-body { display: grid; place-items: center; padding: 48px; }
+    .workspace-ready { width: min(680px, 100%); display: grid; justify-items: center; gap: 18px; text-align: center; }
+    .workspace-ready h1 { margin: 0; color: var(--text-strong); font-size: 25px; letter-spacing: -.02em; }
+    .composer {
+      width: min(680px, 100%);
+      min-height: 96px;
+      display: grid;
+      align-content: space-between;
+      margin-top: 16px;
+      padding: 16px;
+      border: 1px solid var(--border-strong);
+      border-radius: 14px;
+      color: var(--faint);
+      background: var(--surface);
+      text-align: left;
+      box-shadow: 0 12px 36px rgba(0,0,0,.06);
+    }
+    .composer-footer { display: flex; justify-content: flex-end; }
+    .send-button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 7px; color: var(--primary-text); background: var(--primary); }
+
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 1120px) {
+      .screen { padding-inline: 38px; }
+      .plan-card { padding: 19px; }
+      .plan-grid { gap: 10px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body data-theme="light">
+  <main class="prototype-stage">
+    <div class="prototype-bar" aria-label="原型控制区">
+      <div class="prototype-meta">
+        <span class="prototype-badge">独立原型</span>
+        <span>套餐与价格为演示数据</span>
+      </div>
+      <div class="prototype-actions">
+        <button class="prototype-action" type="button" data-action="toggle-theme">切换深浅色</button>
+        <button class="prototype-action" type="button" data-action="reset">重新体验</button>
+        <button class="prototype-action prototype-action--pay" type="button" data-action="complete-payment" hidden>模拟支付完成</button>
+      </div>
+    </div>
+    <section class="mac-window" aria-label="Doge 桌面应用原型">
+      <div class="titlebar" aria-hidden="true">
+        <div class="traffic-lights"><i class="traffic-light"></i><i class="traffic-light"></i><i class="traffic-light"></i></div>
+        <span class="titlebar-name">Doge</span>
+      </div>
+      <div id="app" class="app-root"></div>
+    </section>
+  </main>
+
+  <script>
+    const ASSETS = {
+      doge: "../../../../src/assets/brand/doge-mascot-avatar.png",
+      codex: "../../../../public/brand-logos/codex.svg",
+      claude: "../../../../public/brand-logos/claude-code.svg",
+    };
+
+    const plans = [
+      { id: "light", name: "轻量", price: "29", features: ["适合偶尔使用", "30 天有效", "随时升级"] },
+      { id: "standard", name: "标准", price: "79", recommended: true, features: ["适合日常开发", "30 天有效", "优先使用额度"] },
+      { id: "pro", name: "高频", price: "159", features: ["适合高频任务", "30 天有效", "更高使用额度"] },
+    ];
+
+    const initialState = () => ({ screen: "auth", authTab: "login", engine: null, plan: "standard", theme: "light" });
+    let state = initialState();
+    let pendingTimer = null;
+
+    const app = document.querySelector("#app");
+    const paymentControl = document.querySelector('[data-action="complete-payment"]');
+
+    function escapeText(value) {
+      return String(value).replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char]);
+    }
+
+    function help(text, label = "查看说明") {
+      return `<button class="help" type="button" aria-label="${escapeText(label)}" data-tip="${escapeText(text)}"></button>`;
+    }
+
+    function engineMeta() {
+      return state.engine === "claude"
+        ? { name: "Claude Code", logo: ASSETS.claude }
+        : { name: "Codex", logo: ASSETS.codex };
+    }
+
+    function authScreen() {
+      if (state.authTab === "recover") {
+        return `<section class="screen">
+          <button class="top-action top-action--left" type="button" data-action="auth-login">← 返回登录</button>
+          <div class="auth-card">
+            <div class="brand-lockup"><img class="doge-mark" src="${ASSETS.doge}" alt="Doge" /><h1>找回密码</h1></div>
+            <form class="form" data-form="recover">
+              <label class="field"><span class="field-label">邮箱</span><input type="email" autocomplete="email" placeholder="name@example.com" /></label>
+              <button class="primary-button" type="submit">发送找回邮件</button>
+            </form>
+          </div>
+        </section>`;
+      }
+
+      if (state.authTab === "recover-sent") {
+        return `<section class="screen"><div class="focused-state">
+          <div class="status-icon status-icon--success">✓</div><h1>请查看邮箱</h1>
+          ${help("为了保护账号安全，无论邮箱是否已注册，Doge 都会显示相同结果。", "查看找回密码说明")}
+          <div class="focused-actions"><button class="primary-button" type="button" data-action="auth-login">返回登录</button></div>
+        </div></section>`;
+      }
+
+      const isLogin = state.authTab === "login";
+      return `<section class="screen"><div class="auth-card">
+        <div class="brand-lockup"><img class="doge-mark" src="${ASSETS.doge}" alt="Doge" /><h1>欢迎使用 Doge</h1></div>
+        <div class="tabs" role="tablist" aria-label="账号入口">
+          <button class="tab" type="button" role="tab" aria-selected="${isLogin}" data-action="auth-login">登录</button>
+          <button class="tab" type="button" role="tab" aria-selected="${!isLogin}" data-action="auth-register">注册</button>
+        </div>
+        <form class="form" data-form="auth">
+          <label class="field"><span class="field-label">邮箱</span><input type="email" autocomplete="email" placeholder="name@example.com" /></label>
+          <label class="field"><span class="field-label">密码</span><input type="password" autocomplete="${isLogin ? "current-password" : "new-password"}" placeholder="${isLogin ? "输入密码" : "设置密码"}" /></label>
+          ${isLogin ? `<button class="text-button text-button--right" type="button" data-action="auth-recover">忘记密码</button>` : ""}
+          <button class="primary-button" type="submit">${isLogin ? "登录" : "创建账号"}</button>
+        </form>
+      </div></section>`;
+    }
+
+    function engineScreen() {
+      return `<section class="screen">
+        <button class="top-action top-action--right" type="button" data-action="sign-out">退出登录</button>
+        <div class="engine-shell">
+          <div class="screen-heading"><div class="heading-row"><h1>选择一个引擎</h1>${help("只展示 Doge 已完成自动接入的引擎。选择结果会被记住，之后可随时切换。", "查看引擎选择说明")}</div></div>
+          <div class="engine-grid">
+            <button class="engine-card" type="button" data-engine="codex"><span class="engine-logo-wrap"><img class="engine-logo" src="${ASSETS.codex}" alt="" /></span><span class="engine-name">Codex</span></button>
+            <button class="engine-card" type="button" data-engine="claude"><span class="engine-logo-wrap"><img class="engine-logo" src="${ASSETS.claude}" alt="" /></span><span class="engine-name">Claude Code</span></button>
+          </div>
+        </div>
+      </section>`;
+    }
+
+    function checkingScreen() {
+      const engine = engineMeta();
+      return `<section class="screen"><div class="focused-state"><span class="engine-logo-wrap"><img class="engine-logo" src="${engine.logo}" alt="" /></span><div class="spinner" aria-hidden="true"></div><h1>正在检查 ${engine.name}</h1></div></section>`;
+    }
+
+    function plansScreen() {
+      const cards = plans.map((plan) => `<button class="plan-card" type="button" role="radio" aria-checked="${state.plan === plan.id}" data-plan="${plan.id}">
+        ${plan.recommended ? '<span class="plan-badge">推荐</span>' : ""}
+        <span class="plan-name">${plan.name}</span>
+        <span class="plan-price">¥${plan.price}<small> / 30 天</small></span>
+        <ul class="plan-features">${plan.features.map((feature) => `<li>${feature}</li>`).join("")}</ul>
+        <span class="plan-select">${state.plan === plan.id ? "已选择" : "选择此套餐"}</span>
+      </button>`).join("");
+
+      return `<section class="screen">
+        <button class="top-action top-action--left" type="button" data-action="back-engines">← 选择其他引擎</button>
+        <div class="plans-shell">
+          <div class="screen-heading"><div class="heading-row"><h1>选择 Codex 套餐</h1>${help("正式版本会读取当前账号可购买的真实套餐，并在付款前再次确认金额。", "查看套餐说明")}</div></div>
+          <div class="plan-grid" role="radiogroup" aria-label="Codex 套餐">${cards}</div>
+          <div class="plans-action"><button class="primary-button" type="button" data-action="subscribe">订阅并继续</button></div>
+        </div>
+      </section>`;
+    }
+
+    function paymentScreen() {
+      const selected = plans.find((plan) => plan.id === state.plan) || plans[1];
+      return `<section class="screen">
+        <button class="top-action top-action--left" type="button" data-action="back-plans">← 返回套餐</button>
+        <div class="focused-state">
+          <div class="status-icon">↗</div>
+          <div class="heading-row"><h1>请在浏览器完成支付</h1>${help("Doge 不接触支付凭据。支付完成后会自动确认并继续，无需手动刷新。", "查看支付说明")}</div>
+          <div class="payment-summary"><span>Codex · ${selected.name}</span><strong>¥${selected.price}</strong></div>
+          <div class="waiting-dots" aria-label="等待支付"><i></i><i></i><i></i></div>
+          <div class="focused-actions"><button class="secondary-button" type="button">重新打开支付页</button><button class="text-button" type="button" data-action="back-plans">取消</button></div>
+        </div>
+      </section>`;
+    }
+
+    function preparingScreen() {
+      const engine = engineMeta();
+      return `<section class="screen"><div class="focused-state"><img class="doge-mark" src="${ASSETS.doge}" alt="Doge" /><div class="spinner" aria-hidden="true"></div><h1>正在准备 ${engine.name}</h1>${help("Doge 正在后台创建专用凭据并完成必要配置。敏感信息不会显示在页面中。", "查看准备过程说明")}</div></section>`;
+    }
+
+    function workspaceScreen() {
+      const engine = engineMeta();
+      return `<section class="workspace">
+        <aside class="workspace-sidebar">
+          <div class="workspace-brand"><img src="${ASSETS.doge}" alt="" /><span>Doge</span></div>
+          <div class="workspace-projects"><div class="workspace-project-label">Projects</div><button class="workspace-project workspace-project--active" type="button">⌁&nbsp; doge</button><button class="workspace-project" type="button">＋&nbsp; 新建项目</button></div>
+          <div class="workspace-account"><span class="avatar">D</span><span>demo@doge.app</span></div>
+        </aside>
+        <main class="workspace-main">
+          <header class="workspace-header"><strong>doge</strong><button class="engine-pill" type="button" data-action="switch-engine"><img src="${engine.logo}" alt="" />${engine.name}⌄</button></header>
+          <div class="workspace-body"><div class="workspace-ready"><div class="status-icon status-icon--success">✓</div><h1>${engine.name} 已就绪</h1><div class="composer"><span>告诉 Doge 你想做什么…</span><div class="composer-footer"><button class="send-button" type="button" aria-label="发送">↑</button></div></div></div></div>
+        </main>
+      </section>`;
+    }
+
+    function render() {
+      paymentControl.hidden = state.screen !== "payment";
+      document.body.dataset.theme = state.theme;
+      const screens = {
+        auth: authScreen,
+        engines: engineScreen,
+        checking: checkingScreen,
+        plans: plansScreen,
+        payment: paymentScreen,
+        preparing: preparingScreen,
+        workspace: workspaceScreen,
+      };
+      app.innerHTML = (screens[state.screen] || authScreen)();
+    }
+
+    function clearPendingTimer() {
+      if (pendingTimer !== null) window.clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
+
+    function go(screen) {
+      clearPendingTimer();
+      state.screen = screen;
+      render();
+    }
+
+    function beginEngine(engineId) {
+      state.engine = engineId;
+      go("checking");
+      pendingTimer = window.setTimeout(() => {
+        if (engineId === "codex") go("plans");
+        else beginPreparing();
+      }, 850);
+    }
+
+    function beginPreparing() {
+      go("preparing");
+      pendingTimer = window.setTimeout(() => go("workspace"), 2400);
+    }
+
+    document.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const form = event.target;
+      if (!(form instanceof HTMLFormElement)) return;
+      if (form.dataset.form === "recover") {
+        state.authTab = "recover-sent";
+        render();
+      } else if (form.dataset.form === "auth") {
+        go("engines");
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      const target = event.target instanceof Element ? event.target.closest("button") : null;
+      if (!target) return;
+
+      const engineId = target.dataset.engine;
+      if (engineId) return beginEngine(engineId);
+
+      const planId = target.dataset.plan;
+      if (planId) {
+        state.plan = planId;
+        return render();
+      }
+
+      const action = target.dataset.action;
+      if (!action) return;
+      if (action === "auth-login") { state.authTab = "login"; return go("auth"); }
+      if (action === "auth-register") { state.authTab = "register"; return go("auth"); }
+      if (action === "auth-recover") { state.authTab = "recover"; return go("auth"); }
+      if (action === "sign-out") { state.authTab = "login"; return go("auth"); }
+      if (action === "back-engines" || action === "switch-engine") return go("engines");
+      if (action === "back-plans") return go("plans");
+      if (action === "subscribe") return go("payment");
+      if (action === "complete-payment") return beginPreparing();
+      if (action === "toggle-theme") { state.theme = state.theme === "light" ? "dark" : "light"; return render(); }
+      if (action === "reset") { clearPendingTimer(); state = initialState(); return render(); }
+    });
+
+    render();
+  </script>
+</body>
+</html>

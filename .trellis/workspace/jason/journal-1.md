@@ -347,3 +347,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: 实现订阅制引擎启动闭环
+
+**Date**: 2026-08-16
+**Task**: 实现订阅制引擎启动闭环
+**Branch**: `codex/require-account-engine-subscription-onboarding`
+
+### Summary
+
+完成强制登录、引擎选择、服务端公开订阅套餐、checkout 与托管凭据自动配置闭环；接入密码找回请求，补齐跨层测试、OpenSpec/Trellis 规范和 macOS/Windows artifact-only release workflow。token2api 已在 AWS 运行合并 commit 3677f53d。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c8f85ee1a` | (see git log) |
+
+### Testing
+
+- [OK] 1097/1097 frontend test files，Rust 2076 pass，typecheck/lint/runtime/OpenSpec/release contracts pass
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- GitHub PR 与 macOS/Windows artifact-only CI

@@ -10,6 +10,7 @@ import PanelLeftClose from "lucide-react/dist/esm/icons/panel-left-close";
 import PanelLeftOpen from "lucide-react/dist/esm/icons/panel-left-open";
 import PanelRightClose from "lucide-react/dist/esm/icons/panel-right-close";
 import PanelRightOpen from "lucide-react/dist/esm/icons/panel-right-open";
+import CircleUserRound from "lucide-react/dist/esm/icons/circle-user-round";
 import TerminalSquare from "lucide-react/dist/esm/icons/terminal-square";
 import type { OpenAppMenuExtraAction } from "./OpenAppMenu";
 import type { SidebarToggleProps } from "../../layout/components/SidebarToggleControls";
@@ -37,6 +38,8 @@ type MainHeaderActionsOptions = {
   showFileCompareButton?: boolean;
   isFileCompareActive?: boolean;
   onOpenFileCompare?: () => void;
+  showAccountButton?: boolean;
+  onOpenAccount?: () => void;
 };
 
 export function useMainHeaderActionItems({
@@ -62,6 +65,8 @@ export function useMainHeaderActionItems({
   showFileCompareButton = false,
   isFileCompareActive = false,
   onOpenFileCompare,
+  showAccountButton = false,
+  onOpenAccount,
 }: MainHeaderActionsOptions): OpenAppMenuExtraAction[] {
   const { t } = useTranslation();
   const {
@@ -80,6 +85,7 @@ export function useMainHeaderActionItems({
     const canOpenClientDocumentation =
       showClientDocumentationButton && Boolean(onOpenClientDocumentation);
     const canOpenFileCompare = showFileCompareButton && Boolean(onOpenFileCompare);
+    const canOpenAccount = showAccountButton && Boolean(onOpenAccount);
     const canToggleBrowserDock = !isCompact && Boolean(onToggleBrowserDock);
 
     if (
@@ -90,7 +96,8 @@ export function useMainHeaderActionItems({
         !canToggleSoloMode &&
         !canToggleBrowserDock &&
         !canOpenFileCompare &&
-        !canOpenClientDocumentation)
+        !canOpenClientDocumentation &&
+        !canOpenAccount)
     ) {
       return [];
     }
@@ -98,6 +105,15 @@ export function useMainHeaderActionItems({
     const isCollapsed = rightPanelCollapsed;
     const labelKey = isCollapsed ? "sidebar.showGitSidebar" : "sidebar.hideGitSidebar";
     const actionItems: OpenAppMenuExtraAction[] = [];
+
+    if (canOpenAccount) {
+      actionItems.push({
+        id: "account",
+        label: t("settings.sidebarAccount"),
+        icon: <CircleUserRound size={18} aria-hidden />,
+        onSelect: () => onOpenAccount?.(),
+      });
+    }
 
     if (canToggleRuntimeConsole) {
       actionItems.push({
@@ -200,6 +216,7 @@ export function useMainHeaderActionItems({
     onCollapseRightPanel,
     onExpandRightPanel,
     onOpenClientDocumentation,
+    onOpenAccount,
     onOpenFileCompare,
     onOpenSpecHub,
     onToggleBrowserDock,
@@ -209,6 +226,7 @@ export function useMainHeaderActionItems({
     rightPanelAvailable,
     rightPanelCollapsed,
     showClientDocumentationButton,
+    showAccountButton,
     showFileCompareButton,
     showRuntimeConsoleButton,
     showSoloButton,

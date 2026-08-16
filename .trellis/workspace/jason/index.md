@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 10
-- **Last Active**: 2026-08-11
+- **Total Sessions**: 11
+- **Last Active**: 2026-08-16
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~349 | Active |
+| `journal-1.md` | ~382 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 11 | 2026-08-16 | 实现订阅制引擎启动闭环 | `c8f85ee1a` | `codex/require-account-engine-subscription-onboarding` |
 | 10 | 2026-08-11 | 固定 doge 单一应用图标 | `1bf44af01` | `fix/hide-app-icon-switcher` |
 | 9 | 2026-08-10 | 默认合并构建桌面安装包 | `2b78bee46` | `ci/default-combined-installers` |
 | 8 | 2026-08-10 | 合并并行 main 进展 | `8b462e062` | `ci/macos-artifact-only` |

@@ -1111,6 +1111,7 @@ pub(crate) async fn spawn_workspace_session_with_launch_options<E: EventSink>(
         launch_options,
         provider_runtime_key,
         crate::types::AppSettings::default(),
+        std::collections::BTreeMap::new(),
     )
     .await
 }
@@ -1134,6 +1135,7 @@ pub(crate) async fn spawn_workspace_session_inner_with_settings<E: EventSink>(
     launch_options: CodexAppServerLaunchOptions,
     provider_runtime_key: String,
     app_settings: crate::types::AppSettings,
+    launch_env: std::collections::BTreeMap<String, String>,
 ) -> Result<Arc<WorkspaceSession>, String> {
     let codex_bin = entry
         .codex_bin
@@ -1166,6 +1168,7 @@ pub(crate) async fn spawn_workspace_session_inner_with_settings<E: EventSink>(
             launch_options,
             provider_runtime_key,
             app_settings,
+            launch_env,
         )
         .await;
     }
@@ -1182,6 +1185,7 @@ pub(crate) async fn spawn_workspace_session_inner_with_settings<E: EventSink>(
         launch_options,
         provider_runtime_key,
         app_settings,
+        launch_env,
     )
     .await
 }
@@ -1198,6 +1202,7 @@ async fn spawn_workspace_session_with_wrapper_fallback<E: EventSink>(
     launch_options: CodexAppServerLaunchOptions,
     provider_runtime_key: String,
     app_settings: crate::types::AppSettings,
+    launch_env: std::collections::BTreeMap<String, String>,
 ) -> Result<Arc<WorkspaceSession>, String> {
     let primary_sink = DeferredStartupEventSink::new(event_sink.clone());
     let primary_result = spawn_workspace_session_once(
@@ -1212,6 +1217,7 @@ async fn spawn_workspace_session_with_wrapper_fallback<E: EventSink>(
         launch_options,
         provider_runtime_key.clone(),
         app_settings.clone(),
+        launch_env.clone(),
     )
     .await;
     match primary_result {
@@ -1242,6 +1248,7 @@ async fn spawn_workspace_session_with_wrapper_fallback<E: EventSink>(
                 ),
                 provider_runtime_key,
                 app_settings,
+                launch_env,
             )
             .await
             .map_err(|retry_error| {
@@ -1265,6 +1272,7 @@ async fn spawn_workspace_session_once<E: EventSink>(
     launch_options: CodexAppServerLaunchOptions,
     provider_runtime_key: String,
     app_settings: crate::types::AppSettings,
+    launch_env: std::collections::BTreeMap<String, String>,
 ) -> Result<Arc<WorkspaceSession>, String> {
     let generated_developer_instructions_enabled =
         !codex_args_override_instructions(codex_args.as_deref());
@@ -1285,6 +1293,9 @@ async fn spawn_workspace_session_once<E: EventSink>(
     command.current_dir(&entry.path);
     if let Some(codex_home) = codex_home {
         command.env("CODEX_HOME", codex_home);
+    }
+    for (key, value) in launch_env {
+        command.env(key, value);
     }
     if launch_options.launch_mode == CodexAppServerLaunchMode::SessionHooksDisabled {
         command.env("CODEX_NON_INTERACTIVE", "1");

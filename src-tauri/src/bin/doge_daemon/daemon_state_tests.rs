@@ -104,6 +104,16 @@ fn daemon_provider_profile_rejects_managed_ids() {
     assert!(error.contains("provider-scoped runtime is unavailable in daemon mode"));
 }
 
+#[test]
+fn daemon_rejects_account_managed_claude_without_exposing_the_vault() {
+    assert!(reject_account_managed_claude_for_daemon(None).is_ok());
+    let error = reject_account_managed_claude_for_daemon(Some(
+        engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID,
+    ))
+    .unwrap_err();
+    assert!(error.contains("desktop runtime"));
+}
+
 #[tokio::test(flavor = "current_thread")]
 async fn daemon_disk_start_confirms_ready_before_returning() {
     let events = Rc::new(RefCell::new(Vec::<String>::new()));

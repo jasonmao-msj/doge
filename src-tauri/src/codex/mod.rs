@@ -302,9 +302,14 @@ async fn compact_claude_thread(
             None,
         )?,
     };
-    let provider_launch_profile = crate::engine::claude::resolve_claude_provider_launch_profile(
-        provider_profile_id.as_deref(),
-    )?;
+    let provider_launch_profile = state
+        .account_runtime
+        .hydrate_managed_claude_launch_profile(
+            crate::engine::claude::resolve_claude_provider_launch_profile(
+                provider_profile_id.as_deref(),
+            )?,
+        )
+        .await?;
     let session = state
         .engine_manager
         .get_claude_session_for_provider(
@@ -406,6 +411,7 @@ pub(crate) async fn spawn_workspace_session(
         codex_home,
         provider_runtime_key,
         CodexAppServerLaunchOptions::primary(),
+        std::collections::BTreeMap::new(),
     )
     .await
 }
@@ -418,6 +424,7 @@ pub(crate) async fn spawn_workspace_session_with_launch_options(
     codex_home: Option<PathBuf>,
     provider_runtime_key: String,
     launch_options: CodexAppServerLaunchOptions,
+    launch_env: std::collections::BTreeMap<String, String>,
 ) -> Result<Arc<WorkspaceSession>, String> {
     let client_version = app_handle.package_info().version.to_string();
     let app_settings_snapshot = {
@@ -442,6 +449,7 @@ pub(crate) async fn spawn_workspace_session_with_launch_options(
         launch_options,
         provider_runtime_key,
         app_settings_snapshot,
+        launch_env,
     )
     .await
 }

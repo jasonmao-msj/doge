@@ -1,0 +1,8 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "AGENTS.md", "reason": "项目入口与全局 gate"}
+{"file": ".trellis/spec/guides/project-instruction-layering-guide.md", "reason": "agent 与 host adapter 分层边界"}
+{"file": ".agents/agents/doge-project-lead.md", "reason": "共享规则与 agent creation contract"}
+{"file": "openspec/changes/establish-doge-development-agent-system/design.md", "reason": "已批准的角色拓扑与 dispatch 决策"}
+{"file": ".agents/agents/README.md", "reason": "端到端 agent catalog、dispatch matrix 与 handoff contract"}

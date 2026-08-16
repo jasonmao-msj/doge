@@ -19,6 +19,7 @@
 | [Parallel Conversation Runtime Residuals](./parallel-conversation-runtime-residuals.md) | 多 session 并行实时对话的 7 条根因诊断 + 修复 + 回归契约 | Active |
 | [Messages Streaming Render Contract](./messages-streaming-render-contract.md) | 固化 live conversation streaming 的 stable snapshot + live row override render contract | Active |
 | [Computer Use Bridge](./computer-use-bridge.md) | Computer Use 状态面板、hook 与 bridge service contract | Active |
+| [Account Convenience Native Contract](../backend/account-convenience-native-contract.md) | AccountGateway、Settings Account、pull-only quota、safe config diff 与 Local Mode isolation | Active |
 | [Claude Context Usage Display](./claude-context-usage-display.md) | Claude context usage view model、tooltip layout、pending/estimated/live display contract | Active |
 | [Model Structured Output Contract](./model-structured-output.md) | AI model JSON / structured payload normalization、validator、bounded repair contract | Active |
 | [Desktop Drag-Drop Contract](./desktop-drag-drop.md) | Tauri multi-WebView 外部文件/文件夹拖入 Composer 的跨层事件契约 | Active |

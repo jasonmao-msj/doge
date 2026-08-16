@@ -1,0 +1,53 @@
+{
+  "id": "require-account-engine-subscription-onboarding",
+  "name": "require-account-engine-subscription-onboarding",
+  "title": "强制账号与引擎订阅式启动闭环",
+  "description": "OpenSpec: require-account-engine-subscription-onboarding；依赖 integrate-token2api-account-system 的 Native account foundation，交付 subscription-only account gate、managed Codex/Claude access 与跨平台测试包。",
+  "status": "planning",
+  "dev_type": "fullstack",
+  "scope": "cross-repo",
+  "package": null,
+  "priority": "P0",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-15",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "feat/daily-poetry-composer-banner",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": "08-11-integrate-token2api-account-system",
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

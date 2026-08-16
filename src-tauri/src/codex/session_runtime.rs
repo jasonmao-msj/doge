@@ -403,6 +403,11 @@ async fn ensure_codex_session_with_mode(
         };
 
         let materialized_profile = materialize_codex_provider_profile(profile.clone())?;
+        let mut launch_env = materialized_profile.launch_env.clone();
+        if profile.id() == crate::account::configuration::ACCOUNT_CODEX_PROVIDER_ID {
+            let managed_key = state.account_runtime.managed_codex_key_for_launch().await?;
+            launch_env.insert("OPENAI_API_KEY".to_string(), managed_key.to_string());
+        }
         let codex_home = materialized_profile
             .codex_home
             .clone()
@@ -426,6 +431,7 @@ async fn ensure_codex_session_with_mode(
             codex_home,
             session_key.clone(),
             ensure_mode.launch_options(),
+            launch_env,
         )
         .await;
         let session = match spawn_result {

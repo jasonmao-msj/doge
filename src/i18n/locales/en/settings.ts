@@ -481,6 +481,8 @@ const settings = {
       "Assign projects to groups and adjust their order.",
     ungroupedTitle: "UNGROUPED",
     sidebarBasic: "Basic Settings",
+    sidebarAccount: "Account",
+    accountDescription: "Optional sign-in, on-demand quota, and one-click Codex setup. Local Mode remains fully available.",
     sidebarShortcuts: "Shortcuts",
     sidebarProviders: "Providers",
     sidebarMcp: "MCP Servers",

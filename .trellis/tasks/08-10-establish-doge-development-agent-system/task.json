@@ -1,0 +1,53 @@
+{
+  "id": "establish-doge-development-agent-system",
+  "name": "establish-doge-development-agent-system",
+  "title": "brainstorm: 建立 doge 端到端开发 agent 体系（OpenSpec: establish-doge-development-agent-system）",
+  "description": "",
+  "status": "planning",
+  "dev_type": "fullstack",
+  "scope": "agents",
+  "package": null,
+  "priority": "P2",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-10",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "feat/daily-poetry-composer-banner",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

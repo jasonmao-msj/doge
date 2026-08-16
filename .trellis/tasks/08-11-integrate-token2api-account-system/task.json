@@ -1,0 +1,63 @@
+{
+  "id": "integrate-token2api-account-system",
+  "name": "integrate-token2api-account-system",
+  "title": "实现 token2api Account Convenience 并交付 macOS 本地试用包",
+  "description": "OpenSpec: integrate-token2api-account-system；proposal/design/spec/research 已冻结，按 C0/F/D/T lanes 分阶段实现，目标为 A0 Fully Integrated Local Trial Package。",
+  "status": "planning",
+  "dev_type": "fullstack",
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-11",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "feat/daily-poetry-composer-banner",
+  "worktree_path": null,
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [
+    "08-15-require-account-engine-subscription-onboarding"
+  ],
+  "parent": null,
+  "relatedFiles": [
+    "openspec/changes/integrate-token2api-account-system",
+    "src/features/account",
+    "src-tauri/src/account"
+  ],
+  "notes": "G0 architecture frozen；G1 executable contract foundation 是首个 blocking gate。首轮派工为 C0 contract/schema/scenario foundation、F0 Mock Account Lab shell、D0 Rust broker skeleton/fake authority 与 T0 token2api prerequisite planning。M0 仅代表 Mock UX review，A0 才代表 Real integrated local trial。",
+  "meta": {
+    "openspecChange": "integrate-token2api-account-system",
+    "architectureStatus": "architecture-frozen-for-contract-implementation",
+    "releaseTarget": "macOS ARM64 local trial"
+  }
+}

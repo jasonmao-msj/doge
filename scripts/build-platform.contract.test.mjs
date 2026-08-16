@@ -102,14 +102,16 @@ test("DMG Finder automation is bounded and keeps headless fallbacks", () => {
   assert.match(dmg, /ln -s \/Applications/);
 });
 
-test("unsigned macOS artifacts still bundle portable OpenSSL libraries", () => {
+test("artifact-only macOS builds bundle OpenSSL and apply verified ad-hoc signing", () => {
   const build = read("scripts/build-platform.mjs");
   const fixOpenSsl = read("scripts/macos-fix-openssl.sh");
 
   assert.match(build, /SKIP_CODESIGN=1/);
-  assert.match(build, /Bundling OpenSSL without signing/);
+  assert.match(build, /Bundling OpenSSL with ad-hoc signing/);
   assert.match(fixOpenSsl, /skip_codesign="\$\{SKIP_CODESIGN:-0\}"/);
+  assert.match(fixOpenSsl, /codesign --force --sign -/);
+  assert.match(fixOpenSsl, /codesign --verify --deep --strict/);
   assert.match(fixOpenSsl, /OPENSSL_DIR/);
-  assert.match(fixOpenSsl, /Bundled OpenSSL dylibs without code signing/);
+  assert.match(fixOpenSsl, /applied a verified ad-hoc signature/);
   assert.match(fixOpenSsl, /install_name_tool -change/);
 });

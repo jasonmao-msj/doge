@@ -363,6 +363,7 @@ mod tests {
             },
         );
         AppState {
+            account_runtime: crate::account::AccountRuntime::load(&data_dir),
             workspaces: tokio::sync::Mutex::new(workspaces),
             sessions: tokio::sync::Mutex::new(std::collections::HashMap::new()),
             terminal_sessions: tokio::sync::Mutex::new(std::collections::HashMap::new()),

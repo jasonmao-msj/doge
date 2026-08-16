@@ -1,0 +1,243 @@
+.account-app-gate {
+  --gate-accent: #715cff;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 56px 24px 32px;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 50% 8%, color-mix(in srgb, var(--gate-accent) 10%, transparent), transparent 34%),
+    var(--background);
+}
+
+.account-gate-window-drag {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 42px;
+}
+
+.account-gate-card {
+  position: relative;
+  width: min(100%, 760px);
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 50px 56px;
+  box-sizing: border-box;
+}
+
+.account-gate-logo {
+  width: 54px;
+  height: 54px;
+  align-self: center;
+  margin-bottom: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--gate-accent) 20%, transparent));
+}
+
+.account-gate-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 30px;
+}
+
+.account-gate-heading h1,
+.account-gate-centered h1,
+.account-gate-centered h2 {
+  margin: 0;
+  font-size: clamp(25px, 4vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+
+.account-gate-centered h2 { font-size: 22px; }
+
+.account-gate-centered {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.account-gate-centered > svg {
+  width: 32px;
+  height: 32px;
+  color: var(--text-secondary);
+}
+
+.account-gate-spin { animation: account-gate-spin .9s linear infinite; }
+@keyframes account-gate-spin { to { transform: rotate(360deg); } }
+
+.account-gate-engine-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.account-gate-engine,
+.account-gate-plan,
+.account-gate-methods button {
+  appearance: none;
+  border: 1px solid var(--border-subtle, var(--border));
+  color: inherit;
+  background: color-mix(in srgb, var(--surface-raised, var(--card)) 90%, transparent);
+  box-shadow: 0 14px 40px color-mix(in srgb, #000 7%, transparent);
+  transition: border-color .16s ease, background-color .16s ease, transform .16s ease;
+}
+
+.account-gate-engine:hover,
+.account-gate-plan:hover,
+.account-gate-methods button:hover {
+  border-color: color-mix(in srgb, var(--gate-accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--gate-accent) 7%, var(--surface-raised, var(--card)));
+  transform: translateY(-1px);
+}
+
+.account-gate-engine:focus-visible,
+.account-gate-plan:focus-visible,
+.account-gate-methods button:focus-visible,
+.account-gate-primary:focus-visible,
+.account-gate-secondary:focus-visible,
+.account-gate-back:focus-visible {
+  outline: 2px solid var(--ring, var(--gate-accent));
+  outline-offset: 3px;
+}
+
+.account-gate-engine {
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  border-radius: 18px;
+  cursor: pointer;
+}
+
+.account-gate-engine strong { font-size: 18px; }
+.account-gate-engine span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--success, #27ae80);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.account-gate-plan-list { display: grid; gap: 10px; }
+.account-gate-plan {
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 22px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-gate-plan-main,
+.account-gate-plan-price { display: grid; gap: 5px; }
+.account-gate-plan-price { justify-items: end; }
+.account-gate-plan-main strong { font-size: 15px; }
+.account-gate-plan-price strong { font-size: 18px; }
+.account-gate-plan small,
+.account-gate-plan-limit { color: var(--text-secondary); font-size: 12px; }
+.account-gate-plan-limit { display: none; }
+
+.account-gate-methods { display: grid; gap: 10px; }
+.account-gate-methods button {
+  min-height: 54px;
+  border-radius: 12px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-gate-primary,
+.account-gate-secondary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 680;
+  cursor: pointer;
+}
+.account-gate-primary { color: white; background: var(--gate-accent); }
+.account-gate-secondary { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
+
+.account-gate-back {
+  position: absolute;
+  top: 48px;
+  left: 14px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+.account-gate-back:hover { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
+.account-gate-back svg { width: 18px; height: 18px; }
+
+.account-gate-inline-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+  color: var(--destructive, #d94c4c);
+  font-size: 13px;
+}
+
+.account-gate-auth {
+  width: min(100%, 500px);
+  margin: 0 auto;
+}
+.account-gate-auth .account-auth-shell { max-width: 500px; }
+.account-gate-auth .account-auth-tabs { justify-content: stretch; }
+.account-gate-auth .account-auth-tabs [data-slot="tabs-tab"] { flex: 1; }
+.account-gate-auth .account-auth-form { margin-top: 24px; }
+.account-gate-auth .account-auth-form input { min-height: 48px; }
+.account-gate-auth .account-primary-button { min-height: 48px; }
+
+.account-gate-qr {
+  width: min(240px, 70vw);
+  height: auto;
+  border-radius: 12px;
+  background: white;
+  padding: 10px;
+}
+
+@media (max-width: 680px) {
+  .account-app-gate { padding-inline: 16px; }
+  .account-gate-card { min-height: 440px; padding: 42px 12px 30px; }
+  .account-gate-engine-grid { grid-template-columns: 1fr; }
+  .account-gate-engine { min-height: 112px; }
+  .account-gate-back { top: 34px; left: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-gate-spin { animation-duration: 1.8s; }
+  .account-gate-engine,
+  .account-gate-plan,
+  .account-gate-methods button { transition: none; }
+}

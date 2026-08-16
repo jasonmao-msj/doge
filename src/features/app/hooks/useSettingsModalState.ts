@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 
 export type SettingsSection =
   | "basic"
+  | "account"
   | "providers"
   | "shortcuts"
   | "project-management"

@@ -1751,10 +1751,14 @@ pub async fn engine_send_message(
                     "claude",
                     provider_profile_id.as_deref(),
                 )?;
-            let provider_launch_profile =
-                crate::engine::claude::resolve_claude_provider_launch_profile(
-                    effective_provider_profile_id.as_deref(),
-                )?;
+            let provider_launch_profile = state
+                .account_runtime
+                .hydrate_managed_claude_launch_profile(
+                    crate::engine::claude::resolve_claude_provider_launch_profile(
+                        effective_provider_profile_id.as_deref(),
+                    )?,
+                )
+                .await?;
             let workspace_path = std::path::PathBuf::from(&workspace_entry.path);
             state
                 .runtime_manager

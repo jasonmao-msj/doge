@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -57,6 +57,7 @@ import { PromptSection } from "./PromptSection";
 import type { SessionRadarEntry } from "../../session-activity/hooks/useSessionRadarFeed";
 import { deleteSessionRadarHistoryEntries } from "../../session-activity/utils/sessionRadarHistoryManagement";
 import Settings from "lucide-react/dist/esm/icons/settings";
+import CircleUserRound from "lucide-react/dist/esm/icons/circle-user-round";
 import MoreHorizontalIcon from "lucide-react/dist/esm/icons/more-horizontal";
 import Users from "lucide-react/dist/esm/icons/users";
 import {
@@ -123,6 +124,28 @@ import {
   TEMPORARILY_DISABLED_SIDEBAR_SECTIONS as BASE_DISABLED_SIDEBAR_SECTIONS,
 } from "./settings-view/settingsViewConstants";
 import { useSystemProxySettings } from "./settings-view/hooks/useSystemProxySettings";
+import { AccountSettingsSection } from "../../account/components/AccountSettingsSection";
+import { isAccountConvenienceV1Enabled } from "../../account/runtime/featureFlag";
+import { ACCOUNT_UI_PREVIEW_V1_ENABLED } from "../../account/runtime/uiPreviewFlag";
+import { createRealAccountGatewayV1 } from "../../../services/accountGateway";
+
+const accountConvenienceV1Enabled = isAccountConvenienceV1Enabled();
+const AccountPreviewSettingsSection = ACCOUNT_UI_PREVIEW_V1_ENABLED
+  ? lazy(async () => {
+      const module = await import("../../account/components/AccountPreviewSettingsSection");
+      return { default: module.AccountPreviewSettingsSection };
+    })
+  : null;
+
+function AccountSettingsSectionHost() {
+  if (AccountPreviewSettingsSection) return <AccountPreviewSettingsSection />;
+  return <RealAccountSettingsSectionHost />;
+}
+
+function RealAccountSettingsSectionHost() {
+  const gateway = useMemo(() => createRealAccountGatewayV1(), []);
+  return <AccountSettingsSection gateway={gateway} />;
+}
 
 export type SettingsViewProps = {
   workspaceGroups: WorkspaceGroup[];
@@ -833,6 +856,10 @@ export function SettingsView({
       // 「内置精选」已并入其他设置；遗留 mcp 深链统一落到 other。
       if (initialSection === "mcp") {
         setActiveSection("other");
+        return;
+      }
+      if (initialSection === "account" && !accountConvenienceV1Enabled) {
+        setActiveSection("basic");
         return;
       }
       setActiveSection(
@@ -1706,6 +1733,11 @@ export function SettingsView({
           title: t("settings.sidebarBasic"),
           description: t("settings.basicDescription"),
         };
+      case "account":
+        return {
+          title: t("settings.sidebarAccount"),
+          description: t("settings.accountDescription"),
+        };
       case "shortcuts":
         return {
           title: t("settings.sidebarShortcuts"),
@@ -1793,6 +1825,18 @@ export function SettingsView({
             <ArrowLeft aria-hidden />
             <span className="settings-nav-label">{t("settings.backToApp")}</span>
           </button>
+          {accountConvenienceV1Enabled && (
+            <button
+              type="button"
+              className={`settings-nav ${activeSection === "account" ? "active" : ""}`}
+              onClick={() => setActiveSection("account")}
+              aria-label={t("settings.sidebarAccount")}
+              title={t("settings.sidebarAccount")}
+            >
+              <CircleUserRound aria-hidden />
+              <span className="settings-nav-label">{t("settings.sidebarAccount")}</span>
+            </button>
+          )}
           <button
             type="button"
             className={`settings-nav ${activeSection === "basic" ? "active" : ""}`}
@@ -1880,7 +1924,9 @@ export function SettingsView({
               <h1 className="settings-page-title">
                 {activeSectionHeader.title}
               </h1>
-              {activeSection !== "community" && activeSection !== "about" && (
+              {activeSection !== "community" &&
+                activeSection !== "about" &&
+                activeSection !== "account" && (
                 <p className="settings-page-description">
                   {activeSectionHeader.description}
                 </p>
@@ -2090,6 +2136,11 @@ export function SettingsView({
                   onOpenMailSession={onOpenMailSession}
                 />
               )}
+            </section>
+          )}
+          {accountConvenienceV1Enabled && activeSection === "account" && (
+            <section className="settings-section settings-section-account">
+              <AccountSettingsSectionHost />
             </section>
           )}
           {activeSection === "shortcuts" && (

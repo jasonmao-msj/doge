@@ -103,7 +103,7 @@ test("Windows artifact-only dispatch cannot publish or access release secrets", 
   );
 });
 
-test("macOS artifact-only dispatch produces checksummed unsigned DMGs without release authority", () => {
+test("macOS artifact-only dispatch is ad-hoc signed, verified, and cannot publish", () => {
   const workflow = read(".github/workflows/release.yml");
   const artifactJob = workflowJob(workflow, "build_macos_artifact");
 
@@ -119,12 +119,14 @@ test("macOS artifact-only dispatch produces checksummed unsigned DMGs without re
   assert.match(artifactJob, /--skip-sign --skip-notarize/);
   assert.match(artifactJob, /hdiutil verify/);
   assert.match(artifactJob, /shasum -a 256/);
-  assert.match(artifactJob, /name: doge-macos-\$\{\{ matrix\.arch \}\}-unsigned/);
+  assert.match(artifactJob, /signature=adhoc/);
+  assert.match(artifactJob, /notarization=not-submitted/);
+  assert.match(artifactJob, /name: doge-macos-\$\{\{ matrix\.arch \}\}-adhoc/);
   assert.match(artifactJob, /if-no-files-found: error/);
   assert.doesNotMatch(artifactJob, /environment: release/);
   assert.doesNotMatch(
     artifactJob,
-    /secrets\.|TAURI_SIGNING|\.sig|latest\.json|gh release|notarytool|codesign/,
+    /secrets\.|TAURI_SIGNING|\.sig|latest\.json|gh release|notarytool/,
   );
 });
 

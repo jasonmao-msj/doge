@@ -1,8 +1,10 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
 import { useWindowLabel } from "./features/layout/hooks/useWindowLabel";
 import { isDetachedFileExplorerWindowLabel } from "./features/files/detachedFileExplorer";
 import { isBrowserAgentDockWindowLabel } from "./features/browser-agent/browserAgentDockWindow";
 import { AppShell } from "./app-shell";
+import { AccountAppGate } from "./features/account/components/AccountAppGate";
+import { createRealAccountGatewayV1 } from "./services/accountGateway";
 import { StartupGateOverlay } from "./features/app/components/StartupGateOverlay";
 import { isStartupGateOverlayTestEnabled } from "./features/startup-orchestration/utils/startupGateOverlayTestFlag";
 
@@ -41,36 +43,34 @@ export function AppRouter() {
   const [startupGateOverlayEnabledAtMount] = useState(
     isStartupGateOverlayTestEnabled,
   );
+  const accountGateway = useMemo(() => createRealAccountGatewayV1(), []);
+  let readyContent: ReactNode = <AppShell />;
   if (windowLabel === "about") {
-    return (
+    readyContent = (
       <Suspense fallback={null}>
         <AboutView />
       </Suspense>
     );
-  }
-  if (isDetachedFileExplorerWindowLabel(windowLabel)) {
-    return (
+  } else if (isDetachedFileExplorerWindowLabel(windowLabel)) {
+    readyContent = (
       <Suspense fallback={null}>
         <DetachedFileExplorerWindow />
       </Suspense>
     );
-  }
-  if (windowLabel === "spec-hub") {
-    return (
+  } else if (windowLabel === "spec-hub") {
+    readyContent = (
       <Suspense fallback={null}>
         <DetachedSpecHubWindow />
       </Suspense>
     );
-  }
-  if (windowLabel === "client-documentation") {
-    return (
+  } else if (windowLabel === "client-documentation") {
+    readyContent = (
       <Suspense fallback={null}>
         <ClientDocumentationWindow />
       </Suspense>
     );
-  }
-  if (isBrowserAgentDockWindowLabel(windowLabel)) {
-    return (
+  } else if (isBrowserAgentDockWindowLabel(windowLabel)) {
+    readyContent = (
       <Suspense fallback={null}>
         <DetachedBrowserAgentWindow />
       </Suspense>
@@ -78,8 +78,10 @@ export function AppRouter() {
   }
   return (
     <>
-      <AppShell />
-      {startupGateOverlayEnabledAtMount ? <StartupGateOverlay /> : null}
+      <AccountAppGate gateway={accountGateway} readyContent={readyContent} />
+      {windowLabel === "main" && startupGateOverlayEnabledAtMount ? (
+        <StartupGateOverlay />
+      ) : null}
     </>
   );
 }

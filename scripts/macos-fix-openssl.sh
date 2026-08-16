@@ -115,7 +115,19 @@ fi
 echo "All library references verified OK."
 
 if [[ "${skip_codesign}" == "1" ]]; then
-  echo "Bundled OpenSSL dylibs without code signing: ${app_path}"
+  # `install_name_tool` invalidates the linker-generated signatures. Even an
+  # internal artifact must be structurally re-signed or macOS may terminate it
+  # before launch with a generic "cannot be opened" dialog. Ad-hoc signing is
+  # intentionally distinct from Developer ID signing and is never notarized.
+  codesign --force --sign - "${frameworks_dir}/libcrypto.3.dylib"
+  codesign --force --sign - "${frameworks_dir}/libssl.3.dylib"
+  codesign --force --sign - "${codesign_entitlements[@]}" "${bin_path}"
+  if [[ -f "${daemon_path}" ]]; then
+    codesign --force --sign - "${codesign_entitlements[@]}" "${daemon_path}"
+  fi
+  codesign --force --sign - "${app_path}"
+  codesign --verify --deep --strict --verbose=2 "${app_path}"
+  echo "Bundled OpenSSL dylibs and applied a verified ad-hoc signature: ${app_path}"
   exit 0
 fi
 

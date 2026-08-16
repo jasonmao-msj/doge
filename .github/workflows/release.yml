@@ -9,7 +9,7 @@ on:
         default: true
         type: boolean
       macos_artifact_only:
-        description: Build unsigned macOS DMGs (enabled by default with Windows)
+        description: Build ad-hoc signed macOS internal artifacts (enabled by default with Windows)
         required: true
         default: true
         type: boolean
@@ -217,14 +217,14 @@ jobs:
       - name: Verify doge branding
         run: npm run check:branding
 
-      - name: Build unsigned macOS DMG
+      - name: Build ad-hoc signed macOS DMG
         env:
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: |
           set -euo pipefail
           npm run "${{ matrix.build_script }}" -- --skip-sign --skip-notarize
 
-      - name: Verify and stage DMG
+      - name: Verify and stage artifact
         run: |
           set -euo pipefail
           shopt -s nullglob
@@ -241,14 +241,17 @@ jobs:
           TARGET="release-artifacts/$(basename "$DMG")"
           cp "$DMG" "$TARGET"
           shasum -a 256 "$TARGET" > "$TARGET.sha256"
+          printf 'signature=adhoc\nnotarization=not-submitted\narchitecture=%s\n' \
+            "$ARCH" > "$TARGET.build-status.txt"
 
-      - name: Upload macOS installer artifact
+      - name: Upload macOS test artifact
         uses: actions/upload-artifact@v4
         with:
-          name: doge-macos-${{ matrix.arch }}-unsigned
+          name: doge-macos-${{ matrix.arch }}-adhoc
           path: |
             release-artifacts/doge_*_${{ matrix.arch }}.dmg
             release-artifacts/doge_*_${{ matrix.arch }}.dmg.sha256
+            release-artifacts/doge_*_${{ matrix.arch }}.dmg.build-status.txt
           if-no-files-found: error
           retention-days: 14
 
