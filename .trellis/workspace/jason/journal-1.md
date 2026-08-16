@@ -611,3 +611,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: 补全支付恢复退出动线并生成本地包
+
+**Date**: 2026-08-16
+**Task**: 补全支付恢复退出动线并生成本地包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+为 recovered checkout 增加返回套餐与退出登录；新增 account/device/checkout-scoped 本地 checkpoint abandon，logout 清理旧 checkpoint；补齐跨层测试与 OpenSpec/Trellis contract，并生成且验证 macOS arm64 DMG。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f8cc2082b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
