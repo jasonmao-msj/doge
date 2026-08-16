@@ -17,6 +17,10 @@ const previewSource = readFileSync(
   new URL("./AccountPreviewSettingsSection.tsx", import.meta.url),
   "utf8",
 );
+const accountCopySource = readFileSync(
+  new URL("../locale/accountExperienceCopy.ts", import.meta.url),
+  "utf8",
+);
 
 describe("Account visual contract", () => {
   it("keeps the configuration surface opaque and free of backdrop blur", () => {
@@ -63,5 +67,9 @@ describe("Account visual contract", () => {
     expect(previewSource).toContain("createProductPreviewAccountGatewayV1");
     expect(previewSource).not.toMatch(/<select|体验场景|交互预览|ACCOUNT_FRONTEND_SCENARIOS_V1/);
     expect(experienceCss).not.toMatch(/account-ui-preview-toolbar/);
+  });
+
+  it("does not introduce a pay-as-you-go mental model in account product copy", () => {
+    expect(accountCopySource).not.toMatch(/按量付费|pay\s+as\s+you\s+go/i);
   });
 });
