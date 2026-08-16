@@ -644,3 +644,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: 补全无订阅账号退出入口并重新打包
+
+**Date**: 2026-08-16
+**Task**: 补全无订阅账号退出入口并重新打包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+将退出登录提升为 authenticated AccountAppGate 的统一逃生口，覆盖套餐、空态、加载、异常、支付与准备状态；补齐 pending/失败/stale checkout 回归，更新 OpenSpec 与 Trellis contract，完成全量 1098 文件测试并生成验证 macOS arm64 DMG。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `af809d10b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
