@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 12
+- **Total Sessions**: 13
 - **Last Active**: 2026-08-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~415 | Active |
+| `journal-1.md` | ~448 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 13 | 2026-08-16 | 统一 Windows 校验文件换行 | `36f5f8dd2` | `codex/windows-checksum-lf` |
 | 12 | 2026-08-16 | 移除按量付费用户心智 | `b46a202bf` | `codex/remove-payg-mental-model` |
 | 11 | 2026-08-16 | 实现订阅制引擎启动闭环 | `c8f85ee1a` | `codex/require-account-engine-subscription-onboarding` |
 | 10 | 2026-08-11 | 固定 doge 单一应用图标 | `1bf44af01` | `fix/hide-app-icon-switcher` |

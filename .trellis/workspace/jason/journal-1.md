@@ -413,3 +413,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: 统一 Windows 校验文件换行
+
+**Date**: 2026-08-16
+**Task**: 统一 Windows 校验文件换行
+**Branch**: `codex/windows-checksum-lf`
+
+### Summary
+
+修复 GitHub Windows artifact 的 SHA-256 sidecar 使用 CRLF 导致 Unix shasum -c 无法读取的问题，改为 BOM-free ASCII + LF，并加入 release workflow contract。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `36f5f8dd2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
