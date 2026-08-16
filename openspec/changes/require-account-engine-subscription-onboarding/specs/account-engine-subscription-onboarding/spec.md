@@ -121,6 +121,10 @@ account gate SHALL 每屏只呈现一个主要决策；说明性内容 SHALL 收
 - **WHEN** 操作因 stable typed reason 失败
 - **THEN** UI SHALL 展示对应的下一步与重试动作，不得裸露 `protocolMismatch`、`vaultUnavailable` 等内部枚举
 
+#### Scenario: Masked account identity is restored
+- **WHEN** signed-in cold restore 返回符合 masking contract 的 `primaryEmailLabel`，包括 local part 中的 `*`
+- **THEN** renderer SHALL 接受该 safe projection 并继续加载 engine catalog，不得把成功的 bootstrap 误判为 `protocolMismatch` 或“服务暂时不可用”
+
 ### Requirement: Account and checkout recovery SHALL be durable and bounded
 系统 SHALL 持久化 credential-free session/checkpoint/receipt，并为 checkout、managed binding 与 configuration 提供 crash-safe recovery；reconciliation MUST 有 absolute expiry 与 bounded backoff。
 

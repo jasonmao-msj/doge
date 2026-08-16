@@ -155,6 +155,71 @@ const gateway = createProductPreviewAccountGatewayV1();
 return <AccountSettingsSection gateway={gateway} />;
 ```
 
+## Scenario: Masked account identity SafeLabel boundary
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `src/features/account/contracts/safeValues.ts`、`primaryEmailLabel` masking、`gateway.bootstrap` authenticated session projection 或 IPC privacy validation。
+- 目标：Native 已脱敏的 account label 必须能通过 renderer SafeLabel boundary；通用 label 规则不得先行否决 field-specific masking alphabet。
+
+### 2. Signatures
+
+- `validateSafeLabelForFieldV1(field, value) -> SchemaValidationV1<SafeLabelV1>`。
+- `primaryEmailLabel` renderer shape：`string | null`；masked local part MAY 包含 `*`，例如 `a***@token-matrix.com`。
+- `profileDisplayName` 等其他 SafeLabel field 继续使用不含 `*` 的通用 alphabet。
+
+### 3. Contracts
+
+- `primaryEmailLabel` MUST 使用独立 allowlist：首字符为 letter/number，总长 `1..=80`，后续只允许 letter/number、space、`._()@*+-`。
+- `*` MUST NOT 因本场景扩散到 `profileDisplayName/providerLabel/targetLabel/fieldLabel/subscriptionLabel/maskedPresentation`。
+- field-specific shape 通过后仍 MUST 执行 URL、raw email/PII、forbidden field/value privacy checks；允许 masked email 不等于允许 raw email。
+- signed-in `gateway.bootstrap` 若其他 correlation/schema 均有效，MUST 接受 masked `primaryEmailLabel` 并继续 engine catalog；不得降级成 `protocolMismatch`。
+
+### 4. Validation & Error Matrix
+
+| 输入 | Field | 结果 |
+|---|---|---|
+| `a***@token-matrix.com` | `primaryEmailLabel` | accept |
+| `user@example.com` | `primaryEmailLabel` | reject as raw PII |
+| `A***` | `profileDisplayName` | reject |
+| `https://example.com` | any SafeLabel | reject as URL |
+| 合法 masked label + wrong IPC correlation | bootstrap response | reject correlation，不得被 label acceptance 掩盖 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：field 决定 allowlist alphabet，随后统一执行 URI/PII/secret privacy scan。
+- Base：`primaryEmailLabel=null` 继续作为合法 signed-out/unknown projection。
+- Bad：把 `*` 直接加入全局 `SAFE_LABEL_PATTERN_V1`，使所有用户可见 label 的 closed alphabet 被扩大。
+- Bad：先执行全局 alphabet，再追加一个更宽的 email check；后者永远无法挽救已产生的 validation issue。
+
+### 6. Tests Required
+
+- `src/features/account/contracts/accountContracts.test.ts` MUST 构造 authenticated `gateway.bootstrap` exact envelope，并断言 masked email 与完整 IPC response 均通过。
+- 同一 regression MUST 断言 `profileDisplayName="A***"` 仍失败，锁定 field isolation。
+- privacy corpus MUST 继续证明 raw email、URL、secret/path/diff canary 被拒绝。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+if (!SAFE_LABEL_PATTERN_V1.test(value)) issues.push(forbiddenIssue);
+if (field === "primaryEmailLabel" && !MASKED_EMAIL_PATTERN.test(value)) {
+  issues.push(emailIssue);
+}
+```
+
+#### Correct
+
+```ts
+const pattern = field === "primaryEmailLabel"
+  ? MASKED_PRIMARY_EMAIL_LABEL_PATTERN_V1
+  : SAFE_LABEL_PATTERN_V1;
+if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
+  issues.push(forbiddenIssue);
+}
+```
+
 ## Scenario: Mandatory engine subscription onboarding
 
 ### Signatures
