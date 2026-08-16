@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 20
+- **Total Sessions**: 21
 - **Last Active**: 2026-08-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~679 | Active |
+| `journal-1.md` | ~712 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 21 | 2026-08-16 | 修复退出登录永久连接竞态 | `fe5a70b82` | `codex/fix-account-masked-email-bootstrap` |
 | 20 | 2026-08-16 | 补全无订阅账号退出入口并重新打包 | `af809d10b` | `codex/fix-account-masked-email-bootstrap` |
 | 19 | 2026-08-16 | 补全支付恢复退出动线并生成本地包 | `f8cc2082b` | `codex/fix-account-masked-email-bootstrap` |
 | 18 | 2026-08-16 | 修复账号恢复脱敏邮箱误判并验证本地包 | `520a19ade` | `codex/fix-account-masked-email-bootstrap` |

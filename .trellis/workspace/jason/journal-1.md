@@ -677,3 +677,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 21: 修复退出登录永久连接竞态
+
+**Date**: 2026-08-16
+**Task**: 修复退出登录永久连接竞态
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+定位 logout 本地 sessionChanged 触发 bootstrap 后被 generation 作废但 loading 未释放的竞态；用 exact loading generation owner 修复 logout/change-password signed-out 收敛，新增 deferred event 回归测试并同步 OpenSpec/Trellis contract。验证 focused 28 tests、全量 1098 test files、typecheck、lint 0 errors、Rust account 73 tests、OpenSpec strict、runtime contracts/doctor；macOS arm64 DMG 已通过 hdiutil、deep codesign、Mach-O/OpenSSL 与 8 秒启动 smoke，Windows x64 artifact 待同 commit CI 构建。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fe5a70b82` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
