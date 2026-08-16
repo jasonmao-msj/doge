@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
+- **Total Sessions**: 17
 - **Last Active**: 2026-08-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~547 | Active |
+| `journal-1.md` | ~580 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 17 | 2026-08-16 | 记录跨平台发布证据 | `2693045ae` | `codex/account-release-evidence` |
 | 16 | 2026-08-16 | 验证 Windows 应用启动 | `7a9d9b3cb` | `codex/windows-launch-smoke` |
 | 15 | 2026-08-16 | 修复 macOS 嵌套签名顺序 | `2f672fc67` | `codex/macos-sign-nested-first` |
 | 14 | 2026-08-16 | 生成可移植 macOS 校验文件 | `508425f81` | `codex/macos-portable-checksum` |
