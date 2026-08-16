@@ -114,4 +114,19 @@ test("artifact-only macOS builds bundle OpenSSL and apply verified ad-hoc signin
   assert.match(fixOpenSsl, /OPENSSL_DIR/);
   assert.match(fixOpenSsl, /applied a verified ad-hoc signature/);
   assert.match(fixOpenSsl, /install_name_tool -change/);
+
+  const adHocSigning = sourceSection(
+    fixOpenSsl,
+    'if [[ "${skip_codesign}" == "1" ]]',
+    "codesign --force --options runtime --timestamp",
+  );
+  const developerIdSigning = fixOpenSsl.slice(
+    fixOpenSsl.indexOf("codesign --force --options runtime --timestamp"),
+  );
+  for (const section of [adHocSigning, developerIdSigning]) {
+    assert.ok(
+      section.indexOf('"${daemon_path}"') < section.indexOf('"${bin_path}"'),
+      "nested daemon must be signed before the main executable",
+    );
+  }
 });

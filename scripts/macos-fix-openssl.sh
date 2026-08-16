@@ -121,10 +121,10 @@ if [[ "${skip_codesign}" == "1" ]]; then
   # intentionally distinct from Developer ID signing and is never notarized.
   codesign --force --sign - "${frameworks_dir}/libcrypto.3.dylib"
   codesign --force --sign - "${frameworks_dir}/libssl.3.dylib"
-  codesign --force --sign - "${codesign_entitlements[@]}" "${bin_path}"
   if [[ -f "${daemon_path}" ]]; then
     codesign --force --sign - "${codesign_entitlements[@]}" "${daemon_path}"
   fi
+  codesign --force --sign - "${codesign_entitlements[@]}" "${bin_path}"
   codesign --force --sign - "${app_path}"
   codesign --verify --deep --strict --verbose=2 "${app_path}"
   echo "Bundled OpenSSL dylibs and applied a verified ad-hoc signature: ${app_path}"
@@ -133,10 +133,10 @@ fi
 
 codesign --force --options runtime --timestamp --sign "${identity}" "${frameworks_dir}/libcrypto.3.dylib"
 codesign --force --options runtime --timestamp --sign "${identity}" "${frameworks_dir}/libssl.3.dylib"
-codesign --force --options runtime --timestamp --sign "${identity}" "${codesign_entitlements[@]}" "${bin_path}"
 if [[ -f "${daemon_path}" ]]; then
   codesign --force --options runtime --timestamp --sign "${identity}" "${codesign_entitlements[@]}" "${daemon_path}"
 fi
+codesign --force --options runtime --timestamp --sign "${identity}" "${codesign_entitlements[@]}" "${bin_path}"
 codesign --force --options runtime --timestamp --sign "${identity}" "${codesign_entitlements[@]}" "${app_path}"
 
 echo "Bundled OpenSSL dylibs and re-signed ${app_path}"
