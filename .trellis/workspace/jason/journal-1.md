@@ -710,3 +710,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 22: 完成双平台本地试用包交付
+
+**Date**: 2026-08-16
+**Task**: 完成双平台本地试用包交付
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+完成 task 6.9 双平台交付闭环：macOS arm64 DMG 通过 hdiutil verify、deep codesign、Mach-O/OpenSSL 和 8 秒启动 smoke；Windows x64 unsigned NSIS 在 GitHub windows-latest 对同一修复 commit 构建，doge.exe 启动 smoke、artifact upload 与本地 SHA-256 复核通过。交付目录 release-local/fix-logout-loading-20260816。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c37cf1c27` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
