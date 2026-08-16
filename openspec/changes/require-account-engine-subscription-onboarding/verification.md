@@ -35,7 +35,12 @@
 
 ### Release evidence 与 remaining manual gates
 
-- macOS arm64 final-source artifact-only build: `/release-local/doge_0.1.0_aarch64.dmg`，SHA-256 `f1980e9ab5632a4b4b1b8466bdb10c8f2d06e9f25d89386917e63b25656506c0`；`hdiutil verify`=VALID，App/main/daemon/OpenSSL 均为 arm64，binary 不含 Homebrew absolute dependency。
-- OpenSSL fixup 后显式 ad-hoc sign nested dylibs/main/daemon/App；mounted App `codesign --verify --deep --strict`=pass，sealed resources v2（261 files），受控 `open -n` 启动 smoke 观察到 main process 正常存活后主动退出。`spctl` 按预期拒绝无 Developer ID/notarization 的内部包，因此它不宣称 formal release。
-- controlled-account payment/launch smoke、visual platform matrix、macOS x64 与 Windows x64 artifact checksums are appended before change closure.
+- macOS final run: `https://github.com/jasonmao-msj/doge/actions/runs/31944142977`，source `9bddd5b0c1cc31baf9a2f2817028204afaf79d6e`，arm64 与 x86_64 jobs 均 success。
+- macOS arm64: `release-local/github-31944142977/doge-macos-aarch64-adhoc/doge_0.1.0_aarch64.dmg`，SHA-256 `2ba174b6712b2ac89a8512d8177a285dff13e1a998f5c3953e9de3b1fb5571cb`；portable sidecar `shasum -c`、`hdiutil verify`、App/main/daemon/OpenSSL arm64、无 Homebrew absolute dependency、`codesign --verify --deep --strict`、sealed resources v2（261 files）与 native 8s launch smoke 均 pass。
+- macOS x86_64: `release-local/github-31944142977/doge-macos-x86_64-adhoc/doge_0.1.0_x86_64.dmg`，SHA-256 `3289c44e6683eb9e949a4ed0a1310a886b5e26ee4f949b77000d398a7e81fef5`；portable sidecar、DMG、四个 Mach-O x86_64、无 Homebrew absolute dependency、deep/strict codesign、sealed resources v2（261 files）与 Apple Silicon Rosetta 8s launch smoke 均 pass。
+- macOS signing 由内到外固定为 OpenSSL dylibs → daemon → main → App；PR #10 修复 Intel 对未签名 nested daemon 的 fail-closed rejection，并同时覆盖 ad-hoc 与 Developer ID paths。两份 build status 均为 `signature=adhoc`、`notarization=not-submitted`。
+- Windows final run: `https://github.com/jasonmao-msj/doge/actions/runs/31946059530`，source `53e07446372bc9c59e1fb0f65a634b476736bc96`；Windows runner 启动 `doge.exe` 8 秒并记录 `windows_launch_smoke=alive pid=6040` 后才 staging artifact。
+- Windows installer: `release-local/github-31946059530/doge-windows-x64-unsigned/doge_0.1.0_x64-setup.exe`，SHA-256 `7278e77175f57ae6ba8fb2fbd6f578669d13baf84c2fa89758ba0fa62b9478e5`；portable LF sidecar `shasum -c`=pass，NSIS PE Security Directory 为 `0/0`，与 `unsigned` 标记一致。
+- PR #8 / #9 把 Windows checksum 固定为 BOM-free ASCII + LF，并让 macOS sidecar 只记录 basename；下载后的三份 sidecar 均由标准 `shasum -c` 直接验证。
+- controlled-account payment/managed-access/Codex/Claude launch smoke 与完整 visual/accessibility platform matrix 尚待专用测试账号和人工目视，不因 artifact green 越级声称完成。
 - Apple Developer ID, notarization credentials, Windows code-signing certificate, and Tauri updater private key are not configured in the GitHub `release` environment. macOS artifact-only builds明确标记 ad-hoc/not-notarized，Windows 标记 unsigned；两者都不代表 formal signed release。
