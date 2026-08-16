@@ -109,6 +109,7 @@
 .account-gate-primary:focus-visible,
 .account-gate-secondary:focus-visible,
 .account-gate-text-button:focus-visible,
+.account-gate-logout:focus-visible,
 .account-gate-back:focus-visible {
   outline: 2px solid var(--ring, var(--gate-accent));
   outline-offset: 3px;
@@ -210,8 +211,29 @@
   background: var(--surface-hover, var(--accent));
 }
 
+.account-gate-logout {
+  position: absolute;
+  top: 48px;
+  right: 14px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.account-gate-logout:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover, var(--accent));
+}
+
 .account-gate-secondary:disabled,
-.account-gate-text-button:disabled {
+.account-gate-text-button:disabled,
+.account-gate-logout:disabled {
   cursor: default;
   opacity: .55;
 }
@@ -269,6 +291,7 @@
   .account-gate-engine-grid { grid-template-columns: 1fr; }
   .account-gate-engine { min-height: 112px; }
   .account-gate-back { top: 34px; left: 0; }
+  .account-gate-logout { top: 34px; right: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

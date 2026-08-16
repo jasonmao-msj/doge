@@ -70,6 +70,10 @@ React Component
 22. reattachment cleanup 必须带 exact owner compare-and-clear。旧 Runtime terminal
     可以为自己的 identity 安装 ledger barrier，但不能用 thread-level cleanup 清掉新
     Attempt 的 processing、active owner 或 frozen Target。
+23. 强制 gate / onboarding state machine 的 escape action 必须按全部 authenticated
+    blocking states 枚举并由 shared frame owner 渲染；不能只在某个 leaf phase（如
+    checkout）补按钮。至少覆盖 loading、catalog、empty、failure、selection、payment、
+    preparing，并验证 action pending、failure 与 stale async completion。
 
 ## 常见失败模式
 
@@ -112,6 +116,8 @@ React Component
   frozen Target 一并清空。
 - context package 已成功生成，仅 fidelity 降级，却弹出 Continue/Cancel 并阻塞发送；
   Target 切换因此退化成重复审批。
+- 只在支付恢复页加入“退出登录”，套餐为空或服务失败时仍无账号切换入口；leaf tests
+  全绿但完整 state machine 仍存在 dead end。
 
 ## Optional Payload Contract
 
@@ -150,6 +156,9 @@ React Component
   仍持久化、真正 prepare/ACK/rejection 失败仍 fail closed，且 UI 不进入确认 gate。
 - 历史/Projection 至少覆盖：rich terminal blocks、failed/cancelled、
   reasoning/tool-only provenance、legacy dual-read、strict prompt echo filter。
+- mandatory gate escape 至少覆盖：authenticated loading、selection、empty、failure、
+  checkout 与 preparing 共享同一可见 action；pending 时阻止重复提交，失败后留在原
+  state，成功后 stale catalog/checkout completion 不得重新推进旧流程。
 - mocked RPC 只能证明 mapping，不能代替 fake Runtime side-effect assertion。关键
   routing change 至少留一个可观察实际 Provider process/session key 与 Runtime model 的
   focused test。

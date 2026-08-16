@@ -552,7 +552,7 @@ export function useAccountExperienceControllerV1(
     setBusy(false);
     if (!result.ok) {
       setFailure(result.error);
-      return;
+      return false;
     }
     generationRef.current += 1;
     setBootstrap((current) => current ? { ...current, session: { status: "signedOut" } } : current);
@@ -560,6 +560,7 @@ export function useAccountExperienceControllerV1(
     setUsage(null);
     setConfiguration(INITIAL_CONFIGURATION_SURFACE_V1);
     setAuthSurface("login");
+    return true;
   }, [gateway]);
 
   const loadUsage = useCallback(async () => {

@@ -130,6 +130,11 @@ account gate SHALL 每屏只呈现一个主要决策；说明性内容 SHALL 收
 - **WHEN** signed-in cold restore 返回符合 masking contract 的 `primaryEmailLabel`，包括 local part 中的 `*`
 - **THEN** renderer SHALL 接受该 safe projection 并继续加载 engine catalog，不得把成功的 bootstrap 误判为 `protocolMismatch` 或“服务暂时不可用”
 
+#### Scenario: Authenticated user changes account from a blocking gate
+- **WHEN** 已登录用户停留在 engine catalog、套餐列表、无可售套餐、支付方式、等待支付、preparing 或 authenticated service failure 任一 pre-AppShell blocking state
+- **THEN** 页面 SHALL 始终提供可见的“退出登录”动作；成功后 MUST 回到登录/注册页，使没有目标订阅的用户可以切换账号
+- **AND** logout pending 期间该动作 MUST 防止重复提交，失败时 MUST 留在当前页面并展示可重试的用户文案
+
 ### Requirement: Account and checkout recovery SHALL be durable and bounded
 系统 SHALL 持久化 credential-free session/checkpoint/receipt，并为 checkout、managed binding 与 configuration 提供 crash-safe recovery；reconciliation MUST 有 absolute expiry 与 bounded backoff。
 

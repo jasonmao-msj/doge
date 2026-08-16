@@ -319,3 +319,76 @@ DELETE FROM account_engine_checkout
 WHERE authority_origin_id = ?1 AND account_link_id = ?2
   AND device_id = ?3 AND checkout_id = ?4;
 ```
+
+## Scenario: Authenticated AccountGate escape hatch
+
+### 1. Scope / Trigger
+
+- Trigger：修改 mandatory `AccountAppGate` state machine、登录后 engine/plan/payment/preparing/failure 页面，或 `useAccountExperienceControllerV1.logout`。
+- 目标：任何尚未进入 AppShell 的 authenticated blocking state 都不能成为账号死路；用户无订阅、无可售套餐或服务失败时仍能切换账号。
+
+### 2. Signatures
+
+- Controller：`logout(scope: "thisDevice" | "allSessions") -> Promise<boolean>`；`true` 仅表示 local signed-out session 已提交，remote revocation truth 仍由既有 receipt 表达。
+- Shared frame：`GateFrame({ children, accountExit?: GateAccountExit })`。
+- UI contract：`GateAccountExit { copy, busy, failureCode, onLogout }`；产品动作固定复用 localized `copy.logout`。
+
+### 3. Contracts
+
+- `accountExit` MUST 由 authenticated `AccountAppGate` shared frame owner 渲染，并覆盖 `catalog/loading`、engine selection、plans、empty plans、payment method、checkout、preparing 与 authenticated failure；`ready` AppShell 和 signed-out login/register MUST NOT 渲染该 gate action。
+- 点击 MUST 调用 `controller.logout("thisDevice")`。成功后进入 login/register；用户可换账号。不得要求先购买订阅、返回上一页或清理 API Key。
+- logout pending MUST 同时设置 `disabled` 与 `aria-busy=true`，重复点击不得产生第二个 mutation。
+- logout failure MUST 返回 `false`，Gate 留在当前 phase 并显示 mapped safe copy；禁止裸露 Native/protocol enum。
+- successful logout MUST invalidate in-flight catalog generation；迟到 catalog result 不得继续 `resumeCheckout`、打开支付 action 或恢复旧 engine path。
+- checkout-local “返回套餐”继续负责 exact checkpoint abandon；全局“退出登录”不得替代该 local recovery contract。
+
+### 4. Validation & Error Matrix
+
+| 当前状态 | 退出动作 | 结果 |
+|---|---|---|
+| engine / plans / empty plans / payment method | `logout(thisDevice)` | login/register，可换账号 |
+| catalog loading / authenticated failure | shared action 始终可见 | 成功 invalidates generation；迟到 catalog 不推进 |
+| checkout pending/terminal | shared logout + leaf 返回套餐 | logout 清 session/checkpoint；返回套餐 exact abandon |
+| preparing / prepare failure | shared logout | 不挂载 AppShell，返回登录 |
+| logout pending | disabled + `aria-busy` | duplicate click 零新增 mutation |
+| logout failure | `false` + safe failure | 原 phase 与原主要动作仍可用 |
+| signedOut / ready | 不渲染 gate logout | 登录页或 AppShell 各自拥有自己的账号入口 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：`GateFrame accountExit={accountExit}` 作为 authenticated phases 的公共 owner；新增 phase 默认必须显式选择是否属于 authenticated blocking surface。
+- Base：无订阅用户在套餐页点击“退出登录”，成功后直接看到登录/注册并换账号。
+- Bad：只在 `phase === "checkout"` 内写 logout button，导致 plans/empty/failure 仍无出口。
+- Bad：logout 失败后清空 plans 或跳回 loading，使用户既未退出又丢失当前恢复动作。
+- Bad：catalog promise 在 logout 成功后继续调用 `resumeCheckout()`，重新打开已退出账号的支付流程。
+
+### 6. Tests Required
+
+- `AccountAppGate.test.tsx` MUST 覆盖无订阅套餐页 visible logout、`auth.logout({scope:"thisDevice"})` exact call、成功后计划页消失。
+- 使用 deferred logout 覆盖 pending disabled、duplicate click only once、failure safe alert、plan list 保持可用。
+- 使用 deferred catalog 覆盖 catalog loading 中退出成功后迟到 response 不调用 `resumeCheckout`。
+- Existing checkout tests MUST 继续覆盖“返回套餐”与 shared logout；测试点击前先等待目标 phase，避免误点 catalog-loading 的同名 global action。
+- Gates：focused Vitest、`npm run typecheck`、target ESLint、full `npm run test`、`npm run lint`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+if (phase === "checkout") {
+  return <button onClick={() => void logout("thisDevice")}>退出登录</button>;
+}
+```
+
+#### Correct
+
+```tsx
+const accountExit = {
+  copy,
+  busy: logoutBusy || accountBusy,
+  failureCode: logoutFailure,
+  onLogout: () => void logoutFromGate(),
+};
+
+return <GateFrame accountExit={accountExit}>{phaseContent}</GateFrame>;
+```

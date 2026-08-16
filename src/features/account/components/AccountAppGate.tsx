@@ -42,6 +42,13 @@ type GatePhase =
   | "preparing"
   | "ready";
 
+type GateAccountExit = {
+  readonly copy: AccountExperienceCopyV1;
+  readonly busy: boolean;
+  readonly failureCode: string | null;
+  readonly onLogout: () => void;
+};
+
 export type AccountAppGateProps = {
   readonly gateway: AccountGatewayV1;
   readonly engineClient?: AccountEngineOnboardingClientV1;
@@ -90,6 +97,8 @@ function AccountAppGateInner({
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanViewV1 | null>(null);
   const [checkout, setCheckout] = useState<CheckoutViewV1 | null>(null);
   const [checkoutActionBusy, setCheckoutActionBusy] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
+  const [logoutFailure, setLogoutFailure] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const catalogGeneration = useRef(0);
 
@@ -161,13 +170,22 @@ function AccountAppGateInner({
     setCheckoutActionBusy(false);
   }, [checkout, checkoutActionBusy, client, openPlans, selectedEngine]);
 
-  const logoutFromCheckout = useCallback(async () => {
-    if (checkoutActionBusy || accountBusy) return;
-    setCheckoutActionBusy(true);
-    setFailure(null);
-    await accountLogout("thisDevice");
-    setCheckoutActionBusy(false);
-  }, [accountBusy, accountLogout, checkoutActionBusy]);
+  const logoutFromGate = useCallback(async () => {
+    if (checkoutActionBusy || logoutBusy || accountBusy) return;
+    setLogoutBusy(true);
+    setLogoutFailure(null);
+    const signedOut = await accountLogout("thisDevice");
+    if (signedOut) catalogGeneration.current += 1;
+    else setLogoutFailure("serviceUnavailable");
+    setLogoutBusy(false);
+  }, [accountBusy, accountLogout, checkoutActionBusy, logoutBusy]);
+
+  const accountExit: GateAccountExit = {
+    copy,
+    busy: checkoutActionBusy || logoutBusy || accountBusy,
+    failureCode: logoutFailure,
+    onLogout: () => void logoutFromGate(),
+  };
 
   const loadCatalog = useCallback(async () => {
     const generation = catalogGeneration.current + 1;
@@ -182,6 +200,7 @@ function AccountAppGateInner({
     }
     setEngines(result.value);
     const pending = await client.resumeCheckout();
+    if (catalogGeneration.current !== generation) return;
     if (!pending.ok) {
       setFailure(pending.error.code);
       return;
@@ -275,12 +294,12 @@ function AccountAppGateInner({
 
   if (phase === "catalog") {
     return failure
-      ? <GateFailure copy={copy} code={failure} onRetry={() => void loadCatalog()} />
-      : <GateLoading label={copy.gateConfirmingServices} />;
+      ? <GateFailure copy={copy} code={failure} onRetry={() => void loadCatalog()} accountExit={accountExit} />
+      : <GateLoading label={copy.gateConfirmingServices} accountExit={accountExit} />;
   }
   if (phase === "preparing" && selectedEngine) {
     return (
-      <GateFrame>
+      <GateFrame accountExit={accountExit}>
         <GateStepBack copy={copy} onClick={() => setPhase("engine")} />
         <div className="account-gate-centered" role="status">
           {failure ? (
@@ -301,7 +320,7 @@ function AccountAppGateInner({
   }
   if (phase === "engine") {
     return (
-      <GateFrame>
+      <GateFrame accountExit={accountExit}>
         <GateHeading copy={copy} title={copy.gateChooseEngine} help={copy.gateEngineHelp} />
         <div className="account-gate-engine-grid">
           {engines.map((engine) => (
@@ -318,7 +337,7 @@ function AccountAppGateInner({
   }
   if ((phase === "plans" || phase === "paymentMethod") && selectedEngine) {
     return (
-      <GateFrame>
+      <GateFrame accountExit={accountExit}>
         <GateStepBack copy={copy} onClick={() => { setFailure(null); setPhase("engine"); }} />
         <GateHeading copy={copy} title={interpolate(copy.gateChoosePlanTemplate, "engine", engineLabel(selectedEngine))} help={copy.gatePlanHelp} />
         {failure ? <GateFailureBody copy={copy} code={failure} onRetry={() => void openPlans(selectedEngine)} /> :
@@ -355,7 +374,7 @@ function AccountAppGateInner({
   if (phase === "checkout" && checkout) {
     const terminal = ["cancelled", "expired", "failed"].includes(checkout.status);
     return (
-      <GateFrame>
+      <GateFrame accountExit={accountExit}>
         <div className="account-gate-centered" role="status">
           {terminal ? <CircleAlert aria-hidden /> : <LoaderCircle className="account-gate-spin" aria-hidden />}
           <h1>{terminal ? copy.gatePaymentFailed : copy.gateWaitingPayment}</h1>
@@ -382,14 +401,6 @@ function AccountAppGateInner({
               >
                 {copy.gateBackToPlans}
               </button>
-              <button
-                className="account-gate-text-button"
-                type="button"
-                disabled={checkoutActionBusy || accountBusy}
-                onClick={() => void logoutFromCheckout()}
-              >
-                {copy.logout}
-              </button>
             </div>
           </div>
           {failure ? <GateInlineFailure copy={copy} code={failure} /> : null}
@@ -397,7 +408,7 @@ function AccountAppGateInner({
       </GateFrame>
     );
   }
-  return <GateFailure copy={copy} code="serviceUnavailable" onRetry={() => void loadCatalog()} />;
+  return <GateFailure copy={copy} code="serviceUnavailable" onRetry={() => void loadCatalog()} accountExit={accountExit} />;
 }
 
 function CheckoutQrCode({ copy, value }: { readonly copy: AccountExperienceCopyV1; readonly value: string }) {
@@ -455,13 +466,30 @@ async function openCheckoutAction(
   }
 }
 
-function GateFrame({ children }: { readonly children: ReactNode }) {
+function GateFrame({ children, accountExit }: {
+  readonly children: ReactNode;
+  readonly accountExit?: GateAccountExit;
+}) {
   return (
     <main className="account-app-gate">
       <div className="account-gate-window-drag" data-tauri-drag-region />
       <section className="account-gate-card">
+        {accountExit ? (
+          <button
+            className="account-gate-logout"
+            type="button"
+            disabled={accountExit.busy}
+            aria-busy={accountExit.busy}
+            onClick={accountExit.onLogout}
+          >
+            {accountExit.copy.logout}
+          </button>
+        ) : null}
         <img className="account-gate-logo" src={dogeMascot} alt="Doge" />
         {children}
+        {accountExit?.failureCode ? (
+          <GateInlineFailure copy={accountExit.copy} code={accountExit.failureCode} />
+        ) : null}
       </section>
     </main>
   );
@@ -480,9 +508,12 @@ function GateHeading({ copy, title, help }: {
   );
 }
 
-function GateLoading({ label }: { readonly label: string }) {
+function GateLoading({ label, accountExit }: {
+  readonly label: string;
+  readonly accountExit?: GateAccountExit;
+}) {
   return (
-    <GateFrame>
+    <GateFrame accountExit={accountExit}>
       <div className="account-gate-centered" role="status">
         <LoaderCircle className="account-gate-spin" aria-hidden />
         <h1>{label}</h1>
@@ -491,12 +522,13 @@ function GateLoading({ label }: { readonly label: string }) {
   );
 }
 
-function GateFailure({ copy, code, onRetry }: {
+function GateFailure({ copy, code, onRetry, accountExit }: {
   readonly copy: AccountExperienceCopyV1;
   readonly code: string;
   readonly onRetry: () => void;
+  readonly accountExit?: GateAccountExit;
 }) {
-  return <GateFrame><GateFailureBody copy={copy} code={code} onRetry={onRetry} /></GateFrame>;
+  return <GateFrame accountExit={accountExit}><GateFailureBody copy={copy} code={code} onRetry={onRetry} /></GateFrame>;
 }
 
 function GateFailureBody({ copy, code, onRetry }: {

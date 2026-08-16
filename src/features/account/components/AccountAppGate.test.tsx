@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMockAccountGatewayV1 } from "../mock/MockAccountGatewayV1";
 import { createScenarioRuntimeV1 } from "../mock/ScenarioRuntimeV1";
@@ -39,6 +40,101 @@ describe("AccountAppGate", () => {
     expect(screen.getByRole("button", { name: /Pro/ })).toBeTruthy();
     expect(screen.queryByText(/充值|按量|API Key/i)).toBeNull();
     expect(screen.queryByText("主应用已挂载")).toBeNull();
+  });
+
+  it("lets a user without a subscription sign out from the plan gate", async () => {
+    const client = engineClient({ codexEntitled: false });
+    const gateway = authenticatedGateway();
+    const logout = vi.spyOn(gateway.auth, "logout").mockResolvedValue({
+      ok: true,
+      value: { localSessionCleared: true, remoteRevocation: "unconfirmed" },
+    });
+    render(<AccountAppGate gateway={gateway} engineClient={client} engineActivator={async () => undefined} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Codex/ }));
+    expect(await screen.findByRole("button", { name: /Starter/ })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "退出登录" }));
+
+    await waitFor(() => expect(logout).toHaveBeenCalledWith(
+      { scope: "thisDevice" },
+      expect.any(Object),
+    ));
+    await waitFor(() => expect(screen.queryByRole("button", { name: /Starter/ })).toBeNull());
+  });
+
+  it("keeps the plan gate recoverable and blocks duplicate sign-out submissions", async () => {
+    const client = engineClient({ codexEntitled: false });
+    const gateway = authenticatedGateway();
+    type LogoutResult = Awaited<ReturnType<AccountGatewayV1["auth"]["logout"]>>;
+    let settleLogout: (result: LogoutResult) => void = () => undefined;
+    const pendingLogout = new Promise<LogoutResult>((resolve) => { settleLogout = resolve; });
+    const logout = vi.spyOn(gateway.auth, "logout").mockReturnValue(pendingLogout);
+    render(<AccountAppGate gateway={gateway} engineClient={client} engineActivator={async () => undefined} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Codex/ }));
+    expect(await screen.findByRole("button", { name: /Starter/ })).toBeTruthy();
+    const logoutButton = screen.getByRole("button", { name: "退出登录" }) as HTMLButtonElement;
+
+    fireEvent.click(logoutButton);
+    await waitFor(() => expect(logoutButton.disabled).toBe(true));
+    fireEvent.click(logoutButton);
+    expect(logout).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      settleLogout({
+        ok: false,
+        error: {
+          code: "serviceUnavailable",
+          stage: "logout",
+          recovery: { action: "retry", afterMs: null },
+        },
+      });
+      await pendingLogout;
+    });
+
+    expect((await screen.findByRole("alert")).textContent).toContain("服务暂时不可用");
+    expect(screen.getByRole("button", { name: /Starter/ })).toBeTruthy();
+    expect(logoutButton.disabled).toBe(false);
+  });
+
+  it("signs out from catalog recovery without opening a stale checkout", async () => {
+    const client = engineClient({ codexEntitled: false });
+    vi.mocked(openUrl).mockClear();
+    type ResumeResult = Awaited<ReturnType<AccountEngineOnboardingClientV1["resumeCheckout"]>>;
+    let settleResume: (result: ResumeResult) => void = () => undefined;
+    const pendingResume = new Promise<ResumeResult>((resolve) => { settleResume = resolve; });
+    vi.mocked(client.resumeCheckout).mockReturnValue(pendingResume);
+    const gateway = authenticatedGateway();
+    const logout = vi.spyOn(gateway.auth, "logout").mockResolvedValue({
+      ok: true,
+      value: { localSessionCleared: true, remoteRevocation: "unconfirmed" },
+    });
+    render(<AccountAppGate gateway={gateway} engineClient={client} engineActivator={async () => undefined} />);
+
+    await waitFor(() => expect(client.resumeCheckout).toHaveBeenCalledTimes(1));
+    fireEvent.click(await screen.findByRole("button", { name: "退出登录" }));
+    await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "退出登录" })).toBeNull());
+
+    await act(async () => {
+      settleResume({
+        ok: true,
+        value: {
+          engineId: "codex",
+          checkout: {
+            checkoutId: 91,
+            status: "pending",
+            expiresAt: "2030-01-01T00:00:00Z",
+            action: { kind: "open_url", url: "https://token-matrix.com/pay/91", data: null },
+          },
+        },
+      });
+      await pendingResume;
+    });
+
+    expect(openUrl).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: /Codex/ })).toBeNull();
   });
 
   it("automatically prepares after a paid checkout receipt", async () => {
@@ -90,6 +186,7 @@ describe("AccountAppGate", () => {
     await waitFor(() => expect(client.abandonCheckout).toHaveBeenCalledWith(88));
     expect(client.plans).toHaveBeenCalledWith("codex");
     expect(await screen.findByRole("button", { name: /Starter/ })).toBeTruthy();
+    expect((screen.getByRole("button", { name: "退出登录" }) as HTMLButtonElement).disabled).toBe(false);
   });
 
   it("leaves a recovered checkout by signing out", async () => {
@@ -113,6 +210,7 @@ describe("AccountAppGate", () => {
     });
 
     render(<AccountAppGate gateway={gateway} engineClient={client} engineActivator={async () => undefined} readyContent={<div>主应用已挂载</div>} />);
+    expect(await screen.findByText("等待完成支付")).toBeTruthy();
     fireEvent.click(await screen.findByRole("button", { name: "退出登录" }));
 
     await waitFor(() => expect(logout).toHaveBeenCalledWith(
