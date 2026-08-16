@@ -446,3 +446,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: 生成可移植 macOS 校验文件
+
+**Date**: 2026-08-16
+**Task**: 生成可移植 macOS 校验文件
+**Branch**: `codex/macos-portable-checksum`
+
+### Summary
+
+修复 macOS artifact SHA-256 sidecar 记录 CI release-artifacts 路径的问题，改为仅记录 basename，并加入 release workflow contract。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `508425f81` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
