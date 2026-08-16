@@ -136,7 +136,12 @@ jobs:
           $target = Join-Path "release-artifacts" $installer.Name
           Copy-Item $installer.FullName $target
           $hash = (Get-FileHash -Algorithm SHA256 $target).Hash.ToLowerInvariant()
-          "$hash  $($installer.Name)" | Set-Content -Encoding ascii "$target.sha256"
+          $checksumLine = "$hash  $($installer.Name)`n"
+          [System.IO.File]::WriteAllText(
+            "$target.sha256",
+            $checksumLine,
+            [System.Text.Encoding]::ASCII
+          )
 
       - name: Upload Windows installer artifact
         uses: actions/upload-artifact@v4
