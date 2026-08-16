@@ -21,6 +21,7 @@
 | [Logging Guidelines](./logging-guidelines.md) | 日志可观测性与敏感信息约束 |
 | [Database Guidelines](./database-guidelines.md) | 文件存储/锁/原子写规范 |
 | [Computer Use Bridge](./computer-use-bridge.md) | Computer Use status-only bridge 的 command / platform / status contract |
+| [Account Convenience Native Contract](./account-convenience-native-contract.md) | token2api authority、OS vault、safe IPC、Codex recipe/config transaction 与 Local Mode isolation contract |
 | [Claude Context Usage Contract](./claude-context-usage-contract.md) | Claude home resolution、runtime `context_window`、post-turn `/context` probe 与 `UsageUpdate` payload contract |
 | [Codex Provider-Scoped Runtime Contract](./codex-provider-scoped-runtime.md) | Codex provider profile、provider-scoped `CODEX_HOME`、runtime key、thread binding、fork、stale retry 与 `codex-tui` launch identity contract |
 | [Provider-Scoped Model Catalog Contract](./provider-scoped-model-catalog.md) | 五 CLI provider-bound/local validation model lookup、public merge、dedupe、Shared capability propagation、Desktop/daemon parity 与 stale guard contract |

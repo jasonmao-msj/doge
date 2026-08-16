@@ -1,0 +1,61 @@
+.account-config-bubble-wrap {
+  position: fixed;
+  z-index: 1100;
+  right: 22px;
+  bottom: 22px;
+  width: 64px;
+  height: 64px;
+}
+
+.account-config-bubble {
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / 28%));
+}
+
+.account-config-bubble img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.account-config-bubble:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.account-config-bubble:focus-visible,
+.account-config-bubble-dismiss:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.account-config-bubble-dismiss {
+  position: absolute;
+  z-index: 1;
+  top: -3px;
+  left: -3px;
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  background: var(--popover);
+  box-shadow: 0 3px 10px rgb(0 0 0 / 18%);
+}
+
+.account-config-bubble-dismiss svg {
+  width: 12px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .account-config-bubble {
+    transition: transform 140ms ease;
+  }
+}

@@ -1,5 +1,6 @@
 /** @vitest-environment jsdom */
 import { act, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 let windowLabel = "main";
@@ -11,6 +12,12 @@ vi.mock("./features/layout/hooks/useWindowLabel", () => ({
 
 vi.mock("./app-shell", () => ({
   AppShell: () => <div>main-shell</div>,
+}));
+
+vi.mock("./features/account/components/AccountAppGate", () => ({
+  AccountAppGate: ({ readyContent }: { readyContent: ReactNode }) => (
+    <div data-testid="account-app-gate-sentinel">{readyContent}</div>
+  ),
 }));
 
 vi.mock("./features/app/components/StartupGateOverlay", () => ({
@@ -100,12 +107,13 @@ describe("AppRouter", () => {
     ).toBeNull();
   });
 
-  it("does not mount the startup gate in detached windows", async () => {
+  it("keeps detached windows behind the account gate without the startup overlay", async () => {
     windowLabel = "about";
     startupGateOverlayTestEnabled = true;
     await renderAppRouter();
 
     expect(await screen.findByText("about-view")).not.toBeNull();
+    expect(screen.getByTestId("account-app-gate-sentinel")).not.toBeNull();
     expect(
       screen.queryByTestId("startup-gate-overlay-sentinel"),
     ).toBeNull();

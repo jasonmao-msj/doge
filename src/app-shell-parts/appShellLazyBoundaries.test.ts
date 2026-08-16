@@ -64,6 +64,18 @@ describe("AppShell lazy feature boundaries", () => {
     expect(source).toContain(`import("../../../../CHANGELOG.md?raw")`);
   });
 
+  it("keeps the preview configuration bubble behind a build-time lazy boundary", () => {
+    const renderSource = readSource(join(currentDir, "renderAppShell.tsx"));
+
+    expect(renderSource).toContain("ACCOUNT_UI_PREVIEW_V1_ENABLED");
+    expect(renderSource).toContain(
+      'import("../features/account/components/AccountPreviewConfigurationBubbleHost")',
+    );
+    expect(renderSource).not.toContain(
+      'from "../features/account/components/AccountPreviewConfigurationBubbleHost"',
+    );
+  });
+
   it("mounts heavy canvas surfaces only when their surface is active", () => {
     const layoutNodesSource = readSource(join(srcDir, "features/layout/hooks/useLayoutNodes.tsx"));
     const shellSectionSource = readSource(join(currentDir, "useAppShellLayoutNodesSection.tsx"));

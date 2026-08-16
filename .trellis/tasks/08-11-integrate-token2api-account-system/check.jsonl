@@ -1,0 +1,24 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": "AGENTS.md", "reason": "Global completion, ADR, and session gates"}
+{"file": ".trellis/tasks/08-11-integrate-token2api-account-system/prd.md", "reason": "Acceptance criteria and frozen product decisions"}
+{"file": "openspec/changes/integrate-token2api-account-system/proposal.md", "reason": "Scope drift review"}
+{"file": "openspec/changes/integrate-token2api-account-system/design.md", "reason": "Architecture and lane ownership review"}
+{"file": "openspec/changes/integrate-token2api-account-system/tasks.md", "reason": "Task completion and evidence ledger"}
+{"file": "openspec/changes/integrate-token2api-account-system/specs/token2api-account-convenience/spec.md", "reason": "Behavior conformance review"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/v1-contract-freeze-review.md", "reason": "B-01 through B-12 mechanical enforcement review"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/token2api-modification-verdict.md", "reason": "Server release blocker review"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/doge-implementation-impact-map.md", "reason": "Shared-file ownership and update-site review"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/local-package-readiness.md", "reason": "M0 versus A0 and package evidence review"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend pre-development and quality index"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend pre-development and quality index"}
+{"file": ".trellis/spec/guides/index.md", "reason": "Cross-layer review index"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Cross-layer conformance and missed-site review"}
+{"file": ".trellis/spec/guides/native-webview-api-risk-gate.md", "reason": "Platform risk review"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Gateway and IPC type review"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend quality review"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "No false success and error contract review"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Privacy-safe logging review"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Persistence and migration review"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Backend quality review"}
+{"file": "docs/research/mossx-multi-cli-provider-session-foundation-design.md", "reason": "ADR calibration trigger review"}

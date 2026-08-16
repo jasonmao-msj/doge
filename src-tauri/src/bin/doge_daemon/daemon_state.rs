@@ -33,6 +33,20 @@ fn normalize_daemon_disk_provider_profile(
     ))
 }
 
+fn reject_account_managed_claude_for_daemon(
+    provider_profile_id: Option<&str>,
+) -> Result<(), String> {
+    if provider_profile_id.map(str::trim)
+        == Some(engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID)
+    {
+        return Err(
+            "Doge account-managed Claude is unavailable in daemon mode; use the desktop runtime."
+                .to_string(),
+        );
+    }
+    Ok(())
+}
+
 fn resolve_supported_daemon_active_engine(
     settings: &AppSettings,
     configured_engine: Option<&str>,
@@ -1091,6 +1105,7 @@ impl DaemonState {
                         "claude",
                         provider_profile_id.as_deref(),
                     )?;
+                reject_account_managed_claude_for_daemon(effective_provider_profile_id.as_deref())?;
                 let provider_launch_profile =
                     engine::claude::resolve_claude_provider_launch_profile(
                         effective_provider_profile_id.as_deref(),

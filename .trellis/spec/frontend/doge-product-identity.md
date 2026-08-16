@@ -27,6 +27,7 @@
 - Allowlist entry MUST contain exact path/line/token category、reason、removal condition；catch-all allowlist forbidden。
 - Platform icons MUST derive from `brand.visual.appIconSource`；README icon、DMG、ICNS/ICO、Windows/iOS/Android matrix MUST remain present and dimension-checked。
 - Settings MUST NOT expose an alternate app/Dock icon selector；doge ships one canonical visual identity。Persisted legacy `dockIconId` values MAY remain accepted as compatibility input, but MUST normalize to `default` and MUST NOT select or bundle a legacy runtime icon。
+- Shipping renderer surfaces and the runtime `default` Dock icon MUST resolve the canonical Doge product asset；feature UI MUST NOT reintroduce legacy `src/assets/icon.png` imagery or ship a second default visual identity。
 
 ### 4. Validation & Error Matrix
 
@@ -39,6 +40,7 @@
 | compatibility reader 含旧 token | narrow allowlist + legacy fixture | 当作新写入继续扩散 |
 | icon matrix 缺文件/尺寸错误 | icon contract fail | 发布时临时复用旧图标 |
 | Appearance settings 渲染备用应用图标选择器 | SettingsView regression fail | 允许用户恢复上游视觉身份 |
+| feature UI / runtime default Dock 使用不同产品图标 | visual contract fail；统一到 canonical product asset | 在 feature 内直接 import legacy icon |
 
 ### 5. Good / Base / Bad Cases
 

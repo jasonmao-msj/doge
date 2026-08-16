@@ -39,8 +39,10 @@ Keep this managed block so 'trellis update' can refresh the instructions.
    - frontend / backend / guides 的具体实现规范
 3. **Behavior specs**：`openspec/**`
    - proposal / design / tasks / main specs / workspace governance
-4. **Host adapter config**：`.claude/**`、`.codex/**`
-   - hooks / commands / skills / host-specific glue
+4. **Agent workflow + host adapter config**：`.agents/**`、`.claude/**`、`.codex/**`
+   - `.agents/agents/**`：project-neutral agent roles 与 dispatch catalog
+   - `.agents/skills/**`：project-neutral reusable workflows
+   - `.claude/**`、`.codex/**`：hooks / commands / registration / host-specific glue
 5. **Runtime artifacts**：`.omx/**` 及其他本地运行态目录
    - 不是长期仓库资产，不作为规范事实源
 
@@ -56,6 +58,9 @@ Keep this managed block so 'trellis update' can refresh the instructions.
   - `openspec/README.md`
   - `openspec/project.md`
   - 对应 `openspec/changes/<change-id>/**`
+- 涉及 multi-agent 拆分、delegation 或并行开发时，再读：
+  - `.agents/agents/README.md`
+  - `.agents/agents/doge-project-lead.md`
 - 只有在调试 host hooks / commands / skills 时，才优先深入 `.claude/**` 或 `.codex/**`。
 
 ## OpenSpec + Trellis

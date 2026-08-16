@@ -12,7 +12,7 @@ status: implemented
 > 内容类型：Architecture Decision Record
 > 生命周期：accepted / implemented in slices；原始 A–D 路线已归档，后续修复与收口 change 独立演进
 > 初始日期：2026-07-27
-> 最近校准：2026-08-10 · `rebrand-client-to-doge`：Context/ACK/dispatch producers 统一写 `DOGE_*` / `dogeDispatchReceipt`，历史 `MOSSX_*` / `mossxDispatchReceipt` 保持 dual-read 或 exact legacy round-trip；fresh storage/runtime temporary paths 只写 doge namespace
+> 最近校准：2026-08-16 · `require-account-engine-subscription-onboarding`：Codex/Claude Code 增加 account-managed Provider binding；配置只写 `doge-token-matrix` sentinel，credential 按 engine scope 存 OS vault 并在 desktop launch 注入，daemon 对该 binding fail closed
 > 适用范围：Native Session、Shared Session、Provider Runtime、Session Catalog、Sidebar Projection、未来 Plugin / Orchestration
 > 核心决策：Native Session 保持原生身份；Shared Session 承担跨 CLI、跨 Provider 的逐 Turn 切换
 
@@ -29,6 +29,7 @@ status: implemented
 | Shared target boundary | Claude/Codex/Kimi/Grok/OpenCode；Gemini 排除 | `sharedSessionEngines.ts`、`src-tauri/src/shared_sessions.rs` |
 | Gemini runtime | registry 中存在，但 runtime policy 默认 disabled | `src-tauri/src/engine_policy.rs` |
 | Provider selection | Native 原子选择；Shared 逐 Turn target | `close-native-session-provider-create-binding` 与 Shared target contracts |
+| Account-managed Provider binding | Codex/Claude Code 在 mandatory AccountGate ready 后使用 engine-scoped `doge-token-matrix` binding；secret 不进 renderer/config，desktop launch 从 OS vault 注入，daemon 不回退 local/default | `src-tauri/src/account/{runtime.rs,configuration.rs}`、`src-tauri/src/engine/claude/provider_profile.rs`、OpenSpec `require-account-engine-subscription-onboarding` |
 | Shared send UI 状态机 | 九态 + Recovery Exit Ladder（Probe/Stop/停止并重建/放弃本轮） | `sendStateMachine.ts`、`SharedSendStatusBar.tsx`、`shared_session_v2.rs` |
 | Recovery Exit Closure | **设计见 §14.5.7**；已实现并收口（OpenSpec `fix-shared-session-recovery-exit-closure`） | abandon durable + stop-before-rebuild + fuse disabled reasons |
 | Shared 上下文续接 integrity | native 不可信时禁止假设 history 已在 native 内；zero-transfer 不等于可 rematerialize；`empty-context-handoff` 为一等 recovery 错误类别 | OpenSpec `fix-shared-context-resume-integrity`、`shared_context/compiler.rs`、`recoveryErrorMap.ts` |

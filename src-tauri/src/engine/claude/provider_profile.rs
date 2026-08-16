@@ -5,6 +5,7 @@ use serde_json::Value;
 use crate::session_management::EngineProviderBinding;
 
 pub(crate) const CLAUDE_LOCAL_PROVIDER_PROFILE_ID: &str = "__local_settings_json__";
+pub(crate) const CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID: &str = "doge-token-matrix";
 
 pub(crate) fn claude_runtime_key(workspace_id: &str, provider_profile_id: Option<&str>) -> String {
     let profile_id = provider_profile_id

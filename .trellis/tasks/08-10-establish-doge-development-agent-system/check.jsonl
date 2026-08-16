@@ -1,0 +1,7 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": "AGENTS.md", "reason": "检查最小入口与全局 gate"}
+{"file": ".trellis/spec/guides/project-instruction-layering-guide.md", "reason": "检查 single source of truth 边界"}
+{"file": "openspec/changes/establish-doge-development-agent-system/specs/development-agent-orchestration/spec.md", "reason": "核对 agent orchestration 验收 contract"}
+{"file": ".agents/agents/README.md", "reason": "检查 31-role coverage、ownership 与 trigger"}
+{"file": "openspec/changes/establish-doge-development-agent-system/verification.md", "reason": "最终验证证据与 residual"}

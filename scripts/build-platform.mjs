@@ -115,7 +115,7 @@ async function buildMacOS(arch, options = {}) {
 
   if (!skipSign && !CONFIG.codesignIdentity) {
     throw new Error(
-      "CODESIGN_IDENTITY is required for signed macOS builds; use --skip-sign for a local unsigned build.",
+      "CODESIGN_IDENTITY is required for a formal macOS build; use --skip-sign for a local ad-hoc signed artifact.",
     );
   }
 
@@ -217,9 +217,10 @@ async function buildMacOS(arch, options = {}) {
     exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app`);
   }
 
-  // Bundle OpenSSL for both signed and unsigned artifacts. `--skip-sign`
-  // must not leave host-local Homebrew paths in an otherwise valid app.
-  console.log(skipSign ? "\nBundling OpenSSL without signing..." : "\nBundling OpenSSL and signing...");
+  // Bundle OpenSSL for both formal and artifact-only builds. `--skip-sign`
+  // skips Developer ID signing, but still applies a verified ad-hoc signature
+  // after install_name_tool invalidates the linker-generated signatures.
+  console.log(skipSign ? "\nBundling OpenSSL with ad-hoc signing..." : "\nBundling OpenSSL and signing...");
 
   if (arch === "universal") {
       // Create universal OpenSSL dylibs
@@ -258,6 +259,14 @@ async function buildMacOS(arch, options = {}) {
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/doge"`);
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/doge_daemon"`);
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}"`);
+    } else {
+      const entitlements = CONFIG.entitlements;
+      exec(`codesign --force --sign - "${frameworksPath}/libcrypto.3.dylib"`);
+      exec(`codesign --force --sign - "${frameworksPath}/libssl.3.dylib"`);
+      exec(`codesign --force --sign - --entitlements "${entitlements}" "${bundlePath}/Contents/MacOS/doge"`);
+      exec(`codesign --force --sign - --entitlements "${entitlements}" "${bundlePath}/Contents/MacOS/doge_daemon"`);
+      exec(`codesign --force --sign - "${bundlePath}"`);
+      exec(`codesign --verify --deep --strict --verbose=2 "${bundlePath}"`);
     }
   } else {
     // Use the shared single-arch fixup; signing remains an explicit second phase.
@@ -429,7 +438,7 @@ Platforms:
   all            - All platforms for current OS
 
 Options:
-  --skip-sign      - Skip code signing (macOS only)
+  --skip-sign      - Skip Developer ID signing; apply verified ad-hoc signing (macOS only)
   --skip-notarize  - Skip notarization (macOS only)
 
 Examples:

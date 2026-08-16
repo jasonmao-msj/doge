@@ -1,0 +1,34 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "AGENTS.md", "reason": "Canonical project entry and global gates"}
+{"file": ".trellis/tasks/08-11-integrate-token2api-account-system/prd.md", "reason": "Frozen product decisions, first trial scope, and delivery authorization"}
+{"file": "openspec/changes/integrate-token2api-account-system/.openspec.yaml", "reason": "Change-local OpenSpec configuration"}
+{"file": "openspec/config.yaml", "reason": "Workspace OpenSpec configuration"}
+{"file": "openspec/changes/integrate-token2api-account-system/proposal.md", "reason": "Formal behavior proposal and scope"}
+{"file": "openspec/changes/integrate-token2api-account-system/design.md", "reason": "Frozen v1 architecture, contracts, lanes, and gates"}
+{"file": "openspec/changes/integrate-token2api-account-system/tasks.md", "reason": "Executable ownership, dependencies, and acceptance gates"}
+{"file": "openspec/changes/integrate-token2api-account-system/specs/token2api-account-convenience/spec.md", "reason": "Normative product behavior delta"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/v1-contract-freeze-review.md", "reason": "B-01 through B-12 executable contract resolutions"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/token2api-modification-verdict.md", "reason": "Current-vs-target token2api gaps and upstream prerequisites"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/doge-implementation-impact-map.md", "reason": "Current code impact and serialized shared-file ownership"}
+{"file": "openspec/changes/integrate-token2api-account-system/research/local-package-readiness.md", "reason": "macOS A0 package prerequisites and honest artifact gates"}
+{"file": ".trellis/spec/guides/index.md", "reason": "Cross-layer guide index"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Frontend-IPC-Rust mapping and durable ownership rules"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse-before-new implementation discipline"}
+{"file": ".trellis/spec/guides/native-webview-api-risk-gate.md", "reason": "OS vault, browser, WebView, and platform safety gate"}
+{"file": ".trellis/spec/frontend/directory-structure.md", "reason": "Account feature slice placement"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Account UI component and i18n conventions"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Async listener and polling safety"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Local/global/persistent/runtime state boundaries"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Discriminated unions and boundary validation"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend implementation and review gate"}
+{"file": ".trellis/spec/backend/directory-structure.md", "reason": "Rust account module placement"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Closed error propagation and no false success"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "Secret-free diagnostic rules"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "SQLite, lock, atomic write, and migration rules"}
+{"file": ".trellis/spec/backend/doge-storage-and-serialized-compatibility.md", "reason": "Doge storage compatibility and privacy contract"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Rust validation and quality gate"}
+{"file": ".trellis/spec/backend/upstream-service-isolation.md", "reason": "Authority origin and upstream service isolation"}
+{"file": ".trellis/spec/backend/codex-provider-scoped-runtime.md", "reason": "Codex provider/session runtime binding contract"}
+{"file": "docs/research/mossx-multi-cli-provider-session-foundation-design.md", "reason": "Provider binding and ADR calibration fact source for Codex recipe integration"}

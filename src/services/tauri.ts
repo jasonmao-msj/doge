@@ -4,6 +4,13 @@ export {
   pickWebAssetsArchive,
   pickWorkspacePath,
 } from "./tauri/filePickers";
+export {
+  executeAccountRequestV1,
+  getAccountNativeContextV1,
+  prepareAccountMutationV1,
+  subscribeAccountWakeupV1,
+} from "./tauri/account";
+export type { AccountNativeContextV1 } from "./tauri/account";
 export { getConfigModel, listWorkspaces, takeWorkspacesRecoveryNotice } from "./tauri/workspaceConfig";
 export {
   compactThreadContext,

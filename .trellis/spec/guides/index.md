@@ -22,6 +22,7 @@
 - 修改大 CSS 文件或 `*.partN.css`。
 - 修改 `threads/spec-hub/git-history/file-view/composer` 主流程。
 - 修改 `AGENTS.md`、`openspec/README.md`、`openspec/project.md`、`.gitignore`、`.claude/**`、`.codex/**` 等治理入口。
+- 修改 `.agents/agents/**` project roles/catalog 或 `.agents/skills/**` reusable workflows。
 - 新增/恢复 CLI engine，或修改 `engineIds.json`、`EngineType`、`sharedSessionEngines`、capability matrix fixture、幕布渲染白名单（`TimelineRowRenderer` / `MessagesCore` / `useAppServerEvents`）中的任一 engine 分支。
 - 调用 native / WebView 系统能力（zoom、DPI、窗口、透明度等），或新增「启动时生效的持久化设置」→ 必读 [Native WebView API Risk Gate](./native-webview-api-risk-gate.md)。
 
