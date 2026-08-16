@@ -578,3 +578,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: 修复账号恢复脱敏邮箱误判并验证本地包
+
+**Date**: 2026-08-16
+**Task**: 修复账号恢复脱敏邮箱误判并验证本地包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+修复 masked primaryEmailLabel 被通用 SafeLabel 拒绝导致服务暂时不可用的问题；新增 exact IPC bootstrap 回归测试，更新 OpenSpec/Trellis contract，并完成 macOS arm64 DMG 构建、签名校验与真实会话恢复冒烟。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `520a19ade` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

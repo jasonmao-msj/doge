@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 17
+- **Total Sessions**: 18
 - **Last Active**: 2026-08-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~580 | Active |
+| `journal-1.md` | ~613 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 18 | 2026-08-16 | 修复账号恢复脱敏邮箱误判并验证本地包 | `520a19ade` | `codex/fix-account-masked-email-bootstrap` |
 | 17 | 2026-08-16 | 记录跨平台发布证据 | `2693045ae` | `codex/account-release-evidence` |
 | 16 | 2026-08-16 | 验证 Windows 应用启动 | `7a9d9b3cb` | `codex/windows-launch-smoke` |
 | 15 | 2026-08-16 | 修复 macOS 嵌套签名顺序 | `2f672fc67` | `codex/macos-sign-nested-first` |
