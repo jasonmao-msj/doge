@@ -875,3 +875,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 27: 加固 Windows artifact 构建入口
+
+**Date**: 2026-08-17
+**Task**: 加固 Windows artifact 构建入口
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+GitHub hosted runner 连续因第三方 action codeload 429/502 在 setup 阶段失败；Windows artifact-only job 改用 runner 预装 rustup stable，移除非必要 rust-cache 与 sccache third-party actions，降低发布链外部故障点，不改应用代码。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `76007cc53` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

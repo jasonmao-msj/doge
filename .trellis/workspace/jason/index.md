@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 26
+- **Total Sessions**: 27
 - **Last Active**: 2026-08-17
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~877 | Active |
+| `journal-1.md` | ~910 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 27 | 2026-08-17 | 加固 Windows artifact 构建入口 | `76007cc53` | `codex/fix-account-masked-email-bootstrap` |
 | 26 | 2026-08-17 | 内置订阅引擎与版本选择 | `40f9ee78e` | `codex/fix-account-masked-email-bootstrap` |
 | 25 | 2026-08-17 | 完善账号多订阅用量与 Keychain 恢复 | `8e8b165c4` | `codex/fix-account-masked-email-bootstrap` |
 | 24 | 2026-08-16 | 打通第二引擎订阅闭环并生成 macOS 体验包 | `177720cc1` | `codex/fix-account-masked-email-bootstrap` |
