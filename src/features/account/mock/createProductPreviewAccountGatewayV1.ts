@@ -233,6 +233,8 @@ export function createProductPreviewAccountGatewayV1(): AccountGatewayV1 {
     usage: {
       read: (context) =>
         gatewayForScenarioV1("usage.fresh-normal").usage.read(context),
+      readDayModels: (input, context) =>
+        gatewayForScenarioV1("usage.fresh-normal").usage.readDayModels(input, context),
     },
     managedKey: {
       readStatus: configurationGateway.managedKey.readStatus,

@@ -484,3 +484,116 @@ if (loadingGenerationRef.current === generation) {
 }
 if (generationRef.current !== generation) return;
 ```
+
+## Scenario: Subscription-owned usage projection and daily model heatmap
+
+### 1. Scope / Trigger
+
+- Trigger：修改 Account `usage.read`、额度页、Desktop engine entitlement mapping，或 token2api subscription/usage API adapter。
+- 目标：额度必须来自用户当前 active subscription，而不是可为空的 user platform quota；每个已订阅 engine 独立展示额度与过去一年用量，日级 model 明细只在 hover/focus 时按需读取。
+
+### 2. Signatures
+
+- Gateway read：`usage.read({}) -> QuotaUsageViewV1`。
+- Lazy read：`usage.readDayModels({ engineId: "codex" | "claude-code", date: "YYYY-MM-DD" }) -> UsageDayModelsViewV1`。
+- Authority composition：
+  - `GET /api/v1/desktop/v1/engines`：提供 active engine 的 `engine_id + subscription_id + group_id + subscription_label + expires_at`。
+  - `GET /api/v1/subscriptions/progress`：提供 subscription `daily/weekly/monthly` 的 `limit_usd + used_usd + remaining_usd + percentage + resets_at`。
+  - `GET /api/v1/usage/dashboard/snapshot-v2?group_id=<id>&start_date=<date>&end_date=<date>`：提供 group-scoped `trend[] + models[]`。
+- Main native boundary 仍复用 `account_v1_execute`；新增 operation name 必须在 Rust `GATEWAY_OPERATIONS_V1`、TS IPC schema/transport、Real/Mock gateway 与 scenario manifest 同步登记。
+
+### 3. Contracts
+
+- `usage.read` MUST 先以 Desktop engine catalog 为 entitlement truth，只投影 `subscriptionId/groupId` 均有效的 active engine；不得从 renderer 猜测 engine→group 映射。
+- 每个 engine MUST 独立关联同一 subscription id 的 progress，并投影 `windows.daily/weekly/monthly`；不存在的窗口用 `null`，不得用 0 伪造套餐额度。
+- 年度 analytics MUST 按 engine 的 `group_id` 分别读取，返回 `range + totals + days + models`；heatmap intensity 为该 engine 日 `actualCost` 的相对 0..4 等级，不得跨 engine 混算。
+- 某个 engine dashboard 失败时，该 engine `analyticsStatus="unavailable"`，其他 engine 与已读取额度仍可显示；catalog/progress top-level 失败才使 `usage.read` 失败。
+- `usage.readDayModels` MUST 在 Native 重新读取 catalog 并验证请求 engine 当前仍有 active group，date 必须为过去 365 天内的 ISO date；禁止信任 renderer 传入 group id。
+- day-model response 只包含 `modelLabel + requests + input/output/cache/total tokens + cost + actualCost`，不得包含 API key、account id、group id、raw server error 或 credential。
+- UI 首次进入 Account Center 不自动读取 usage；只有用户打开“额度”Tab或点击刷新才调用 `usage.read`。日级 model 明细只在 activity cell hover/focus 时调用一次并按 `engineId:date` 缓存；禁止轮询与 AppShell root state。
+- Account Center Header MUST 是 usage refresh/fetched time 与 logout 的唯一 action owner：logout 常驻，refresh/fetched time 只在额度 Tab出现；两个 action 都使用有 accessible name 与 hover/focus tooltip 的 icon-only button。额度/安全内容区不得重复同名 heading。
+- active subscription engine MUST 使用 selectable card master/detail：一行最多 3 张，1/2/3 张等宽占满，更多自动换行，responsive 降为 2/1 列；card selection 只存在 component-local state，不得触发新的`usage.read`或写入持久化状态。card 摘要优先 daily，缺失时回退 weekly/monthly；detail 保留全部 available windows。
+- heatmap cell MUST 可键盘 focus，tooltip宽度自适应且无固定高度；无 activity 的日期不发 day-model request。
+- token2api 已有上述三类 read API 时，本场景只改 Doge adapter/contract/UI，不要求 token2api migration 或生产发布。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Native/Gateway | UI |
+|---|---|---|
+| active subscription + platform quota 为空 | 以 subscription progress 成功投影 | 显示套餐总额/已用/剩余 |
+| Codex + Claude 均 active | 按各自 group 独立 snapshot | 两张 engine card，可独立切换 |
+| 某 engine snapshot 失败 | 仅该 engine analytics unavailable | 额度窗口保留，其他 engine 热力图正常 |
+| progress endpoint失败/畸形 | safe `serviceUnavailable/protocolMismatch` | 可重试，不展示伪造额度 |
+| renderer提交 unknown engine/group/date | boundary `validationRejected` | 不发 Authority request |
+| hover同一 engine/date 多次 | controller in-flight dedupe + cache | 最多一个请求，复用 model 明细 |
+| logout/refresh session | 清 day-model cache 与 generation | 旧响应不得写回新账号 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：catalog 给出 Codex group 11、Claude group 22；Native 分别读取两个 snapshot，UI选择 engine 后只展示该 engine 的窗口与热力图。
+- Base：套餐只有 monthly window，UI只渲染 monthly card；daily/weekly保持`null`。
+- Bad：继续读取`/api/v1/user/platform-quotas`并因null显示“暂时无法读取额度”。
+- Bad：renderer传`groupId`给Native，或一次性为365天逐日加载model明细。
+- Bad：一个 engine analytics失败后清空全部 subscription progress。
+
+### 6. Tests Required
+
+- Rust Authority test：断言 progress path、group-scoped snapshot query 与 Bearer envelope；projection test锁定 canonical decimal、windows、365-day trend。
+- Rust IPC/model test：`usage.readDayModels` 为read operation，exact payload仅允许`engineId/date`，invalid/未来/超范围date fail closed。
+- TS contract test：operation inventory、request/result schema、unknown field、privacy scan、Real/Mock transport mapping。
+- React regression：打开额度Tab前零read；Codex/Claude切换；active cell hover分别发送各自`engineId/date`；重复hover不重复读取；partial analytics failure保留额度。
+- React visual/interaction regression：Header logout/refresh icon-only 且 tooltip 可由 hover/focus 打开；refresh pending 防重复提交；额度/安全无重复 heading；多订阅 grid 锁定最多3列与 responsive 2/1列；card切换不增加`usage.read`调用。
+- Required commands：focused Vitest、`cargo test --manifest-path src-tauri/Cargo.toml account:: --lib`、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+const quota = await fetch("/api/v1/user/platform-quotas");
+if (!quota.limit) return unavailableUsage();
+```
+
+#### Correct
+
+```ts
+const view = await gateway.usage.read({});
+// Native composes active engine catalog + subscription progress + group snapshots.
+await gateway.usage.readDayModels({ engineId, date }, {}); // hover/focus only
+```
+
+## Scenario: Cold restore OS vault access budget
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `gateway.bootstrap`、`try_restore_session`、access-token refresh、`activate_auth` 或 `DurableAccountVault`。
+- 目标：macOS Keychain authorization 是用户可见的高成本 side effect；启动恢复不得对同一 credential 做重复 status/read，同时必须保留 refresh rotation durability。
+
+### 2. Signatures
+
+- `bootstrap(state) -> bootstrap projection`：每次调用最多求值一次 `vault.status()`。
+- `activate_auth(state, auth, existing_scope, previous_refresh)`：已有 session 的 caller MUST 传入刚读取的 previous refresh snapshot；新 login/OAuth MAY 传 `None` 并由 activation 读取 rollback baseline。
+
+### 3. Contracts
+
+- active-session cold restore MUST 对 refresh credential 执行 exactly one `vault.read()`；同一值同时用于 Authority refresh 与 local rollback snapshot。
+- bootstrap restore gate 与最终 projection MUST 复用同一个 `AccountVaultStatus`，禁止重复 `vault.status()`。
+- rotated refresh MUST 写回 OS vault；不得为了减少提示保留旧 refresh 或退化为 memory-only session。
+- repository commit 失败时 MUST 使用 snapshot 恢复旧 refresh；snapshot 不得进入 renderer、SQLite、log 或 error message。
+- vault locked/unavailable 继续 fail closed。该 contract 约束 Doge access count，不承诺 ad-hoc signature 下 macOS 永不显示必要的 read/write authorization。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Vault access | 结果 |
+|---|---|---|
+| signed-out bootstrap | `status=1`，无 refresh read/write | 登录页；不访问不存在的 session credential |
+| active cold restore success | `status=1, read=1, write=1` | rotated refresh durable，session restored |
+| Authority refresh failure | `status=1, read=1, write=0` | 保留旧 credential，可重试 |
+| repository commit failure | `status=1, read=1, write new + rollback old` | 不留下半提交 session |
+| vault locked/unavailable | `status=1`，不发 Authority refresh | safe `vaultUnavailable` / recoverable gate |
+
+### 5. Tests Required
+
+- Counting vault regression MUST 锁定 cold restore `status_calls == 1` 与 refresh-purpose `read_calls == 1`。
+- Activation regression MUST 证明 caller 提供 snapshot 时不再次 read，且 repository failure 仍写回旧 snapshot。
+- Required commands：`cargo test --manifest-path src-tauri/Cargo.toml account:: --lib`、`cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`、`npm run check:runtime-contracts`、OpenSpec strict validation。

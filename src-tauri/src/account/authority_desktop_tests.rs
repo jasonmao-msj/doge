@@ -1,13 +1,16 @@
 use super::authority::{TokenMatrixAuthority, TOKEN_MATRIX_ORIGIN};
 use super::desktop_continuation::{DesktopContinuationBroker, DesktopContinuationPurpose};
 use axum::{
-    extract::State,
+    extract::{Query, State},
     http::HeaderMap,
     routing::{get, post},
     Json, Router,
 };
 use serde_json::{json, Value};
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 const NOW: i64 = 1_893_456_000;
 const DEVICE: &str = "device_synthetic01";
@@ -270,6 +273,115 @@ async fn desktop_api_key_list_is_metadata_only_and_handoff_is_scoped() {
             "recipe_id": "doge.account.codex-token-service",
             "recipe_version": 1,
         }),
+    );
+}
+
+#[tokio::test]
+async fn subscription_usage_authority_wire_uses_progress_and_group_scoped_dashboard() {
+    let captured_query = Arc::new(Mutex::new(HashMap::<String, String>::new()));
+    let app = Router::new()
+        .route(
+            "/api/v1/subscriptions/progress",
+            get(|| async {
+                Json(json!({
+                    "code": 0,
+                    "data": [{
+                        "subscription": { "id": 7, "group_id": 11 },
+                        "progress": {
+                            "id": 7,
+                            "group_name": "Codex Pro",
+                            "expires_at": "2030-02-01T00:00:00+08:00",
+                            "daily": {
+                                "limit_usd": 10.0,
+                                "used_usd": 1.25,
+                                "remaining_usd": 8.75,
+                                "percentage": 12.5,
+                                "window_start": "2030-01-01T00:00:00+08:00",
+                                "resets_at": "2030-01-02T00:00:00+08:00",
+                                "resets_in_seconds": 3600
+                            }
+                        }
+                    }]
+                }))
+            }),
+        )
+        .route(
+            "/api/v1/usage/dashboard/snapshot-v2",
+            get({
+                let captured_query = Arc::clone(&captured_query);
+                move |Query(query): Query<HashMap<String, String>>| {
+                    let captured_query = Arc::clone(&captured_query);
+                    async move {
+                        *captured_query.lock().expect("capture usage query") = query;
+                        Json(json!({
+                            "code": 0,
+                            "data": {
+                                "generated_at": "2030-01-01T00:00:00Z",
+                                "start_date": "2029-01-02",
+                                "end_date": "2030-01-01",
+                                "granularity": "day",
+                                "trend": [{
+                                    "date": "2030-01-01", "requests": 2,
+                                    "input_tokens": 100, "output_tokens": 20,
+                                    "cache_creation_tokens": 5, "cache_read_tokens": 10,
+                                    "total_tokens": 135, "cost": 1.5, "actual_cost": 1.25
+                                }],
+                                "models": [{
+                                    "model": "gpt-5", "requests": 2,
+                                    "input_tokens": 100, "output_tokens": 20,
+                                    "cache_creation_tokens": 5, "cache_read_tokens": 10,
+                                    "total_tokens": 135, "cost": 1.5, "actual_cost": 1.25
+                                }]
+                            }
+                        }))
+                    }
+                }
+            }),
+        );
+    let origin = spawn_protocol_server(app).await;
+    let authority = TokenMatrixAuthority::new_for_protocol_test(origin, None);
+
+    let progress = authority
+        .subscription_progress("synthetic-access")
+        .await
+        .expect("subscription progress");
+    assert_eq!(progress[0].subscription.id, 7);
+    assert_eq!(
+        progress[0]
+            .progress
+            .daily
+            .as_ref()
+            .map(|value| value.used_usd),
+        Some(1.25)
+    );
+
+    let snapshot = authority
+        .usage_dashboard_snapshot(
+            "synthetic-access",
+            11,
+            "2029-01-02",
+            "2030-01-01",
+            true,
+            true,
+        )
+        .await
+        .expect("group-scoped usage dashboard");
+    assert_eq!(snapshot.trend[0].actual_cost, 1.25);
+    assert_eq!(snapshot.models[0].model, "gpt-5");
+    let query = captured_query.lock().expect("usage query");
+    assert_eq!(query.get("group_id").map(String::as_str), Some("11"));
+    assert_eq!(
+        query.get("start_date").map(String::as_str),
+        Some("2029-01-02")
+    );
+    assert_eq!(
+        query.get("end_date").map(String::as_str),
+        Some("2030-01-01")
+    );
+    assert_eq!(query.get("include_trend").map(String::as_str), Some("true"));
+    assert_eq!(
+        query.get("include_model_stats").map(String::as_str),
+        Some("true")
     );
 }
 

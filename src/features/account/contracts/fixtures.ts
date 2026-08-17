@@ -128,6 +128,8 @@ export const ACCOUNT_BASE_CONTRACT_FIXTURES_V1 = {
     used: null,
     resetsAt: null,
     subscriptionLabel: null,
+    range: null,
+    engines: [],
   } as const,
   supportedMinorDescriptor: {
     id: "token2api-account-authority",

@@ -8,6 +8,12 @@ OpenSpec single source of truth：`openspec/changes/require-account-engine-subsc
 
 登录后的第二引擎增购复用同一闭环：从 main engine picker 或 Settings“我的引擎”直接进入目标 engine 套餐；flow 覆盖在已挂载 AppShell 上，cancel 保留原 workspace/conversation，支付完成后自动配置并打开目标 engine 的空白新会话，原 engine 订阅不受影响。
 
+额度页按每个 active subscription engine 展示 subscription-owned daily/weekly/monthly 总额、已用、剩余、进度与重置时间；最近一年使用 GitHub-style daily heatmap，hover/focus 某天按需读取该 engine 当天 model breakdown。所有读取仅由打开页面、刷新或检查某天触发，不进入 AppShell root polling；本轮只复用 token2api existing APIs，不修改或发布 token2api。
+
+Account Center 采用已确认的渐进披露布局：Header 保留 display name 与 safe account identity，退出登录为带 tooltip 的 icon-only action；额度 Tab 额外在 Header 右侧展示短格式读取时间与 icon-only refresh。额度内容不重复显示“额度”标题，subscription engine 使用可选择卡片展示，一行最多 3 张并按窗口自适应换行；选择卡片后，下方只投影该 engine 的 quota windows、年度 heatmap 与 model drill-down。安全 Tab 不重复显示“安全”标题，直接展示两步验证、修改密码、登录方式以及按需展开的资料/密码编辑器。
+
+macOS cold restore 必须收敛 OS vault 访问：一次 `gateway.bootstrap` 只评估一次 vault availability，refresh credential 只读取一次，并把该值复用为 refresh rotation 的 rollback snapshot。禁止为了状态展示或补偿逻辑重复读取同一 Keychain item；rotated refresh 仍必须持久化，不能以减少授权提示为由降低 session durability。
+
 ## 不可变约束
 
 - 只有 subscription plans；无 balance recharge、pay-as-you-go 或按量付费 fallback。
@@ -15,6 +21,8 @@ OpenSpec single source of truth：`openspec/changes/require-account-engine-subsc
 - renderer 不接收 raw secret；用户不选择 API Key、不看配置文件或 diff。
 - ready 前不挂载 AppShell/managed runtime。
 - Codex 与 Claude Code 都需完成真实 managed configuration 与 launch 验证。
+- Account Center 不新增技术说明段落、重复标题或带文字外框的 Header action；所有 icon-only action 必须具备 accessible name 与 hover/focus tooltip。
+- 单次 cold restore 对 refresh credential 的 vault read 次数必须为 1；repository commit 失败时仍恢复原 credential，vault locked/unavailable 继续 fail closed。
 
 ## 验收与执行
 

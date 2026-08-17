@@ -283,6 +283,23 @@ pub(super) fn validate_operation_payload(operation: &str, payload: &Value) -> Re
         | "configuration.readOffer"
         | "configuration.readCurrentTask"
         | "profile.requestTotpEmailCode" => null(),
+        "usage.readDayModels" => {
+            exact_payload(payload, &["engineId", "date"], &[]).and_then(|object| {
+                let engine_id = object
+                    .get("engineId")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
+                let date = object
+                    .get("date")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default();
+                if matches!(engine_id, "codex" | "claude-code") && valid_iso_date(date) {
+                    Ok(())
+                } else {
+                    Err("Account usage day payload is invalid".to_string())
+                }
+            })
+        }
         "gateway.reconcileIntent" => {
             exact_payload(payload, &["intent", "expected"], &[]).and_then(|object| {
                 let intent = object
@@ -495,6 +512,11 @@ fn valid_opaque_id(value: &str, prefix: &str) -> bool {
         && value
             .chars()
             .all(|character| character.is_ascii_alphanumeric() || matches!(character, '_' | '-'))
+}
+
+fn valid_iso_date(value: &str) -> bool {
+    chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d")
+        .is_ok_and(|date| date.format("%Y-%m-%d").to_string() == value)
 }
 
 pub(super) fn mutation_fingerprint(operation: &str, payload: &Value) -> Result<String, String> {

@@ -16,6 +16,7 @@ import type {
   OAuthProviderCapabilityKeyV1,
   QuotaUsageViewV1,
   SecretInputV1,
+  UsageDayModelsViewV1,
 } from "./semantic";
 import { ACCOUNT_GATEWAY_CONTRACT_V1 } from "./semantic";
 import type {
@@ -54,6 +55,7 @@ export const ACCOUNT_GATEWAY_OPERATION_NAMES_V1 = [
   "profile.unbindIdentity",
   "profile.revokeAllSessions",
   "usage.read",
+  "usage.readDayModels",
   "managedKey.readStatus",
   "managedKey.listCandidates",
   "managedKey.selectExisting",
@@ -484,6 +486,11 @@ export interface AccountProfilePortV1 {
 export interface AccountUsagePortV1 {
   /** Pull-only: callers may invoke only for an open usage surface or explicit refresh. */
   read(context: GatewayReadContextV1): Promise<GatewayResultV1<QuotaUsageViewV1>>;
+  /** Pull-only day drill-down; callers cache by engine + date and never poll. */
+  readDayModels(input: {
+    readonly engineId: "codex" | "claude-code";
+    readonly date: string;
+  }, context: GatewayReadContextV1): Promise<GatewayResultV1<UsageDayModelsViewV1>>;
 }
 
 export interface AccountManagedKeyPortV1 {

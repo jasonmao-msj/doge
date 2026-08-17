@@ -11,6 +11,11 @@
 - **WHEN** 用户 session、最近 engine、active subscription、vault binding 与 configuration verifier 都有效
 - **THEN** 系统 SHALL 自动恢复该 engine 并进入 AppShell，无需再次选择套餐或 API Key
 
+#### Scenario: Cold restore minimizes OS vault authorization
+- **WHEN** Doge 通过 `gateway.bootstrap` 恢复 active session 并旋转 refresh credential
+- **THEN** Native SHALL 在本次 bootstrap 中只评估一次 vault availability，并且只读取一次当前 refresh credential
+- **AND** 已读取 credential SHALL 作为 rotation rollback snapshot 复用；rotated refresh 仍 MUST 写回 OS vault，repository commit 失败时 MUST 恢复旧 credential
+
 #### Scenario: Readiness cannot be proven
 - **WHEN** network、authority、subscription、vault 或 configuration 状态无法 authoritative verify
 - **THEN** 系统 SHALL fail closed 在可恢复 gate，不得进入假 ready 状态
@@ -146,6 +151,16 @@ account gate SHALL 每屏只呈现一个主要决策；说明性内容 SHALL 收
 - **WHEN** 用户在 Settings Account 查看 managed engine 入口
 - **THEN** 页面 SHALL 使用“我的引擎”表达已拥有与可增加的 engine，不得使用会暗示替换现有权益的“切换引擎”作为唯一入口文案
 
+#### Scenario: Account Center header actions are rendered
+- **WHEN** authenticated Account Center 被渲染
+- **THEN** Header SHALL 显示 server-safe display name 与 account identity，并只用带 accessible name 和 hover/focus tooltip 的 icon action 提供退出登录
+- **AND** 额度 Tab SHALL 在同一 Header 中额外显示最近一次成功读取的短格式时间与 icon-only refresh，不得在内容区重复刷新按钮或“额度”标题
+
+#### Scenario: Security tab is rendered
+- **WHEN** 用户打开安全 Tab
+- **THEN** 内容 SHALL 直接从两步验证、修改密码与登录方式 rows 开始，不得重复渲染“安全”section heading
+- **AND** 资料与密码 editor SHALL 只在用户选择对应 action 后展开
+
 #### Scenario: In-App acquisition is cancelled
 - **WHEN** ready 用户从 Account Center 或 main engine picker 打开增购 flow 后选择 cancel/back
 - **THEN** 系统 SHALL 关闭 overlay 并返回原 workspace/conversation/draft，上层 AppShell 不得因 flow 打开或关闭而 unmount
@@ -183,6 +198,40 @@ account gate SHALL 每屏只呈现一个主要决策；说明性内容 SHALL 收
 #### Scenario: Composer is rendered
 - **WHEN** 用户进入可输入消息的主界面
 - **THEN** composer SHALL 不展示每日古诗、轮换文案或其 dismiss control；通用 SDK warning/header composition MAY 继续存在以承载明确的未来产品消息
+
+### Requirement: Subscription usage SHALL be projected per entitled engine
+系统 SHALL 以 server-owned Desktop engine entitlement 关联 subscription quota 与 usage analytics，不得用 account-level platform quota 代替 subscription truth。额度读取 MUST 保持 pull-only，并以 credential-free projection 进入 renderer。
+
+#### Scenario: User opens quota with multiple subscriptions
+- **WHEN** 用户同时拥有 Codex 与 Claude 的 active subscriptions 并主动打开额度页
+- **THEN** Doge SHALL 为每个已订阅 engine 展示 daily/weekly/monthly 的 total、used、remaining、progress 与 reset time
+- **AND** engine 与 subscription 的关联 MUST 来自 authoritative `subscription_id/group_id`，不得由套餐名称、API Key 名称或模型字符串推断
+
+#### Scenario: Subscription cards adapt and select one detail owner
+- **WHEN** 额度页拥有一个或多个 active subscription engines
+- **THEN** UI SHALL 以 selectable engine cards 展示，一行最多 3 张；1/2/3 张 card 分别等宽占满当前行，更多 card 自动换行，窄屏自动收敛为 2/1 列
+- **AND** 切换 card SHALL 只更新所选 engine 的 quota windows、年度 heatmap 与 model detail，不得重新读取全部 usage summary 或持久化 selected card
+
+#### Scenario: Account platform quota is empty
+- **WHEN** active subscription 存在但 `/user/platform-quotas` 为空或 limit 为 null
+- **THEN** Doge SHALL 继续使用 subscription progress 展示真实额度，不得显示“暂时无法读取额度”
+
+#### Scenario: Year heatmap is rendered
+- **WHEN** selected engine 的最近一年 daily usage 已成功读取
+- **THEN** UI SHALL 用类似 GitHub contribution graph 的紧凑日历展示每天的用量强度，并支持 pointer hover、keyboard focus 与 screen reader date/value label
+- **AND** cell color SHALL 基于该 engine 的 daily actual cost 做 bounded intensity projection，不能把颜色等级作为新的 billing truth
+- **AND** 零用量日期 SHALL 仍以低对比度小格显示，month label 每月最多出现一次，overflow 初始位置 SHALL 显示最近日期
+- **AND** 月份、星期、日期、数字与货币 SHALL 跟随 Doge 当前语言，不得从操作系统 locale 产生中英文混排
+- **AND** UI SHALL 不展示“少/多”等额外颜色图例；tooltip 与 cell accessible label 负责渐进披露精确值
+
+#### Scenario: User inspects one day
+- **WHEN** 用户 hover 或 focus 某个有用量的日期
+- **THEN** tooltip SHALL 立即展示该 engine 当天的 requests、input/output/cache tokens、standard cost 与 actual cost，并按需读取该日不同 models 的同类 breakdown
+- **AND** model read SHALL 以 `engineId + date` 在当前 session 去重缓存，不得持续 polling 或在 renderer 传递 raw group/subscription id
+
+#### Scenario: One engine analytics fails
+- **WHEN** 某个 engine 的 trend 或 day-model authority read 失败
+- **THEN** 其他 engine 与已成功的 subscription window summary SHALL 继续可见；day tooltip SHALL 保留 aggregate 并提供可重试状态，不得清空整个额度页
 
 ### Requirement: Account and checkout recovery SHALL be durable and bounded
 系统 SHALL 持久化 credential-free session/checkpoint/receipt，并为 checkout、managed binding 与 configuration 提供 crash-safe recovery；reconciliation MUST 有 absolute expiry 与 bounded backoff。

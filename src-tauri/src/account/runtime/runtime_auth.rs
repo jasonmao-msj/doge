@@ -46,6 +46,7 @@ impl AccountRuntime {
             | "profile.unbindIdentity" => Err(capability_failure("security")),
             "profile.revokeAllSessions" => self.revoke_all(state).await,
             "usage.read" => self.read_usage(state).await,
+            "usage.readDayModels" => self.read_usage_day_models(state, payload).await,
             "managedKey.readStatus" => self.managed_key_status(state),
             "managedKey.listCandidates" => self.list_api_key_candidates(state).await,
             "managedKey.selectExisting" => {
@@ -86,20 +87,22 @@ impl AccountRuntime {
             } else {
                 "serviceUnavailable"
             };
+            let vault_status = self.vault.status();
             return Ok(bootstrap_value(
                 state,
                 state.public_settings.as_ref(),
                 None,
-                self.vault.status(),
+                vault_status,
                 availability,
             ));
         }
+        let vault_status = self.vault.status();
         if state.access_token.is_none()
             && state
                 .metadata
                 .as_ref()
                 .is_some_and(|metadata| metadata.session_status == "active")
-            && self.vault.status() == AccountVaultStatus::Ready
+            && vault_status == AccountVaultStatus::Ready
         {
             self.try_restore_session(state).await;
         }
@@ -107,7 +110,7 @@ impl AccountRuntime {
             state,
             state.public_settings.as_ref(),
             state.authority_descriptor.as_ref(),
-            self.vault.status(),
+            vault_status,
             "ready",
         ))
     }
@@ -231,7 +234,11 @@ impl AccountRuntime {
             }
             Err(_) => return,
         };
-        if self.activate_auth(state, auth, Some(scope)).await.is_err() {
+        if self
+            .activate_auth(state, auth, Some(scope), Some(refresh_token))
+            .await
+            .is_err()
+        {
             let _ = self.clear_local_session(state, false);
         }
     }
@@ -313,7 +320,7 @@ impl AccountRuntime {
             )
             .await
             .map_err(|error| authority_failure(error, "register"))?;
-        self.activate_auth(state, auth, None).await
+        self.activate_auth(state, auth, None, None).await
     }
 
     pub(super) async fn resend_registration(
@@ -376,7 +383,7 @@ impl AccountRuntime {
             .await
             .map_err(|error| authority_failure(error, "verifyEmail"))?;
         state.registration_attempts.remove(&attempt);
-        self.activate_auth(state, auth, None).await
+        self.activate_auth(state, auth, None, None).await
     }
 
     pub(super) async fn login(
@@ -425,7 +432,7 @@ impl AccountRuntime {
             }));
         }
         let auth = auth_from_login(login)?;
-        self.activate_auth(state, auth, None).await
+        self.activate_auth(state, auth, None, None).await
     }
 
     pub(super) async fn request_password_reset(&self, payload: &Value) -> Result<Value, Value> {
@@ -458,7 +465,7 @@ impl AccountRuntime {
             .await
             .map_err(|error| authority_failure(error, "mfa"))?;
         state.mfa_attempts.remove(&attempt);
-        self.activate_auth(state, auth, None).await
+        self.activate_auth(state, auth, None, None).await
     }
 
     pub(super) async fn activate_auth(
@@ -466,6 +473,7 @@ impl AccountRuntime {
         state: &mut RuntimeState,
         auth: AuthWire,
         existing_scope: Option<String>,
+        previous_refresh: Option<String>,
     ) -> Result<Value, Value> {
         let refresh_token = auth
             .refresh_token
@@ -491,15 +499,22 @@ impl AccountRuntime {
                 && metadata.account_link_id.as_deref() == Some(account_link_id.as_str())
                 && metadata.device_id.as_deref() == Some(device_id)
         });
-        let scope = existing_scope
+        let existing_refresh = existing_scope
             .filter(|_| same_existing_session)
+            .map(|scope| (scope, previous_refresh));
+        let scope = existing_refresh
+            .as_ref()
+            .map(|(scope, _)| scope.clone())
             .or_else(|| binding.as_ref().map(|value| value.vault_scope.clone()))
             .unwrap_or_else(|| Uuid::new_v4().simple().to_string());
         let refresh_purpose = format!("{REFRESH_PURPOSE_PREFIX}{scope}");
-        let previous_refresh = self
-            .vault
-            .read(&refresh_purpose)
-            .map_err(|_| vault_failure())?;
+        let previous_refresh = match existing_refresh.and_then(|(_, refresh)| refresh) {
+            Some(refresh) => Some(refresh),
+            None => self
+                .vault
+                .read(&refresh_purpose)
+                .map_err(|_| vault_failure())?,
+        };
         self.vault
             .write(&refresh_purpose, &refresh_token)
             .map_err(|_| vault_failure())?;
@@ -705,7 +720,7 @@ impl AccountRuntime {
             .await
             .map_err(|error| authority_failure(error, "refresh"))?;
         let access = Zeroizing::new(auth.access_token.clone());
-        self.activate_auth(state, auth, Some(scope.to_string()))
+        self.activate_auth(state, auth, Some(scope.to_string()), Some(refresh))
             .await?;
         Ok(access)
     }
@@ -773,12 +788,88 @@ impl AccountRuntime {
     pub(super) async fn read_usage(&self, state: &mut RuntimeState) -> Result<Value, Value> {
         let access = self.authorized_access_token(state).await?;
         let fetched_at = rfc3339_now();
-        let quota = self
-            .authority_required()?
-            .quota(&access)
+        let today = Utc::now().date_naive();
+        let start_date = (today - chrono::Duration::days(364))
+            .format("%Y-%m-%d")
+            .to_string();
+        let end_date = today.format("%Y-%m-%d").to_string();
+        let authority = self.authority_required()?;
+        let catalog = authority
+            .desktop_engines(&access)
             .await
             .map_err(|error| authority_failure(error, "usage"))?;
-        Ok(quota_value(&quota.platform_quotas, &fetched_at))
+        let progress = authority
+            .subscription_progress(&access)
+            .await
+            .map_err(|error| authority_failure(error, "usage"))?;
+        let mut snapshots = HashMap::new();
+        for engine in catalog.engines.iter().filter(|engine| {
+            engine.entitlement.status == "active"
+                && matches!(engine.id.as_str(), "codex" | "claude-code")
+        }) {
+            let snapshot = match engine.entitlement.group_id.filter(|value| *value > 0) {
+                Some(group_id) => authority
+                    .usage_dashboard_snapshot(&access, group_id, &start_date, &end_date, true, true)
+                    .await
+                    .ok(),
+                None => None,
+            };
+            snapshots.insert(engine.id.clone(), snapshot);
+        }
+        Ok(subscription_usage_value(
+            &catalog,
+            &progress,
+            &snapshots,
+            &fetched_at,
+            &start_date,
+            &end_date,
+        ))
+    }
+
+    pub(super) async fn read_usage_day_models(
+        &self,
+        state: &mut RuntimeState,
+        payload: &Value,
+    ) -> Result<Value, Value> {
+        let engine_id = payload
+            .get("engineId")
+            .and_then(Value::as_str)
+            .filter(|value| matches!(*value, "codex" | "claude-code"))
+            .ok_or_else(|| edit_failure("validationRejected", "usage", "engine"))?;
+        let date = payload
+            .get("date")
+            .and_then(Value::as_str)
+            .and_then(|value| chrono::NaiveDate::parse_from_str(value, "%Y-%m-%d").ok())
+            .ok_or_else(|| edit_failure("validationRejected", "usage", "date"))?;
+        let age_days = Utc::now()
+            .date_naive()
+            .signed_duration_since(date)
+            .num_days();
+        if !(0..=365).contains(&age_days) {
+            return Err(edit_failure("validationRejected", "usage", "date"));
+        }
+        let access = self.authorized_access_token(state).await?;
+        let authority = self.authority_required()?;
+        let catalog = authority
+            .desktop_engines(&access)
+            .await
+            .map_err(|error| authority_failure(error, "usage"))?;
+        let engine = catalog
+            .engines
+            .iter()
+            .find(|engine| engine.id == engine_id && engine.entitlement.status == "active")
+            .ok_or_else(|| capability_failure("usage"))?;
+        let group_id = engine
+            .entitlement
+            .group_id
+            .filter(|value| *value > 0)
+            .ok_or_else(|| capability_failure("usage"))?;
+        let date = date.format("%Y-%m-%d").to_string();
+        let snapshot = authority
+            .usage_dashboard_snapshot(&access, group_id, &date, &date, false, true)
+            .await
+            .map_err(|error| authority_failure(error, "usage"))?;
+        Ok(usage_day_models_value(engine_id, &date, &snapshot))
     }
 
     pub(super) fn managed_key_status(&self, state: &RuntimeState) -> Result<Value, Value> {

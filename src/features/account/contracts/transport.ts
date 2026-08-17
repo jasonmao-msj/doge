@@ -17,6 +17,7 @@ import type {
   AccountManagedKeyPortV1,
   ApiKeyCandidateListViewV1,
   AccountProfilePortV1,
+  AccountUsagePortV1,
   AuthNextViewV1,
   ConfigurationOfferViewV1,
   ConfigurationPlanViewV1,
@@ -30,7 +31,7 @@ import type {
   OAuthAttemptViewV1,
   TotpEnrollmentPresentationV1,
 } from "./gateway";
-import type { QuotaUsageViewV1 } from "./semantic";
+import type { QuotaUsageViewV1, UsageDayModelsViewV1 } from "./semantic";
 import type { SchemaValidationV1 } from "./schema";
 import { isEnumValueV1 } from "./schema";
 import { ACCOUNT_GATEWAY_OPERATION_NAMES_V1 } from "./gateway";
@@ -92,6 +93,7 @@ export type AccountIpcOperationResultMapV1 = {
     readonly remoteRevocation: "confirmed" | "outcomeUnknown";
   };
   readonly "usage.read": QuotaUsageViewV1;
+  readonly "usage.readDayModels": UsageDayModelsViewV1;
   readonly "managedKey.readStatus": ManagedKeyStatusViewV1;
   readonly "managedKey.listCandidates": ApiKeyCandidateListViewV1;
   readonly "managedKey.selectExisting": ManagedKeyStatusViewV1;
@@ -151,6 +153,7 @@ export type AccountIpcSafeRequestPayloadMapV1 = {
   readonly "profile.unbindIdentity": Parameters<AccountProfilePortV1["unbindIdentity"]>[0];
   readonly "profile.revokeAllSessions": Parameters<AccountProfilePortV1["revokeAllSessions"]>[0];
   readonly "usage.read": null;
+  readonly "usage.readDayModels": Parameters<AccountUsagePortV1["readDayModels"]>[0];
   readonly "managedKey.readStatus": Parameters<AccountManagedKeyPortV1["readStatus"]>[0];
   readonly "managedKey.listCandidates": Parameters<AccountManagedKeyPortV1["listCandidates"]>[0];
   readonly "managedKey.selectExisting": Parameters<AccountManagedKeyPortV1["selectExisting"]>[0];

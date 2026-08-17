@@ -115,6 +115,32 @@ composer 移除每日古诗的 data、daily rotation、dismiss persistence、ren
 
 Windows engine probe 视所有 external wrapper 为不可信：stdin 关闭、version/help probe 使用 4 秒 deadline、timeout 后按 root pid 终止整个 Windows process tree 并回收 child；单项失败只形成 unavailable/timeout status。Tauri `single-instance` plugin 作为首个 plugin 注册，第二次启动仅恢复、显示并聚焦已有 main window。Release notes 已有 viewport-bounded card、内部 scroll 与 Escape close，因此本批次只保留 regression gate，不重复重构。
 
+### 11. 订阅用量采用 engine-owned summary + pull-only daily drill-down
+
+现有 `usage.read` 错把 `/api/v1/user/platform-quotas` 的 account/platform record 当作 subscription quota。订阅套餐的 daily/weekly/monthly usage truth 实际位于 `user_subscriptions`，因此 active Codex/Claude subscription 可能同时得到 `platform_quotas=[]` 或全部 limit 为 `null`，最终被 Doge 投影为 unavailable。
+
+修复后 Native Broker 先读取 Desktop engine catalog，以 server-owned `subscription_id/group_id` 作为 correlation：`/api/v1/subscriptions/progress` 提供 quota windows 与 resets，`/api/v1/usage/dashboard/snapshot-v2?group_id=...` 提供最近 365 天 daily trend 与 period model totals。renderer 只接收 credential-free engine id、safe labels、canonical decimal strings、token/request counts 与 dates；不得接收 access token、API Key、raw group id 或 subscription id。
+
+日历 cell intensity 使用该 engine 当前 range 内 daily `actual_cost` 的 bounded projection，仅作为展示值，额度扣减 truth 仍来自 subscription progress。hover/focus 当天时调用独立 pull-only `usage.readDayModels({engineId,date})`：Native 每次重新由 catalog 解析 active entitlement，再用 authoritative `group_id` 查询单日 models；renderer 不能自行提交 group id。controller 以 `engineId + date` 做 session-memory request de-dup/cache，页面关闭后不 polling，logout 清空 cache。
+
+热力图视觉必须使用全局已定义的 theme token，零用量日期仍显示低对比度 cell；禁止引用 feature scope 外未定义的 custom property 导致 grid 透明。月份只在 month boundary 出现一次，横向 overflow 初次进入时定位到最近日期。月份、星期、日期、数字与货币 formatter 必须显式绑定 Doge 当前 `zh-CN/en-US` locale，不能回落到操作系统语言。颜色强度已经由 cell 自身表达，因此不再展示“少/多”说明图例。
+
+partial failure 保留局部真相：progress 成功但 trend 失败时仍展示日/周/月额度；一个 engine 失败不清空其他 engine；单日 model fetch 失败时 tooltip 仍展示 daily aggregate，并允许后续 hover/focus 重试。Doge 本轮只复用 token2api existing API，不修改、不提交、不部署 token2api。
+
+### 12. Account Center 使用 Header actions + selected-engine master/detail
+
+Account Center Header 是账号 identity 与页面级 action 的唯一 owner：左侧显示 server-safe display name 与 account identity；右侧常驻 icon-only logout，额度 Tab 再显示短格式 `fetchedAt` 与 icon-only refresh。图标必须有 accessible name，并通过自适应 hover/focus tooltip 披露动作；不得使用带文字和外框的 Header button。读取时间只表示最近一次成功 `usage.read`，不能伪装成 live status。
+
+额度 Tab 使用 master/detail：上方 subscription cards 只承担 engine selection 与最关键的当前窗口摘要，默认优先 `daily`，缺失时依次回退 `weekly/monthly`；下方单一 detail surface 展示所选 engine 的全部 available windows、年度 heatmap 与 model drill-down。列表最多 3 columns，1/2/3 张 card 分别使用 1/2/3 等宽列，更多 card 自动换行，窄屏收敛到 2/1 列。切换 selected card 是 component-local transient state，不重新调用 `usage.read`，也不进入 persistent store 或 AppShell root。
+
+额度与安全 Tab 都不再重复与 Tab 同名的 section heading。安全内容从 preference rows 开始，资料/密码编辑器保持 action-triggered progressive disclosure；危险操作与既有 capability guards 不变。该调整只改变 Doge renderer composition/CSS，不新增 IPC、Authority route、SQLite 字段或 token2api 发布要求。
+
+### 13. Cold restore 复用单次 Keychain credential snapshot
+
+`gateway.bootstrap` 先把 `vault.status()` 缓存在本次调用的 local variable，后续 restore gate 与 bootstrap projection 共用同一结果，禁止为了状态投影再次访问 OS vault。`try_restore_session` / access-token refresh 已经读取到旧 refresh credential，因此把该值作为 `activate_auth` 的 rollback snapshot 传入；`activate_auth` 只有在 login/OAuth 等没有旧 snapshot 的路径才主动读取现有 item。
+
+该优化删除重复 Keychain read，但不会跳过 rotated refresh 写回。若 SQLite session commit 失败，Native 使用传入 snapshot 恢复旧 credential；若 vault locked/unavailable，仍按既有 `vaultUnavailable` fail closed。ad-hoc build 的签名身份仍可能让 macOS 对 read/write 各自请求授权，完全消除跨版本提示依赖稳定 Developer ID；本 change 只保证 Doge 不制造可避免的重复访问。
+
 ## Risks / Trade-offs
 
 - [Risk] token2api 的 `group.platform` 不能表达未来一个套餐覆盖多个 engine → [Mitigation] 首期 server-owned catalog 固定一对一 mapping；未来新增显式 plan-engine relation migration，不让客户端推断。
@@ -124,6 +150,9 @@ Windows engine probe 视所有 external wrapper 为不可信：stdin 关闭、ve
 - [Risk] mandatory login 暂时降低离线可用性 → [Mitigation] 已 ready 的 session 可在 refresh grace 内恢复 UI，但启动 engine 前仍需可验证 subscription；该取舍由本 change 的产品决策接受。
 - [Risk] 上游同步与新增 Desktop schema 冲突 → [Mitigation] 独立 migration、handler/service 与 additive route，避免修改通用 payment response；merge 时按 capability matrix semantic merge。
 - [Risk] 第三方 wrapper 在 `--version` 下等待登录、继承 pipe 或留下 `cmd.exe/node.exe` descendant → [Mitigation] non-interactive spawn、短 deadline、Windows `/T /F` tree termination、single-instance wakeup 与 focused hanging-wrapper regression。
+- [Risk] 一年 daily trend 与 hover model drill-down 增加 authority reads → [Mitigation] 额度页只在用户主动打开/刷新时读取；单日 models 按 hover/focus lazy load、session-memory 去重，绝不进入 AppShell root polling。
+- [Risk] 365 个日期在高 UI scale 下横向溢出，默认停在最旧日期会隐藏最近用量 → [Mitigation] 保留可滚动历史并在 engine/range 变化时将 scroll owner 定位到末尾，不做 JS 尺寸驱动布局。
+- [Risk] refresh rotation 同时包含 Keychain read/write，ad-hoc 签名仍可能触发平台授权 → [Mitigation] 删除所有重复 status/read，保留必要 write；正式发行使用稳定 Developer ID + notarization，不伪造“零提示”保证。
 
 ## Migration Plan
 

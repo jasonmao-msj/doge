@@ -496,6 +496,52 @@ export type QuotaMeasureV1 = {
   readonly unit: "requests" | "credits" | "tokens" | "usd";
 };
 
+export type ManagedUsageEngineIdV1 = "codex" | "claude-code";
+
+export type SubscriptionUsageWindowV1 = {
+  readonly limit: QuotaMeasureV1;
+  readonly used: QuotaMeasureV1;
+  readonly remaining: QuotaMeasureV1;
+  readonly percentage: string;
+  readonly resetsAt: string;
+};
+
+export type SubscriptionUsageTotalsV1 = {
+  readonly requests: number;
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+  readonly cacheReadTokens: number;
+  readonly cacheWriteTokens: number;
+  readonly totalTokens: number;
+  readonly cost: QuotaMeasureV1;
+  readonly actualCost: QuotaMeasureV1;
+};
+
+export type SubscriptionUsageDayV1 = SubscriptionUsageTotalsV1 & {
+  readonly date: string;
+  readonly intensity: 0 | 1 | 2 | 3 | 4;
+};
+
+export type SubscriptionUsageModelV1 = SubscriptionUsageTotalsV1 & {
+  readonly modelLabel: string;
+};
+
+export type SubscriptionEngineUsageV1 = {
+  readonly engineId: ManagedUsageEngineIdV1;
+  readonly engineLabel: string;
+  readonly subscriptionLabel: string;
+  readonly expiresAt: string | null;
+  readonly analyticsStatus: "available" | "unavailable";
+  readonly windows: {
+    readonly daily: SubscriptionUsageWindowV1 | null;
+    readonly weekly: SubscriptionUsageWindowV1 | null;
+    readonly monthly: SubscriptionUsageWindowV1 | null;
+  };
+  readonly totals: SubscriptionUsageTotalsV1;
+  readonly days: readonly SubscriptionUsageDayV1[];
+  readonly models: readonly SubscriptionUsageModelV1[];
+};
+
 export type QuotaUsageViewV1 = {
   readonly status: "available" | "unavailable";
   readonly source:
@@ -509,6 +555,18 @@ export type QuotaUsageViewV1 = {
   readonly used: QuotaMeasureV1 | null;
   readonly resetsAt: string | null;
   readonly subscriptionLabel: string | null;
+  readonly range: {
+    readonly startDate: string;
+    readonly endDate: string;
+    readonly days: number;
+  } | null;
+  readonly engines: readonly SubscriptionEngineUsageV1[];
+};
+
+export type UsageDayModelsViewV1 = {
+  readonly engineId: ManagedUsageEngineIdV1;
+  readonly date: string;
+  readonly models: readonly SubscriptionUsageModelV1[];
 };
 
 export type AccountConvenienceCompatibilityV1 =

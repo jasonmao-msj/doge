@@ -33,6 +33,9 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 - 收敛 release-facing UI：composer 不再展示每日古诗轮换；面向小白的 engine picker 与 Settings 固定入口统一使用“Claude / Codex / Grok / Kimi / OpenCode”和“引擎管理”，不暴露 `CLI` 术语；二维码支付页标题显示 `Doge + 当前订阅套餐名称`。
 - 加固 Windows startup：外部 engine version/help probe 必须 non-interactive、有 3–5 秒 deadline，并在 timeout 后终止整个进程树；Doge 使用原生 single-instance 唤醒已有窗口，异常第三方 wrapper 与重复点击都不得阻塞主界面。
 - managed API Key 的 server-owned display name 后续改为 `Doge {无 CLI 后缀的引擎名} {订阅套餐名}`；本轮按发布边界 HOLD，不修改或发布 token2api。
+- 修正 Account Center 额度读取的数据归属：Doge 不再用 account-level `platform-quotas` 冒充 subscription quota，而是以 Desktop engine catalog 的 `subscription_id/group_id` 关联现有 subscription progress 与 usage dashboard API；额度页按已订阅 engine 展示日/周/月总额、已用、剩余、重置时间及最近一年日历热力图，并在用户 hover/focus 某天时按需读取该 engine 当天的 model breakdown。
+- 按已确认 UI 收敛 Account Center：Header 保留 display name 与 safe account identity，退出登录与额度刷新使用 icon-only action；额度读取时间移入 Header。额度/安全 Tab 不重复渲染同名 section heading；多订阅额度以 selectable cards 呈现，一行最多 3 张并自适应换行，所选 card 独占下方 quota windows、heatmap 与 model details。
+- 收敛 macOS cold restore 的 OS vault access budget：同一 `gateway.bootstrap` 只检查一次 vault status，refresh credential 只读取一次并复用为 rotation rollback snapshot，避免重复 Keychain authorization；rotated refresh 仍按 durable session contract 写回。
 
 ## Capabilities
 
@@ -80,6 +83,10 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 - 所有主路径 engine label 与管理入口不出现 `CLI`；二维码支付标题准确包含当前选中套餐的 server-owned `name`。
 - 后续上游 change 验收：新建及恢复的 managed API Key 名称准确包含 engine 与 authoritative plan name；旧的 `Doge Codex managed key` 在下一次 ensure 时只原地改名，不得轮换 secret 或重复建 Key。本轮 Doge release 不包含该上游 change。
 - Windows 上模拟外部 engine command 长时间不退出时，probe 在 deadline 内返回 timeout、终止 command tree 且主界面保持可用；连续启动只保留一个实例并唤醒已有窗口。
+- 已订阅 engine 的额度页必须展示 subscription-owned daily/weekly/monthly windows，且单个 engine 的 analytics failure 不得使其他 engine 或 quota summary 消失；最近一年日历按 daily actual cost 强度分级，hover/focus 可看到当天 requests/tokens/cost 与按需缓存的 model breakdown，关闭页面后不得继续 polling。
+- 多订阅额度页在宽屏每行最多 3 张等宽 card，1/2/3 个订阅分别占满可用行宽，窄屏自动降为 2/1 列；点击或键盘激活 card 后只更新下方 selected-engine detail，不触发新的 usage summary read。Header refresh 必须有 pending feedback，logout/refresh 均可通过 hover/focus tooltip 理解。
+- 安全页进入后直接展示 security rows，不再重复“安全”标题；资料与密码表单只在用户选择对应 action 后展开，保持页面首屏简洁。
+- 已登录 cold restore 对同一 refresh credential 只执行一次 vault read；重复 `vault.status()` 与补偿性二次读取由 regression test 禁止，vault failure 与 repository failure 仍保持 fail closed/rollback truth。
 - doge focused Vitest、Rust account tests、token2api Go tests、跨仓库 contract fixtures、真实 Desktop E2E、macOS package smoke 与 Windows CI package 全部通过。
 
 ## Impact

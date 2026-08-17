@@ -1,6 +1,7 @@
 use super::authority::{
-    AuthWire, AuthorityCapabilityDescriptor, AuthorityError, LoginWire, PublicSettingsWire,
-    TokenMatrixAuthority,
+    AuthWire, AuthorityCapabilityDescriptor, AuthorityError, DesktopEngineCatalogWire, LoginWire,
+    PublicSettingsWire, SubscriptionProgressEntryWire, SubscriptionUsageWindowWire,
+    TokenMatrixAuthority, UsageDashboardSnapshotWire, UsageModelWire, UsageTrendWire,
 };
 use super::configuration::{self, ConfigurationPlanState, ACCOUNT_RECIPE_ID};
 use super::desktop_continuation::DesktopContinuationBroker;
@@ -36,6 +37,7 @@ pub(super) const READ_OPERATIONS: &[&str] = &[
     "auth.inspectExternalIntent",
     "profile.read",
     "usage.read",
+    "usage.readDayModels",
     "managedKey.readStatus",
     "managedKey.listCandidates",
     "configuration.readOffer",
@@ -72,6 +74,7 @@ pub(super) const OPERATIONS: &[&str] = &[
     "profile.unbindIdentity",
     "profile.revokeAllSessions",
     "usage.read",
+    "usage.readDayModels",
     "managedKey.readStatus",
     "managedKey.listCandidates",
     "managedKey.selectExisting",
@@ -569,6 +572,76 @@ use runtime_projection::*;
 mod tests {
     use super::*;
     use crate::account::vault::tests::MemoryVault;
+    use axum::{
+        routing::{get, post},
+        Json, Router,
+    };
+
+    async fn spawn_account_protocol_server(app: Router) -> String {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind Account runtime protocol server");
+        let address = listener
+            .local_addr()
+            .expect("read Account runtime protocol address");
+        tokio::spawn(async move {
+            axum::serve(listener, app)
+                .await
+                .expect("serve Account runtime protocol test");
+        });
+        format!("http://{address}")
+    }
+
+    fn active_test_metadata(profile: &Value, device_id: &str, scope: &str) -> AccountMetadata {
+        AccountMetadata {
+            authority_origin_id: Some(AUTHORITY_ORIGIN_ID.to_string()),
+            account_link_id: Some(account_link_id(profile).expect("derive test account link")),
+            device_id: Some(device_id.to_string()),
+            account_epoch: 1,
+            profile_label: "Synthetic".to_string(),
+            primary_email_label: Some("s***@example.com".to_string()),
+            session_status: "active".to_string(),
+            vault_scope: Some(scope.to_string()),
+            managed_key_id: None,
+            updated_at: "2030-01-01T00:00:00Z".to_string(),
+        }
+    }
+
+    fn runtime_with_test_storage(
+        repository: AccountRepository,
+        vault: Arc<MemoryVault>,
+        authority: Option<TokenMatrixAuthority>,
+        device_id: String,
+        metadata: AccountMetadata,
+    ) -> AccountRuntime {
+        AccountRuntime {
+            enabled: true,
+            authority,
+            repository: Some(repository),
+            vault,
+            state: Mutex::new(RuntimeState {
+                initialized: false,
+                account_epoch: metadata.account_epoch,
+                access_token: None,
+                access_expires_at: 0,
+                profile: None,
+                public_settings: None,
+                authority_descriptor: None,
+                authority_contract_fetched_at: 0,
+                metadata: Some(metadata),
+                registration_attempts: HashMap::new(),
+                mfa_attempts: HashMap::new(),
+                desktop_authorizations: HashMap::new(),
+                api_key_candidates: HashMap::new(),
+                configuration_plan: None,
+                configuration_result: None,
+            }),
+            device_id: Some(device_id),
+            process_generation: 1,
+            event_sequence: Arc::new(AtomicU64::new(0)),
+            desktop_continuations: DesktopContinuationBroker::new(),
+        }
+    }
 
     #[test]
     fn account_disabled_build_does_not_create_account_store() {
@@ -652,6 +725,202 @@ mod tests {
         assert!(runtime.managed_codex_key_for_launch().await.is_err());
     }
 
+    #[tokio::test]
+    async fn cold_restore_reads_refresh_once_and_evaluates_vault_once() {
+        let root = std::env::temp_dir().join(format!(
+            "doge-account-vault-budget-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&root).expect("create Account vault budget root");
+        let repository = AccountRepository::open(root.join("account-v1.sqlite3"))
+            .expect("open Account vault budget repository");
+        let device_id = repository
+            .load_or_create_device_id(now_epoch())
+            .expect("create Account vault budget device");
+        let profile = json!({
+            "id": 42,
+            "username": "Synthetic",
+            "email": "synthetic@example.com",
+        });
+        let scope = "scopevaultbudget01";
+        let metadata = active_test_metadata(&profile, &device_id, scope);
+        repository
+            .save_session(&metadata)
+            .expect("seed Account vault budget session");
+        let vault = Arc::new(MemoryVault::default());
+        vault
+            .write(
+                &format!("{REFRESH_PURPOSE_PREFIX}{scope}"),
+                "refresh-before-rotation",
+            )
+            .expect("seed refresh credential");
+        let baseline = vault.access_counts();
+
+        let app = Router::new()
+            .route(
+                "/api/v1/settings/public",
+                get(|| async {
+                    Json(json!({
+                        "code": 0,
+                        "data": {
+                            "registration_enabled": true,
+                            "email_verify_enabled": false,
+                            "password_reset_enabled": true,
+                            "totp_enabled": false,
+                            "github_oauth_enabled": false,
+                            "google_oauth_enabled": false,
+                            "api_base_url": "https://token-matrix.com",
+                            "version": "0.1.175"
+                        }
+                    }))
+                }),
+            )
+            .route(
+                "/api/v1/desktop/v1/authority",
+                get(|| async {
+                    Json(json!({
+                        "code": 0,
+                        "data": {
+                            "contractId": "token2api-account-authority",
+                            "contractVersion": "1.0.0",
+                            "observedAt": "2030-01-01T00:00:00Z",
+                            "capabilities": {},
+                            "guarantees": [
+                                "durable_token_pair_v1",
+                                "atomic_refresh_replay_v1",
+                                "stable_account_reasons_v1"
+                            ]
+                        }
+                    }))
+                }),
+            )
+            .route(
+                "/api/v1/auth/refresh",
+                post(|| async {
+                    Json(json!({
+                        "code": 0,
+                        "data": {
+                            "access_token": "access-after-rotation",
+                            "refresh_token": "refresh-after-rotation",
+                            "expires_in": 900,
+                            "user": {
+                                "id": 42,
+                                "username": "Synthetic",
+                                "email": "synthetic@example.com"
+                            }
+                        }
+                    }))
+                }),
+            );
+        let origin = spawn_account_protocol_server(app).await;
+        let runtime = runtime_with_test_storage(
+            repository,
+            Arc::clone(&vault),
+            Some(TokenMatrixAuthority::new_for_protocol_test(
+                origin,
+                Some("/api/v1/desktop/v1/authority"),
+            )),
+            device_id,
+            metadata,
+        );
+
+        let projection = {
+            let mut state = runtime.state.lock().await;
+            runtime
+                .bootstrap(&mut state)
+                .await
+                .expect("restore Account session")
+        };
+        assert_eq!(projection["session"]["status"], "authenticated");
+        let counts = vault.access_counts();
+        assert_eq!(counts.status - baseline.status, 1);
+        assert_eq!(counts.reads - baseline.reads, 1);
+        assert_eq!(counts.writes - baseline.writes, 1);
+        assert_eq!(counts.deletes - baseline.deletes, 0);
+        assert_eq!(
+            vault
+                .read(&format!("{REFRESH_PURPOSE_PREFIX}{scope}"))
+                .expect("read rotated refresh credential")
+                .as_deref(),
+            Some("refresh-after-rotation")
+        );
+        drop(runtime);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn activation_uses_refresh_snapshot_for_repository_rollback() {
+        let root = std::env::temp_dir().join(format!(
+            "doge-account-vault-rollback-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&root).expect("create Account vault rollback root");
+        let repository = AccountRepository::open(root.join("account-v1.sqlite3"))
+            .expect("open Account vault rollback repository");
+        let device_id = repository
+            .load_or_create_device_id(now_epoch())
+            .expect("create Account vault rollback device");
+        let profile = json!({
+            "id": 84,
+            "username": "Rollback",
+            "email": "rollback@example.com",
+        });
+        let scope = "scopevaultrollback1";
+        let metadata = active_test_metadata(&profile, &device_id, scope);
+        repository
+            .save_session(&metadata)
+            .expect("seed Account vault rollback session");
+        repository
+            .connect()
+            .expect("connect Account vault rollback repository")
+            .execute_batch(
+                "CREATE TRIGGER fail_account_session_update
+                 BEFORE UPDATE ON account_session
+                 BEGIN
+                   SELECT RAISE(ABORT, 'synthetic Account session failure');
+                 END;",
+            )
+            .expect("install Account session failure trigger");
+        let vault = Arc::new(MemoryVault::default());
+        let purpose = format!("{REFRESH_PURPOSE_PREFIX}{scope}");
+        vault
+            .write(&purpose, "refresh-before-failed-rotation")
+            .expect("seed rollback refresh credential");
+        let baseline = vault.access_counts();
+        let runtime =
+            runtime_with_test_storage(repository, Arc::clone(&vault), None, device_id, metadata);
+
+        let result = {
+            let mut state = runtime.state.lock().await;
+            runtime
+                .activate_auth(
+                    &mut state,
+                    AuthWire {
+                        access_token: "access-after-failed-rotation".to_string(),
+                        refresh_token: Some("refresh-after-failed-rotation".to_string()),
+                        expires_in: Some(900),
+                        user: Some(profile),
+                    },
+                    Some(scope.to_string()),
+                    Some("refresh-before-failed-rotation".to_string()),
+                )
+                .await
+        };
+        assert!(result.is_err());
+        let counts = vault.access_counts();
+        assert_eq!(counts.reads - baseline.reads, 0);
+        assert_eq!(counts.writes - baseline.writes, 2);
+        assert_eq!(
+            vault
+                .read(&purpose)
+                .expect("read rolled-back refresh credential")
+                .as_deref(),
+            Some("refresh-before-failed-rotation")
+        );
+        drop(runtime);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
     #[test]
     fn request_boundary_rejects_unknown_fields() {
         let request = json!({
@@ -666,6 +935,21 @@ mod tests {
             "unexpected": true,
         });
         assert!(validate_request(&request, 1).is_err());
+        assert!(validate_operation_payload(
+            "usage.readDayModels",
+            &json!({ "engineId": "codex", "date": "2030-02-29" }),
+        )
+        .is_err());
+        assert!(validate_operation_payload(
+            "usage.readDayModels",
+            &json!({ "engineId": "unknown", "date": "2030-01-01" }),
+        )
+        .is_err());
+        validate_operation_payload(
+            "usage.readDayModels",
+            &json!({ "engineId": "claude-code", "date": "2030-01-01" }),
+        )
+        .expect("valid usage day payload");
     }
 
     #[test]
@@ -876,16 +1160,100 @@ mod tests {
 
     #[test]
     fn quota_projection_uses_canonical_strings() {
-        let view = quota_value(
-            &[json!({
-                "platform": "openai",
-                "monthly_limit_usd": 20.0,
-                "monthly_usage_usd": 3.25,
-                "monthly_window_resets_at": "2030-01-01T00:00:00Z",
-            })],
+        use crate::account::authority::{
+            DesktopEngineEntitlementWire, DesktopEngineWire, SubscriptionIdentityWire,
+            SubscriptionProgressWire,
+        };
+        let catalog = DesktopEngineCatalogWire {
+            engines: vec![
+                DesktopEngineWire {
+                    id: "codex".to_string(),
+                    display_name: "Codex".to_string(),
+                    entitlement: DesktopEngineEntitlementWire {
+                        status: "active".to_string(),
+                        subscription_id: Some(7),
+                        group_id: Some(11),
+                        expires_at: Some("2030-02-01T00:00:00Z".to_string()),
+                    },
+                },
+                DesktopEngineWire {
+                    id: "claude-code".to_string(),
+                    display_name: "Claude".to_string(),
+                    entitlement: DesktopEngineEntitlementWire {
+                        status: "active".to_string(),
+                        subscription_id: Some(8),
+                        group_id: Some(12),
+                        expires_at: Some("2030-02-01T00:00:00Z".to_string()),
+                    },
+                },
+            ],
+        };
+        let progress = vec![
+            SubscriptionProgressEntryWire {
+                subscription: SubscriptionIdentityWire {
+                    id: 7,
+                    group_id: 11,
+                },
+                progress: SubscriptionProgressWire {
+                    id: 7,
+                    group_name: "Codex Pro".to_string(),
+                    expires_at: "2030-02-01T00:00:00Z".to_string(),
+                    daily: None,
+                    weekly: None,
+                    monthly: Some(SubscriptionUsageWindowWire {
+                        limit_usd: 20.0,
+                        used_usd: 3.25,
+                        remaining_usd: 16.75,
+                        percentage: 16.25,
+                        resets_at: "2030-02-01T00:00:00Z".to_string(),
+                    }),
+                },
+            },
+            SubscriptionProgressEntryWire {
+                subscription: SubscriptionIdentityWire {
+                    id: 8,
+                    group_id: 12,
+                },
+                progress: SubscriptionProgressWire {
+                    id: 8,
+                    group_name: "Claude Pro".to_string(),
+                    expires_at: "2030-02-01T00:00:00Z".to_string(),
+                    daily: None,
+                    weekly: None,
+                    monthly: None,
+                },
+            },
+        ];
+        let snapshots = HashMap::from([
+            (
+                "codex".to_string(),
+                Some(UsageDashboardSnapshotWire {
+                    trend: vec![UsageTrendWire {
+                        date: "2030-01-01".to_string(),
+                        actual_cost: 3.25,
+                        cost: 3.25,
+                        ..UsageTrendWire::default()
+                    }],
+                    models: vec![],
+                }),
+            ),
+            ("claude-code".to_string(), None),
+        ]);
+        let view = subscription_usage_value(
+            &catalog,
+            &progress,
+            &snapshots,
             "2030-01-01T00:00:00Z",
+            "2029-01-02",
+            "2030-01-01",
         );
         assert_eq!(view["remaining"]["value"], "16.75");
         assert_eq!(view["used"]["value"], "3.25");
+        assert_eq!(view["engines"][0]["engineId"], "codex");
+        assert_eq!(view["engines"][0]["days"][0]["intensity"], 4);
+        assert_eq!(view["engines"][0]["totals"]["cost"]["value"], "3.25");
+        assert_eq!(view["engines"][0]["totals"]["actualCost"]["value"], "3.25");
+        assert_eq!(view["engines"][1]["engineId"], "claude-code");
+        assert_eq!(view["engines"][1]["analyticsStatus"], "unavailable");
     }
 }

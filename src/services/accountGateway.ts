@@ -123,6 +123,8 @@ export class RealAccountGatewayV1 implements AccountGatewayV1 {
 
   readonly usage: AccountGatewayV1["usage"] = {
     read: (context) => this.read("usage.read", null, context),
+    readDayModels: (input, context) =>
+      this.read("usage.readDayModels", input, context),
   };
 
   readonly managedKey: AccountGatewayV1["managedKey"] = {
@@ -311,7 +313,7 @@ function stageForOperation(operation: GatewayOperationNameV1) {
     return operation === "configuration.apply" ? "configurationApply" as const : "configurationPlan" as const;
   }
   if (operation.startsWith("managedKey.")) return "managedKey" as const;
-  if (operation === "usage.read") return "usage" as const;
+  if (operation === "usage.read" || operation === "usage.readDayModels") return "usage" as const;
   if (operation.startsWith("profile.")) return "security" as const;
   if (operation.startsWith("humanVerification.")) return "challenge" as const;
   if (operation.includes("OAuth")) return "oauth" as const;

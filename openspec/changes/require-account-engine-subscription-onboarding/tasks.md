@@ -49,3 +49,7 @@
 - [ ] 6.14 [HOLD] 在 token2api 将 managed API Key display name 收敛为 `Doge + engine + plan`；本轮仅保留独立 worktree，不 commit、push 或 deploy，等待后续单独发布窗口
 - [x] 6.15 [P0] 将 Account Center 收敛为“我的引擎”，让 main engine picker 以 target intent 直达对应 entitlement/plans；App 内 flow 保持 AppShell mounted，并提供 cancel 原路返回
 - [x] 6.16 [P0] 覆盖 Codex ready → Claude subscription → paid → prepare/activate → Claude 新会话的 focused regression，完成本地 gates 与 macOS arm64 体验包
+- [x] 6.17 [P0] 修复 subscription quota 数据源，按已订阅 engine 展示日/周/月窗口与最近一年 GitHub-style heatmap；hover/focus 按需读取单日 model breakdown，完成 cross-layer focused tests 与本地 gates
+- [x] 6.18 [P0] 修复 heatmap 空 cell 透明、month label 重复、默认未定位最近日期与 system-locale 混排；删除“少/多”图例，完成 focused tests 并生成 macOS arm64 本地体验包
+- [x] 6.19 [P0] 按确认稿收敛 Account Center Header、icon-only refresh/logout、安全页与多订阅 master/detail；一行最多 3 张 card，补齐 selection/refresh/tooltip/responsive focused tests 与本地 gates
+- [x] 6.20 [P0] 收敛 macOS cold restore 的 Keychain access budget：bootstrap 只评估一次 vault status、refresh credential 只读取一次并复用 rollback snapshot；补齐计数 vault regression 与本地 Rust gates

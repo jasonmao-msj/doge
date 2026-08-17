@@ -15,6 +15,7 @@ const safeLabel = (field: string): RuntimeSchemaV1 => ({ kind: "safeLabel", fiel
 const safeText = (field: string): RuntimeSchemaV1 => ({ kind: "safeText", field });
 const secretInput: RuntimeSchemaV1 = { kind: "secretInput" };
 const timestamp: RuntimeSchemaV1 = { kind: "timestamp" };
+const date: RuntimeSchemaV1 = { kind: "date" };
 const integer: RuntimeSchemaV1 = { kind: "integer", minimum: 0 };
 const boolean: RuntimeSchemaV1 = { kind: "boolean" };
 const nullable = (inner: RuntimeSchemaV1): RuntimeSchemaV1 => ({ kind: "nullable", inner });
@@ -205,6 +206,61 @@ const quotaMeasureV1 = object({
   value: { kind: "decimal" },
   unit: enumV1(["requests", "credits", "tokens", "usd"]),
 });
+const usageTotalsV1 = object({
+  requests: integer,
+  inputTokens: integer,
+  outputTokens: integer,
+  cacheReadTokens: integer,
+  cacheWriteTokens: integer,
+  totalTokens: integer,
+  cost: quotaMeasureV1,
+  actualCost: quotaMeasureV1,
+});
+const subscriptionUsageWindowV1 = object({
+  limit: quotaMeasureV1,
+  used: quotaMeasureV1,
+  remaining: quotaMeasureV1,
+  percentage: { kind: "decimal" },
+  resetsAt: timestamp,
+});
+const subscriptionUsageDayV1 = object({
+  date,
+  intensity: integer,
+  requests: integer,
+  inputTokens: integer,
+  outputTokens: integer,
+  cacheReadTokens: integer,
+  cacheWriteTokens: integer,
+  totalTokens: integer,
+  cost: quotaMeasureV1,
+  actualCost: quotaMeasureV1,
+});
+const subscriptionUsageModelV1 = object({
+  modelLabel: safeLabel("fieldLabel"),
+  requests: integer,
+  inputTokens: integer,
+  outputTokens: integer,
+  cacheReadTokens: integer,
+  cacheWriteTokens: integer,
+  totalTokens: integer,
+  cost: quotaMeasureV1,
+  actualCost: quotaMeasureV1,
+});
+const subscriptionEngineUsageV1 = object({
+  engineId: enumV1(["codex", "claude-code"]),
+  engineLabel: safeLabel("targetLabel"),
+  subscriptionLabel: safeLabel("subscriptionLabel"),
+  expiresAt: nullable(timestamp),
+  analyticsStatus: enumV1(["available", "unavailable"]),
+  windows: object({
+    daily: nullable(subscriptionUsageWindowV1),
+    weekly: nullable(subscriptionUsageWindowV1),
+    monthly: nullable(subscriptionUsageWindowV1),
+  }),
+  totals: usageTotalsV1,
+  days: array(subscriptionUsageDayV1),
+  models: array(subscriptionUsageModelV1),
+});
 const quotaV1 = object({
   status: enumV1(["available", "unavailable"]),
   source: enumV1([
@@ -219,6 +275,18 @@ const quotaV1 = object({
   used: nullable(quotaMeasureV1),
   resetsAt: nullable(timestamp),
   subscriptionLabel: nullable(safeLabel("subscriptionLabel")),
+  range: nullable(object({
+    startDate: date,
+    endDate: date,
+    days: integer,
+  })),
+  engines: array(subscriptionEngineUsageV1),
+});
+
+const usageDayModelsV1 = object({
+  engineId: enumV1(["codex", "claude-code"]),
+  date,
+  models: array(subscriptionUsageModelV1),
 });
 
 const managedKeyV1 = union("status", {
@@ -521,6 +589,13 @@ export const ACCOUNT_IPC_OPERATION_SCHEMAS_V1: Readonly<
     result: object({ remoteRevocation: enumV1(["confirmed", "outcomeUnknown"]) }),
   },
   "usage.read": { request: NULL_V1, result: quotaV1 },
+  "usage.readDayModels": {
+    request: object({
+      engineId: enumV1(["codex", "claude-code"]),
+      date,
+    }),
+    result: usageDayModelsV1,
+  },
   "managedKey.readStatus": { request: recipeRefV1, result: managedKeyV1 },
   "managedKey.listCandidates": { request: recipeRefV1, result: apiKeyCandidatesV1 },
   "managedKey.selectExisting": {
