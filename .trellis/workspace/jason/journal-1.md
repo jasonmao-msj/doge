@@ -908,3 +908,36 @@ GitHub hosted runner 连续因第三方 action codeload 429/502 在 setup 阶段
 ### Next Steps
 
 - None - task complete
+
+
+## Session 28: 修复 Windows 跨卷引擎打包
+
+**Date**: 2026-08-17
+**Task**: 修复 Windows 跨卷引擎打包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+真实 Windows runner 发现 TEMP 位于 C 盘、workspace 位于 D 盘，OS temp staging 到 generated resources 的 rename 返回 EXDEV；最终 stage 改为 output sibling same-volume atomic rename，增加回归测试与 OpenSpec/Trellis contract。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e06a03bc0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

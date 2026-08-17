@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 27
+- **Total Sessions**: 28
 - **Last Active**: 2026-08-17
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~910 | Active |
+| `journal-1.md` | ~943 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 28 | 2026-08-17 | 修复 Windows 跨卷引擎打包 | `e06a03bc0` | `codex/fix-account-masked-email-bootstrap` |
 | 27 | 2026-08-17 | 加固 Windows artifact 构建入口 | `76007cc53` | `codex/fix-account-masked-email-bootstrap` |
 | 26 | 2026-08-17 | 内置订阅引擎与版本选择 | `40f9ee78e` | `codex/fix-account-masked-email-bootstrap` |
 | 25 | 2026-08-17 | 完善账号多订阅用量与 Keychain 恢复 | `8e8b165c4` | `codex/fix-account-masked-email-bootstrap` |
