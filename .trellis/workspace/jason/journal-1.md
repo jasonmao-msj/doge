@@ -743,3 +743,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 23: 清理引擎界面并加固桌面启动
+
+**Date**: 2026-08-16
+**Task**: 清理引擎界面并加固桌面启动
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+删除古诗词轮换与相关持久化/测试，统一面向用户的简洁引擎名称和引擎管理文案；二维码使用当前选中套餐名；外部 engine probe 增加 4 秒 deadline、进程树清理和 single-instance 唤醒。focused tests、typecheck、Rust check、OpenSpec validate 通过并生成验证 macOS arm64 DMG；token2api 改动保持独立 worktree 未提交未发布，Windows 本地包受 macOS host gate 限制。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `31498df79` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
