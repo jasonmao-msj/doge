@@ -809,3 +809,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 25: 完善账号多订阅用量与 Keychain 恢复
+
+**Date**: 2026-08-17
+**Task**: 完善账号多订阅用量与 Keychain 恢复
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+实现多订阅额度/安全中心与年度用量视图，扩展账号 usage contract 和 mock/native projection，并将 macOS 冷启动 vault 访问收敛为一次状态检查、一次 refresh 读取和一次轮换写入。验证：lint/typecheck、账号前端 65/65、Rust account 76/76、runtime/release contracts、OpenSpec strict 均通过；全量测试因未修改的 pricing fixture 时间漂移在第 67/274 批次出现 3 个 stale 断言失败。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8e8b165c4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

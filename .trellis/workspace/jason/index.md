@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 24
-- **Last Active**: 2026-08-16
+- **Total Sessions**: 25
+- **Last Active**: 2026-08-17
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~811 | Active |
+| `journal-1.md` | ~844 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 25 | 2026-08-17 | 完善账号多订阅用量与 Keychain 恢复 | `8e8b165c4` | `codex/fix-account-masked-email-bootstrap` |
 | 24 | 2026-08-16 | 打通第二引擎订阅闭环并生成 macOS 体验包 | `177720cc1` | `codex/fix-account-masked-email-bootstrap` |
 | 23 | 2026-08-16 | 清理引擎界面并加固桌面启动 | `31498df79` | `codex/fix-account-masked-email-bootstrap` |
 | 22 | 2026-08-16 | 完成双平台本地试用包交付 | `c37cf1c27` | `codex/fix-account-masked-email-bootstrap` |
