@@ -187,6 +187,14 @@
 .account-gate-primary { color: white; background: var(--gate-accent); }
 .account-gate-secondary { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
 
+.account-gate-version-choice { min-height: 320px; }
+.account-gate-version-actions {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 10px;
+}
+.account-gate-version-actions > button { width: 100%; }
+
 .account-gate-checkout-actions {
   display: grid;
   justify-items: center;

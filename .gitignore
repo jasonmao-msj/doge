@@ -8,6 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.cache/bundled-engines/
+src-tauri/resources/bundled-engines/current/
 dist
 dist-ssr
 *.local

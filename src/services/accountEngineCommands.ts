@@ -7,4 +7,5 @@ export {
   readPendingAccountEngineCheckoutV1,
   readAccountEnginePlansV1,
   readAccountEngineReadinessV1,
+  resolveAccountEngineToolchainV1,
 } from "./tauri/accountEngine";

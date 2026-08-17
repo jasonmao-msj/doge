@@ -2,6 +2,7 @@ use super::configuration::ACCOUNT_RECIPE_ID;
 use super::runtime::{CONTRACT_ID, CONTRACT_VERSION, OPERATIONS, READ_OPERATIONS};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
+use tauri::Manager;
 use tauri::{AppHandle, Emitter, State};
 
 #[tauri::command]
@@ -159,6 +160,91 @@ pub(crate) async fn account_engine_v1_prepare(
         .account_runtime
         .engine_prepare(&engine_id, &operation_id)
         .await)
+}
+
+#[tauri::command]
+pub(crate) async fn account_engine_v1_toolchain(
+    engine_id: String,
+    choice: Option<String>,
+    app: AppHandle,
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    let choice = match super::toolchain::ToolchainChoice::parse(choice.as_deref()) {
+        Ok(value) => value,
+        Err(error) => {
+            return Ok(json!({
+                "ok": false,
+                "error": { "code": error.code(), "action": "engineToolchain", "nextAction": "retry" }
+            }));
+        }
+    };
+    let settings = state.app_settings.lock().await.clone();
+    let resource_dir = match app.path().resource_dir() {
+        Ok(path) => path,
+        Err(_) => {
+            return Ok(json!({
+                "ok": false,
+                "error": { "code": "engineBundleUnavailable", "action": "engineToolchain", "nextAction": "retry" }
+            }));
+        }
+    };
+    let resolution = match super::toolchain::resolve(&resource_dir, &engine_id, choice, &settings)
+        .await
+    {
+        Ok(value) => value,
+        Err(error) => {
+            return Ok(json!({
+                "ok": false,
+                "error": { "code": error.code(), "action": "engineToolchain", "nextAction": "retry" }
+            }));
+        }
+    };
+    if let Some(binary) = resolution.selected_binary.as_ref() {
+        let binary = binary.to_string_lossy().to_string();
+        let engine_type = if engine_id == "claude-code" {
+            crate::engine::EngineType::Claude
+        } else {
+            crate::engine::EngineType::Codex
+        };
+        let verified = state
+            .engine_manager
+            .refresh_engine_status_for_binary(engine_type, &binary)
+            .await;
+        if !verified.installed {
+            return Ok(json!({
+                "ok": false,
+                "error": { "code": "engineBundleVerificationFailed", "action": "engineToolchain", "nextAction": "retry" }
+            }));
+        }
+        let previous = state
+            .account_runtime
+            .set_managed_engine_binary_for_launch(&engine_id, binary.clone())
+            .await;
+        if engine_type == crate::engine::EngineType::Claude {
+            state
+                .engine_manager
+                .set_claude_provider_config(
+                    crate::engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID,
+                    crate::engine::EngineConfig {
+                        bin_path: Some(binary.clone()),
+                        ..Default::default()
+                    },
+                )
+                .await
+            ;
+            if previous.as_deref() != Some(&binary) {
+                state
+                    .engine_manager
+                    .remove_claude_sessions_for_provider(
+                        crate::engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID,
+                    )
+                    .await;
+            }
+        }
+    }
+    Ok(json!({ "ok": true, "value": resolution }))
 }
 
 pub(super) fn require_main_account_window(window: &tauri::Window) -> Result<(), String> {

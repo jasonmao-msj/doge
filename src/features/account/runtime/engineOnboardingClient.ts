@@ -58,6 +58,7 @@ export type CheckoutViewV1 = {
   readonly checkoutId: number;
   readonly status: "pending" | "processing" | "paid" | "cancelled" | "expired" | "failed";
   readonly expiresAt: string;
+  readonly planName: string | null;
   readonly action: null | {
     readonly kind: "open_url" | "show_qr" | "unsupported";
     readonly url: string | null;
@@ -243,12 +244,17 @@ function parseCheckout(value: unknown): EngineOnboardingResultV1<CheckoutViewV1>
   if (checkout.action !== undefined && checkout.action !== null && action === null) {
     return protocolFailure();
   }
+  if (!isNullish(checkout.plan_name) &&
+    (typeof checkout.plan_name !== "string" || checkout.plan_name.trim().length === 0)) {
+    return protocolFailure();
+  }
   return {
     ok: true,
     value: {
       checkoutId: checkout.checkout_id,
       status: checkout.status as CheckoutViewV1["status"],
       expiresAt: checkout.expires_at,
+      planName: typeof checkout.plan_name === "string" ? checkout.plan_name : null,
       action,
     },
   };

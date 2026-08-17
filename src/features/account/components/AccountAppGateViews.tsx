@@ -212,6 +212,36 @@ export function GateEmptyPlans({ copy, onRetry }: {
   );
 }
 
+export function GateToolchainChoice({
+  copy,
+  engineName,
+  bundledVersion,
+  externalVersion,
+  onUseBundled,
+  onKeepExternal,
+}: {
+  readonly copy: AccountExperienceCopyV1;
+  readonly engineName: string;
+  readonly bundledVersion: string;
+  readonly externalVersion: string;
+  readonly onUseBundled: () => void;
+  readonly onKeepExternal: () => void;
+}) {
+  return (
+    <div className="account-gate-centered account-gate-version-choice">
+      <h1>{interpolate(copy.gateEngineUpdateTitle, "engine", engineName)}</h1>
+      <div className="account-gate-version-actions">
+        <button className="account-gate-primary" type="button" onClick={onUseBundled}>
+          {interpolate(copy.gateUseBundledVersion, "version", bundledVersion)}
+        </button>
+        <button className="account-gate-secondary" type="button" onClick={onKeepExternal}>
+          {interpolate(copy.gateKeepExternalVersion, "version", externalVersion)}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function PlanButton({ copy, plan, onClick }: {
   readonly copy: AccountExperienceCopyV1;
   readonly plan: SubscriptionPlanViewV1;
@@ -281,9 +311,11 @@ function failureMessage(code: string, copy: AccountExperienceCopyV1) {
   if (code === "rateLimited") return copy.gateRateLimited;
   if (code === "checkoutOpenFailed") return copy.gateCheckoutOpenFailed;
   if (code === "paymentUnavailable") return copy.gatePaymentUnavailable;
-  if (code === "configurationRejected" || code === "concurrentEdit") {
+  if (["configurationRejected", "configurationAccessDenied", "configurationBusy",
+    "configurationUnsafeTarget", "concurrentEdit"].includes(code)) {
     return copy.gateConfigurationRejected;
   }
-  if (code === "engineUnavailable") return copy.gateEngineUnavailable;
+  if (code === "engineUnavailable" || code === "engineBundleUnavailable" ||
+    code === "engineBundleVerificationFailed") return copy.gateEngineUnavailable;
   return copy.gateServiceUnavailable;
 }

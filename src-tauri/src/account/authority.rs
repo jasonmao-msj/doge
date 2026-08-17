@@ -273,6 +273,8 @@ pub(crate) struct DesktopCheckoutWire {
     pub(crate) checkout_id: i64,
     pub(crate) status: String,
     pub(crate) expires_at: String,
+    #[serde(default)]
+    pub(crate) plan_name: Option<String>,
     pub(crate) action: Option<DesktopCheckoutActionWire>,
 }
 

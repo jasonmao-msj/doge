@@ -31,6 +31,12 @@ import {
   readLastManagedEnginePreferenceV1,
   writeLastManagedEnginePreferenceV1,
 } from "../runtime/enginePreference";
+import {
+  createManagedEngineToolchainClientV1,
+  type ManagedEngineToolchainChoiceV1,
+  type ManagedEngineToolchainClientV1,
+  type ManagedEngineToolchainViewV1,
+} from "../runtime/managedEngineToolchain";
 import { AccountAuthPanel } from "./AccountExperience";
 import {
   CheckoutQrCode,
@@ -42,6 +48,7 @@ import {
   GateInlineFailure,
   GateLoading,
   GateStepBack,
+  GateToolchainChoice,
   PaymentMethodList,
   PlanButton,
   interpolate,
@@ -58,6 +65,7 @@ type GatePhase =
   | "plans"
   | "paymentMethod"
   | "checkout"
+  | "toolchainChoice"
   | "preparing"
   | "ready";
 
@@ -65,6 +73,7 @@ export type AccountAppGateProps = {
   readonly gateway: AccountGatewayV1;
   readonly engineClient?: AccountEngineOnboardingClientV1;
   readonly engineActivator?: (engineId: ManagedEngineIdV1) => Promise<void>;
+  readonly engineToolchain?: ManagedEngineToolchainClientV1;
   readonly readyContent?: ReactNode;
 };
 
@@ -72,17 +81,23 @@ export function AccountAppGate({
   gateway,
   engineClient,
   engineActivator,
+  engineToolchain,
   readyContent,
 }: AccountAppGateProps) {
   const client = useMemo(
     () => engineClient ?? createAccountEngineOnboardingClientV1(),
     [engineClient],
   );
+  const toolchainClient = useMemo(
+    () => engineToolchain ?? createManagedEngineToolchainClientV1(),
+    [engineToolchain],
+  );
   return (
     <AccountGatewayProvider gateway={gateway}>
       <AccountAppGateInner
         client={client}
         activateEngine={engineActivator ?? activateManagedEngine}
+        toolchain={toolchainClient}
         readyContent={readyContent}
       />
     </AccountGatewayProvider>
@@ -92,10 +107,12 @@ export function AccountAppGate({
 function AccountAppGateInner({
   client,
   activateEngine,
+  toolchain,
   readyContent,
 }: {
   readonly client: AccountEngineOnboardingClientV1;
   readonly activateEngine: (engineId: ManagedEngineIdV1) => Promise<void>;
+  readonly toolchain: ManagedEngineToolchainClientV1;
   readonly readyContent?: React.ReactNode;
 }) {
   const controller = useAccountExperienceControllerV1({ loadAuthenticatedExtras: false });
@@ -108,6 +125,7 @@ function AccountAppGateInner({
   const [plans, setPlans] = useState<EnginePlansViewV1 | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanViewV1 | null>(null);
   const [checkout, setCheckout] = useState<CheckoutViewV1 | null>(null);
+  const [toolchainChoice, setToolchainChoice] = useState<ManagedEngineToolchainViewV1 | null>(null);
   const [checkoutActionBusy, setCheckoutActionBusy] = useState(false);
   const [logoutBusy, setLogoutBusy] = useState(false);
   const [logoutFailure, setLogoutFailure] = useState<string | null>(null);
@@ -149,14 +167,20 @@ function AccountAppGateInner({
     }
   }, [activateEngine]);
 
-  const prepare = useCallback(async (
+  const finishPreparation = useCallback(async (
     engineId: ManagedEngineIdV1,
     generation = flowGeneration.current,
   ) => {
-    setSelectedEngine(engineId);
     setPhase("preparing");
     setFailure(null);
-    const result = await client.prepare(engineId);
+    let result: Awaited<ReturnType<AccountEngineOnboardingClientV1["prepare"]>>;
+    try {
+      result = await client.prepare(engineId);
+    } catch {
+      if (flowGeneration.current !== generation) return;
+      setFailure("serviceUnavailable");
+      return;
+    }
     if (flowGeneration.current !== generation) return;
     if (!result.ok || result.value.status !== "ready") {
       setFailure(result.ok ? "configurationRejected" : result.error.code);
@@ -164,6 +188,57 @@ function AccountAppGateInner({
     }
     await commitReady(engineId, generation);
   }, [client, commitReady]);
+
+  const prepare = useCallback(async (
+    engineId: ManagedEngineIdV1,
+    generation = flowGeneration.current,
+  ) => {
+    setSelectedEngine(engineId);
+    setToolchainChoice(null);
+    setPhase("preparing");
+    setFailure(null);
+    let resolution: Awaited<ReturnType<ManagedEngineToolchainClientV1["inspect"]>>;
+    try {
+      resolution = await toolchain.inspect(engineId);
+    } catch {
+      if (flowGeneration.current !== generation) return;
+      setFailure("engineBundleUnavailable");
+      return;
+    }
+    if (flowGeneration.current !== generation) return;
+    if (!resolution.ok) {
+      setFailure(resolution.error.code);
+      return;
+    }
+    if (resolution.value.status === "choiceRequired") {
+      setToolchainChoice(resolution.value);
+      setPhase("toolchainChoice");
+      return;
+    }
+    await finishPreparation(engineId, generation);
+  }, [finishPreparation, toolchain]);
+
+  const chooseToolchain = useCallback(async (choice: ManagedEngineToolchainChoiceV1) => {
+    if (!selectedEngine || !toolchainChoice) return;
+    const generation = flowGeneration.current;
+    setPhase("preparing");
+    setFailure(null);
+    let resolution: Awaited<ReturnType<ManagedEngineToolchainClientV1["choose"]>>;
+    try {
+      resolution = await toolchain.choose(selectedEngine, choice, toolchainChoice);
+    } catch {
+      if (flowGeneration.current !== generation) return;
+      setFailure("engineBundleUnavailable");
+      return;
+    }
+    if (flowGeneration.current !== generation) return;
+    if (!resolution.ok || resolution.value.status !== "ready") {
+      setFailure(resolution.ok ? "protocolMismatch" : resolution.error.code);
+      return;
+    }
+    setToolchainChoice(null);
+    await finishPreparation(selectedEngine, generation);
+  }, [finishPreparation, selectedEngine, toolchain, toolchainChoice]);
 
   const openPlans = useCallback(async (
     engineId: ManagedEngineIdV1,
@@ -211,6 +286,7 @@ function AccountAppGateInner({
         return;
       }
       setCheckout(null);
+      setToolchainChoice(null);
       setSelectedPlan(null);
       await openPlans(selectedEngine, flowGeneration.current);
     } catch {
@@ -226,6 +302,7 @@ function AccountAppGateInner({
     checkoutActionBusyRef.current = true;
     setCheckoutActionBusy(true);
     setFailure(null);
+    setToolchainChoice(null);
     try {
       if (checkout !== null) {
         const result = await client.abandonCheckout(checkout.checkoutId);
@@ -287,6 +364,7 @@ function AccountAppGateInner({
       flowGeneration.current += 1;
       inAppFlow.current = false;
       activeIntent.current = null;
+      setToolchainChoice(null);
       clearManagedEngineEntitlementsV1();
     }
     else setLogoutFailure("serviceUnavailable");
@@ -307,6 +385,7 @@ function AccountAppGateInner({
     flowGeneration.current = nextFlowGeneration;
     inAppFlow.current = false;
     activeIntent.current = null;
+    setToolchainChoice(null);
     setPhase("catalog");
     setFailure(null);
     const result = await client.catalog();
@@ -366,6 +445,7 @@ function AccountAppGateInner({
     setPlans(null);
     setSelectedPlan(null);
     setCheckout(null);
+    setToolchainChoice(null);
     setPhase("catalog");
     void client.catalog().then(async (result) => {
       if (
@@ -506,6 +586,25 @@ function AccountAppGateInner({
       </GateFrame>
     );
   }
+  if (phase === "toolchainChoice" && selectedEngine && toolchainChoice) {
+    return renderGate(
+      <GateFrame
+        accountExit={accountExit}
+        onReturnToApp={inAppFlow.current ? () => void returnToApp() : undefined}
+        returnBusy={checkoutActionBusy}
+      >
+        <GateToolchainChoice
+          copy={copy}
+          engineName={engineLabel(selectedEngine)}
+          bundledVersion={toolchainChoice.bundledVersion}
+          externalVersion={toolchainChoice.externalVersion ?? ""}
+          onUseBundled={() => void chooseToolchain("bundled")}
+          onKeepExternal={() => void chooseToolchain("external")}
+        />
+        {failure ? <GateInlineFailure copy={copy} code={failure} /> : null}
+      </GateFrame>
+    );
+  }
   if (phase === "engine") {
     return renderGate(
       <GateFrame
@@ -583,8 +682,8 @@ function AccountAppGateInner({
     const terminal = ["cancelled", "expired", "failed"].includes(checkout.status);
     const checkoutTitle = terminal
       ? copy.gatePaymentFailed
-      : checkout.action?.kind === "show_qr" && selectedPlan
-        ? `Doge ${selectedPlan.name}`
+      : checkout.action?.kind === "show_qr" && (selectedPlan?.name || checkout.planName)
+        ? `Doge ${selectedPlan?.name ?? checkout.planName}`
         : copy.gateWaitingPayment;
     return renderGate(
       <GateFrame

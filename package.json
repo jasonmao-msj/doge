@@ -10,6 +10,8 @@
     "dev:perf": "VITE_ENABLE_REACT_SCAN=1 VITE_ENABLE_PERF_BASELINE=1 npm run dev",
     "tauri:dev:scan": "VITE_ENABLE_REACT_SCAN=1 VITE_ENABLE_PERF_BASELINE=1 npm run tauri:dev:hot",
     "build": "tsc && vite build",
+    "prepare:bundled-engines": "node scripts/prepare-bundled-engines.mjs",
+    "test:bundled-engines": "node --test scripts/prepare-bundled-engines.test.mjs",
     "build:appimage": "NO_STRIP=1 tauri build --bundles appimage",
     "build:mac-arm64": "node scripts/build-platform.mjs mac-arm64",
     "build:mac-x64": "node scripts/build-platform.mjs mac-x64",

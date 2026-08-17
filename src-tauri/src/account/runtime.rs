@@ -145,9 +145,29 @@ pub(crate) struct AccountRuntime {
     process_generation: u64,
     event_sequence: Arc<AtomicU64>,
     desktop_continuations: DesktopContinuationBroker,
+    managed_engine_binaries: Mutex<HashMap<String, String>>,
 }
 
 impl AccountRuntime {
+    pub(crate) async fn set_managed_engine_binary_for_launch(
+        &self,
+        engine_id: &str,
+        binary: String,
+    ) -> Option<String> {
+        self.managed_engine_binaries
+            .lock()
+            .await
+            .insert(engine_id.to_string(), binary)
+    }
+
+    pub(crate) async fn managed_engine_binary_for_launch(&self, engine_id: &str) -> Option<String> {
+        self.managed_engine_binaries
+            .lock()
+            .await
+            .get(engine_id)
+            .cloned()
+    }
+
     pub(crate) fn load(data_dir: &Path) -> Self {
         if !account_convenience_enabled_for_build() {
             return Self {
@@ -176,6 +196,7 @@ impl AccountRuntime {
                 process_generation: random_process_generation(),
                 event_sequence: Arc::new(AtomicU64::new(0)),
                 desktop_continuations: DesktopContinuationBroker::new(),
+                managed_engine_binaries: Mutex::new(HashMap::new()),
             };
         }
         let repository = AccountRepository::open(data_dir.join("account-v1.sqlite3")).ok();
@@ -236,6 +257,7 @@ impl AccountRuntime {
             process_generation: random_process_generation(),
             event_sequence: Arc::new(AtomicU64::new(0)),
             desktop_continuations: DesktopContinuationBroker::new(),
+            managed_engine_binaries: Mutex::new(HashMap::new()),
             state: Mutex::new(RuntimeState {
                 initialized: false,
                 account_epoch,
@@ -640,6 +662,7 @@ mod tests {
             process_generation: 1,
             event_sequence: Arc::new(AtomicU64::new(0)),
             desktop_continuations: DesktopContinuationBroker::new(),
+            managed_engine_binaries: Mutex::new(HashMap::new()),
         }
     }
 
@@ -706,6 +729,7 @@ mod tests {
             process_generation: 1,
             event_sequence: Arc::new(AtomicU64::new(0)),
             desktop_continuations: DesktopContinuationBroker::new(),
+            managed_engine_binaries: Mutex::new(HashMap::new()),
         };
 
         let credential = runtime

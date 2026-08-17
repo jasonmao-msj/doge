@@ -715,6 +715,28 @@ async fn probe_cli_version(
     }
 }
 
+pub(crate) async fn probe_engine_version_text(
+    bin: &str,
+    path_env: Option<&String>,
+) -> Result<String, String> {
+    match run_cli_probe(bin, &["--version"], path_env, DETECTION_TIMEOUT).await {
+        Ok(output) if output.success => {
+            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if version.is_empty() {
+                Err("engine version output is empty".to_string())
+            } else {
+                Ok(version)
+            }
+        }
+        Ok(output) => Err(format!(
+            "engine version probe failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        )),
+        Err(CliProbeError::Execution(error)) => Err(error),
+        Err(CliProbeError::Timeout) => Err("engine version probe timed out".to_string()),
+    }
+}
+
 async fn probe_cli_help(bin: &str, path_env: Option<&String>) -> bool {
     matches!(
         run_cli_probe(bin, &["--help"], path_env, DETECTION_TIMEOUT).await,

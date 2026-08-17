@@ -4,6 +4,7 @@ use super::*;
 pub struct ClaudeSessionManager {
     sessions: Mutex<HashMap<String, Arc<ClaudeSession>>>,
     default_config: RwLock<EngineConfig>,
+    provider_configs: RwLock<HashMap<String, EngineConfig>>,
     ask_user_question_resume_diagnostic_sink:
         StdMutex<Option<ClaudeAskUserQuestionResumeDiagnosticSink>>,
 }
@@ -13,6 +14,7 @@ impl ClaudeSessionManager {
         Self {
             sessions: Mutex::new(HashMap::new()),
             default_config: RwLock::new(EngineConfig::default()),
+            provider_configs: RwLock::new(HashMap::new()),
             ask_user_question_resume_diagnostic_sink: StdMutex::new(None),
         }
     }
@@ -29,6 +31,36 @@ impl ClaudeSessionManager {
     /// Set default configuration
     pub async fn set_config(&self, config: EngineConfig) {
         *self.default_config.write().await = config;
+    }
+
+    /// Set a provider-scoped binary/config without changing the user's local Claude runtime.
+    pub(crate) async fn set_provider_config(
+        &self,
+        provider_profile_id: &str,
+        config: EngineConfig,
+    ) {
+        self.provider_configs
+            .write()
+            .await
+            .insert(provider_profile_id.to_string(), config);
+    }
+
+    pub(crate) async fn remove_sessions_for_provider_profile(&self, provider_profile_id: &str) {
+        let suffix = format!("::{provider_profile_id}");
+        let removed = {
+            let mut sessions = self.sessions.lock().await;
+            let keys = sessions
+                .keys()
+                .filter(|key| key.ends_with(&suffix))
+                .cloned()
+                .collect::<Vec<_>>();
+            keys.into_iter()
+                .filter_map(|key| sessions.remove(&key))
+                .collect::<Vec<_>>()
+        };
+        for session in removed {
+            let _ = session.interrupt().await;
+        }
     }
 
     /// Get or create a session for a workspace
@@ -55,7 +87,17 @@ impl ClaudeSessionManager {
             return session.clone();
         }
 
-        let config = self.default_config.read().await.clone();
+        let provider_config = match provider_profile_id
+            .map(str::trim)
+            .filter(|profile_id| !profile_id.is_empty())
+        {
+            Some(profile_id) => self.provider_configs.read().await.get(profile_id).cloned(),
+            None => None,
+        };
+        let config = match provider_config {
+            Some(config) => config,
+            None => self.default_config.read().await.clone(),
+        };
         let session = Arc::new(ClaudeSession::new_with_runtime(
             workspace_id.to_string(),
             workspace_path.to_path_buf(),
@@ -180,5 +222,45 @@ impl ClaudeSessionManager {
 impl Default for ClaudeSessionManager {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+#[cfg(test)]
+mod provider_config_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn provider_binary_override_does_not_replace_local_claude_config() {
+        let manager = ClaudeSessionManager::new();
+        manager
+            .set_config(EngineConfig {
+                bin_path: Some("user-claude".to_string()),
+                ..Default::default()
+            })
+            .await;
+        manager
+            .set_provider_config(
+                provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID,
+                EngineConfig {
+                    bin_path: Some("bundled-claude".to_string()),
+                    ..Default::default()
+                },
+            )
+            .await;
+
+        let workspace = std::env::temp_dir();
+        let local = manager
+            .get_or_create_session_for_provider("workspace", &workspace, None)
+            .await;
+        let managed = manager
+            .get_or_create_session_for_provider(
+                "workspace",
+                &workspace,
+                Some(provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID),
+            )
+            .await;
+
+        assert_eq!(local.resolve_cli_binary(), "user-claude");
+        assert_eq!(managed.resolve_cli_binary(), "bundled-claude");
     }
 }

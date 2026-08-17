@@ -122,6 +122,12 @@ jobs:
           $ErrorActionPreference = "Stop"
           npm run tauri -- build --config src-tauri/tauri.windows.conf.json --bundles nsis
 
+      - name: Verify standard-user configuration replacement contract
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          cargo test --manifest-path src-tauri/Cargo.toml atomic_write_replaces_an_existing_user_profile_target --lib
+
       - name: Smoke Windows application startup
         shell: pwsh
         run: |
@@ -195,7 +201,7 @@ jobs:
             rust_target: x86_64-apple-darwin
             build_script: build:mac-x64
     env:
-      MACOSX_DEPLOYMENT_TARGET: "10.13"
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -364,7 +370,7 @@ jobs:
           - platform: macos-15-intel
             arch: x86_64
     env:
-      MACOSX_DEPLOYMENT_TARGET: "10.13"
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
       CODESIGN_IDENTITY: ${{ vars.CODESIGN_IDENTITY }}
       NOTARY_PROFILE_NAME: ${{ vars.NOTARY_PROFILE_NAME }}
       APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}

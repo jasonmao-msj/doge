@@ -413,15 +413,23 @@ impl AccountRuntime {
             now_epoch(),
         );
         match configured {
-            Ok(_) => engine_success(json!({ "engineId": engine_id, "status": "ready" })),
+            Ok(_) => {
+                if let Err(error) = configuration::commit_completed_transactions() {
+                    log::warn!(
+                        "[account] managed engine configuration committed but journal cleanup failed: {}",
+                        error
+                    );
+                }
+                engine_success(json!({ "engineId": engine_id, "status": "ready" }))
+            }
             Err(ApplyError::ConcurrentEdit) => {
                 engine_failure(code_failure("concurrentEdit", "enginePrepare", "retry"))
             }
             Err(ApplyError::RollbackIncomplete) => {
                 engine_failure(code_failure("rollbackIncomplete", "enginePrepare", "retry"))
             }
-            Err(ApplyError::Rejected(_)) => engine_failure(code_failure(
-                "configurationRejected",
+            Err(ApplyError::Rejected(reason)) => engine_failure(code_failure(
+                configuration_rejection_code(&reason),
                 "enginePrepare",
                 "retry",
             )),
@@ -507,6 +515,26 @@ fn valid_managed_engine(engine_id: &str) -> bool {
     matches!(engine_id, "codex" | "claude-code")
 }
 
+fn configuration_rejection_code(reason: &str) -> &'static str {
+    let normalized = reason.to_ascii_lowercase();
+    if normalized.contains("access is denied")
+        || normalized.contains("permission denied")
+        || normalized.contains("os error 5")
+    {
+        return "configurationAccessDenied";
+    }
+    if normalized.contains("used by another process")
+        || normalized.contains("sharing violation")
+        || normalized.contains("os error 32")
+    {
+        return "configurationBusy";
+    }
+    if normalized.contains("unsafe") || normalized.contains("not a regular file") {
+        return "configurationUnsafeTarget";
+    }
+    "configurationRejected"
+}
+
 fn validate_desktop_checkout(value: DesktopCheckoutWire) -> Result<DesktopCheckoutWire, ()> {
     if value.checkout_id <= 0
         || !matches!(
@@ -515,6 +543,11 @@ fn validate_desktop_checkout(value: DesktopCheckoutWire) -> Result<DesktopChecko
         )
         || chrono::DateTime::parse_from_rfc3339(&value.expires_at).is_err()
     {
+        return Err(());
+    }
+    if value.plan_name.as_deref().is_some_and(|name| {
+        name.trim().is_empty() || name.len() > 160 || name.chars().any(char::is_control)
+    }) {
         return Err(());
     }
     let Some(action) = value.action.as_ref() else {
@@ -571,6 +604,7 @@ mod tests {
             checkout_id: 7,
             status: "pending".to_string(),
             expires_at: "2030-01-01T00:00:00Z".to_string(),
+            plan_name: Some("Doge 套餐".to_string()),
             action,
         }
     }
@@ -606,5 +640,21 @@ mod tests {
             data: Some("weixin://wxpay/bizpayurl?pr=opaque".to_string()),
         }));
         assert!(validate_desktop_checkout(value).is_ok());
+    }
+
+    #[test]
+    fn configuration_rejections_keep_windows_recovery_reasons_distinct() {
+        assert_eq!(
+            configuration_rejection_code("Access is denied. (os error 5)"),
+            "configurationAccessDenied"
+        );
+        assert_eq!(
+            configuration_rejection_code("file is being used by another process (os error 32)"),
+            "configurationBusy"
+        );
+        assert_eq!(
+            configuration_rejection_code("configuration target parent is unsafe"),
+            "configurationUnsafeTarget"
+        );
     }
 }

@@ -909,7 +909,7 @@ fn reject_unsafe_target(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn atomic_write(path: &Path, content: &str) -> Result<(), String> {
+pub(super) fn atomic_write(path: &Path, content: &str) -> Result<(), String> {
     let parent = path
         .parent()
         .ok_or_else(|| "configuration target has no parent".to_string())?;
@@ -927,7 +927,7 @@ fn atomic_write(path: &Path, content: &str) -> Result<(), String> {
     let mut staged = options
         .open(&temporary)
         .map_err(|error| format!("failed to stage configuration: {error}"))?;
-    {
+    let staged_result = (|| -> Result<(), String> {
         use std::io::Write;
         staged
             .write_all(content.as_bytes())
@@ -935,19 +935,63 @@ fn atomic_write(path: &Path, content: &str) -> Result<(), String> {
         staged
             .sync_all()
             .map_err(|error| format!("failed to sync staged configuration: {error}"))?;
+        Ok(())
+    })();
+    if let Err(error) = staged_result {
+        drop(staged);
+        let _ = fs::remove_file(&temporary);
+        return Err(error);
     }
+    drop(staged);
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         fs::set_permissions(&temporary, fs::Permissions::from_mode(0o600))
             .map_err(|error| format!("failed to protect staged configuration: {error}"))?;
     }
-    fs::rename(&temporary, path)
-        .map_err(|error| format!("failed to commit configuration: {error}"))?;
+    if let Err(error) = commit_staged_configuration(&temporary, path) {
+        let _ = fs::remove_file(&temporary);
+        return Err(format!("failed to commit configuration: {error}"));
+    }
     #[cfg(unix)]
     fs::File::open(parent)
         .and_then(|directory| directory.sync_all())
         .map_err(|error| format!("failed to sync configuration directory: {error}"))?;
+    Ok(())
+}
+
+#[cfg(not(windows))]
+fn commit_staged_configuration(temporary: &Path, path: &Path) -> Result<(), String> {
+    fs::rename(temporary, path).map_err(|error| error.to_string())
+}
+
+#[cfg(windows)]
+fn commit_staged_configuration(temporary: &Path, path: &Path) -> Result<(), String> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Storage::FileSystem::{
+        MoveFileExW, MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH,
+    };
+
+    let source = temporary
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let target = path
+        .as_os_str()
+        .encode_wide()
+        .chain(std::iter::once(0))
+        .collect::<Vec<_>>();
+    let replaced = unsafe {
+        MoveFileExW(
+            source.as_ptr(),
+            target.as_ptr(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH,
+        )
+    };
+    if replaced == 0 {
+        return Err(std::io::Error::last_os_error().to_string());
+    }
     Ok(())
 }
 

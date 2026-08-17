@@ -134,7 +134,29 @@ token2api SHALL 在 active subscription 验证后按 `user + device + engine` �
 
 #### Scenario: CLI is missing
 - **WHEN** 所选 engine CLI 未安装或 verifier 失败
-- **THEN** 系统 SHALL 提供安装/重试恢复动作，不得错误展示订阅套餐或标记 ready
+- **THEN** 系统 SHALL 使用安装包内经过 build-time checksum verification 的对应 engine binary，bounded verifier 成功后继续 managed configuration，不得在用户电脑下载 CLI、要求用户打开引擎管理、复制命令或提升为管理员
+- **AND** bundled manifest、binary 或 verifier 不可用时 SHALL 停留在 preparing recovery，不得错误展示订阅套餐或标记 ready
+
+#### Scenario: CLI is already installed
+- **WHEN** 所选 engine 的 external CLI 版本等于或高于 bundled version 且通过 bounded verifier
+- **THEN** 系统 SHALL 静默使用 external CLI 并直接继续 managed preparation，不重装、降级或修改用户安装
+
+#### Scenario: External CLI is older than bundled engine
+- **WHEN** external CLI 通过识别但 semantic version 低于 bundled version
+- **THEN** 系统 SHALL 一次性提示用户选择“使用 Doge 新版”或“保留现有版本”，并显示两个版本号
+- **AND** 选择 Doge 新版 SHALL 只让 Doge managed session 使用 bundled binary，不得覆盖、升级或卸载 external CLI
+- **AND** 选择保留现有版本 SHALL 仅在 external CLI 通过当前 protocol verifier 时继续，否则 SHALL 要求使用 bundled binary
+- **AND** 决策 SHALL 按 `engine + external version + bundled version` 记忆；版本组合未变化时不重复提示
+
+#### Scenario: Bundled engine supply chain is prepared
+- **WHEN** 构建 macOS arm64/x64 或 Windows x64 安装包
+- **THEN** build SHALL 从 checked-in pinned manifest 获取官方 artifact，验证 SHA-256 后解包，只把当前 target 所需 binary/resources 纳入安装包
+- **AND** checksum mismatch、缺失 executable 或 version probe mismatch SHALL fail closed；macOS nested Mach-O SHALL 在 outer app 签名前完成签名
+
+#### Scenario: Windows configuration replaces an existing user target
+- **WHEN** 当前 Windows 用户的 `.doge` managed configuration file 已存在
+- **THEN** configuration transaction SHALL 在同一用户 profile 内完成 staged replacement 与 verification，并保留 recovery journal rollback truth
+- **AND** access denied、sharing violation、unsafe target 与 rollback incomplete SHALL 产生不同 stable recovery classification，不得统一丢失为不可诊断的 configuration failure
 
 #### Scenario: Configuration outcome is uncertain
 - **WHEN** server、vault 或 file side effect 可能已发生但本地 commit/response 丢失

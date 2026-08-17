@@ -121,6 +121,7 @@ if [[ "${skip_codesign}" == "1" ]]; then
   # intentionally distinct from Developer ID signing and is never notarized.
   codesign --force --sign - "${frameworks_dir}/libcrypto.3.dylib"
   codesign --force --sign - "${frameworks_dir}/libssl.3.dylib"
+  bash scripts/sign-bundled-engines-macos.sh "${app_path}" adhoc
   if [[ -f "${daemon_path}" ]]; then
     codesign --force --sign - "${codesign_entitlements[@]}" "${daemon_path}"
   fi
@@ -133,6 +134,7 @@ fi
 
 codesign --force --options runtime --timestamp --sign "${identity}" "${frameworks_dir}/libcrypto.3.dylib"
 codesign --force --options runtime --timestamp --sign "${identity}" "${frameworks_dir}/libssl.3.dylib"
+bash scripts/sign-bundled-engines-macos.sh "${app_path}" developer-id "${identity}"
 if [[ -f "${daemon_path}" ]]; then
   codesign --force --options runtime --timestamp --sign "${identity}" "${codesign_entitlements[@]}" "${daemon_path}"
 fi

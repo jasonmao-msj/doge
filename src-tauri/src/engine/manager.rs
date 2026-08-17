@@ -211,6 +211,43 @@ impl EngineManager {
             .await
     }
 
+    /// Verify/cache a provider-scoped binary without mutating the user's global engine config.
+    pub(crate) async fn refresh_engine_status_for_binary(
+        &self,
+        engine_type: EngineType,
+        binary: &str,
+    ) -> EngineStatus {
+        let mut status = match engine_type {
+            EngineType::Claude => detect_claude_status(Some(binary)).await,
+            EngineType::Codex => detect_codex_status(Some(binary)).await,
+            _ => disabled_engine_status(engine_type),
+        };
+        // The account toolchain owns this path. Existing renderer-facing engine status
+        // projections must not disclose an absolute packaged executable location.
+        status.bin_path = None;
+        self.engine_statuses
+            .write()
+            .await
+            .insert(engine_type, status.clone());
+        status
+    }
+
+    pub(crate) async fn set_claude_provider_config(
+        &self,
+        provider_profile_id: &str,
+        config: EngineConfig,
+    ) {
+        self.claude_manager
+            .set_provider_config(provider_profile_id, config)
+            .await;
+    }
+
+    pub(crate) async fn remove_claude_sessions_for_provider(&self, provider_profile_id: &str) {
+        self.claude_manager
+            .remove_sessions_for_provider_profile(provider_profile_id)
+            .await;
+    }
+
     pub async fn detect_engines_with_gates(&self, gemini_enabled: bool) -> Vec<EngineStatus> {
         let gemini_enabled = gemini_enabled && crate::engine_policy::GEMINI_RUNTIME_ENABLED;
         let (claude_bin, codex_bin, gemini_bin, opencode_bin, kimi_bin, grok_bin) = {
@@ -281,6 +318,8 @@ impl EngineManager {
     pub async fn set_engine_config(&self, engine_type: EngineType, config: EngineConfig) {
         let mut configs = self.engine_configs.write().await;
         configs.insert(engine_type, config.clone());
+        drop(configs);
+        self.engine_statuses.write().await.remove(&engine_type);
 
         // Update Claude manager if it's Claude config
         if engine_type == EngineType::Claude {

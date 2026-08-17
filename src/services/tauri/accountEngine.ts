@@ -39,3 +39,10 @@ export function prepareAccountEngineV1(
 ): Promise<unknown> {
   return invoke("account_engine_v1_prepare", { engineId, operationId });
 }
+
+export function resolveAccountEngineToolchainV1(
+  engineId: string,
+  choice: "bundled" | "external" | null,
+): Promise<unknown> {
+  return invoke("account_engine_v1_toolchain", { engineId, choice });
+}

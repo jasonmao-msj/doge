@@ -22,6 +22,9 @@
 - [x] 4.1 [P0] 将 Codex recipe 收敛为 entitlement 后自动 prepare，并保留 journal、semantic verifier 与 launch-time secret injection
 - [x] 4.2 [P0] 新增 Claude Code managed provider sentinel、vault launch injection 与 configuration verifier，按 Engine/Provider/Model/Session identity matrix 复核
 - [x] 4.3 [P0] 实现最近 engine restore 与显式 switch，确保不同账号/engine 不复用 credential 或 provider binding
+- [x] 4.4 [P0] 实现 pinned 官方 Codex/Claude build-time bundle：target-aware fetch/cache、SHA-256、safe extract、runtime manifest、Tauri resources 与 macOS nested signing
+- [x] 4.5 [P0] 接入 AccountGate toolchain resolver：无 external 自动 bundled；external 同版/更高静默复用；external 较旧一次二选一且 bundled 不覆盖用户安装
+- [x] 4.6 [P0] 修复 Windows account configuration existing-target replacement与 stable error classification，明确 NSIS `currentUser`，覆盖普通用户 profile/ACL regression
 
 ## 5. Mandatory account UI
 
@@ -46,10 +49,13 @@
 - [x] 6.11 [P0] 将主路径 user-facing engine label/Settings 入口统一为简洁引擎命名与“引擎管理”，并把新建 QR checkout 标题改为 `Doge + 当前选中的 server plan name`；恢复旧 checkout 无本地套餐上下文时安全回退通用标题
 - [x] 6.12 [P0] 将 external engine probe 改为 4 秒 non-interactive、timeout 后 process-tree cleanup；接入 Tauri single-instance 并唤醒已有 main window
 - [ ] 6.13 [P0] focused frontend/Rust tests、typecheck、OpenSpec strict validate 与 macOS arm64 本地包已完成；Windows x64 本地入口已验证被 host gate 拒绝，等待真实 Windows host（本轮按用户要求不使用 GitHub CI）
-- [ ] 6.14 [HOLD] 在 token2api 将 managed API Key display name 收敛为 `Doge + engine + plan`；本轮仅保留独立 worktree，不 commit、push 或 deploy，等待后续单独发布窗口
+- [ ] 6.14 [P0] 在 token2api 最新主分支将 managed API Key display name 收敛为 `Doge + engine + plan`；legacy key 仅原地改名，不轮换 secret/重复建 key
 - [x] 6.15 [P0] 将 Account Center 收敛为“我的引擎”，让 main engine picker 以 target intent 直达对应 entitlement/plans；App 内 flow 保持 AppShell mounted，并提供 cancel 原路返回
 - [x] 6.16 [P0] 覆盖 Codex ready → Claude subscription → paid → prepare/activate → Claude 新会话的 focused regression，完成本地 gates 与 macOS arm64 体验包
 - [x] 6.17 [P0] 修复 subscription quota 数据源，按已订阅 engine 展示日/周/月窗口与最近一年 GitHub-style heatmap；hover/focus 按需读取单日 model breakdown，完成 cross-layer focused tests 与本地 gates
 - [x] 6.18 [P0] 修复 heatmap 空 cell 透明、month label 重复、默认未定位最近日期与 system-locale 混排；删除“少/多”图例，完成 focused tests 并生成 macOS arm64 本地体验包
 - [x] 6.19 [P0] 按确认稿收敛 Account Center Header、icon-only refresh/logout、安全页与多订阅 master/detail；一行最多 3 张 card，补齐 selection/refresh/tooltip/responsive focused tests 与本地 gates
 - [x] 6.20 [P0] 收敛 macOS cold restore 的 Keychain access budget：bootstrap 只评估一次 vault status、refresh credential 只读取一次并复用 rollback snapshot；补齐计数 vault regression 与本地 Rust gates
+- [ ] 6.21 [P0] token2api provider-owned QR/payment page 标题使用 `Doge + authoritative plan name`，补 checkout/渲染 regression，不修改生产套餐、价格或支付状态机
+- [ ] 6.22 [P0] 在独立 worktree 完成 token2api focused/full gates、commit/push/PR，并按 AWS runbook server-first 发布、健康检查与 rollback evidence
+- [ ] 6.23 [P0] 完成 Doge bundled-engine focused Vitest/Rust/build-script tests、standard-user Windows matrix、macOS smoke、typecheck/lint/OpenSpec strict validate与跨层检查

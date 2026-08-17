@@ -9,6 +9,7 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 - 选定引擎后先读取 authoritative entitlement：有效订阅直接进入自动准备；无有效订阅只展示 token2api 当前对该引擎 `for_sale=true`、用户可购买的 subscription plans。
 - Doge 不提供 balance recharge、pay-as-you-go、按量付费或其二级入口；套餐为空时显示无套餐状态，不能降级到余额充值。
 - 购买成功后 token2api 按 `user + device + engine` 幂等创建/恢复 managed API key，由 Doge Native Broker 接收 one-time secret、写入 OS vault 并完成 engine 配置；renderer 永远不接收 raw secret。
+- Doge 的 macOS/Windows 安装包必须内置经过 checksum 校验的官方 Codex 与 Claude Code engine。选中 engine 后优先比较用户已有版本与内置版本，再以选定 binary 继续配置；用户电脑不得在首次使用时联网下载 CLI，也不得要求理解 npm、PATH、管理员权限或手工命令。
 - 首次成功后记住最近使用的引擎；后续启动在登录态、订阅和本机 managed binding 都有效时自动恢复，用户只在切换或失效恢复时再次选择。
 
 ## 非目标
@@ -26,13 +27,14 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 - 新增 subscription-only engine plan catalog；Doge 只投影 token2api authenticated API 返回的当前可售套餐，不维护本地套餐、价格或排序事实源。
 - 新增 Desktop subscription checkout projection 与 bounded native order reconciliation；支付终态通过 wakeup + authoritative read 驱动 UI，不在 React root 建立秒级 polling。
 - 新增 managed engine access contract：subscription verified 后幂等确保 engine-scoped API key、one-time native handoff、OS vault binding、Codex/Claude Code provider configuration 与启动恢复。
+- 将 build-time engine bundling 与 account gate 串成闭环：`build fetch/checksum/sign → runtime detect/compare/select → verify → managed prepare → activate`。无外部安装时自动使用内置版本；外部版本相同或更高时优先复用；外部版本较旧时只提示一次“使用 Doge 新版 / 保留现有版本”，且使用内置新版不得覆盖或卸载用户全局安装。
 - Settings Account 继续作为登录后的固定账号管理入口；启动门禁不复用 Settings 巨型状态，也不把 account state 写入 `AppSettings`。
 - 将登录后的 engine acquisition 收敛为同一条目标明确的闭环：Account Center 使用“我的引擎”管理既有权益，composer engine picker 对未订阅目标展示“订阅后使用”；点击 Claude 等目标后直接读取该 engine 的套餐，不要求用户先进入通用“切换引擎”页面。
 - App 内增购 flow 以 overlay 形式覆盖已挂载 AppShell，cancel/back 必须原路返回且保留当前 workspace/conversation state；支付成功后自动 ensure credential、写 vault、配置并激活目标 engine，再落到该 engine 的新会话入口，同时保留原 engine 订阅。
 - 原型确认的 minimal UI 成为验收基线：每屏一个主决策，说明进入自适应 `?` tooltip，产品 UI 不出现 API Key、文件 diff、技术错误码或 scenario selector。
 - 收敛 release-facing UI：composer 不再展示每日古诗轮换；面向小白的 engine picker 与 Settings 固定入口统一使用“Claude / Codex / Grok / Kimi / OpenCode”和“引擎管理”，不暴露 `CLI` 术语；二维码支付页标题显示 `Doge + 当前订阅套餐名称`。
 - 加固 Windows startup：外部 engine version/help probe 必须 non-interactive、有 3–5 秒 deadline，并在 timeout 后终止整个进程树；Doge 使用原生 single-instance 唤醒已有窗口，异常第三方 wrapper 与重复点击都不得阻塞主界面。
-- managed API Key 的 server-owned display name 后续改为 `Doge {无 CLI 后缀的引擎名} {订阅套餐名}`；本轮按发布边界 HOLD，不修改或发布 token2api。
+- token2api 的 managed API Key server-owned display name 改为 `Doge {无 CLI 后缀的引擎名} {订阅套餐名}`；二维码支付页标题改为 `Doge {订阅套餐名}`。两项均只使用 authoritative plan name，随本次低流量发布窗口部署，不夹带其他生产行为变更。
 - 修正 Account Center 额度读取的数据归属：Doge 不再用 account-level `platform-quotas` 冒充 subscription quota，而是以 Desktop engine catalog 的 `subscription_id/group_id` 关联现有 subscription progress 与 usage dashboard API；额度页按已订阅 engine 展示日/周/月总额、已用、剩余、重置时间及最近一年日历热力图，并在用户 hover/focus 某天时按需读取该 engine 当天的 model breakdown。
 - 按已确认 UI 收敛 Account Center：Header 保留 display name 与 safe account identity，退出登录与额度刷新使用 icon-only action；额度读取时间移入 Header。额度/安全 Tab 不重复渲染同名 section heading；多订阅额度以 selectable cards 呈现，一行最多 3 张并自适应换行，所选 card 独占下方 quota windows、heatmap 与 model details。
 - 收敛 macOS cold restore 的 OS vault access budget：同一 `gateway.bootstrap` 只检查一次 vault status，refresh credential 只读取一次并复用为 rotation rollback snapshot，避免重复 Keychain authorization；rotated refresh 仍按 durable session contract 写回。
@@ -75,13 +77,14 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 - UI 与 source scan 均不存在 balance recharge、pay-as-you-go、按量付费及相关 fallback。
 - 支付在 system browser 完成；Doge 自动获得 terminal order/subscription 状态，不要求“我已支付”产品按钮，React 无秒级 polling。
 - 支付成功或已有权益时，managed access ensure 同一 `user/device/engine` 并发与重试只创建一个 active binding；raw key 只在 token2api → Rust → OS vault 路径存在。
-- Codex 与 Claude Code 各完成一条真实配置/启动 E2E；用户不选择 API Key、不查看文件 diff、不确认技术配置。
+- Codex 与 Claude Code 各完成一条“干净普通用户环境、无外部 CLI → 使用安装包内置 engine → 自动配置 → 启动”的真实 E2E；用户不选择 API Key、不查看文件 diff、不确认技术配置，也不提升为管理员或依赖运行时下载。
 - vault unavailable、套餐为空、支付取消/超时、subscription 失效、managed access 失败、config 失败均停在可恢复 gate，不能进入假就绪 AppShell。
 - 最近引擎可恢复；主动切换重新检查权益并隔离 credential/config binding，不跨账号或跨引擎复用。
 - 已订阅 Codex 的用户从主 engine picker 选择未订阅 Claude 时，系统直接展示 Claude 的 authoritative plans；用户可取消返回原 Codex 上下文，支付成功后无需再次选择或确认即可进入新的 Claude 会话，且 Codex 权益保持不变。
 - 每日古诗数据、轮换、dismiss persistence、专用样式和测试均已删除，composer header 仍保留可承载未来公告的通用结构。
 - 所有主路径 engine label 与管理入口不出现 `CLI`；二维码支付标题准确包含当前选中套餐的 server-owned `name`。
-- 后续上游 change 验收：新建及恢复的 managed API Key 名称准确包含 engine 与 authoritative plan name；旧的 `Doge Codex managed key` 在下一次 ensure 时只原地改名，不得轮换 secret 或重复建 Key。本轮 Doge release 不包含该上游 change。
+- 上游 change 验收：新建及恢复的 managed API Key 名称准确包含 engine 与 authoritative plan name；旧的 `Doge Codex managed key` 在下一次 ensure 时只原地改名，不得轮换 secret 或重复建 Key；新建二维码支付页面标题准确包含当前 authoritative plan name。
+- macOS/Windows 普通用户在未安装目标 CLI 时，选择已订阅 engine SHALL 自动使用包内版本并继续准备；Windows 安装与配置只写当前用户 profile/app-owned 目录，NSIS 保持 per-user，管理员启动不得成为成功条件。
 - Windows 上模拟外部 engine command 长时间不退出时，probe 在 deadline 内返回 timeout、终止 command tree 且主界面保持可用；连续启动只保留一个实例并唤醒已有窗口。
 - 已订阅 engine 的额度页必须展示 subscription-owned daily/weekly/monthly windows，且单个 engine 的 analytics failure 不得使其他 engine 或 quota summary 消失；最近一年日历按 daily actual cost 强度分级，hover/focus 可看到当天 requests/tokens/cost 与按需缓存的 model breakdown，关闭页面后不得继续 polling。
 - 多订阅额度页在宽屏每行最多 3 张等宽 card，1/2/3 个订阅分别占满可用行宽，窄屏自动降为 2/1 列；点击或键盘激活 card 后只更新下方 selected-engine detail，不触发新的 usage summary read。Header refresh 必须有 pending feedback，logout/refresh 均可通过 hover/focus tooltip 理解。
@@ -93,5 +96,5 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 
 - doge frontend：`src/bootstrapApp.tsx`、router/AppShell composition、`src/features/account/**`、engine selection/provider projection、i18n 与主题样式。
 - doge native：`src-tauri/src/account/**`、`AppState`、command/event registry、OS vault、payment reconciliation、Codex/Claude provider configuration。
-- token2api：Desktop authority descriptor、authenticated plan projection、subscription checkout/status receipt、protected managed engine access service/handler/routes 与 idempotency/security tests。
+- token2api：Desktop authority descriptor、authenticated plan projection、subscription checkout/status receipt、protected managed engine access service/handler/routes、支付标题与 managed key naming，以及 idempotency/security tests。
 - Release：macOS/Windows 都需要验证 OS credential vault、system-browser checkout、恢复与正式签名边界；无法取得正式签名身份时只能交付明确标注的内部测试包，不能误称正式发行版。

@@ -24,6 +24,7 @@ mod persistence_schema;
 mod persistence_tests;
 pub(crate) mod runtime;
 pub(crate) mod runtime_ipc;
+mod toolchain;
 mod vault;
 
 pub(crate) use runtime::AccountRuntime;

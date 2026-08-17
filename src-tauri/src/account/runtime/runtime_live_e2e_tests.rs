@@ -36,6 +36,7 @@ fn live_runtime(data_dir: &Path, origin: String) -> AccountRuntime {
         process_generation: random_process_generation(),
         event_sequence: Arc::new(AtomicU64::new(0)),
         desktop_continuations: DesktopContinuationBroker::new(),
+        managed_engine_binaries: Mutex::new(HashMap::new()),
     }
 }
 

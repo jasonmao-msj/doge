@@ -12,6 +12,7 @@ pub(crate) fn invoke_handler(
         crate::account::runtime_ipc::account_engine_v1_abandon_checkout,
         crate::account::runtime_ipc::account_engine_v1_readiness,
         crate::account::runtime_ipc::account_engine_v1_prepare,
+        crate::account::runtime_ipc::account_engine_v1_toolchain,
         // Settings
         crate::settings::get_app_settings,
         crate::settings::take_settings_recovery_notice,

@@ -13,6 +13,8 @@ import {
   subscribeAccountEngineReadyV1,
 } from "../runtime/engineSwitchSignal";
 import { AccountAppGate } from "./AccountAppGate";
+import { resolveAccountEngineToolchainV1 } from "../../../services/accountEngineCommands";
+import { resetClientStorageForTests } from "../../../services/clientStorage";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ i18n: { resolvedLanguage: "zh-CN" } }),
@@ -20,13 +22,69 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: vi.fn(async () => undefined) }));
 
+vi.mock("../../../services/accountEngineCommands", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../../../services/accountEngineCommands")>(),
+  resolveAccountEngineToolchainV1: vi.fn(async (engineId: "codex" | "claude-code") => ({
+    ok: true,
+    value: {
+      engineId,
+      status: "ready",
+      bundledVersion: engineId === "codex" ? "0.147.0" : "2.1.233",
+      externalVersion: null,
+      selectedSource: "bundled",
+    },
+  })),
+}));
+
 beforeEach(() => {
   localStorage.clear();
+  resetClientStorageForTests();
   clearManagedEngineEntitlementsV1();
+  vi.mocked(resolveAccountEngineToolchainV1).mockImplementation(async (engineId) => ({
+    ok: true,
+    value: {
+      engineId,
+      status: "ready",
+      bundledVersion: engineId === "codex" ? "0.147.0" : "2.1.233",
+      externalVersion: null,
+      selectedSource: "bundled",
+    },
+  }));
 });
 afterEach(() => vi.useRealTimers());
 
 describe("AccountAppGate", () => {
+  it("asks once before using a bundled version newer than the user's engine", async () => {
+    const client = engineClient({ codexEntitled: true });
+    vi.mocked(resolveAccountEngineToolchainV1).mockImplementation(async (engineId, choice) => ({
+      ok: true,
+      value: choice === null
+        ? {
+            engineId,
+            status: "choiceRequired",
+            bundledVersion: "0.147.0",
+            externalVersion: "0.146.0",
+            selectedSource: null,
+          }
+        : {
+            engineId,
+            status: "ready",
+            bundledVersion: "0.147.0",
+            externalVersion: "0.146.0",
+            selectedSource: choice,
+          },
+    }));
+    render(<AccountAppGate gateway={authenticatedGateway()} engineClient={client} engineActivator={async () => undefined} readyContent={<div>主应用已挂载</div>} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Codex/ }));
+    expect(await screen.findByRole("heading", { name: "使用哪个 Codex 版本？" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "使用 Doge 新版 0.147.0" }));
+
+    expect(await screen.findByText("主应用已挂载")).toBeTruthy();
+    expect(resolveAccountEngineToolchainV1).toHaveBeenLastCalledWith("codex", "bundled");
+    expect(client.prepare).toHaveBeenCalledWith("codex");
+  });
+
   it("does not mount the app before an entitled engine is ready", async () => {
     const client = engineClient({ codexEntitled: true });
     render(<AccountAppGate gateway={authenticatedGateway()} engineClient={client} engineActivator={async () => undefined} readyContent={<div>主应用已挂载</div>} />);
@@ -58,6 +116,7 @@ describe("AccountAppGate", () => {
         checkoutId: 77,
         status: "pending",
         expiresAt: "2030-01-01T00:00:00Z",
+        planName: null,
         action: { kind: "show_qr", url: null, data: "alipay://payment/opaque" },
       },
     });
@@ -171,6 +230,7 @@ describe("AccountAppGate", () => {
             checkoutId: 91,
             status: "pending",
             expiresAt: "2030-01-01T00:00:00Z",
+            planName: null,
             action: { kind: "open_url", url: "https://token-matrix.com/pay/91", data: null },
           },
         },
@@ -186,7 +246,7 @@ describe("AccountAppGate", () => {
     const client = engineClient({ codexEntitled: false });
     vi.mocked(client.readCheckout).mockResolvedValue({
       ok: true,
-      value: { checkoutId: 77, status: "paid", expiresAt: "2030-01-01T00:00:00Z", action: null },
+      value: { checkoutId: 77, status: "paid", expiresAt: "2030-01-01T00:00:00Z", planName: null, action: null },
     });
     render(<AccountAppGate gateway={authenticatedGateway()} engineClient={client} engineActivator={async () => undefined} readyContent={<div>主应用已挂载</div>} />);
     fireEvent.click(await screen.findByRole("button", { name: /Codex/ }));
@@ -242,6 +302,7 @@ describe("AccountAppGate", () => {
         checkoutId: 77,
         status: "paid",
         expiresAt: "2030-01-01T00:00:00Z",
+        planName: null,
         action: null,
       },
     });
@@ -292,6 +353,7 @@ describe("AccountAppGate", () => {
           checkoutId: 88,
           status: "pending",
           expiresAt: "2030-01-01T00:00:00Z",
+          planName: null,
           action: { kind: "open_url", url: "https://token-matrix.com/pay/88", data: null },
         },
       },
@@ -324,6 +386,7 @@ describe("AccountAppGate", () => {
           checkoutId: 88,
           status: "pending",
           expiresAt: "2030-01-01T00:00:00Z",
+          planName: null,
           action: null,
         },
       },
@@ -355,6 +418,7 @@ describe("AccountAppGate", () => {
           checkoutId: 88,
           status: "pending",
           expiresAt: "2030-01-01T00:00:00Z",
+          planName: null,
           action: null,
         },
       },
@@ -523,12 +587,13 @@ function engineClient({ codexEntitled }: { readonly codexEntitled: boolean }): A
         checkoutId: 77,
         status: "pending" as const,
         expiresAt: "2030-01-01T00:00:00Z",
+        planName: null,
         action: { kind: "open_url" as const, url: "https://token-matrix.com/pay/77", data: null },
       },
     })),
     readCheckout: vi.fn(async () => ({
       ok: true as const,
-      value: { checkoutId: 77, status: "pending" as const, expiresAt: "2030-01-01T00:00:00Z", action: null },
+      value: { checkoutId: 77, status: "pending" as const, expiresAt: "2030-01-01T00:00:00Z", planName: null, action: null },
     })),
     resumeCheckout: vi.fn(async () => ({ ok: true as const, value: null })),
     abandonCheckout: vi.fn(async () => ({ ok: true as const, value: null })),

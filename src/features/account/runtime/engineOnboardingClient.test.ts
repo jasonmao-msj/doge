@@ -156,6 +156,7 @@ describe("account engine onboarding client", () => {
         checkoutId: 9,
         status: "pending",
         expiresAt: "2030-01-01T00:00:00Z",
+        planName: null,
         action: {
           kind: "open_url",
           url: "https://pay.example.com/orders/9",
