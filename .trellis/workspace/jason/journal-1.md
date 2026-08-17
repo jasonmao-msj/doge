@@ -842,3 +842,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 26: 内置订阅引擎与版本选择
+
+**Date**: 2026-08-17
+**Task**: 内置订阅引擎与版本选择
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+将 Codex 0.147.0 与 Claude Code 2.1.233 按平台打包进安装器；账号启动按本机版本静默复用或提示选择，不覆盖用户安装；隔离 account provider runtime binary，修复 Windows current-user 配置替换与稳定错误；完成前后端 focused tests、Rust account suite、macOS arm64 DMG 构建和签名/架构校验。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `40f9ee78e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
