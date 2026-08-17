@@ -60,6 +60,12 @@ export function runtimeArchitecture(target) {
   throw new Error(`Unsupported target architecture: ${target}`);
 }
 
+export async function createOutputStage(outputDir) {
+  const outputParent = dirname(outputDir);
+  mkdirSync(outputParent, { recursive: true });
+  return mkdtemp(join(outputParent, ".current-stage-"));
+}
+
 export function validateArchiveEntries(entries) {
   for (const rawEntry of entries) {
     const entry = rawEntry.trim().replaceAll("\\", "/");
@@ -165,7 +171,7 @@ async function main() {
   if (source.schemaVersion !== 1 || !source.engines) throw new Error("Unsupported bundled engine source manifest.");
   const requestedTarget = resolveRequestedTarget();
   const variants = targetVariants(requestedTarget);
-  const stageRoot = await mkdtemp(join(tmpdir(), "doge-bundled-engines-"));
+  const stageRoot = await createOutputStage(OUTPUT_DIR);
   const runtime = { schemaVersion: 1, target: requestedTarget, architectures: {} };
   try {
     for (const target of variants) {
@@ -186,7 +192,6 @@ async function main() {
     }
     writeFileSync(join(stageRoot, "manifest.json"), `${JSON.stringify(runtime, null, 2)}\n`);
     rmSync(OUTPUT_DIR, { recursive: true, force: true });
-    mkdirSync(dirname(OUTPUT_DIR), { recursive: true });
     await rename(stageRoot, OUTPUT_DIR);
     process.stdout.write(`Bundled engines prepared for ${requestedTarget}: ${relative(ROOT, OUTPUT_DIR)}\n`);
   } catch (error) {

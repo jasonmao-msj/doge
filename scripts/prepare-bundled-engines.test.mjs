@@ -1,11 +1,27 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join } from "node:path";
 import {
+  createOutputStage,
   resolveRequestedTarget,
   runtimeArchitecture,
   targetVariants,
   validateArchiveEntries,
 } from "./prepare-bundled-engines.mjs";
+
+test("creates the final stage beside the output for atomic cross-platform rename", async () => {
+  const root = mkdtempSync(join(tmpdir(), "doge-bundled-output-test-"));
+  try {
+    const output = join(root, "resources", "bundled-engines", "current");
+    const stage = await createOutputStage(output);
+    assert.equal(dirname(stage), dirname(output));
+    assert.match(basename(stage), /^\.current-stage-/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("normalizes build-script aliases and explicit targets", () => {
   assert.equal(resolveRequestedTarget({}, ["mac-arm64"]), "aarch64-apple-darwin");

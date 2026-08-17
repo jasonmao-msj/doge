@@ -89,7 +89,7 @@ Bundled engine preparation 与 credential/config transaction 分域，但由同�
 
 运行时不下载、不复制到 system location，也不修改用户全局 engine：无 external binary 时直接选择 bundled；external version 等于或高于 bundled 时静默选择 external；external version 低于 bundled 时展示一次二选一。选择 bundled 只改变 Doge managed session 的 launch path，不覆盖 external binary；选择 external 只有通过当前 protocol verifier 才能继续，否则必须回到 bundled。选择偏好按 `engine + external version + bundled version` 记忆，任一版本变化后重新决策。
 
-Codex bundle 保留 package 内的 helper/resources，并为 launch `PATH` 加入其 sibling resource directory；Claude 使用官方 standalone executable。Renderer 只接收 engine、版本、source 和 closed decision，不接收 absolute path、command preview、stdout/stderr 或 archive URL。构建脚本和 checked-in manifest 是版本与 checksum 的事实源，下载缓存/generated resources 不入库。
+Codex bundle 保留 package 内的 helper/resources，并为 launch `PATH` 加入其 sibling resource directory；Claude 使用官方 standalone executable。Renderer 只接收 engine、版本、source 和 closed decision，不接收 absolute path、command preview、stdout/stderr 或 archive URL。构建脚本和 checked-in manifest 是版本与 checksum 的事实源，下载缓存/generated resources 不入库。最终 generated resource stage 必须创建在 output sibling directory，再用 same-volume rename commit；不得依赖 OS temp volume 与 workspace 在同一文件系统。
 
 Windows configuration commit 必须显式支持替换当前用户已有的 `.doge` target，并由现有 recovery journal 保持 rollback truth；普通用户 access denied、file sharing violation、unsafe parent 与 rollback incomplete 必须分开分类，不能全部折叠为 `configurationRejected`。NSIS 明确使用 `currentUser`，管理员启动不属于恢复路径。
 

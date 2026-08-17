@@ -261,6 +261,7 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 ### 3. Contracts
 
 - official artifact 只在 build 期下载；用户运行期零 engine download/install side effect。checksum/version/expected executable 任一不匹配即 build fail closed。
+- 最终 build stage 必须位于 generated output 同一 parent volume，再用 atomic rename commit；Windows runner 常见 `TEMP=C:`、workspace=`D:`，禁止从 OS temp 直接 rename 到 workspace。
 - 无 external 时选 bundled；external version `>= bundled` 时静默选 external；external `< bundled` 时要求一次 closed choice。bundled choice 不得覆盖/卸载 external；external choice必须通过 protocol verifier。
 - renderer 不接收 executable absolute path、archive URL、command preview、stdout/stderr；只接收 closed status/source/version。版本选择 generation 失效后不得 prepare/activate stale target。
 - Codex bundled sibling resources/PATH 必须随 launch 保留；Claude 使用 standalone executable。managed session 使用 resolver path，manual/local engine path 保持原行为。
@@ -279,6 +280,7 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 | bundled Claude selected、local Claude 已配置 | account provider 使用 bundled；local/manual provider 继续使用用户 path |
 | remembered 版本组合不变 | 不重复提示 |
 | bundled checksum/version/文件不符 | build fail closed，不产出安装包 |
+| Windows temp/workspace 跨卷 | stage 位于 output sibling，same-volume rename 成功且不残留 partial output |
 | Windows 已有 `.doge/config.json` | 普通用户 staged replacement成功；不需管理员 |
 | Windows target 被锁/ACL拒绝 | typed recoverable failure；保留 journal，不假 ready |
 | install 成功但 flow generation 已失效 | 不 prepare、不 activate stale engine |
@@ -288,7 +290,7 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 - React orchestration：missing external auto bundled、same/newer external silent reuse、older choice/remember、verifier failure、stale generation/cancel。
 - Rust resolver：manifest/target/arch validation、semver compare、closed choice、selected managed launch path、Codex sibling PATH、absolute path non-disclosure。
 - Rust Claude manager/daemon：provider override 与 local default 隔离；只清 account-provider sessions；daemon send/compact 均拒绝 `doge-token-matrix`。
-- Build script：pinned URL/checksum、cache corruption recovery、archive traversal/expected executable、macOS nested signing order、Windows resource inclusion。
+- Build script：pinned URL/checksum、cache corruption recovery、archive traversal/expected executable、same-volume output stage、macOS nested signing order、Windows resource inclusion。
 - Rust configuration：Windows replacement helper contract、write/verify/rollback、error classifier；Windows CI 使用 standard-user account执行 focused test。
 - Packaging：tauri Windows config/produced installer证明 `currentUser`，普通双击安装/启动后完成 Codex/Claude prepare；管理员运行不作为验收证据。
 
