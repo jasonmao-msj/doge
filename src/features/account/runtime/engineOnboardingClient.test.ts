@@ -86,6 +86,26 @@ describe("account engine onboarding client", () => {
     });
   });
 
+  it("uses novice-facing engine names instead of upstream runtime labels", async () => {
+    tauri.catalog.mockResolvedValue({
+      ok: true,
+      value: {
+        engines: [
+          { id: "codex", display_name: "Codex CLI", entitlement: { status: "active" } },
+          { id: "claude-code", display_name: "Claude Code", entitlement: { status: "none" } },
+        ],
+      },
+    });
+
+    await expect(createAccountEngineOnboardingClientV1().catalog()).resolves.toEqual({
+      ok: true,
+      value: [
+        { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+        { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+      ],
+    });
+  });
+
   it("accepts nullable optional fields emitted by the native wire contract", async () => {
     tauri.catalog.mockResolvedValue({
       ok: true,

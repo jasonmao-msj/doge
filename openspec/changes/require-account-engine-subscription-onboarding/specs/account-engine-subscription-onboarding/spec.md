@@ -26,6 +26,15 @@
 - **WHEN** ready 用户从 Settings 或 account menu 主动切换 engine
 - **THEN** 系统 SHALL 重新验证目标 engine 的 entitlement 与 binding，且不得复用其他 engine 或其他账号的 credential
 
+#### Scenario: User adds a second engine from the main picker
+- **WHEN** 已订阅 Codex 的 ready 用户在 main engine picker 选择未订阅的 Claude
+- **THEN** 系统 SHALL 直接读取并展示 Claude 的 authoritative subscription plans，不得要求用户再经过通用 engine selector 或理解 API Key
+- **AND** Codex entitlement 与现有 Codex conversation SHALL 保持不变
+
+#### Scenario: Target engine is already entitled
+- **WHEN** in-App intent 指向已有 active entitlement 的 managed engine
+- **THEN** 系统 SHALL 跳过 plan/checkout，重新 authoritative prepare 目标 engine 后完成切换
+
 ### Requirement: Subscription plan catalog SHALL be server authoritative and subscription-only
 系统 MUST 只展示 token2api 对当前 engine 返回的、当前用户可购买且 `for_sale=true` 的 subscription plans。Doge MUST NOT 提供 balance recharge、pay-as-you-go、按量付费或相应 fallback。
 
@@ -60,6 +69,11 @@
 - **WHEN** provider webhook 与 subscription fulfillment 均已完成
 - **THEN** Native reconciliation SHALL 产生 paid terminal receipt 并自动进入 managed engine preparing
 
+#### Scenario: Second engine payment completes
+- **WHEN** 用户在已进入 App 的增购 flow 中完成目标 engine 支付
+- **THEN** 系统 SHALL 自动 ensure/reuse managed credential、写入 OS vault、配置并激活目标 engine，随后打开该 engine 的空白新会话入口
+- **AND** 用户不得再次选择 API Key、点击配置确认或手工刷新支付状态
+
 #### Scenario: Payment is cancelled or expires
 - **WHEN** checkout 被取消或超过 server expiry
 - **THEN** 系统 SHALL 停止 reconciliation，展示重试/重新选套餐动作，且不得误建 managed credential
@@ -70,7 +84,8 @@
 
 #### Scenario: Renderer reconciliation remains outside the AppShell root
 - **WHEN** checkout 处于 pending 或 processing
-- **THEN** React SHALL 只在 pre-AppShell AccountGate 内执行有 absolute expiry 的 bounded authoritative read，不得在 AppShell/root hook 中建立秒级 polling
+- **THEN** React SHALL 只在 AccountGate-owned surface 内执行有 absolute expiry 的 bounded authoritative read，不得在 AppShell/root hook 中建立秒级 polling
+- **AND** 登录后的第二引擎增购 MAY 保持 AppShell mounted 在 overlay 之后，但 checkout tick 不得成为 AppShell root state update
 
 #### Scenario: User leaves a recovered checkout
 - **WHEN** App 恢复 pending/processing checkout 并展示等待支付页面
@@ -126,6 +141,18 @@ account gate SHALL 每屏只呈现一个主要决策；说明性内容 SHALL 收
 #### Scenario: Primary path is rendered
 - **WHEN** 用户处于登录、选 engine、选套餐、等待支付或 preparing 任一状态
 - **THEN** 页面 SHALL 只突出当前步骤的 primary action，不展示 scenario selector、技术状态表或配置说明段落
+
+#### Scenario: Authenticated engine management is rendered
+- **WHEN** 用户在 Settings Account 查看 managed engine 入口
+- **THEN** 页面 SHALL 使用“我的引擎”表达已拥有与可增加的 engine，不得使用会暗示替换现有权益的“切换引擎”作为唯一入口文案
+
+#### Scenario: In-App acquisition is cancelled
+- **WHEN** ready 用户从 Account Center 或 main engine picker 打开增购 flow 后选择 cancel/back
+- **THEN** 系统 SHALL 关闭 overlay 并返回原 workspace/conversation/draft，上层 AppShell 不得因 flow 打开或关闭而 unmount
+
+#### Scenario: In-App acquisition succeeds
+- **WHEN** 目标 engine prepare 与 activation committed
+- **THEN** 系统 SHALL 关闭 overlay、切换 active engine 并打开目标 engine 的空白新会话入口，不得原地改写当前既有 thread 的 engine identity
 
 #### Scenario: User asks for context
 - **WHEN** 用户 hover、focus 或激活 `?` help icon

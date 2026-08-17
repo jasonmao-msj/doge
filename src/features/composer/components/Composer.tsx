@@ -97,6 +97,12 @@ import {
   collectRunStatusSubagentSourceItems,
 } from "./run-status";
 import { isEngineCapabilityAvailable } from "../../engine/engineCapabilityMatrix";
+import { isAccountConvenienceV1Enabled } from "../../account/runtime/featureFlag";
+import {
+  managedEngineIdForRuntimeV1,
+  readManagedEngineEntitlementsV1,
+} from "../../account/runtime/engineEntitlementStore";
+import { requestAccountEngineSwitchV1 } from "../../account/runtime/engineSwitchSignal";
 import { overlaySessionFileChangesWithGitStats } from "../../messages/utils/turnFileChanges";
 import {
   ingestFileEditsFromConversationItems,
@@ -1239,6 +1245,22 @@ function ComposerImpl({
     },
     [activeThreadId, activeWorkspaceId, isSharedSessionResolved],
   );
+  const requestManagedEngineAccess = useCallback((engine: EngineType) => {
+    if (!isAccountConvenienceV1Enabled() || engine === selectedEngine) {
+      return false;
+    }
+    const targetEngineId = managedEngineIdForRuntimeV1(engine);
+    if (targetEngineId === null) return false;
+    if (readManagedEngineEntitlementsV1()[targetEngineId] === "unknown") {
+      return false;
+    }
+    requestAccountEngineSwitchV1({
+      source: "enginePicker",
+      targetEngineId,
+      openNewConversation: true,
+    });
+    return true;
+  }, [selectedEngine]);
   /**
    * Native 会话也走首页同款 Atomic 双栏 picker（含「本地配置」渠道）。
    * 同 engine+profile 只切模型；跨 managed profile 走续接；其余走 engine/model 切换。
@@ -1279,6 +1301,9 @@ function ComposerImpl({
         }
         return;
       }
+      if (requestManagedEngineAccess(target.engine)) {
+        return;
+      }
       // 跨渠道时清掉本会话点选覆盖，避免沿用旧模型 id
       setNativeAtomicSelection(null);
       // Claude/Codex 切到 managed 渠道 → Native Provider Continuation
@@ -1311,6 +1336,7 @@ function ComposerImpl({
       onSelectEngine,
       onSelectModel,
       providerProfileId,
+      requestManagedEngineAccess,
       selectedEffort,
       selectedEngine,
     ],
@@ -1318,6 +1344,9 @@ function ComposerImpl({
   const handleCreationTargetChange = useCallback(
     (target: ExecutionTarget) => {
       if (!createSessionTargetPicker || !isResolvedExecutionTarget(target)) {
+        return;
+      }
+      if (requestManagedEngineAccess(target.engine)) {
         return;
       }
       // 首页 engine 选择必须同步全局 activeEngine + client store，否则重启后首页
@@ -1328,7 +1357,7 @@ function ComposerImpl({
       }
       setSelectedCreationTarget(target);
     },
-    [createSessionTargetPicker, onSelectEngine, selectedEngine],
+    [createSessionTargetPicker, onSelectEngine, requestManagedEngineAccess, selectedEngine],
   );
   // 草稿值直接订阅模块级 store(而非经 app-shell 根 prop 灌入):按键写 store 时
   // 只有 Composer 自身重渲染,不再把整个 app-shell 拖下水。

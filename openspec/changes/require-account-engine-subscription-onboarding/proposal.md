@@ -27,6 +27,8 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 - 新增 Desktop subscription checkout projection 与 bounded native order reconciliation；支付终态通过 wakeup + authoritative read 驱动 UI，不在 React root 建立秒级 polling。
 - 新增 managed engine access contract：subscription verified 后幂等确保 engine-scoped API key、one-time native handoff、OS vault binding、Codex/Claude Code provider configuration 与启动恢复。
 - Settings Account 继续作为登录后的固定账号管理入口；启动门禁不复用 Settings 巨型状态，也不把 account state 写入 `AppSettings`。
+- 将登录后的 engine acquisition 收敛为同一条目标明确的闭环：Account Center 使用“我的引擎”管理既有权益，composer engine picker 对未订阅目标展示“订阅后使用”；点击 Claude 等目标后直接读取该 engine 的套餐，不要求用户先进入通用“切换引擎”页面。
+- App 内增购 flow 以 overlay 形式覆盖已挂载 AppShell，cancel/back 必须原路返回且保留当前 workspace/conversation state；支付成功后自动 ensure credential、写 vault、配置并激活目标 engine，再落到该 engine 的新会话入口，同时保留原 engine 订阅。
 - 原型确认的 minimal UI 成为验收基线：每屏一个主决策，说明进入自适应 `?` tooltip，产品 UI 不出现 API Key、文件 diff、技术错误码或 scenario selector。
 - 收敛 release-facing UI：composer 不再展示每日古诗轮换；面向小白的 engine picker 与 Settings 固定入口统一使用“Claude / Codex / Grok / Kimi / OpenCode”和“引擎管理”，不暴露 `CLI` 术语；二维码支付页标题显示 `Doge + 当前订阅套餐名称`。
 - 加固 Windows startup：外部 engine version/help probe 必须 non-interactive、有 3–5 秒 deadline，并在 timeout 后终止整个进程树；Doge 使用原生 single-instance 唤醒已有窗口，异常第三方 wrapper 与重复点击都不得阻塞主界面。
@@ -73,6 +75,7 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 - Codex 与 Claude Code 各完成一条真实配置/启动 E2E；用户不选择 API Key、不查看文件 diff、不确认技术配置。
 - vault unavailable、套餐为空、支付取消/超时、subscription 失效、managed access 失败、config 失败均停在可恢复 gate，不能进入假就绪 AppShell。
 - 最近引擎可恢复；主动切换重新检查权益并隔离 credential/config binding，不跨账号或跨引擎复用。
+- 已订阅 Codex 的用户从主 engine picker 选择未订阅 Claude 时，系统直接展示 Claude 的 authoritative plans；用户可取消返回原 Codex 上下文，支付成功后无需再次选择或确认即可进入新的 Claude 会话，且 Codex 权益保持不变。
 - 每日古诗数据、轮换、dismiss persistence、专用样式和测试均已删除，composer header 仍保留可承载未来公告的通用结构。
 - 所有主路径 engine label 与管理入口不出现 `CLI`；二维码支付标题准确包含当前选中套餐的 server-owned `name`。
 - 后续上游 change 验收：新建及恢复的 managed API Key 名称准确包含 engine 与 authoritative plan name；旧的 `Doge Codex managed key` 在下一次 ensure 时只原地改名，不得轮换 secret 或重复建 Key。本轮 Doge release 不包含该上游 change。

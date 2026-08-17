@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import ts from "typescript";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -12,6 +12,7 @@ import {
 } from "./threadEditorPreservation";
 import { pushErrorToast } from "../services/toasts";
 import { useAppShellLayoutNodesSection } from "./useAppShellLayoutNodesSection";
+import { publishAccountEngineReadyV1 } from "../features/account/runtime/engineSwitchSignal";
 
 const pushErrorToastMock = vi.mocked(pushErrorToast);
 
@@ -431,6 +432,8 @@ describe("useAppShellLayoutNodesSection quick switcher wrapper behavior", () => 
     const handleToggleSearchPalette = vi.fn();
     const handleBaseQuickSwitcherNavigate = vi.fn();
     const handleOpenSpecHub = vi.fn();
+    const handleOpenHomeChat = vi.fn();
+    const setActiveEngine = vi.fn(async () => undefined);
     // 首页表面 state：拦截 action（含回切）执行前统一关闭，提示/委托分支除外。
     const setHomeOpen = vi.fn();
     const setWorkspaceHomeWorkspaceId = vi.fn();
@@ -470,6 +473,8 @@ describe("useAppShellLayoutNodesSection quick switcher wrapper behavior", () => 
         handleOpenSearchPalette,
         handleToggleSearchPalette,
         handleOpenSpecHub,
+        handleOpenHomeChat,
+        setActiveEngine,
         setHomeOpen,
         setWorkspaceHomeWorkspaceId,
         closeSettings,
@@ -503,6 +508,8 @@ describe("useAppShellLayoutNodesSection quick switcher wrapper behavior", () => 
       handleOpenSearchPalette,
       handleToggleSearchPalette,
       handleBaseQuickSwitcherNavigate,
+      handleOpenHomeChat,
+      setActiveEngine,
       setHomeOpen,
       setWorkspaceHomeWorkspaceId,
       closeSettings,
@@ -516,6 +523,20 @@ describe("useAppShellLayoutNodesSection quick switcher wrapper behavior", () => 
       handleActivateGitHistoryTab,
     };
   }
+
+  it("opens a fresh target-engine conversation after account preparation commits", async () => {
+    const fixture = createQuickSwitcherWrapperFixture();
+    renderHook(() => useAppShellLayoutNodesSection(fixture.input));
+
+    act(() => publishAccountEngineReadyV1({
+      engineId: "claude-code",
+      openNewConversation: true,
+    }));
+
+    await waitFor(() => expect(fixture.setActiveEngine).toHaveBeenCalledWith("claude"));
+    expect(fixture.closeSettings).toHaveBeenCalled();
+    expect(fixture.handleOpenHomeChat).toHaveBeenCalled();
+  });
 
   it("intercepts discovery targets with canonical actions after closing the switcher", () => {
     const fixture = createQuickSwitcherWrapperFixture();

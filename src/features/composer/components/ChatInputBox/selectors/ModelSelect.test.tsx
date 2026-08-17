@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -15,6 +15,10 @@ import {
 import { STORAGE_KEYS } from "../../../types/provider";
 import type { ExecutionTarget } from "../../../../shared-session/target/types";
 import type { ProviderTargetGroup } from "../hooks/useProviderTargetCatalogOwners";
+import {
+  clearManagedEngineEntitlementsV1,
+  publishManagedEngineEntitlementsV1,
+} from "../../../../account/runtime/engineEntitlementStore";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -58,6 +62,7 @@ vi.mock("../../../../vendors/providerBrandIcon", () => ({
 describe("ModelSelect", () => {
   afterEach(() => {
     window.localStorage.clear();
+    act(() => clearManagedEngineEntitlementsV1());
   });
 
   it("renders the readiness trigger with provider and selected model chrome", async () => {
@@ -144,6 +149,41 @@ describe("ModelSelect", () => {
 
     expect(onProviderModelChange).toHaveBeenCalledWith("claude", "claude-sonnet-4-6");
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("marks an unsubscribed managed engine in the main picker", async () => {
+    publishManagedEngineEntitlementsV1([
+      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+    ]);
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    render(
+      <ModelSelect
+        value="gpt-5.4"
+        currentProvider="codex"
+        onChange={vi.fn()}
+        models={[{ id: "gpt-5.4", label: "GPT-5.4" }]}
+        modelGroups={[
+          {
+            providerId: "claude",
+            providerLabel: "Claude",
+            enabled: true,
+            models: [{ id: "claude-sonnet", label: "Sonnet" }],
+          },
+          {
+            providerId: "codex",
+            providerLabel: "Codex",
+            enabled: true,
+            models: [{ id: "gpt-5.4", label: "GPT-5.4" }],
+          },
+        ]}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "chat.currentModel:GPT-5.4" }));
+
+    expect(screen.getByRole("menuitem", { name: /Claude.*models\.subscribeToUse/ })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: /Codex/ }).textContent).not.toContain("models.subscribeToUse");
   });
 
   it("uses runtime model ids for mapped model brand icons", async () => {

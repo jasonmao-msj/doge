@@ -64,7 +64,7 @@ Desktop plan projection 不设本地套餐白名单、不截断 2/3 个、不补
 
 选择 plan 后，仅当 server 返回多个可用支付方式时显示一个短 method chooser；单一方式自动选中。Native 创建 subscription order，并按 provider result 打开 `pay_url`；若 provider 只支持 QR，则 gate 显示二维码这一唯一支付动作。Doge 不提供“我已支付”按钮。
 
-Rust AccountRuntime 为 pending checkout 保存 credential-free safe checkpoint；重启先用 `checkout_id` 做 authoritative read，支付 URL/QR payload 不落 SQLite。AccountGate 在 AppShell 尚未挂载时使用 2–15 秒 bounded backoff 与 server absolute expiry 对账；一旦 ready/unmount 立即停止。该 timer 不得进入 AppShell/root hook 链。未来可在不改变 IPC response shape 的前提下替换为 Native event wakeup。
+Rust AccountRuntime 为 pending checkout 保存 credential-free safe checkpoint；重启先用 `checkout_id` 做 authoritative read，支付 URL/QR payload 不落 SQLite。AccountGate 使用 2–15 秒 bounded backoff 与 server absolute expiry 对账：首次启动 checkout 时 AppShell 尚未挂载；登录后的第二引擎增购可让 AppShell 保持 mounted，但 polling state 仍只属于 AccountGate overlay，不得进入 AppShell/root hook 链。一旦 flow ready/cancel/unmount 立即停止。未来可在不改变 IPC response shape 的前提下替换为 Native event wakeup。
 
 ### 5. managed binding 复用受保护 API key 的 durable uniqueness
 
@@ -88,6 +88,12 @@ vault scope 由 `authority_origin + account_id + device_id + engine_id` 组成�
 credential-free preference 只保存 `engine_id`，不保存 plan/order/key。状态机为：
 
 `bootstrapping → signedOut → authenticating → choosingEngine → checkingEntitlement → choosingPlan → choosingPaymentMethod → awaitingPayment → preparing → ready`，并有 `recoverableFailure`。所有 transition 由 authoritative read 或 typed mutation receipt 驱动；网络、vault、CLI missing、subscription unavailable、payment cancelled 分开投影，只有 `noEntitlement` 才进入 plans。
+
+登录后新增 engine 使用 typed in-process intent 衔接 AppShell 与 AccountGate：`source` 仅区分 `accountCenter` / `enginePicker`，`targetEngineId` 只允许 managed engine id，`openNewConversation` 表达成功落点；event 不携带 entitlement、plan、order 或 secret。AccountGate 收到目标后必须重新读取 authoritative catalog：目标已有权益则直接 `prepare`，无权益则直接读取该目标 plans，禁止先让用户再点一次 engine。
+
+首次启动仍由 gate 在 ready 前阻止 AppShell mount；已经进入 App 后的增购/切换采用 overlay，AppShell 保持 mounted，当前 workspace、conversation 与 draft 不被销毁。用户 cancel 时只关闭 overlay 并回到原上下文；成功时 Native 完成 ensure/vault/config 后发布 credential-free completion intent，由 AppShell 更新 active engine 并打开该 engine 的空白新会话。该行为创建新的会话落点，不原地篡改已有 Codex thread 的 execution identity。
+
+Account Center 固定入口命名为“我的引擎”，用于查看/增加 engine；engine catalog 卡片明确区分“已订阅”和“订阅后使用”。composer picker 选择未订阅的 managed engine 时复用同一 AccountGate flow，不建立第二套 checkout 状态机。
 
 ### 8. Rollout 与 compatibility
 

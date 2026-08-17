@@ -5,6 +5,7 @@
 const models = {
   "models": {
     "selectModel": "Selecionar modelo",
+    "subscribeToUse": "Assine para usar",
     "engineHeader": "{{name}} Engine",
     "addModel": "Adicionar modelo",
 

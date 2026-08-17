@@ -235,7 +235,7 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 - 只展示 authority 返回的当前 engine、active subscription group、`for_sale=true` plans；空列表不补 fallback。产品 UI 禁止 balance、recharge、pay-as-you-go、API Key、文件路径与 diff。
 - Checkout create 必须携带新 operation id 作为 `Idempotency-Key`；只允许 subscription order。`PAID/RECHARGING → processing`，只有 fulfillment `COMPLETED → paid`。
 - Payment navigation 在 Rust 与 TypeScript 两层校验：`open_url` 只允许无 username/password 的 HTTPS；`show_qr` 只作为 bounded QR content 编码，禁止作为 URL/src 执行。
-- Pending checkout checkpoint 按 authority/account/device 隔离并在 restart 后 authoritative read；React polling 只允许存在于 AppShell 挂载前的 gate，使用 bounded backoff + absolute server expiry，禁止进入 AppShell/root hook 链。
+- Pending checkout checkpoint 按 authority/account/device 隔离并在 restart 后 authoritative read；React polling 只允许存在于 AccountGate-owned surface，使用 bounded backoff + absolute server expiry，禁止进入 AppShell/root hook 链。首次启动 flow 在 AppShell mount 前执行；第二引擎增购 overlay 可保留 AppShell mounted，但 tick 只能更新 gate owner。
 - managed credential 在 token2api 按 user/device hash/engine/group 幂等 ensure；每次 AppShell mount 前 MUST 重新确认当前 subscription binding，并覆盖 `authority + account + device + engine` scope。raw secret 只走 Rust memory → engine-scoped OS vault。Codex/Claude config 只写 sentinel/base URL，launch 时注入 secret；launch read MUST 要求当前 active account session，MUST NOT 依赖 legacy `managed_key_id`，退出后 fail closed。
 - Claude account-managed provider id 固定 `doge-token-matrix`；desktop runtime 注入 `ANTHROPIC_AUTH_TOKEN`，daemon 必须 fail closed，不得读取或伪造 desktop vault secret。
 
@@ -246,6 +246,81 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 - TypeScript/React：unknown engine/protocol fail closed、exact server plans/no billing fallback、AppShell pre-ready absence、paid auto prepare、pending checkout restart recovery、internal reason 不直出。
 
 异常、恢复与latency scenario由`AccountLab`/Vitest选择；产品页面只呈现用户任务和自然交互。
+
+## Scenario: In-App second managed engine acquisition
+
+### 1. Scope / Trigger
+
+- Trigger：修改 main engine picker、Settings Account engine 入口、`AccountAppGate` ready 后 flow、managed engine entitlement UI 或 post-prepare landing。
+- 目标：已有 Codex/Claude 用户增加第二个 engine 时复用同一 subscription/checkout/prepare authority，不修改当前 thread identity，也不卸载当前 AppShell。
+
+### 2. Signatures
+
+- Request intent：`AccountEngineSwitchIntentV1 { source: "accountCenter" | "enginePicker"; targetEngineId: "codex" | "claude-code" | null; openNewConversation: boolean }`。
+- Completion intent：`AccountEngineReadyIntentV1 { engineId: "codex" | "claude-code"; openNewConversation: boolean }`。
+- Credential-free entitlement snapshot：`Record<"codex" | "claude-code", "active" | "none" | "unknown">`；writer 仅为 authoritative catalog/prepare result。
+- Runtime mapping：`codex -> codex`、`claude -> claude-code`；display mapping：`codex -> Codex`、`claude-code -> Claude`。
+- 本场景不新增 Tauri command、IPC field、SQLite column 或 token2api route。
+
+### 3. Contracts
+
+- Settings authenticated 固定入口 MUST 使用“我的引擎/管理引擎”；catalog card MUST 区分“已订阅/订阅后使用”，不得把新增权益表达成替换原权益。
+- composer 选择不同的 managed engine 且 entitlement snapshot 已 authoritative loaded 时，MUST 在任何 engine/model/provider selection side effect 前发布 target intent；不得先改 `selectedCreationTarget`、active engine 或当前 native thread binding。
+- AccountGate 收到 target intent MUST 重新读取 catalog。active entitlement 直接 `prepare`；`none` 直接读取目标 plans；不得先展示通用 engine selector 要用户重复选择。`unknown` 不能作为 entitlement truth。
+- ready 后 flow MUST 以 fixed overlay 呈现并让既有 `readyContent` 保持同一 mounted instance。checkout polling 仍由 AccountGate owner 承担，不得把 timer/state 放入 AppShell root hook。
+- cancel/back MUST invalidate flow generation；无 checkout 时直接回原 App，有 checkout 时先 exact `abandonCheckout(checkoutId)` 成功再回原 App。迟到 catalog/read/prepare settlement 不得重新激活目标 engine。
+- prepare committed 后 completion event 只能携带 engine id 与 landing intent；AppShell consumer 负责同步 active engine、关闭 Settings 并打开空白 Home conversation。不得原地改写当前 thread engine identity。
+- entitlement/intent/completion event 禁止携带 plan、checkout URL、order payload、binding id、API key、vault scope 或 config detail。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Gate 行为 | AppShell 行为 |
+|---|---|---|
+| Codex active、Claude none | 直达 Claude plans | 保持 mounted、原 thread 不变 |
+| 目标 entitlement active | 跳过 checkout，authoritative prepare | commit 后切 engine + 新会话 |
+| plans/catalog failure | overlay safe failure + retry/cancel | 原上下文仍可返回 |
+| checkout pending 后 cancel | exact local abandon；停止 poll | 返回同一 mounted App |
+| cancel 与迟到 prepare/read race | generation mismatch 丢弃迟到结果 | 不切 engine、不打开新会话 |
+| paid + prepare success | credential-free completion | active engine 同步并打开 Home |
+| entitlement snapshot unknown | 不抢占 legacy selection callback | 不以 unknown 假装已订阅/未订阅 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：composer 在写 target 前发 `{ targetEngineId:"claude-code" }`；Gate re-read catalog 后展示 Claude plans，paid 后发 `{ engineId:"claude-code", openNewConversation:true }`。
+- Base：用户从“我的引擎”打开无 target catalog，选择已有 engine 后 prepare 并进入该 engine 新会话。
+- Bad：先把当前 Codex thread 的 engine 改成 Claude，再发现没有订阅并弹支付。
+- Bad：在 Composer/AppShell root 加 checkout polling，或把 server catalog 长期复制进 `AppSettings`。
+- Bad：completion event 携带 API key/plan/order/config payload。
+
+### 6. Tests Required
+
+- `AccountAppGate.test.tsx` MUST 覆盖 Codex ready → target Claude plans、ready DOM identity 保持、cancel 返回、paid → Claude prepare/activate/completion。
+- `Composer.file-reference-token.test.tsx` MUST 证明已知无权益 target 在 `onSelectEngine` / creation target mutation 前被拦截；snapshot unknown 保留既有 selector contract。
+- `ModelSelect.test.tsx` MUST 证明仅 `none` managed engine 显示 localized“订阅后使用”，active/unknown 不误标。
+- `useAppShellLayoutNodesSection.test.ts` MUST 证明 completion 先同步 target engine，再关闭 Settings 并进入 Home new conversation。
+- `engineSwitchSignal.test.ts` MUST 锁定 closed target/completion payload；`engineOnboardingClient.test.ts` MUST 锁定 novice display mapping。
+- Gates：focused Vitest、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`、engine registry/capability checks 与 strict OpenSpec validation。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+setSelectedCreationTarget(claudeTarget);
+setActiveEngine("claude");
+openPlans("claude-code");
+```
+
+#### Correct
+
+```ts
+requestAccountEngineSwitchV1({
+  source: "enginePicker",
+  targetEngineId: "claude-code",
+  openNewConversation: true,
+});
+// AccountGate re-reads catalog; only committed prepare publishes completion.
+```
 
 ## Scenario: Recovered checkout exit and local abandonment
 

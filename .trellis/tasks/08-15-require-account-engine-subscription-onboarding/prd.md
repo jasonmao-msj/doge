@@ -6,6 +6,8 @@ OpenSpec single source of truth：`openspec/changes/require-account-engine-subsc
 
 面向不理解 API Key、Provider 和配置文件的小白用户，把 Doge 主路径收敛为：登录 → 选择 Codex/Claude Code → 有订阅则自动准备；无订阅则展示 token2api 当前公开可售套餐 → 支付 → 自动创建/恢复 managed credential → 自动配置 → 进入 App。
 
+登录后的第二引擎增购复用同一闭环：从 main engine picker 或 Settings“我的引擎”直接进入目标 engine 套餐；flow 覆盖在已挂载 AppShell 上，cancel 保留原 workspace/conversation，支付完成后自动配置并打开目标 engine 的空白新会话，原 engine 订阅不受影响。
+
 ## 不可变约束
 
 - 只有 subscription plans；无 balance recharge、pay-as-you-go 或按量付费 fallback。

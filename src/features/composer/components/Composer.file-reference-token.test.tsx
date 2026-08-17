@@ -29,11 +29,17 @@ import {
 } from "../../shared-session/runtime/sharedSendStateStore";
 import { subscribeProviderContinuationDialogRequests } from "../../threads/services/providerContinuationRequests";
 import { pushErrorToast } from "../../../services/toasts";
+import {
+  clearManagedEngineEntitlementsV1,
+  publishManagedEngineEntitlementsV1,
+} from "../../account/runtime/engineEntitlementStore";
+import { subscribeAccountEngineSwitchV1 } from "../../account/runtime/engineSwitchSignal";
 
 afterEach(() => {
   cleanup();
   resetSharedTargetStoreForTests();
   resetSharedSendStateStoreForTests();
+  clearManagedEngineEntitlementsV1();
 });
 
 beforeEach(() => {
@@ -301,6 +307,39 @@ function getTextarea(container: HTMLElement) {
 }
 
 describe("Composer file reference token", () => {
+  it("routes an unsubscribed Home engine target to the account purchase flow", async () => {
+    publishManagedEngineEntitlementsV1([
+      { id: "codex", displayName: "Codex", entitlement: { status: "none", expiresAt: null } },
+      { id: "claude-code", displayName: "Claude", entitlement: { status: "active", expiresAt: null } },
+    ]);
+    const switchIntent = vi.fn();
+    const unsubscribe = subscribeAccountEngineSwitchV1(switchIntent);
+    const onCreationTargetEngineChange = vi.fn();
+    const onSelectEngine = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={vi.fn()}
+        createSessionTargetPicker
+        onCreationTargetEngineChange={onCreationTargetEngineChange}
+        onSelectEngine={onSelectEngine}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(view.getByTestId("select-shared-target"));
+      await Promise.resolve();
+    });
+
+    expect(switchIntent).toHaveBeenCalledWith({
+      source: "enginePicker",
+      targetEngineId: "codex",
+      openNewConversation: true,
+    });
+    expect(onSelectEngine).not.toHaveBeenCalled();
+    expect(onCreationTargetEngineChange).toHaveBeenLastCalledWith("claude");
+    unsubscribe();
+  });
+
   it("keeps Home create-session target local and sends one complete target", async () => {
     const onSend = vi.fn();
     const onCreationTargetEngineChange = vi.fn();

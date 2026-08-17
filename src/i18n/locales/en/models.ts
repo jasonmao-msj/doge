@@ -2,6 +2,7 @@
 const models = {
   models: {
     selectModel: "Select Model",
+    subscribeToUse: "Subscribe to use",
     engineHeader: "{{name}} Engine",
     addModel: "Add Model",
     openCliSettings: "Engine Management",

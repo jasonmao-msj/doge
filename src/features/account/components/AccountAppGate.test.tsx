@@ -7,6 +7,11 @@ import { createScenarioRuntimeV1 } from "../mock/ScenarioRuntimeV1";
 import type { AccountGatewayEventV1, AccountGatewayV1 } from "../contracts";
 import type { AccountEngineOnboardingClientV1 } from "../runtime/engineOnboardingClient";
 import { writeLastManagedEnginePreferenceV1 } from "../runtime/enginePreference";
+import { clearManagedEngineEntitlementsV1 } from "../runtime/engineEntitlementStore";
+import {
+  requestAccountEngineSwitchV1,
+  subscribeAccountEngineReadyV1,
+} from "../runtime/engineSwitchSignal";
 import { AccountAppGate } from "./AccountAppGate";
 
 vi.mock("react-i18next", () => ({
@@ -15,7 +20,10 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: vi.fn(async () => undefined) }));
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  clearManagedEngineEntitlementsV1();
+});
 afterEach(() => vi.useRealTimers());
 
 describe("AccountAppGate", () => {
@@ -192,6 +200,86 @@ describe("AccountAppGate", () => {
     vi.useRealTimers();
     await waitFor(() => expect(screen.getByText("主应用已挂载")).toBeTruthy());
     expect(client.prepare).toHaveBeenCalledWith("codex");
+  });
+
+  it("keeps the current app mounted when a second-engine purchase is cancelled", async () => {
+    const client = engineClient({ codexEntitled: true });
+    writeLastManagedEnginePreferenceV1("codex");
+    render(
+      <AccountAppGate
+        gateway={authenticatedGateway()}
+        engineClient={client}
+        engineActivator={async () => undefined}
+        readyContent={<div data-testid="ready-app">主应用已挂载</div>}
+      />,
+    );
+
+    const readyApp = await screen.findByTestId("ready-app");
+    act(() => requestAccountEngineSwitchV1({
+      source: "enginePicker",
+      targetEngineId: "claude-code",
+      openNewConversation: true,
+    }));
+
+    expect(await screen.findByRole("heading", { name: "选择 Claude 套餐" })).toBeTruthy();
+    expect(screen.getByTestId("ready-app")).toBe(readyApp);
+    fireEvent.click(screen.getByRole("button", { name: "返回" }));
+
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "选择 Claude 套餐" })).toBeNull());
+    expect(screen.getByTestId("ready-app")).toBe(readyApp);
+    expect(client.prepare).not.toHaveBeenCalledWith("claude-code");
+  });
+
+  it("completes Codex ready to Claude paid preparation without remounting the app", async () => {
+    const client = engineClient({ codexEntitled: true });
+    const activateEngine = vi.fn(async () => undefined);
+    const readyIntent = vi.fn();
+    const unsubscribe = subscribeAccountEngineReadyV1(readyIntent);
+    writeLastManagedEnginePreferenceV1("codex");
+    vi.mocked(client.readCheckout).mockResolvedValue({
+      ok: true,
+      value: {
+        checkoutId: 77,
+        status: "paid",
+        expiresAt: "2030-01-01T00:00:00Z",
+        action: null,
+      },
+    });
+    render(
+      <AccountAppGate
+        gateway={authenticatedGateway()}
+        engineClient={client}
+        engineActivator={activateEngine}
+        readyContent={<div data-testid="ready-app">主应用已挂载</div>}
+      />,
+    );
+
+    const readyApp = await screen.findByTestId("ready-app");
+    act(() => requestAccountEngineSwitchV1({
+      source: "enginePicker",
+      targetEngineId: "claude-code",
+      openNewConversation: true,
+    }));
+    expect(await screen.findByRole("heading", { name: "选择 Claude 套餐" })).toBeTruthy();
+    expect(client.plans).toHaveBeenCalledWith("claude-code");
+
+    const planButton = await screen.findByRole("button", { name: /Starter/ });
+    vi.useFakeTimers();
+    await act(async () => {
+      fireEvent.click(planButton);
+      await Promise.resolve();
+    });
+    await act(async () => vi.advanceTimersByTimeAsync(2_000));
+    vi.useRealTimers();
+
+    await waitFor(() => expect(readyIntent).toHaveBeenCalledWith({
+      engineId: "claude-code",
+      openNewConversation: true,
+    }));
+    expect(client.prepare).toHaveBeenCalledWith("claude-code");
+    expect(activateEngine).toHaveBeenLastCalledWith("claude-code");
+    expect(screen.getByTestId("ready-app")).toBe(readyApp);
+    unsubscribe();
   });
 
   it("restores a durable pending checkout before offering another plan", async () => {
@@ -417,7 +505,7 @@ function engineClient({ codexEntitled }: { readonly codexEntitled: boolean }): A
       ok: true as const,
       value: [
         { id: "codex" as const, displayName: "Codex", entitlement: { status: codexEntitled ? "active" as const : "none" as const, expiresAt: null } },
-        { id: "claude-code" as const, displayName: "Claude Code", entitlement: { status: "none" as const, expiresAt: null } },
+        { id: "claude-code" as const, displayName: "Claude", entitlement: { status: "none" as const, expiresAt: null } },
       ],
     })),
     plans: vi.fn(async (engineId) => ({

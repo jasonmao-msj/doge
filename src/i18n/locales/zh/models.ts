@@ -2,6 +2,7 @@
 const models = {
   models: {
     selectModel: "选择模型",
+    subscribeToUse: "订阅后使用",
     engineHeader: "{{name}} 引擎",
     addModel: "添加模型",
     openCliSettings: "引擎管理",

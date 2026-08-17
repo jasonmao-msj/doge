@@ -47,3 +47,5 @@
 - [x] 6.12 [P0] 将 external engine probe 改为 4 秒 non-interactive、timeout 后 process-tree cleanup；接入 Tauri single-instance 并唤醒已有 main window
 - [ ] 6.13 [P0] focused frontend/Rust tests、typecheck、OpenSpec strict validate 与 macOS arm64 本地包已完成；Windows x64 本地入口已验证被 host gate 拒绝，等待真实 Windows host（本轮按用户要求不使用 GitHub CI）
 - [ ] 6.14 [HOLD] 在 token2api 将 managed API Key display name 收敛为 `Doge + engine + plan`；本轮仅保留独立 worktree，不 commit、push 或 deploy，等待后续单独发布窗口
+- [x] 6.15 [P0] 将 Account Center 收敛为“我的引擎”，让 main engine picker 以 target intent 直达对应 entitlement/plans；App 内 flow 保持 AppShell mounted，并提供 cancel 原路返回
+- [x] 6.16 [P0] 覆盖 Codex ready → Claude subscription → paid → prepare/activate → Claude 新会话的 focused regression，完成本地 gates 与 macOS arm64 体验包

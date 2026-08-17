@@ -12,6 +12,10 @@ import {
 export const MANAGED_ENGINE_IDS_V1 = ["codex", "claude-code"] as const;
 export type ManagedEngineIdV1 = (typeof MANAGED_ENGINE_IDS_V1)[number];
 
+export function managedEngineDisplayNameV1(engineId: ManagedEngineIdV1): string {
+  return engineId === "codex" ? "Codex" : "Claude";
+}
+
 export type EngineEntitlementV1 = {
   readonly status: "active" | "none";
   readonly expiresAt: string | null;
@@ -169,7 +173,7 @@ function parseEngine(value: unknown): ManagedEngineViewV1 | null {
   if (!isNullish(expiresAt) && typeof expiresAt !== "string") return null;
   return {
     id,
-    displayName: object.display_name,
+    displayName: managedEngineDisplayNameV1(id),
     entitlement: { status, expiresAt: expiresAt ?? null },
   };
 }

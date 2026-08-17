@@ -513,10 +513,14 @@ function AccountCenter({
               <button
                 type="button"
                 className="account-overview-action"
-                onClick={requestAccountEngineSwitchV1}
+                onClick={() => requestAccountEngineSwitchV1({
+                  source: "accountCenter",
+                  targetEngineId: null,
+                  openNewConversation: true,
+                })}
               >
-                <span>引擎</span>
-                <strong>切换引擎</strong>
+                <span>{copy.gateMyEngines}</span>
+                <strong>{copy.gateManageEngines}</strong>
               </button>
             ) : null}
             {showLegacyConfiguration ? (

@@ -40,7 +40,7 @@ describe("AccountPreviewSettingsSection", () => {
     expect(await screen.findByRole("tab", { name: "概览" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "额度" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "安全" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /切换引擎/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /我的引擎.*管理引擎/ })).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -57,7 +57,7 @@ describe("AccountPreviewSettingsSection", () => {
       fireEvent.click(screen.getByRole("button", { name: "创建账号" }));
     });
     expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /切换引擎/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /我的引擎.*管理引擎/ })).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
