@@ -941,3 +941,36 @@ GitHub hosted runner 连续因第三方 action codeload 429/502 在 setup 阶段
 ### Next Steps
 
 - None - task complete
+
+
+## Session 29: 记录双平台内置引擎产物
+
+**Date**: 2026-08-17
+**Task**: 记录双平台内置引擎产物
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+回写 macOS arm64 与真实 Windows x64 bundled-engine release evidence；Windows runner 通过 NSIS current-user bundle、existing-target regression、8 秒启动 smoke 与 artifact 上传，完成 OpenSpec 双平台验证任务。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1540773b1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
