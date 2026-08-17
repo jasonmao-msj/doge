@@ -776,3 +776,36 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 24: 打通第二引擎订阅闭环并生成 macOS 体验包
+
+**Date**: 2026-08-16
+**Task**: 打通第二引擎订阅闭环并生成 macOS 体验包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+实现 Codex 已订阅用户在应用内选择 Claude、查看订阅套餐、支付后自动准备凭据与配置并进入 Claude 新会话的闭环；保留原 AppShell 上下文和取消返回能力，补充 entitlement store、事件契约、多语言文案、focused regression 与 OpenSpec/Trellis executable contract；相关测试、typecheck、lint、runtime/engine contract gates、OpenSpec strict validate 均通过，并生成校验有效的 macOS arm64 DMG。token2api 未修改。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `177720cc1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
