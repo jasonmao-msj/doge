@@ -42,3 +42,8 @@
 - [x] 6.7 [P0] 为 recovered checkout 增加“返回套餐”与“退出登录”闭环；实现 account/device/checkout-scoped local checkpoint abandon、focused cross-layer tests 与本地 macOS package smoke
 - [x] 6.8 [P0] 将“退出登录”提升为所有 authenticated pre-AppShell blocking states 的固定逃生口；覆盖无订阅套餐、空套餐、加载/异常/支付/准备状态，补齐失败回归并重新生成 macOS 本地包
 - [x] 6.9 [P0] 修复 logout 与 `sessionChanged` bootstrap 的 generation race；用 deferred event regression 证明 stale request 释放 loading，并生成 macOS arm64 / Windows x64 本地试用包
+- [x] 6.10 [P0] 删除每日古诗轮换、dismiss persistence、专用样式与 tests；保留 composer 通用 header composition
+- [x] 6.11 [P0] 将主路径 user-facing engine label/Settings 入口统一为简洁引擎命名与“引擎管理”，并把新建 QR checkout 标题改为 `Doge + 当前选中的 server plan name`；恢复旧 checkout 无本地套餐上下文时安全回退通用标题
+- [x] 6.12 [P0] 将 external engine probe 改为 4 秒 non-interactive、timeout 后 process-tree cleanup；接入 Tauri single-instance 并唤醒已有 main window
+- [ ] 6.13 [P0] focused frontend/Rust tests、typecheck、OpenSpec strict validate 与 macOS arm64 本地包已完成；Windows x64 本地入口已验证被 host gate 拒绝，等待真实 Windows host（本轮按用户要求不使用 GitHub CI）
+- [ ] 6.14 [HOLD] 在 token2api 将 managed API Key display name 收敛为 `Doge + engine + plan`；本轮仅保留独立 worktree，不 commit、push 或 deploy，等待后续单独发布窗口

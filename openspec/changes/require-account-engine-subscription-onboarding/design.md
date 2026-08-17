@@ -99,6 +99,16 @@ Doge 的 mandatory gate 是本产品 fork 的默认行为；保留 build-time em
 
 邮件中的 reset link 继续由固定 `token-matrix.com` HTTPS 页面完成，新密码和 raw reset token 不进入 Doge WebView、React state、SQLite、event 或日志。完成后用户回到 Doge 重新登录；`auth.inspectExternalIntent` 与 `auth.resetPassword` 在 Native Desktop ticket contract 上线前保持 disabled，不用 legacy Web link 冒充 Native completion。
 
+### 10. Release-facing UI 与 Windows startup 采用 fail-open hardening
+
+composer 移除每日古诗的 data、daily rotation、dismiss persistence、render branch、专用 CSS 与 tests；`ChatInputBoxHeader` 继续保留 SDK warning 等通用 header composition，未来公告必须以独立 product requirement 接入，不能复活诗词轮换。
+
+面向用户的 engine identity 与内部 runtime terminology 解耦：picker、Settings navigation/page title、search placeholder 与 engine heading 使用 `Claude / Codex / Grok / Kimi / OpenCode` 和“引擎管理”；Rust symbol、IPC field、configuration schema、binary path 与诊断信息仍可保留 `CLI`，避免无收益的内部 contract rename。QR checkout 标题从当前用户已选择的 server plan projection 读取 `plan.name`，渲染为 `Doge {plan.name}`，不得由 price、plan id 或本地商业表推导。
+
+二维码标题只读取当前 Doge 选择流程已有的 `SubscriptionPlanViewV1.name`，不要求 production checkout response 新增字段；恢复旧 checkout 且本地无选中套餐时继续显示通用等待标题。token2api 的 managed credential display name 未来改为 `Doge {engine display name} {plan.name}`，但本轮明确 HOLD：仅保留独立 worktree 方案，不 commit、push 或 deploy，不影响 production。deterministic key material 仍只由 `user/device/engine/group` 决定；未来实施时已有 credential 命中后只能执行 field-mask `Name` update，不重新创建或旋转 secret。
+
+Windows engine probe 视所有 external wrapper 为不可信：stdin 关闭、version/help probe 使用 4 秒 deadline、timeout 后按 root pid 终止整个 Windows process tree 并回收 child；单项失败只形成 unavailable/timeout status。Tauri `single-instance` plugin 作为首个 plugin 注册，第二次启动仅恢复、显示并聚焦已有 main window。Release notes 已有 viewport-bounded card、内部 scroll 与 Escape close，因此本批次只保留 regression gate，不重复重构。
+
 ## Risks / Trade-offs
 
 - [Risk] token2api 的 `group.platform` 不能表达未来一个套餐覆盖多个 engine → [Mitigation] 首期 server-owned catalog 固定一对一 mapping；未来新增显式 plan-engine relation migration，不让客户端推断。
@@ -107,6 +117,7 @@ Doge 的 mandatory gate 是本产品 fork 的默认行为；保留 build-time em
 - [Risk] server ensure 成功、vault/config 失败会留下 orphan binding → [Mitigation] 持久化 outcomeUnknown/quarantine receipt，重试同 binding rotate/handoff，不创建第二个 active binding。
 - [Risk] mandatory login 暂时降低离线可用性 → [Mitigation] 已 ready 的 session 可在 refresh grace 内恢复 UI，但启动 engine 前仍需可验证 subscription；该取舍由本 change 的产品决策接受。
 - [Risk] 上游同步与新增 Desktop schema 冲突 → [Mitigation] 独立 migration、handler/service 与 additive route，避免修改通用 payment response；merge 时按 capability matrix semantic merge。
+- [Risk] 第三方 wrapper 在 `--version` 下等待登录、继承 pipe 或留下 `cmd.exe/node.exe` descendant → [Mitigation] non-interactive spawn、短 deadline、Windows `/T /F` tree termination、single-instance wakeup 与 focused hanging-wrapper regression。
 
 ## Migration Plan
 

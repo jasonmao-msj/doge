@@ -59,11 +59,11 @@ const sidebar = {
     codexProviderChoiceTitle: "供应商选择",
     codexProviderSelectedTip: "已选择，点击左侧 Codex 即可直接开启会话",
     claudeProviderChoiceTitle: "供应商选择",
-    claudeProviderSelectedTip: "已选择，点击左侧 Claude Code 即可直接开启会话",
+    claudeProviderSelectedTip: "已选择，点击左侧 Claude 即可直接开启会话",
     kimiProviderChoiceTitle: "供应商选择",
-    kimiProviderSelectedTip: "已选择，点击左侧 Kimi CLI 即可直接开启会话",
+    kimiProviderSelectedTip: "已选择，点击左侧 Kimi 即可直接开启会话",
     grokProviderChoiceTitle: "供应商选择",
-    grokProviderSelectedTip: "已选择，点击左侧 Grok CLI 即可直接开启会话",
+    grokProviderSelectedTip: "已选择，点击左侧 Grok 即可直接开启会话",
     opencodeProviderChoiceTitle: "供应商选择",
     opencodeProviderSelectedTip: "已选择，点击左侧 OpenCode 即可直接开启会话",
     providerFollowsGlobalLabel: "跟随全局配置",
@@ -211,7 +211,7 @@ const sidebar = {
       title: "MCPs",
       refresh: "刷新",
       tabs: {
-        claude: "Claude Code",
+        claude: "Claude",
         codex: "Codex",
       },
       filter: {

@@ -28,6 +28,9 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 - 新增 managed engine access contract：subscription verified 后幂等确保 engine-scoped API key、one-time native handoff、OS vault binding、Codex/Claude Code provider configuration 与启动恢复。
 - Settings Account 继续作为登录后的固定账号管理入口；启动门禁不复用 Settings 巨型状态，也不把 account state 写入 `AppSettings`。
 - 原型确认的 minimal UI 成为验收基线：每屏一个主决策，说明进入自适应 `?` tooltip，产品 UI 不出现 API Key、文件 diff、技术错误码或 scenario selector。
+- 收敛 release-facing UI：composer 不再展示每日古诗轮换；面向小白的 engine picker 与 Settings 固定入口统一使用“Claude / Codex / Grok / Kimi / OpenCode”和“引擎管理”，不暴露 `CLI` 术语；二维码支付页标题显示 `Doge + 当前订阅套餐名称`。
+- 加固 Windows startup：外部 engine version/help probe 必须 non-interactive、有 3–5 秒 deadline，并在 timeout 后终止整个进程树；Doge 使用原生 single-instance 唤醒已有窗口，异常第三方 wrapper 与重复点击都不得阻塞主界面。
+- managed API Key 的 server-owned display name 后续改为 `Doge {无 CLI 后缀的引擎名} {订阅套餐名}`；本轮按发布边界 HOLD，不修改或发布 token2api。
 
 ## Capabilities
 
@@ -70,6 +73,10 @@ Doge 当前把账号作为 Settings 内的可选增强能力，用户仍需理�
 - Codex 与 Claude Code 各完成一条真实配置/启动 E2E；用户不选择 API Key、不查看文件 diff、不确认技术配置。
 - vault unavailable、套餐为空、支付取消/超时、subscription 失效、managed access 失败、config 失败均停在可恢复 gate，不能进入假就绪 AppShell。
 - 最近引擎可恢复；主动切换重新检查权益并隔离 credential/config binding，不跨账号或跨引擎复用。
+- 每日古诗数据、轮换、dismiss persistence、专用样式和测试均已删除，composer header 仍保留可承载未来公告的通用结构。
+- 所有主路径 engine label 与管理入口不出现 `CLI`；二维码支付标题准确包含当前选中套餐的 server-owned `name`。
+- 后续上游 change 验收：新建及恢复的 managed API Key 名称准确包含 engine 与 authoritative plan name；旧的 `Doge Codex managed key` 在下一次 ensure 时只原地改名，不得轮换 secret 或重复建 Key。本轮 Doge release 不包含该上游 change。
+- Windows 上模拟外部 engine command 长时间不退出时，probe 在 deadline 内返回 timeout、终止 command tree 且主界面保持可用；连续启动只保留一个实例并唤醒已有窗口。
 - doge focused Vitest、Rust account tests、token2api Go tests、跨仓库 contract fixtures、真实 Desktop E2E、macOS package smoke 与 Windows CI package 全部通过。
 
 ## Impact

@@ -186,7 +186,7 @@ export function TaskCreateModal({
   const formatEngineName = (type: EngineType): string => {
     switch (type) {
       case "claude":
-        return "Claude Code";
+        return "Claude";
       case "codex":
         return "Codex";
       default:

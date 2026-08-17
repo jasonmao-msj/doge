@@ -407,7 +407,7 @@ const settings = {
     "ungroupedTitle": "그룹 없음",
     "sidebarBasic": "기본 설정",
     "sidebarShortcuts": "단축키",
-    "sidebarProviders": "제공자",
+    "sidebarProviders": "엔진 관리",
     "sidebarMcp": "MCP 서버",
     "sidebarPermissions": "권한",
     "sidebarCommit": "Commit AI",
@@ -420,7 +420,7 @@ const settings = {
     "sidebarGit": "Git",
     "sidebarOther": "기타",
     "sidebarReleaseNotes": "릴리스 노트",
-    "sidebarVendors": "공급업체",
+    "sidebarVendors": "엔진 관리",
     "sidebarExperimental": "실험적 기능",
     "sidebarAbout": "정보",
     "sidebarCommunity": "커뮤니티",
@@ -1011,8 +1011,8 @@ const settings = {
     "openInTarget": "{{target}}에서 열기",
     "gitTitle": "Git",
     "gitDescription": "Git 사이드바에서 diff를 불러오는 방식을 관리합니다.",
-    "vendorsTitle": "공급자 관리",
-    "vendorsDescription": "Claude 및 Codex의 공급자 구성을 관리합니다.",
+    "vendorsTitle": "엔진 관리",
+    "vendorsDescription": "엔진, 제공자 및 로컬 설정을 관리합니다.",
     "vendor": {
       "ccSwitchImport": {
         "entry": "가져오기",

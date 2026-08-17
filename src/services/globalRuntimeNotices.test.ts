@@ -202,7 +202,7 @@ describe("globalRuntimeNotices", () => {
       expect.objectContaining({
         messageKey: "runtimeNotice.error.threadTurnFailed",
         messageParams: {
-          engine: "Claude Code",
+          engine: "Claude",
           message: "[RUNTIME_ENDED] Claude runtime ended.",
           reasonCode: "runtime-ended",
           userAction: "reconnect",

@@ -60,7 +60,7 @@ const sidebar = {
     "codexProviderChoiceTitle": "제공자 선택",
     "codexProviderSelectedTip": "선택됨. 왼쪽의 Codex를 클릭하여 세션을 시작하세요.",
     "grokProviderChoiceTitle": "제공자 선택",
-    "grokProviderSelectedTip": "선택됨. 왼쪽의 Grok CLI를 클릭하여 세션을 시작하세요.",
+    "grokProviderSelectedTip": "선택됨. 왼쪽의 Grok을 클릭하여 세션을 시작하세요.",
     "opencodeProviderChoiceTitle": "제공자 선택",
     "opencodeProviderSelectedTip": "선택됨. 왼쪽의 OpenCode를 클릭하여 세션을 시작하세요.",
     "providerFollowsGlobalLabel": "전역 구성 따름",
@@ -162,7 +162,7 @@ const sidebar = {
       "title": "MCPs",
       "refresh": "새로 고침",
       "tabs": {
-        "claude": "Claude Code",
+        "claude": "Claude",
         "codex": "Codex"
       },
       "filter": {

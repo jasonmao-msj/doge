@@ -60,13 +60,13 @@ const sidebar = {
       "Selected. Click Codex on the left to start a session.",
     claudeProviderChoiceTitle: "Provider selection",
     claudeProviderSelectedTip:
-      "Selected. Click Claude Code on the left to start a session.",
+      "Selected. Click Claude on the left to start a session.",
     kimiProviderChoiceTitle: "Provider selection",
     kimiProviderSelectedTip:
-      "Selected. Click Kimi CLI on the left to start a session.",
+      "Selected. Click Kimi on the left to start a session.",
     grokProviderChoiceTitle: "Provider selection",
     grokProviderSelectedTip:
-      "Selected. Click Grok CLI on the left to start a session.",
+      "Selected. Click Grok on the left to start a session.",
     opencodeProviderChoiceTitle: "Provider selection",
     opencodeProviderSelectedTip:
       "Selected. Click OpenCode on the left to start a session.",
@@ -218,7 +218,7 @@ const sidebar = {
       title: "MCPs",
       refresh: "Refresh",
       tabs: {
-        claude: "Claude Code",
+        claude: "Claude",
         codex: "Codex",
       },
       filter: {

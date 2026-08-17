@@ -356,18 +356,18 @@ const INLINE_MOVE_FOLDER_TARGET_LIMIT = 12;
 function resolveEngineDisplayName(engineType: EngineType): string {
   switch (engineType) {
     case "codex":
-      return "Codex CLI";
+      return "Codex";
     case "gemini":
-      return "Gemini CLI";
+      return "Gemini";
     case "opencode":
       return "OpenCode";
     case "kimi":
-      return "Kimi CLI";
+      return "Kimi";
     case "grok":
-      return "Grok CLI";
+      return "Grok";
     case "claude":
     default:
-      return "Claude Code";
+      return "Claude";
   }
 }
 

@@ -225,17 +225,17 @@ const runtimeNotice = {
     },
     claude: {
       providerSelected:
-        "{{name}} enabled. Click the Claude Code entry to create a session.",
+        "{{name}} enabled. Click the Claude entry to create a session.",
       resumeCommandCopied:
         "Claude resume command copied. If the TUI /resume picker does not show this GUI session, run claude --resume {{sessionId}} or /resume {{sessionId}} explicitly.",
     },
     kimi: {
       providerSelected:
-        "{{name}} enabled. Click the Kimi CLI entry to create a session.",
+        "{{name}} enabled. Click the Kimi entry to create a session.",
     },
     grok: {
       providerSelected:
-        "{{name}} enabled. Click the Grok CLI entry to create a session.",
+        "{{name}} enabled. Click the Grok entry to create a session.",
     },
     opencode: {
       providerSelected:

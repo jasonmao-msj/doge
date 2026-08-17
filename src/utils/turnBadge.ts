@@ -42,15 +42,15 @@ export const LOCAL_PROVIDER_SOURCE = "disk";
 function resolveEngineLabel(engine: EngineType): string {
   switch (engine) {
     case "claude":
-      return "Claude Code";
+      return "Claude";
     case "codex":
-      return "Codex CLI";
+      return "Codex";
     case "kimi":
-      return "Kimi CLI";
+      return "Kimi";
     case "gemini":
-      return "Gemini CLI";
+      return "Gemini";
     case "grok":
-      return "Grok CLI";
+      return "Grok";
     case "opencode":
       return "OpenCode";
   }

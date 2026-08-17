@@ -34,7 +34,7 @@ describe("engineImageInput", () => {
     const translate = (key: string, options?: Record<string, unknown>) =>
       `${key}:${String(options?.engine ?? "")}`;
     expect(formatEngineImageInputUnsupportedMessage("kimi", translate)).toBe(
-      "messages.imageInputUnsupported:Kimi CLI",
+      "messages.imageInputUnsupported:Kimi",
     );
   });
 

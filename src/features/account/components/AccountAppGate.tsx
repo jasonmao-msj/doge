@@ -373,11 +373,16 @@ function AccountAppGateInner({
   }
   if (phase === "checkout" && checkout) {
     const terminal = ["cancelled", "expired", "failed"].includes(checkout.status);
+    const checkoutTitle = terminal
+      ? copy.gatePaymentFailed
+      : checkout.action?.kind === "show_qr" && selectedPlan
+        ? `Doge ${selectedPlan.name}`
+        : copy.gateWaitingPayment;
     return (
       <GateFrame accountExit={accountExit}>
         <div className="account-gate-centered" role="status">
           {terminal ? <CircleAlert aria-hidden /> : <LoaderCircle className="account-gate-spin" aria-hidden />}
-          <h1>{terminal ? copy.gatePaymentFailed : copy.gateWaitingPayment}</h1>
+          <h1>{checkoutTitle}</h1>
           {checkout.action?.kind === "show_qr" && checkout.action.data ? (
             <CheckoutQrCode copy={copy} value={checkout.action.data} />
           ) : null}
@@ -601,7 +606,7 @@ function PaymentMethodList({ copy, methods, onSelect }: {
 }
 
 function engineLabel(engineId: ManagedEngineIdV1) {
-  return engineId === "codex" ? "Codex" : "Claude Code";
+  return engineId === "codex" ? "Codex" : "Claude";
 }
 
 function formatMoney(value: number, currency: string) {

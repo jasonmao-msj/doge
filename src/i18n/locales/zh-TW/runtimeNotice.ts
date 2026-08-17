@@ -63,7 +63,7 @@ const runtimeNotice = {
       "resumeCommandCopied": "已複製 Claude 續接命令。若 TUI 的 /resume 選單未顯示此 GUI 工作階段，請明確執行 claude --resume {{sessionId}} 或 /resume {{sessionId}}。"
     },
     "grok": {
-      "providerSelected": "已選擇 {{name}}。點擊 Grok CLI 項目以建立工作階段。"
+      "providerSelected": "已選擇 {{name}}。點擊 Grok 項目以建立工作階段。"
     },
     "opencode": {
       "providerSelected": "已選擇 {{name}}。點擊 OpenCode 項目以建立工作階段。"

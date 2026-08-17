@@ -60,7 +60,7 @@ const runtimeNotice = {
       "providerSelected": "{{name}} seleccionado. Haz clic en la entrada de Codex para crear una sesión."
     },
     "grok": {
-      "providerSelected": "{{name}} seleccionado. Haz clic en la entrada de Grok CLI para crear una sesión."
+      "providerSelected": "{{name}} seleccionado. Haz clic en la entrada de Grok para crear una sesión."
     },
     "opencode": {
       "providerSelected": "{{name}} seleccionado. Haz clic en la entrada de OpenCode para crear una sesión."

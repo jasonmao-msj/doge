@@ -51,8 +51,8 @@ describe("ProviderContinuationContextCard", () => {
         "bg-muted",
       ]),
     );
-    expect(details.textContent).toContain("Claude Code · Provider A");
-    expect(details.textContent).toContain("Codex CLI · Provider B");
+    expect(details.textContent).toContain("Claude · Provider A");
+    expect(details.textContent).toContain("Codex · Provider B");
     fireEvent.click(summary);
     expect(details.open).toBe(true);
     expect(screen.getByText("你是什么模型？")).toBeTruthy();
@@ -94,7 +94,7 @@ describe("ProviderContinuationContextCard", () => {
     expect(screen.getByText(/来源会话已不可用/)).toBeTruthy();
     expect(
       screen.getByRole("group", { name: "Provider 续接上下文" }).textContent,
-    ).toContain("Claude Code · 来源 Provider");
+    ).toContain("Claude · 来源 Provider");
     expect(
       (
         screen.getByRole("button", {

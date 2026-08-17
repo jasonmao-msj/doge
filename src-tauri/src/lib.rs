@@ -1,4 +1,6 @@
 use serde::Serialize;
+#[cfg(desktop)]
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 #[cfg(target_os = "macos")]
 use tauri::utils::config::BackgroundThrottlingPolicy;
@@ -16,6 +18,8 @@ const MAIN_WINDOW_DRAG_DROP_FORWARD_EVENT: &str = "main-window://drag-drop";
 /// Stores paths that were passed to the app on launch (via drag-drop or CLI)
 /// Frontend can retrieve these paths after it's ready
 static PENDING_OPEN_PATHS: Mutex<Vec<String>> = Mutex::new(Vec::new());
+#[cfg(desktop)]
+static PENDING_MAIN_WINDOW_WAKEUP: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone, Serialize)]
 struct ForwardedDragDropPosition {
@@ -236,7 +240,22 @@ pub fn run() {
         }
     }
 
-    let builder = tauri::Builder::default()
+    let builder = tauri::Builder::default();
+
+    // Register single-instance first so a second launch cannot start another
+    // round of external engine probes before the existing window is restored.
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.unminimize();
+            let _ = window.show();
+            let _ = window.set_focus();
+        } else {
+            PENDING_MAIN_WINDOW_WAKEUP.store(true, Ordering::Release);
+        }
+    }));
+
+    let builder = builder
         .enable_macos_default_menu(false)
         .manage(menu::MenuItemRegistry::<tauri::Wry>::default())
         .menu(menu::build_menu)
@@ -358,6 +377,13 @@ pub fn run() {
             });
 
             let window = win_builder.build()?;
+
+            #[cfg(desktop)]
+            if PENDING_MAIN_WINDOW_WAKEUP.swap(false, Ordering::AcqRel) {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
 
             // Hide the menu bar on Windows while keeping accelerator shortcuts active.
             #[cfg(target_os = "windows")]

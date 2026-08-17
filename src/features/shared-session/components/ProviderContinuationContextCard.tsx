@@ -10,16 +10,16 @@ import type { ProviderContinuationSourceExcerpt } from "./providerContinuationSo
 function engineLabel(engine: ThreadSummary["engineSource"]): string {
   switch (engine) {
     case "codex":
-      return "Codex CLI";
+      return "Codex";
     case "kimi":
-      return "Kimi CLI";
+      return "Kimi";
     case "gemini":
-      return "Gemini CLI";
+      return "Gemini";
     case "opencode":
       return "OpenCode";
     case "claude":
     default:
-      return "Claude Code";
+      return "Claude";
   }
 }
 

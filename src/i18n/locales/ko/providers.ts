@@ -6,19 +6,19 @@ const providers = {
   "providers": {
     "localConfig": "로컬 설정",
     "claude": {
-      "label": "Claude Code"
+      "label": "Claude"
     },
     "codex": {
-      "label": "Codex CLI"
+      "label": "Codex"
     },
     "gemini": {
-      "label": "Gemini CLI"
+      "label": "Gemini"
     },
     "kimi": {
-      "label": "Kimi CLI"
+      "label": "Kimi"
     },
     "grok": {
-      "label": "Grok CLI"
+      "label": "Grok"
     },
     "opencode": {
       "label": "OpenCode"

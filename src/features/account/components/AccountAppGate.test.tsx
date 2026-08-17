@@ -42,6 +42,25 @@ describe("AccountAppGate", () => {
     expect(screen.queryByText("主应用已挂载")).toBeNull();
   });
 
+  it("titles a QR checkout with Doge and the authoritative plan name", async () => {
+    const client = engineClient({ codexEntitled: false });
+    vi.mocked(client.checkout).mockResolvedValue({
+      ok: true,
+      value: {
+        checkoutId: 77,
+        status: "pending",
+        expiresAt: "2030-01-01T00:00:00Z",
+        action: { kind: "show_qr", url: null, data: "alipay://payment/opaque" },
+      },
+    });
+    render(<AccountAppGate gateway={authenticatedGateway()} engineClient={client} engineActivator={async () => undefined} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Codex/ }));
+    fireEvent.click(await screen.findByRole("button", { name: /Pro/ }));
+
+    expect(await screen.findByRole("heading", { name: "Doge Pro" })).toBeTruthy();
+  });
+
   it("lets a user without a subscription sign out from the plan gate", async () => {
     const client = engineClient({ codexEntitled: false });
     const gateway = authenticatedGateway();

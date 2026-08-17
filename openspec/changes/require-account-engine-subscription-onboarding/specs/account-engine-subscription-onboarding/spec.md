@@ -64,6 +64,10 @@
 - **WHEN** checkout 被取消或超过 server expiry
 - **THEN** 系统 SHALL 停止 reconciliation，展示重试/重新选套餐动作，且不得误建 managed credential
 
+#### Scenario: QR checkout is displayed
+- **WHEN** 当前 selected server plan 创建的 typed payment action 为 `show_qr`
+- **THEN** 支付页标题 SHALL 显示 `Doge {plan.name}`，其中 `plan.name` 来自用户刚选择的 authoritative plan projection，不得显示内部 plan id 或本地硬编码套餐名
+
 #### Scenario: Renderer reconciliation remains outside the AppShell root
 - **WHEN** checkout 处于 pending 或 processing
 - **THEN** React SHALL 只在 pre-AppShell AccountGate 内执行有 absolute expiry 的 bounded authoritative read，不得在 AppShell/root hook 中建立秒级 polling
@@ -91,6 +95,11 @@ token2api SHALL 在 active subscription 验证后按 `user + device + engine` �
 #### Scenario: Account or engine changes
 - **WHEN** 当前账号或 engine identity 变化
 - **THEN** vault scope 与 managed binding SHALL 隔离，旧账号/旧 engine 的 secret 不得被复用
+
+#### Scenario: Managed credential receives a novice-readable name
+- **WHEN** server 为 active engine subscription 创建或恢复 deterministic managed credential
+- **THEN** API Key display name SHALL 为 `Doge {engine display name} {authoritative plan name}`，其中 engine name 不带 `CLI`
+- **AND** legacy managed key 名称更新 MUST 原地执行，不得改变 secret、binding identity、group 或 active key 数量
 
 ### Requirement: Codex and Claude Code SHALL be configured without API Key interaction
 系统 SHALL 为 Codex 与 Claude Code 提供 engine-scoped configuration recipe，并在 entitlement 成立后自动执行；产品 UI MUST NOT 展示 API Key 选择、复制、粘贴、文件列表或 diff confirmation。
@@ -139,6 +148,14 @@ account gate SHALL 每屏只呈现一个主要决策；说明性内容 SHALL 收
 - **WHEN** `logout(thisDevice)` 清除本地 session 并在 mutation 返回前触发 `sessionChanged`，使 controller 启动新的 account bootstrap
 - **THEN** logout 成功 SHALL 作废旧账号 bootstrap，并在有限时间内回到登录/注册页
 - **AND** 被作废的 stale bootstrap MUST 释放自己拥有的 loading state，不得让页面永久停留在“正在连接”
+
+#### Scenario: Novice-facing engine navigation is rendered
+- **WHEN** 用户打开 engine picker 或 Settings engine management 页面
+- **THEN** 主路径 SHALL 使用 `Claude / Codex / Grok / Kimi / OpenCode` 与“引擎管理”等产品名称，不得在入口、列表、标题、搜索提示或可见说明中暴露 `CLI` 术语
+
+#### Scenario: Composer is rendered
+- **WHEN** 用户进入可输入消息的主界面
+- **THEN** composer SHALL 不展示每日古诗、轮换文案或其 dismiss control；通用 SDK warning/header composition MAY 继续存在以承载明确的未来产品消息
 
 ### Requirement: Account and checkout recovery SHALL be durable and bounded
 系统 SHALL 持久化 credential-free session/checkpoint/receipt，并为 checkout、managed binding 与 configuration 提供 crash-safe recovery；reconciliation MUST 有 absolute expiry 与 bounded backoff。

@@ -2,7 +2,7 @@
 const composer = {
   composer: {
     placeholder: "向 Codex 发送消息…",
-    placeholderAsk: "让 Claude Code 做点什么...",
+    placeholderAsk: "让 Claude 做点什么...",
     placeholderAskWithEngine: "让 {{engineName}} 做点什么...",
     send: "发送",
     stop: "停止",

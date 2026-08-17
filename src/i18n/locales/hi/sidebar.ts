@@ -60,7 +60,7 @@ const sidebar = {
     "codexProviderChoiceTitle": "प्रोवाइडर चयन",
     "codexProviderSelectedTip": "चुना गया। सत्र शुरू करने के लिए बाईं ओर Codex पर क्लिक करें।",
     "grokProviderChoiceTitle": "प्रोवाइडर चयन",
-    "grokProviderSelectedTip": "चुना गया। सत्र शुरू करने के लिए बाईं ओर Grok CLI पर क्लिक करें।",
+    "grokProviderSelectedTip": "चुना गया। सत्र शुरू करने के लिए बाईं ओर Grok पर क्लिक करें।",
     "opencodeProviderChoiceTitle": "प्रोवाइडर चयन",
     "opencodeProviderSelectedTip": "चुना गया। सत्र शुरू करने के लिए बाईं ओर OpenCode पर क्लिक करें।",
     "providerFollowsGlobalLabel": "वैश्विक कॉन्फ़िगरेशन का अनुसरण",
@@ -162,7 +162,7 @@ const sidebar = {
       "title": "MCPs",
       "refresh": "रीफ्रेश करें",
       "tabs": {
-        "claude": "Claude Code",
+        "claude": "Claude",
         "codex": "Codex"
       },
       "filter": {

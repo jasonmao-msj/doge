@@ -8,7 +8,7 @@ const models = {
     "engineHeader": "{{name}} Engine",
     "addModel": "Ajouter un modèle",
 
-    "openCliSettings": "Paramètres CLI",
+    "openCliSettings": "Gestion des moteurs",
     "switchChannel": "Changer de canal",
     "selectChannel": "Sélectionner un canal",
     "refreshConfig": "Actualiser la configuration",

@@ -62,7 +62,7 @@ function resolveWorkspaceLabel(
 function resolveRuntimeEngineLabel(engine: string) {
   switch (engine.trim().toLowerCase()) {
     case "claude":
-      return "Claude Code";
+      return "Claude";
     case "gemini":
       return "Gemini";
     case "grok":

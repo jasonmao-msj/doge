@@ -27,11 +27,11 @@ type UseProjectMapGenerationOptionsInput = {
 };
 
 const ENGINE_LABELS: Record<EngineType, string> = {
-  claude: "Claude Code",
-  codex: "Codex CLI",
-  gemini: "Gemini CLI",
-  grok: "Grok CLI",
-  kimi: "Kimi CLI",
+  claude: "Claude",
+  codex: "Codex",
+  gemini: "Gemini",
+  grok: "Grok",
+  kimi: "Kimi",
   opencode: "OpenCode",
 };
 

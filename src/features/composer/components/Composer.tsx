@@ -2899,7 +2899,7 @@ function ComposerImpl({
           selectedEngineInfo?.shortName ||
           selectedEngineInfo?.displayName ||
           selectedEngine ||
-          "Claude Code",
+          "Claude",
         modelLabel:
           selectedModelOption?.displayName ||
           selectedModelOption?.model ||

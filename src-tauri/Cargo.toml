@@ -78,6 +78,7 @@ imap = { version = "3.0.0-alpha.15", default-features = false, features = ["rust
 mailparse = "0.16.1"
 
 [target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
+tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-notification = "2"

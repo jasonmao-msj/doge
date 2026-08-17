@@ -6,7 +6,9 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::path::PathBuf;
 use std::sync::{OnceLock, RwLock};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use tokio::io::AsyncReadExt;
+use tokio::process::Child;
 use tokio::process::Command;
 use tokio::time::timeout;
 
@@ -16,7 +18,8 @@ use crate::backend::app_server::{build_codex_path_env, find_claude_code_binary, 
 use crate::backend::app_server_cli::resolve_safe_opencode_binary;
 
 /// Timeout for CLI commands
-const DETECTION_TIMEOUT: Duration = Duration::from_secs(10);
+const DETECTION_TIMEOUT: Duration = Duration::from_secs(4);
+const DETECTION_CLEANUP_TIMEOUT: Duration = Duration::from_secs(2);
 /// OpenCode model listing can be significantly slower than version probes.
 const OPENCODE_MODELS_TIMEOUT: Duration = Duration::from_secs(30);
 const GENERATED_MODEL_CATALOG_JSON: &str =
@@ -494,6 +497,182 @@ fn build_async_command(bin: &str) -> Command {
     crate::utils::async_command(bin)
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum CliProbeError {
+    Timeout,
+    Execution(String),
+}
+
+struct CliProbeOutput {
+    success: bool,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+}
+
+fn configure_probe_process_group(command: &mut Command) {
+    #[cfg(unix)]
+    unsafe {
+        command.pre_exec(|| {
+            if libc::setpgid(0, 0) == 0 {
+                Ok(())
+            } else {
+                Err(std::io::Error::last_os_error())
+            }
+        });
+    }
+}
+
+async fn read_probe_stream<R>(mut stream: R) -> Vec<u8>
+where
+    R: tokio::io::AsyncRead + Unpin,
+{
+    let mut bytes = Vec::new();
+    if stream.read_to_end(&mut bytes).await.is_err() {
+        bytes.clear();
+    }
+    bytes
+}
+
+async fn terminate_probe_process_tree(child: &mut Child) -> Result<(), String> {
+    let pid = child.id();
+
+    #[cfg(windows)]
+    if let Some(pid) = pid {
+        let pid_text = pid.to_string();
+        let mut taskkill = crate::utils::async_command("taskkill");
+        taskkill
+            .args(["/PID", pid_text.as_str(), "/T", "/F"])
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::piped())
+            .kill_on_drop(true);
+        match timeout(DETECTION_CLEANUP_TIMEOUT, taskkill.output()).await {
+            Ok(Ok(output)) if output.status.success() => {
+                let _ = timeout(DETECTION_CLEANUP_TIMEOUT, child.wait()).await;
+                return Ok(());
+            }
+            Ok(Ok(output)) => {
+                log::warn!(
+                    "[engine/probe] taskkill failed for pid={pid} status={} stderr={}",
+                    output.status,
+                    String::from_utf8_lossy(&output.stderr).trim()
+                );
+            }
+            Ok(Err(error)) => {
+                log::warn!("[engine/probe] taskkill failed for pid={pid}: {error}");
+            }
+            Err(_) => {
+                log::warn!("[engine/probe] taskkill timed out for pid={pid}");
+            }
+        }
+    }
+
+    #[cfg(unix)]
+    if let Some(pid) = pid {
+        let result = unsafe { libc::kill(-(pid as libc::pid_t), libc::SIGKILL) };
+        if result == 0 {
+            let _ = timeout(DETECTION_CLEANUP_TIMEOUT, child.wait()).await;
+            return Ok(());
+        }
+        let error = std::io::Error::last_os_error();
+        if error.raw_os_error() != Some(libc::ESRCH) {
+            log::warn!("[engine/probe] process-group kill failed for pid={pid}: {error}");
+        }
+    }
+
+    if matches!(child.try_wait(), Ok(Some(_))) {
+        return Ok(());
+    }
+    child
+        .kill()
+        .await
+        .map_err(|error| format!("failed to kill probe pid {pid:?}: {error}"))?;
+    timeout(DETECTION_CLEANUP_TIMEOUT, child.wait())
+        .await
+        .map_err(|_| format!("timed out reaping probe pid {pid:?}"))?
+        .map_err(|error| format!("failed to reap probe pid {pid:?}: {error}"))?;
+    Ok(())
+}
+
+async fn run_cli_probe(
+    bin: &str,
+    args: &[&str],
+    path_env: Option<&String>,
+    deadline: Duration,
+) -> Result<CliProbeOutput, CliProbeError> {
+    let started = Instant::now();
+    let mut command = build_async_command(bin);
+    if let Some(path) = path_env {
+        command.env("PATH", path);
+    }
+    command
+        .args(args)
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .kill_on_drop(true);
+    configure_probe_process_group(&mut command);
+
+    let mut child = command
+        .spawn()
+        .map_err(|error| CliProbeError::Execution(format!("failed to spawn {bin}: {error}")))?;
+    let pid = child.id();
+    log::debug!("[engine/probe] started bin={bin} args={args:?} pid={pid:?}");
+    let stdout_reader = child
+        .stdout
+        .take()
+        .map(|stream| tokio::spawn(read_probe_stream(stream)));
+    let stderr_reader = child
+        .stderr
+        .take()
+        .map(|stream| tokio::spawn(read_probe_stream(stream)));
+
+    let status = match timeout(deadline, child.wait()).await {
+        Ok(Ok(status)) => status,
+        Ok(Err(error)) => {
+            return Err(CliProbeError::Execution(format!(
+                "failed to wait for {bin}: {error}"
+            )));
+        }
+        Err(_) => {
+            let cleanup = terminate_probe_process_tree(&mut child).await;
+            if let Err(error) = cleanup {
+                log::warn!("[engine/probe] cleanup incomplete bin={bin} pid={pid:?}: {error}");
+            }
+            if let Some(reader) = stdout_reader {
+                let _ = timeout(DETECTION_CLEANUP_TIMEOUT, reader).await;
+            }
+            if let Some(reader) = stderr_reader {
+                let _ = timeout(DETECTION_CLEANUP_TIMEOUT, reader).await;
+            }
+            log::warn!(
+                "[engine/probe] timed out bin={bin} args={args:?} pid={pid:?} elapsed_ms={}",
+                started.elapsed().as_millis()
+            );
+            return Err(CliProbeError::Timeout);
+        }
+    };
+
+    let stdout = match stdout_reader {
+        Some(reader) => reader.await.unwrap_or_default(),
+        None => Vec::new(),
+    };
+    let stderr = match stderr_reader {
+        Some(reader) => reader.await.unwrap_or_default(),
+        None => Vec::new(),
+    };
+    log::debug!(
+        "[engine/probe] finished bin={bin} args={args:?} pid={pid:?} success={} elapsed_ms={}",
+        status.success(),
+        started.elapsed().as_millis()
+    );
+    Ok(CliProbeOutput {
+        success: status.success(),
+        stdout,
+        stderr,
+    })
+}
+
 fn resolve_bin_path(name: &str, custom_bin: Option<&str>) -> Option<PathBuf> {
     if let Some(custom) = custom_bin.filter(|v| !v.trim().is_empty()) {
         let custom_path = PathBuf::from(custom);
@@ -514,36 +693,21 @@ async fn probe_cli_version(
     cli_name: &str,
     path_env: Option<&String>,
 ) -> (bool, Option<String>, Option<String>) {
-    let version_result = timeout(DETECTION_TIMEOUT, async {
-        let mut cmd = build_async_command(bin);
-        if let Some(path) = path_env {
-            cmd.env("PATH", path);
+    match run_cli_probe(bin, &["--version"], path_env, DETECTION_TIMEOUT).await {
+        Ok(output) if output.success => {
+            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            (true, Some(version), None)
         }
-        let output = cmd
-            .arg("--version")
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .output()
-            .await;
-
-        match output {
-            Ok(out) if out.status.success() => {
-                let version = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                Ok(version)
-            }
-            Ok(out) => {
-                let stderr = String::from_utf8_lossy(&out.stderr);
-                Err(format!("{} --version failed: {}", cli_name, stderr.trim()))
-            }
-            Err(e) => Err(format!("Failed to execute {}: {}", cli_name, e)),
+        Ok(output) => {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            (
+                false,
+                None,
+                Some(format!("{} --version failed: {}", cli_name, stderr.trim())),
+            )
         }
-    })
-    .await;
-
-    match version_result {
-        Ok(Ok(v)) => (true, Some(v), None),
-        Ok(Err(e)) => (false, None, Some(e)),
-        Err(_) => (
+        Err(CliProbeError::Execution(error)) => (false, None, Some(error)),
+        Err(CliProbeError::Timeout) => (
             false,
             None,
             Some(format!("Timeout detecting {} CLI", cli_name)),
@@ -552,20 +716,10 @@ async fn probe_cli_version(
 }
 
 async fn probe_cli_help(bin: &str, path_env: Option<&String>) -> bool {
-    let help_result = timeout(DETECTION_TIMEOUT, async {
-        let mut cmd = build_async_command(bin);
-        if let Some(path) = path_env {
-            cmd.env("PATH", path);
-        }
-        cmd.arg("--help")
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
-            .output()
-            .await
-    })
-    .await;
-
-    matches!(help_result, Ok(Ok(output)) if output.status.success())
+    matches!(
+        run_cli_probe(bin, &["--help"], path_env, DETECTION_TIMEOUT).await,
+        Ok(output) if output.success
+    )
 }
 
 /// Build an uninstalled EngineStatus stub.
@@ -595,7 +749,10 @@ pub async fn detect_claude_status(custom_bin: Option<&str>) -> EngineStatus {
     let (mut installed, mut version, mut error) =
         probe_cli_version(&bin, "claude", path_env.as_ref()).await;
 
-    if !installed && probe_cli_help(&bin, path_env.as_ref()).await {
+    let version_probe_timed_out = error
+        .as_deref()
+        .is_some_and(|message| message.starts_with("Timeout detecting"));
+    if !installed && !version_probe_timed_out && probe_cli_help(&bin, path_env.as_ref()).await {
         installed = true;
         if version.is_none() {
             version = Some("unknown".to_string());
@@ -675,29 +832,15 @@ async fn detect_opencode_status_with_options(
     // OpenCode CLI in GUI-launched environments can intermittently fail `--version`
     // due to startup env quirks. Use a lightweight second probe to avoid false
     // "not installed" states in engine selector.
-    if !installed {
-        let help_probe = timeout(DETECTION_TIMEOUT, async {
-            let mut cmd = build_async_command(&bin);
-            if let Some(ref path) = &path_env {
-                cmd.env("PATH", path);
-            }
-            cmd.arg("--help")
-                .stdout(std::process::Stdio::piped())
-                .stderr(std::process::Stdio::piped())
-                .output()
-                .await
-        })
-        .await;
-
-        if let Ok(Ok(output)) = help_probe {
-            if output.status.success() {
-                installed = true;
-                if version.is_none() {
-                    version = Some("unknown".to_string());
-                }
-                error = None;
-            }
+    let version_probe_timed_out = error
+        .as_deref()
+        .is_some_and(|message| message.starts_with("Timeout detecting"));
+    if !installed && !version_probe_timed_out && probe_cli_help(&bin, path_env.as_ref()).await {
+        installed = true;
+        if version.is_none() {
+            version = Some("unknown".to_string());
         }
+        error = None;
     }
 
     if !installed {
@@ -2457,6 +2600,52 @@ opencode/gpt-5-nano
         permissions.set_mode(0o755);
         fs::set_permissions(&script_path, permissions).expect("chmod temp cli script");
         script_path
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn hanging_probe_times_out_and_terminates_its_process_group() {
+        let child_pid_path = std::env::temp_dir().join(format!(
+            "ccgui-engine-probe-child-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+        ));
+        let script_path = write_unix_test_cli(&format!(
+            "#!/bin/sh\nsleep 60 &\nchild=$!\nprintf '%s' \"$child\" > '{}'\nwait \"$child\"\n",
+            child_pid_path.display()
+        ));
+
+        let started = Instant::now();
+        let result = run_cli_probe(
+            script_path.to_string_lossy().as_ref(),
+            &["--version"],
+            None,
+            Duration::from_millis(500),
+        )
+        .await;
+
+        assert_eq!(result.err(), Some(CliProbeError::Timeout));
+        assert!(started.elapsed() < Duration::from_secs(2));
+        let child_pid = fs::read_to_string(&child_pid_path)
+            .expect("probe must record descendant pid")
+            .parse::<libc::pid_t>()
+            .expect("descendant pid must be numeric");
+        let probe = unsafe { libc::kill(child_pid, 0) };
+        assert_eq!(
+            probe, -1,
+            "probe descendant must be terminated with its group"
+        );
+        assert_eq!(
+            std::io::Error::last_os_error().raw_os_error(),
+            Some(libc::ESRCH)
+        );
+
+        let _ = fs::remove_file(&script_path);
+        let _ = fs::remove_file(&child_pid_path);
+        let _ = fs::remove_dir_all(script_path.parent().unwrap_or(std::path::Path::new("")));
     }
 
     #[cfg(unix)]

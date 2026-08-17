@@ -45,10 +45,10 @@ type KanbanCardProps = {
 };
 
 const ENGINE_NAMES: Record<EngineType, string> = {
-  claude: "Claude Code",
+  claude: "Claude",
   codex: "Codex",
   gemini: "Gemini",
-  grok: "Grok CLI",
+  grok: "Grok",
   kimi: "Kimi",
   opencode: "OpenCode",
 };

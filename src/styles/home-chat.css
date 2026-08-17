@@ -607,8 +607,7 @@
 }
 
 .home-chat-composer-host .resize-handle,
-.home-chat-composer-host .resize-handle-hover-zone,
-.home-chat-composer-host .daily-poetry-banner {
+.home-chat-composer-host .resize-handle-hover-zone {
   display: none;
 }
 

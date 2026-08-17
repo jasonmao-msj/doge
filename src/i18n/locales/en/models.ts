@@ -4,7 +4,7 @@ const models = {
     selectModel: "Select Model",
     engineHeader: "{{name}} Engine",
     addModel: "Add Model",
-    openCliSettings: "CLI Settings",
+    openCliSettings: "Engine Management",
     switchChannel: "Switch channel",
     selectChannel: "Select channel",
     refreshConfig: "Refresh Config",

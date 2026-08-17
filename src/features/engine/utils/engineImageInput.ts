@@ -2,11 +2,11 @@ import type { EngineType } from "../../../types";
 import { isEngineCapabilityAvailable } from "../engineCapabilityMatrix";
 
 const ENGINE_IMAGE_LABEL: Record<EngineType, string> = {
-  claude: "Claude Code",
+  claude: "Claude",
   codex: "Codex",
   gemini: "Gemini",
-  grok: "Grok CLI",
-  kimi: "Kimi CLI",
+  grok: "Grok",
+  kimi: "Kimi",
   opencode: "OpenCode",
 };
 

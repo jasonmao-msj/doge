@@ -177,12 +177,12 @@ function dedupeReviewFiles(
 
 function resolveRewindEngineLabel(engine: RewindPreviewState["engine"]): string {
   if (engine === "codex") {
-    return "Codex CLI";
+    return "Codex";
   }
   if (engine === "gemini") {
-    return "Gemini CLI";
+    return "Gemini";
   }
-  return "Claude Code";
+  return "Claude";
 }
 
 function buildCompactPreviewLines(diff?: string): ParsedDiffLine[] | null {

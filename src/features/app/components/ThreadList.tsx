@@ -807,7 +807,7 @@ export function ThreadList({
     const engineSource: EngineType = thread.engineSource ?? "codex";
     const baseEngineTitle =
       engineSource === "claude"
-        ? "Claude Code"
+        ? "Claude"
         : engineSource === "gemini"
           ? "Gemini"
           : engineSource === "grok"

@@ -66,7 +66,7 @@ export const ProviderSelect = ({
     statusLabel: providerStatusLabels?.[provider.id] ?? null,
     disabledMessage: providerDisabledMessages?.[provider.id] ?? null,
   }));
-  // 用户在「CLI配置管理」停用的引擎不下拉展示;当前选中引擎即使已停用仍兜底显示,
+  // 用户在「引擎管理」停用的引擎不下拉展示;当前选中引擎即使已停用仍兜底显示,
   // 保证进行中的会话不受开关影响。
   const visibleProviders = providers.filter(
     (provider) =>

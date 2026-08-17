@@ -8,7 +8,7 @@ const models = {
     "engineHeader": "{{name}} 引擎",
     "addModel": "新增模型",
 
-    "openCliSettings": "CLI 設定",
+    "openCliSettings": "引擎管理",
     "switchChannel": "切換渠道",
     "selectChannel": "選擇渠道",
     "refreshConfig": "重新整理設定",

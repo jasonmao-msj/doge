@@ -17,8 +17,6 @@ type ChatInputBoxHeaderProps = {
   canFuseFromQueue?: boolean;
   fuseDisabledReasonKey?: string | null;
   fusingQueueMessageId?: string | null;
-  dailyPoetryText?: string | null;
-  onDismissDailyPoetry?: () => void;
 };
 
 export function ChatInputBoxHeader({
@@ -35,13 +33,9 @@ export function ChatInputBoxHeader({
   canFuseFromQueue = false,
   fuseDisabledReasonKey = null,
   fusingQueueMessageId = null,
-  dailyPoetryText,
-  onDismissDailyPoetry,
 }: ChatInputBoxHeaderProps) {
-  const hasDailyPoetry = typeof dailyPoetryText === 'string' && dailyPoetryText.length > 0;
   // Check if there's any content to render
   const hasContent =
-    hasDailyPoetry ||
     sdkStatusLoading ||
     !sdkInstalled ||
     (messageQueue && messageQueue.length > 0) ||
@@ -53,24 +47,6 @@ export function ChatInputBoxHeader({
 
   return (
     <>
-      {/* Daily classical Chinese poetry banner */}
-      {hasDailyPoetry && (
-        <div className="daily-poetry-banner">
-          <span className="banner-text">{dailyPoetryText}</span>
-          <button
-            className="banner-close"
-            aria-label={t('common.close')}
-            title={t('common.close')}
-            onClick={(e) => {
-              e.stopPropagation();
-              onDismissDailyPoetry?.();
-            }}
-          >
-            &#x2715;
-          </button>
-        </div>
-      )}
-
       {/* SDK status loading or not installed warning bar */}
       {(sdkStatusLoading || !sdkInstalled) && (
         <div className={`sdk-warning-bar ${sdkStatusLoading ? 'sdk-loading' : ''}`}>
@@ -81,7 +57,7 @@ export function ChatInputBoxHeader({
             {sdkStatusLoading
               ? t('chat.sdkStatusLoading')
               : t('chat.sdkNotInstalled', {
-                  provider: currentProvider === 'codex' ? 'Codex' : 'Claude Code',
+                  provider: currentProvider === 'codex' ? 'Codex' : 'Claude',
                 })}
           </span>
           {!sdkStatusLoading && (

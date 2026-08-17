@@ -428,7 +428,7 @@ function useProviderTargetCatalogOwner({
   const [loadedModels, setLoadedModels] = useState<Record<string, ModelInfo[]>>(
     () => initialLoadedModels(mode),
   );
-  // 用户在「CLI配置管理」停用的引擎不进 target picker;当前选中引擎兜底保留,
+  // 用户在「引擎管理」停用的引擎不进 target picker;当前选中引擎兜底保留,
   // 与 ProviderSelect 的可见性规则保持一致(进行中的会话不受开关影响)。
   const disabledCliEngineIds = useCliEngineVisibility();
 
