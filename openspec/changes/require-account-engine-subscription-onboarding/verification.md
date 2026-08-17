@@ -42,6 +42,7 @@
 - Focused frontend suites 26/26 pass；frontend boundary + toolchain 6/6 pass；Rust account 82 pass、2 isolated-live tests ignored；build-script tests 4/4 pass（含 Windows temp/workspace cross-volume staging regression）；`npm run typecheck`、`npm run lint`（0 errors，16 pre-existing warnings）、`npm run check:runtime-contracts`、`cargo fmt -- --check` 与 OpenSpec strict validation 均 pass。
 - Full `npm run test` 在 unrelated `context-ledger/costProjection.test.ts` 的两项 date-sensitive pricing assertion 失败：测试 fixture 只覆盖到 2026-05，而当前日期为 2026-08；本 change 的 account/bundle suites 全部通过，未扩大范围修改 pricing baseline。
 - Latest local macOS arm64 artifact: `release-local/doge_0.1.0_aarch64.dmg`，`249573620` bytes，SHA-256 `80a84be06abc072e56795bc46deb218437b007c403dd0beeb8ba9558e4776570`；`hdiutil verify`、App `codesign --verify --deep --strict`、所有 bundled engine nested binaries、arm64 architecture 与 exact version probes 均 pass。该体验包为 ad-hoc signature、未 notarize。
+- Latest Windows bundled-engine run: `https://github.com/jasonmao-msj/doge/actions/runs/32043964202`，source `6bdd15f6ec556975ef15698e99586fc3888cda20`；Codex `0.147.0` 与 Claude Code `2.1.233` prepare 成功，NSIS `currentUser` bundle 成功，existing-target standard-user regression `1/1` pass，`windows_launch_smoke=alive pid=7820`。Artifact `doge-windows-x64-unsigned` id `9293331506`，ZIP `182548127` bytes，upload SHA-256 `a5a99559e4b38d494baf92971c5e5c51d20bca3221a597a36dd299cc19801f0e`，retention through `2026-08-31`；Windows code-signing certificate 未配置，artifact 明确为 unsigned。
 
 ### Release evidence 与 remaining manual gates
 
