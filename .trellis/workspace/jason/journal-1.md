@@ -974,3 +974,36 @@ GitHub hosted runner 连续因第三方 action codeload 429/502 在 setup 阶段
 ### Next Steps
 
 - None - task complete
+
+
+## Session 30: 记录 token2api 生产发布证据
+
+**Date**: 2026-08-17
+**Task**: 记录 token2api 生产发布证据
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge OpenSpec 的 immutable artifact、PostgreSQL backup、EBS snapshot、SSM deploy/verify 与 health evidence，并完成任务 6.22。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c67c997a3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
