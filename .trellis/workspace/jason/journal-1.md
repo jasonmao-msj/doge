@@ -1007,3 +1007,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 31: 记录 Shared 会话额度投影问题
+
+**Date**: 2026-08-17
+**Task**: 记录 Shared 会话额度投影问题
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+记录用户反馈：Shared Session Composer quota panel 识别到 Token Matrix 套餐供应商但显示 provider empty、无额度窗口；新增 OpenSpec change fix-shared-session-subscription-quota-projection，定义 target-scoped authority quota、状态区分与后续验收，暂不修改运行时代码或 token2api。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `83fdbab1e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
