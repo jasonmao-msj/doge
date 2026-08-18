@@ -44,6 +44,17 @@
 - Latest local macOS arm64 artifact: `release-local/doge_0.1.0_aarch64.dmg`，`249573620` bytes，SHA-256 `80a84be06abc072e56795bc46deb218437b007c403dd0beeb8ba9558e4776570`；`hdiutil verify`、App `codesign --verify --deep --strict`、所有 bundled engine nested binaries、arm64 architecture 与 exact version probes 均 pass。该体验包为 ad-hoc signature、未 notarize。
 - Latest Windows bundled-engine run: `https://github.com/jasonmao-msj/doge/actions/runs/32043964202`，source `6bdd15f6ec556975ef15698e99586fc3888cda20`；Codex `0.147.0` 与 Claude Code `2.1.233` prepare 成功，NSIS `currentUser` bundle 成功，existing-target standard-user regression `1/1` pass，`windows_launch_smoke=alive pid=7820`。Artifact `doge-windows-x64-unsigned` id `9293331506`，ZIP `182548127` bytes，upload SHA-256 `a5a99559e4b38d494baf92971c5e5c51d20bca3221a597a36dd299cc19801f0e`，retention through `2026-08-31`；Windows code-signing certificate 未配置，artifact 明确为 unsigned。
 
+### 2026-08-18 token2api production naming and payment-title follow-up
+
+- token2api managed key naming / `plan_name` PR `#44` merged as `aeffdc46d`; provider payment-title PR `#45` merged as exact production source `1b6bae8eb2c274023b949fa06ee6cb8d672e9106`. OpenSpec production evidence PR `#46` is merged.
+- PR `#44` checks `12/12` passed. PR `#45` Actions failed before job startup without job logs; replacement local evidence passed: full handler/service unit suites, focused managed-key/payment-title tests, `golangci-lint` with `0` issues, and strict token2api OpenSpec validation.
+- Immutable ARM64 image `tokenmatrix/sub2api:1b6bae8eb` reports `Sub2API 0.1.177` with exact commit `1b6bae8eb2c274023b949fa06ee6cb8d672e9106`; image ID `sha256:4bf1f0ae10fedf9c1bf8509b38b5b9e89f4b6f499bd3748c1139314d64da79e9`.
+- Encrypted artifact is stored at `s3://tokenmatrix-prod-ops-artifacts-985962084702-us-east-1/releases/sub2api/0.1.177/1b6bae8eb2c274023b949fa06ee6cb8d672e9106/tokenmatrix-sub2api-0.1.177-1b6bae8eb-arm64.tar.gz`; SHA-256 `bd3199225ae98526d3468cf3c9e6e062b74d83c2ce223cd75f56425d954d10ec`; S3 SSE `AES256`.
+- Rollback evidence: PostgreSQL custom backup `/opt/token-matrix/backups/doge-engine-release-20260818T003952Z` (`217700991` bytes, SHA-256 `1dec704ee62f191cd83b2770abd527b0e8eec547b6b352f8490ac9c788f9e1d8`, restore catalog `1179` lines), encrypted completed EBS snapshot `snap-02b5243e66b55e1b7`, and previous image `tokenmatrix/sub2api:3677f53db`.
+- AWS SSM deploy `d54261cc-d8a3-4446-967f-d6a8069ed765` and verify `e46df734-a08e-496a-bdd0-32626f2f0a3b` succeeded. `docker compose up -d --no-deps sub2api` recreated only the API service; PostgreSQL, Redis, and Caddy container identities remained unchanged.
+- Production `sub2api` container `451adde46f71...` is `healthy` with restart count `0`; `https://token-matrix.com/health` returns `{"status":"ok"}`. Authority descriptor still advertises all four engine subscription capabilities and both subscription/managed-binding guarantees.
+- This follow-up introduced no schema or migration, created no real payment during deployment verification, and recorded no password, token, payment action, or raw API secret.
+
 ### Release evidence 与 remaining manual gates
 
 - macOS final run: `https://github.com/jasonmao-msj/doge/actions/runs/31944142977`，source `9bddd5b0c1cc31baf9a2f2817028204afaf79d6e`，arm64 与 x86_64 jobs 均 success。

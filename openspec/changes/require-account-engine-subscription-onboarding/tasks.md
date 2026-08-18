@@ -57,5 +57,5 @@
 - [x] 6.19 [P0] 按确认稿收敛 Account Center Header、icon-only refresh/logout、安全页与多订阅 master/detail；一行最多 3 张 card，补齐 selection/refresh/tooltip/responsive focused tests 与本地 gates
 - [x] 6.20 [P0] 收敛 macOS cold restore 的 Keychain access budget：bootstrap 只评估一次 vault status、refresh credential 只读取一次并复用 rollback snapshot；补齐计数 vault regression 与本地 Rust gates
 - [x] 6.21 [P0] token2api provider-owned QR/payment page 标题使用 `Doge + authoritative plan name`，补 checkout/渲染 regression，不修改生产套餐、价格或支付状态机
-- [ ] 6.22 [P0] 在独立 worktree 完成 token2api focused/full gates、commit/push/PR，并按 AWS runbook server-first 发布、健康检查与 rollback evidence
+- [x] 6.22 [P0] 在独立 worktree 完成 token2api focused/full gates、commit/push/PR，并按 AWS runbook server-first 发布、健康检查与 rollback evidence
 - [x] 6.23 [P0] 完成 Doge bundled-engine focused Vitest/Rust/build-script tests、standard-user Windows matrix、macOS smoke、typecheck/lint/OpenSpec strict validate与跨层检查
