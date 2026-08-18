@@ -70,6 +70,14 @@ React Component
 22. reattachment cleanup 必须带 exact owner compare-and-clear。旧 Runtime terminal
     可以为自己的 identity 安装 ledger barrier，但不能用 thread-level cleanup 清掉新
     Attempt 的 processing、active owner 或 frozen Target。
+23. 强制 gate / onboarding state machine 的 escape action 必须按全部 authenticated
+    blocking states 枚举并由 shared frame owner 渲染；不能只在某个 leaf phase（如
+    checkout）补按钮。至少覆盖 loading、catalog、empty、failure、selection、payment、
+    preparing，并验证 action pending、failure 与 stale async completion。
+24. generation guard 只能决定谁能写结果，不能自动收口 pending UI。凡 async owner 在
+    请求前设置 `loading/busy/pending`，必须把该 flag 绑定到 exact generation/request id；
+    stale settle 仅清理自己仍拥有的 flag，显式 lifecycle commit（如 logout/change-password
+    signed-out）必须同步 invalidate owner 并收敛 UI，避免永久 spinner 或旧请求误清新请求。
 
 ## 常见失败模式
 
@@ -112,6 +120,10 @@ React Component
   frozen Target 一并清空。
 - context package 已成功生成，仅 fidelity 降级，却弹出 Continue/Cancel 并阻塞发送；
   Target 切换因此退化成重复审批。
+- 只在支付恢复页加入“退出登录”，套餐为空或服务失败时仍无账号切换入口；leaf tests
+  全绿但完整 state machine 仍存在 dead end。
+- stale generation 分支直接 `return`，忘记释放该 request 设置的 `loading=true`；或旧
+  request 在 settle 时无 owner compare 地清 loading，造成新 request 的 spinner 被误清。
 
 ## Optional Payload Contract
 
@@ -150,6 +162,11 @@ React Component
   仍持久化、真正 prepare/ACK/rejection 失败仍 fail closed，且 UI 不进入确认 gate。
 - 历史/Projection 至少覆盖：rich terminal blocks、failed/cancelled、
   reasoning/tool-only provenance、legacy dual-read、strict prompt echo filter。
+- mandatory gate escape 至少覆盖：authenticated loading、selection、empty、failure、
+  checkout 与 preparing 共享同一可见 action；pending 时阻止重复提交，失败后留在原
+  state，成功后 stale catalog/checkout completion 不得重新推进旧流程。
+- async loading ownership 至少覆盖：old request stale settle 不清 new owner；显式
+  signed-out commit 取消旧 owner 后立即离开 loading；迟到旧 response 不恢复旧 session。
 - mocked RPC 只能证明 mapping，不能代替 fake Runtime side-effect assertion。关键
   routing change 至少留一个可观察实际 Provider process/session key 与 Runtime model 的
   focused test。

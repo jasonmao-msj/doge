@@ -377,7 +377,7 @@ describe("useGlobalRuntimeNoticeDock", () => {
         messageKey: "runtimeNotice.runtime.ready",
         messageParams: {
           workspace: "Workspace Ready",
-          engine: "Claude Code",
+          engine: "Claude",
         },
       }),
     );

@@ -108,6 +108,9 @@
 .account-gate-methods button:focus-visible,
 .account-gate-primary:focus-visible,
 .account-gate-secondary:focus-visible,
+.account-gate-text-button:focus-visible,
+.account-gate-logout:focus-visible,
+.account-gate-dismiss:focus-visible,
 .account-gate-back:focus-visible {
   outline: 2px solid var(--ring, var(--gate-accent));
   outline-offset: 3px;
@@ -131,6 +134,10 @@
   color: var(--success, #27ae80);
   font-size: 12px;
   font-weight: 650;
+}
+
+.account-gate-engine .account-gate-engine-subscribe {
+  color: var(--text-secondary);
 }
 
 .account-gate-plan-list { display: grid; gap: 10px; }
@@ -180,7 +187,72 @@
 .account-gate-primary { color: white; background: var(--gate-accent); }
 .account-gate-secondary { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
 
-.account-gate-back {
+.account-gate-version-choice { min-height: 320px; }
+.account-gate-version-actions {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 10px;
+}
+.account-gate-version-actions > button { width: 100%; }
+
+.account-gate-checkout-actions {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.account-gate-checkout-exits {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.account-gate-text-button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-gate-text-button:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover, var(--accent));
+}
+
+.account-gate-logout {
+  position: absolute;
+  top: 48px;
+  right: 14px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.account-gate-logout:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover, var(--accent));
+}
+
+.account-gate-secondary:disabled,
+.account-gate-text-button:disabled,
+.account-gate-logout:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.account-gate-back,
+.account-gate-dismiss {
   position: absolute;
   top: 48px;
   left: 14px;
@@ -195,8 +267,15 @@
   background: transparent;
   cursor: pointer;
 }
-.account-gate-back:hover { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
-.account-gate-back svg { width: 18px; height: 18px; }
+.account-gate-back:hover,
+.account-gate-dismiss:hover { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
+.account-gate-back svg,
+.account-gate-dismiss svg { width: 18px; height: 18px; }
+
+.account-gate-dismiss:disabled {
+  cursor: default;
+  opacity: .55;
+}
 
 .account-gate-inline-error {
   display: flex;
@@ -232,7 +311,9 @@
   .account-gate-card { min-height: 440px; padding: 42px 12px 30px; }
   .account-gate-engine-grid { grid-template-columns: 1fr; }
   .account-gate-engine { min-height: 112px; }
-  .account-gate-back { top: 34px; left: 0; }
+  .account-gate-back,
+  .account-gate-dismiss { top: 34px; left: 0; }
+  .account-gate-logout { top: 34px; right: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

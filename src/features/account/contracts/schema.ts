@@ -65,6 +65,12 @@ export function isRfc3339UtcV1(value: unknown): value is string {
     instant.getUTCMilliseconds() === milliseconds;
 }
 
+export function isIsoDateV1(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
 export function isSemVerV1(value: unknown): value is string {
   return typeof value === "string" && /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(value);
 }
@@ -203,6 +209,7 @@ export type RuntimeSchemaV1 =
   | { readonly kind: "literal"; readonly value: string | number | boolean | null }
   | { readonly kind: "enum"; readonly values: readonly string[] }
   | { readonly kind: "timestamp" }
+  | { readonly kind: "date" }
   | { readonly kind: "decimal" }
   | { readonly kind: "opaqueId"; readonly prefix: string }
   | { readonly kind: "safeLabel"; readonly field: string }
@@ -288,6 +295,11 @@ export function validateRuntimeSchemaV1(
     case "timestamp":
       if (!isRfc3339UtcV1(value)) {
         issues.push(issueV1(path, "format", "expected strict RFC 3339 UTC timestamp"));
+      }
+      return;
+    case "date":
+      if (!isIsoDateV1(value)) {
+        issues.push(issueV1(path, "format", "expected YYYY-MM-DD calendar date"));
       }
       return;
     case "decimal":

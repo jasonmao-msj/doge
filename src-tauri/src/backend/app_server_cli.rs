@@ -743,8 +743,20 @@ pub(crate) fn build_codex_path_env(codex_bin: Option<&str>) -> Option<String> {
 }
 
 pub(crate) fn build_cli_path_env(custom_bin: Option<&str>) -> Option<String> {
-    let paths = build_search_paths(custom_bin);
-    let path_str = paths.to_string_lossy().to_string();
+    let mut entries = env::split_paths(&build_search_paths(custom_bin)).collect::<Vec<_>>();
+    if let Some(bin) = custom_bin.map(str::trim).filter(|value| !value.is_empty()) {
+        let path = Path::new(bin);
+        if let Some(package_root) = path.parent().and_then(Path::parent) {
+            let codex_path = package_root.join("codex-path");
+            if codex_path.is_dir() && !entries.iter().any(|entry| paths_equal(entry, &codex_path)) {
+                entries.insert(0, codex_path);
+            }
+        }
+    }
+    let path_str = env::join_paths(entries)
+        .unwrap_or_else(|_| OsString::from(""))
+        .to_string_lossy()
+        .to_string();
     if path_str.is_empty() {
         None
     } else {

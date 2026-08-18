@@ -407,7 +407,7 @@ const settings = {
     "ungroupedTitle": "असमूहित",
     "sidebarBasic": "बुनियादी सेटिंग्स",
     "sidebarShortcuts": "शॉर्टकट",
-    "sidebarProviders": "प्रदाता",
+    "sidebarProviders": "इंजन प्रबंधन",
     "sidebarMcp": "MCP सर्वर",
     "sidebarPermissions": "अनुमतियाँ",
     "sidebarCommit": "Commit AI",
@@ -420,7 +420,7 @@ const settings = {
     "sidebarGit": "Git",
     "sidebarOther": "अन्य",
     "sidebarReleaseNotes": "रिलीज़ नोट्स",
-    "sidebarVendors": "विक्रेता",
+    "sidebarVendors": "इंजन प्रबंधन",
     "sidebarExperimental": "प्रायोगिक",
     "sidebarAbout": "परिचय",
     "sidebarCommunity": "समुदाय",
@@ -1011,8 +1011,8 @@ const settings = {
     "openInTarget": "{{target}} में खोलें",
     "gitTitle": "Git",
     "gitDescription": "प्रबंधित करें कि Git साइडबार में diffs कैसे लोड होते हैं।",
-    "vendorsTitle": "वेंडर प्रबंधन",
-    "vendorsDescription": "Claude और Codex के लिए वेंडर कॉन्फ़िगरेशन प्रबंधित करें।",
+    "vendorsTitle": "इंजन प्रबंधन",
+    "vendorsDescription": "इंजन, प्रदाता और स्थानीय सेटिंग्स प्रबंधित करें।",
     "vendor": {
       "ccSwitchImport": {
         "entry": "आयात करें",

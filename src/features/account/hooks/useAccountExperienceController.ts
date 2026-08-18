@@ -17,6 +17,7 @@ import type {
   GatewayFailureV1,
   OAuthAttemptHandleV1,
   QuotaUsageViewV1,
+  UsageDayModelsViewV1,
 } from "../contracts";
 import { useAccountGatewayV1 } from "../gateway/AccountGatewayProvider";
 import {
@@ -71,11 +72,17 @@ export function useAccountExperienceControllerV1(
   const [centerTab, setCenterTab] = useState<AccountCenterTabV1>("overview");
   const [usage, setUsage] = useState<QuotaUsageViewV1 | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
+  const [usageDayModelsByKey, setUsageDayModelsByKey] = useState<Readonly<Record<string, UsageDayModelsViewV1>>>(() => ({}));
+  const [usageDayModelsLoadingKeys, setUsageDayModelsLoadingKeys] = useState<ReadonlySet<string>>(() => new Set());
+  const [usageDayModelsFailedKeys, setUsageDayModelsFailedKeys] = useState<ReadonlySet<string>>(() => new Set());
   const [securityNotice, setSecurityNotice] = useState<"profileUpdated" | "passwordChanged" | null>(null);
   const [configuration, setConfiguration] = useState<AccountConfigurationSurfaceV1>(
     INITIAL_CONFIGURATION_SURFACE_V1,
   );
   const generationRef = useRef(0);
+  const usageRequestGenerationRef = useRef(0);
+  const usageDayInFlightRef = useRef(new Set<string>());
+  const loadingGenerationRef = useRef<number | null>(null);
   const bootstrapRetryInFlightRef = useRef(false);
   const oauthWakeupsRef = useRef(new OAuthWakeupCoordinatorV1());
   const readOAuthAttemptRef = useRef<(attempt: OAuthAttemptHandleV1) => void>(() => undefined);
@@ -195,11 +202,17 @@ export function useAccountExperienceControllerV1(
     const generation = generationRef.current + 1;
     generationRef.current = generation;
     const indicateLoading = options.indicateLoading !== false;
-    if (indicateLoading) setLoading(true);
+    if (indicateLoading) {
+      loadingGenerationRef.current = generation;
+      setLoading(true);
+    }
     setFailure(null);
     const result = await gateway.bootstrap({});
+    if (indicateLoading && loadingGenerationRef.current === generation) {
+      loadingGenerationRef.current = null;
+      setLoading(false);
+    }
     if (generationRef.current !== generation) return;
-    if (indicateLoading) setLoading(false);
     if (!result.ok) {
       setFailure(result.error);
       return;
@@ -552,23 +565,73 @@ export function useAccountExperienceControllerV1(
     setBusy(false);
     if (!result.ok) {
       setFailure(result.error);
-      return;
+      return false;
     }
     generationRef.current += 1;
+    loadingGenerationRef.current = null;
+    setLoading(false);
     setBootstrap((current) => current ? { ...current, session: { status: "signedOut" } } : current);
     setProfile(null);
     setUsage(null);
+    usageRequestGenerationRef.current += 1;
+    usageDayInFlightRef.current.clear();
+    setUsageDayModelsByKey({});
+    setUsageDayModelsLoadingKeys(new Set());
+    setUsageDayModelsFailedKeys(new Set());
     setConfiguration(INITIAL_CONFIGURATION_SURFACE_V1);
     setAuthSurface("login");
+    return true;
   }, [gateway]);
 
   const loadUsage = useCallback(async () => {
+    const requestGeneration = ++usageRequestGenerationRef.current;
+    const accountGeneration = generationRef.current;
     setUsageLoading(true);
     const result = await gateway.usage.read({});
-    setUsageLoading(false);
-    if (result.ok) setUsage(result.value);
-    else setFailure(result.error);
+    if (usageRequestGenerationRef.current === requestGeneration) setUsageLoading(false);
+    if (
+      generationRef.current !== accountGeneration ||
+      usageRequestGenerationRef.current !== requestGeneration
+    ) return;
+    if (result.ok) {
+      setUsage(result.value);
+      usageDayInFlightRef.current.clear();
+      setUsageDayModelsByKey({});
+      setUsageDayModelsLoadingKeys(new Set());
+      setUsageDayModelsFailedKeys(new Set());
+    } else {
+      setFailure(result.error);
+    }
   }, [gateway]);
+
+  const loadUsageDayModels = useCallback(async (
+    engineId: "codex" | "claude-code",
+    date: string,
+  ) => {
+    const key = `${engineId}:${date}`;
+    if (usageDayModelsByKey[key] || usageDayInFlightRef.current.has(key)) return;
+    const accountGeneration = generationRef.current;
+    usageDayInFlightRef.current.add(key);
+    setUsageDayModelsLoadingKeys((current) => new Set(current).add(key));
+    setUsageDayModelsFailedKeys((current) => {
+      const next = new Set(current);
+      next.delete(key);
+      return next;
+    });
+    const result = await gateway.usage.readDayModels({ engineId, date }, {});
+    usageDayInFlightRef.current.delete(key);
+    if (generationRef.current !== accountGeneration) return;
+    setUsageDayModelsLoadingKeys((current) => {
+      const next = new Set(current);
+      next.delete(key);
+      return next;
+    });
+    if (result.ok) {
+      setUsageDayModelsByKey((current) => ({ ...current, [key]: result.value }));
+    } else {
+      setUsageDayModelsFailedKeys((current) => new Set(current).add(key));
+    }
+  }, [gateway, usageDayModelsByKey]);
 
   const openUsage = useCallback(() => {
     setCenterTab("usage");
@@ -619,6 +682,8 @@ export function useAccountExperienceControllerV1(
       return;
     }
     generationRef.current += 1;
+    loadingGenerationRef.current = null;
+    setLoading(false);
     setBootstrap((current) => current ? { ...current, session: { status: "signedOut" } } : current);
     setProfile(null);
     setUsage(null);
@@ -780,6 +845,9 @@ export function useAccountExperienceControllerV1(
     centerTab,
     usage,
     usageLoading,
+    usageDayModelsByKey,
+    usageDayModelsLoadingKeys,
+    usageDayModelsFailedKeys,
     securityNotice,
     configuration,
     setAuthSurface,
@@ -802,6 +870,7 @@ export function useAccountExperienceControllerV1(
     logout,
     openUsage,
     loadUsage,
+    loadUsageDayModels,
     updateProfile,
     changePassword,
     createConfigurationPlan,
@@ -823,6 +892,8 @@ export function useAccountExperienceControllerV1(
     revokeManagedKey,
   };
 }
+
+export type AccountExperienceControllerV1 = ReturnType<typeof useAccountExperienceControllerV1>;
 
 async function createConfigurationPlanViewV1(
   gateway: AccountGatewayV1,

@@ -292,14 +292,94 @@ describe("AccountExperience", () => {
   });
 
   it("does not read quota until the user opens the quota tab", async () => {
-    const { gateway } = renderScenarioV1("usage.fresh-normal");
+    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(900);
+    const { gateway, container } = renderScenarioV1("usage.fresh-normal");
     const usageRead = vi.spyOn(gateway.usage, "read");
+    const dayModelsRead = vi.spyOn(gateway.usage, "readDayModels");
     expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
     expect(usageRead).not.toHaveBeenCalled();
     await act(async () => {
       fireEvent.click(screen.getByRole("tab", { name: "额度" }));
     });
     await waitFor(() => expect(usageRead).toHaveBeenCalledTimes(1));
+    const codexCard = screen.getByRole("button", { name: /Codex/ });
+    const claudeCard = screen.getByRole("button", { name: /Claude/ });
+    const refreshButton = screen.getByRole("button", { name: "刷新额度" });
+    const logoutButton = screen.getByRole("button", { name: "退出登录" });
+    expect(codexCard.getAttribute("aria-pressed")).toBe("true");
+    expect(claudeCard.getAttribute("aria-pressed")).toBe("false");
+    expect(container.querySelector(".account-usage-engine-list")?.getAttribute("data-columns")).toBe("2");
+    expect(refreshButton.textContent).toBe("");
+    expect(logoutButton.textContent).toBe("");
+    expect(container.querySelector("time.account-header-fetched-at")?.textContent).toMatch(
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/,
+    );
+    expect(screen.queryByRole("heading", { name: "额度" })).toBeNull();
+    fireEvent.focus(refreshButton);
+    expect((await screen.findByRole("tooltip")).textContent).toContain("刷新额度");
+    fireEvent.blur(refreshButton);
+    expect(screen.getByText("过去一年")).toBeTruthy();
+    expect(screen.getAllByText("今日").length).toBeGreaterThan(0);
+    expect(
+      container.querySelectorAll(".account-usage-day[data-level='0']").length,
+    ).toBeGreaterThan(300);
+    expect(container.querySelector(".account-usage-heatmap-legend")).toBeNull();
+    expect(
+      Array.from(container.querySelectorAll(".account-usage-weekdays span"))
+        .map((element) => element.textContent)
+        .filter(Boolean),
+    ).toEqual(["一", "三", "五"]);
+    const monthLabels = Array.from(
+      container.querySelectorAll(".account-usage-heatmap-months span"),
+    ).map((element) => element.textContent ?? "").filter(Boolean);
+    expect(monthLabels.length).toBeGreaterThan(10);
+    expect(monthLabels.every((label) => label.includes("月") && !/[A-Za-z]/.test(label))).toBe(true);
+    expect(monthLabels.some((label, index) => label === monthLabels[index - 1])).toBe(false);
+    await waitFor(() => {
+      expect(container.querySelector<HTMLElement>(".account-usage-heatmap-scroll")?.scrollLeft)
+        .toBe(900);
+    });
+    const activeDay = container.querySelector<HTMLButtonElement>(
+      ".account-usage-day[data-level='2']",
+    );
+    expect(activeDay).toBeTruthy();
+    fireEvent.pointerEnter(activeDay!);
+    await waitFor(() => expect(dayModelsRead).toHaveBeenCalledTimes(1));
+    expect(dayModelsRead.mock.calls[0]?.[0]).toEqual({
+      engineId: "codex",
+      date: activeDay?.dataset.date,
+    });
+    fireEvent.pointerEnter(activeDay!);
+    expect(dayModelsRead).toHaveBeenCalledTimes(1);
+    fireEvent.click(claudeCard);
+    expect(usageRead).toHaveBeenCalledTimes(1);
+    expect(codexCard.getAttribute("aria-pressed")).toBe("false");
+    expect(claudeCard.getAttribute("aria-pressed")).toBe("true");
+    const claudeDay = container.querySelector<HTMLButtonElement>(
+      ".account-usage-day[data-level='3']",
+    );
+    expect(claudeDay).toBeTruthy();
+    fireEvent.pointerEnter(claudeDay!);
+    await waitFor(() => expect(dayModelsRead).toHaveBeenCalledTimes(2));
+    expect(dayModelsRead.mock.calls[1]?.[0]).toEqual({
+      engineId: "claude-code",
+      date: claudeDay?.dataset.date,
+    });
+
+    const firstUsageResult = await usageRead.mock.results[0]!.value;
+    let settleRefresh: ((value: typeof firstUsageResult) => void) | null = null;
+    usageRead.mockImplementationOnce(() => new Promise((resolve) => {
+      settleRefresh = resolve;
+    }));
+    fireEvent.click(refreshButton);
+    expect(refreshButton.getAttribute("aria-busy")).toBe("true");
+    expect(refreshButton.hasAttribute("disabled")).toBe(true);
+    fireEvent.click(refreshButton);
+    expect(usageRead).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      settleRefresh?.(firstUsageResult);
+    });
+    await waitFor(() => expect(refreshButton.getAttribute("aria-busy")).toBe("false"));
   });
 
   it("lists files before lazily loading safe change details", async () => {
@@ -412,6 +492,8 @@ describe("AccountExperience", () => {
     const updateProfile = vi.spyOn(gateway.profile, "updateProfile");
     expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
     fireEvent.click(screen.getByRole("tab", { name: "安全" }));
+    expect(screen.queryByRole("heading", { name: "安全" })).toBeNull();
+    expect(screen.getByText("GitHub")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "编辑资料" }));
     fireEvent.change(screen.getByLabelText("显示名称"), {
       target: { value: "Doge User" },
@@ -424,6 +506,7 @@ describe("AccountExperience", () => {
       expect.objectContaining({ intent: expect.any(String) }),
     );
     expect(await screen.findByText("账号资料已更新。")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Doge User" })).toBeTruthy();
   });
 
   it("keeps password fields local, validates confirmation, and signs out after change", async () => {

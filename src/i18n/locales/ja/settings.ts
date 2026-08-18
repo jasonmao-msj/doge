@@ -407,7 +407,7 @@ const settings = {
     "ungroupedTitle": "未グループ化",
     "sidebarBasic": "基本設定",
     "sidebarShortcuts": "ショートカット",
-    "sidebarProviders": "プロバイダー",
+    "sidebarProviders": "エンジン管理",
     "sidebarMcp": "MCP サーバー",
     "sidebarPermissions": "権限",
     "sidebarCommit": "Commit AI",
@@ -420,7 +420,7 @@ const settings = {
     "sidebarGit": "Git",
     "sidebarOther": "その他",
     "sidebarReleaseNotes": "リリースノート",
-    "sidebarVendors": "ベンダー",
+    "sidebarVendors": "エンジン管理",
     "sidebarExperimental": "実験的機能",
     "sidebarAbout": "情報",
     "sidebarCommunity": "コミュニティ",
@@ -1011,8 +1011,8 @@ const settings = {
     "openInTarget": "{{target}} で開く",
     "gitTitle": "Git",
     "gitDescription": "Git サイドバーでの差分の読み込み方法を管理します。",
-    "vendorsTitle": "ベンダー管理",
-    "vendorsDescription": "Claude と Codex のベンダー設定を管理します。",
+    "vendorsTitle": "エンジン管理",
+    "vendorsDescription": "エンジン、プロバイダー、ローカル設定を管理します。",
     "vendor": {
       "ccSwitchImport": {
         "entry": "インポート",

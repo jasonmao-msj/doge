@@ -6,11 +6,8 @@ import CircleAlert from "lucide-react/dist/esm/icons/circle-alert";
 import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 import Github from "lucide-react/dist/esm/icons/github";
 import KeyRound from "lucide-react/dist/esm/icons/key-round";
-import LogOut from "lucide-react/dist/esm/icons/log-out";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
-import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
 import X from "lucide-react/dist/esm/icons/x";
-import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import {
   Dialog,
   DialogContent,
@@ -19,20 +16,22 @@ import {
   DialogTitle,
 } from "../../../components/ui/dialog";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "../../../components/ui/tabs";
-import { EngineIcon } from "../../engine/components/EngineIcon";
 import type {
   SafePresentedValueV1,
   StaticRedactedSafePresentedValueV1,
 } from "../contracts";
-import { useAccountExperienceControllerV1 } from "../hooks/useAccountExperienceController";
-import { useAccountExperienceCopyV1 } from "../hooks/useAccountExperienceCopy";
+import {
+  useAccountExperienceControllerV1,
+  type AccountExperienceControllerV1,
+} from "../hooks/useAccountExperienceController";
+import {
+  useAccountExperienceCopyV1,
+} from "../hooks/useAccountExperienceCopy";
 import { openTokenMatrixApiKeysV1 } from "../runtime/tokenMatrixLinks";
-import { requestAccountEngineSwitchV1 } from "../runtime/engineSwitchSignal";
 import { AccountHelpTooltip } from "./AccountHelpTooltip";
+import { AccountCenter } from "./AccountCenter";
 import "./account-experience.css";
 import "./account-configuration-dialog.css";
-
-export type AccountExperienceControllerV1 = ReturnType<typeof useAccountExperienceControllerV1>;
 
 export type AccountExperienceProps = {
   /** Test/migration-only access to the superseded manual API-key configuration flow. */
@@ -61,7 +60,10 @@ export function AccountExperience({ showLegacyConfiguration = false }: AccountEx
 
   const signedIn = controller.bootstrap.session.status === "authenticated";
   return (
-    <div className="account-experience" data-testid="account-experience">
+    <div
+      className={`account-experience${signedIn ? " account-experience--authenticated" : ""}`}
+      data-testid="account-experience"
+    >
       {signedIn
         ? <AccountCenter controller={controller} showLegacyConfiguration={showLegacyConfiguration} />
         : <AccountAuthPanel controller={controller} />}
@@ -460,236 +462,6 @@ export function AccountAuthPanel({ controller }: { readonly controller: AccountE
         </>
       )}
     </section>
-  );
-}
-
-function AccountCenter({
-  controller,
-  showLegacyConfiguration,
-}: {
-  readonly controller: AccountExperienceControllerV1;
-  readonly showLegacyConfiguration: boolean;
-}) {
-  const copy = useAccountExperienceCopyV1();
-  const session = controller.bootstrap?.session;
-  if (!session || session.status !== "authenticated") return null;
-  return (
-    <section className="account-center" aria-labelledby="account-center-title">
-      <header className="account-center-header">
-        <div>
-          <h2 id="account-center-title">{session.profileLabel}</h2>
-          <p className="account-connection-status">
-            <span className="account-connection-dot" aria-hidden />
-            <span>{copy.signedInAs}</span>
-            <span aria-hidden>·</span>
-            <span>{session.primaryEmailLabel}</span>
-          </p>
-        </div>
-        <button type="button" className="account-quiet-button" onClick={() => void controller.logout("thisDevice")}>
-          <LogOut size={15} aria-hidden />{copy.logout}
-        </button>
-      </header>
-
-      <Tabs value={controller.centerTab} onValueChange={(value) => {
-        if (value === "usage") controller.openUsage();
-        if (value === "overview" || value === "security") controller.setCenterTab(value);
-      }}>
-        <TabsList className="account-center-tabs" aria-label={copy.accountCenter}>
-          <TabsTab value="overview" onClick={() => controller.setCenterTab("overview")}>
-            {copy.overview}
-          </TabsTab>
-          <TabsTab value="usage" onClick={controller.openUsage}>{copy.usage}</TabsTab>
-          <TabsTab value="security" onClick={() => controller.setCenterTab("security")}>
-            {copy.security}
-          </TabsTab>
-        </TabsList>
-        <TabsPanel value="overview">
-          <div className="account-overview-list">
-            <div className="account-overview-row">
-              <span>{copy.profile}</span>
-              <strong>{controller.profile?.profile.displayName ?? session.profileLabel}</strong>
-            </div>
-            {!showLegacyConfiguration ? (
-              <button
-                type="button"
-                className="account-overview-action"
-                onClick={requestAccountEngineSwitchV1}
-              >
-                <span>引擎</span>
-                <strong>切换引擎</strong>
-              </button>
-            ) : null}
-            {showLegacyConfiguration ? (
-              <button
-                type="button"
-                className="account-overview-action"
-                aria-label={copy.configureCodexAction}
-                onClick={controller.reopenConfiguration}
-              >
-                <span className="account-overview-product">
-                  <EngineIcon engine="codex" size={18} />
-                  <strong>Codex</strong>
-                </span>
-                <span className="account-overview-action-label">{copy.configureCodexAction}</span>
-              </button>
-            ) : null}
-          </div>
-        </TabsPanel>
-        <TabsPanel value="usage"><UsagePanel controller={controller} /></TabsPanel>
-        <TabsPanel value="security"><SecurityPanel controller={controller} showLegacyConfiguration={showLegacyConfiguration} /></TabsPanel>
-      </Tabs>
-    </section>
-  );
-}
-
-function UsagePanel({ controller }: { readonly controller: AccountExperienceControllerV1 }) {
-  const copy = useAccountExperienceCopyV1();
-  const usage = controller.usage;
-  return (
-    <div className="account-usage-panel">
-      <div className="account-section-heading">
-        <div className="account-title-with-help">
-          <h3>{copy.usage}</h3>
-          <AccountHelpTooltip label={`${copy.help}：${copy.usage}`}>
-            {copy.usageIntro}
-          </AccountHelpTooltip>
-        </div>
-        <button type="button" onClick={() => void controller.loadUsage()} disabled={controller.usageLoading}>
-          <RefreshCw size={15} className={controller.usageLoading ? "account-spin" : ""} aria-hidden />
-          {usage ? copy.refreshUsage : copy.loadUsage}
-        </button>
-      </div>
-      {usage?.status === "available" ? (
-        <>
-          <p className="account-usage-freshness" role="status">
-            {usage.freshness === "fresh" ? copy.usageFresh : copy.usageStale}
-            {usage.fetchedAt ? ` · ${new Date(usage.fetchedAt).toLocaleString()}` : ""}
-          </p>
-          <dl className="account-usage-grid">
-            <div><dt>{copy.remaining}</dt><dd>{usage.remaining?.value ?? "—"}<small>{usage.remaining?.unit}</small></dd></div>
-            <div><dt>{copy.used}</dt><dd>{usage.used?.value ?? "—"}<small>{usage.used?.unit}</small></dd></div>
-            <div><dt>{copy.resetsAt}</dt><dd className="account-usage-date">{usage.resetsAt ? new Date(usage.resetsAt).toLocaleString() : "—"}</dd></div>
-          </dl>
-        </>
-      ) : usage ? (
-        <p className="account-empty-state">{copy.usageUnavailable}</p>
-      ) : (
-        <p className="account-empty-state">{copy.usageEmpty}</p>
-      )}
-    </div>
-  );
-}
-
-function SecurityPanel({
-  controller,
-  showLegacyConfiguration,
-}: {
-  readonly controller: AccountExperienceControllerV1;
-  readonly showLegacyConfiguration: boolean;
-}) {
-  const copy = useAccountExperienceCopyV1();
-  const security = controller.profile?.security;
-  const [displayName, setDisplayName] = useState(controller.profile?.profile.displayName ?? "");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordMismatch, setPasswordMismatch] = useState(false);
-  const [editor, setEditor] = useState<"profile" | "password" | null>(null);
-  const [confirming, setConfirming] = useState<"revokeCredential" | "logoutAll" | null>(null);
-  const capabilities = controller.bootstrap?.capabilities.entries;
-  const profileEditable = capabilities?.["account.profile"]?.status === "enabled";
-  const passwordEditable = capabilities?.["account.passwordChange"]?.status === "enabled";
-  const revokeAllEnabled = capabilities?.["account.revokeAllSessions"]?.status === "enabled";
-
-  const submitProfile = (event: FormEvent) => {
-    event.preventDefault();
-    void controller.updateProfile(displayName);
-  };
-  const submitPassword = (event: FormEvent) => {
-    event.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setPasswordMismatch(true);
-      return;
-    }
-    const current = currentPassword;
-    const next = newPassword;
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setPasswordMismatch(false);
-    void controller.changePassword(current, next);
-  };
-  return (
-    <div className="account-security-panel">
-      <div className="account-section-heading">
-        <div className="account-title-with-help">
-          <h3>{copy.security}</h3>
-          <AccountHelpTooltip label={`${copy.help}：${copy.security}`}>
-            {copy.securityDescription}
-          </AccountHelpTooltip>
-        </div>
-      </div>
-      <dl className="account-security-list">
-        <div><dt><ShieldCheck aria-hidden />{copy.totp}</dt><dd>{security?.totp === "enabled" ? copy.enabled : copy.disabled}</dd></div>
-        <div><dt><KeyRound aria-hidden />{copy.passwordChange}</dt><dd>{security?.passwordChange === "available" ? copy.available : "—"}</dd></div>
-        <div><dt>{copy.identityBindings}</dt><dd>{security?.identityBindings.map((binding) => binding.provider.replace("auth.oauth.", "")).join(", ") || "—"}</dd></div>
-        {showLegacyConfiguration ? <div><dt><KeyRound aria-hidden />{copy.codexCredential}</dt><dd>{controller.configuration.managedKeyReady ? copy.enabled : copy.disabled}</dd></div> : null}
-      </dl>
-      {showLegacyConfiguration && controller.configuration.managedKeyReady ? (
-        <div className="account-security-actions">
-          <button type="button" onClick={() => void controller.changeManagedKey()} disabled={controller.busy}>{copy.rotateCredential}</button>
-          <button type="button" className="account-danger-button" onClick={() => setConfirming("revokeCredential")} disabled={controller.busy}>{copy.revokeCredential}</button>
-        </div>
-      ) : null}
-      <div className="account-security-editor-actions">
-        {profileEditable ? (
-          <button type="button" onClick={() => setEditor(editor === "profile" ? null : "profile")} aria-expanded={editor === "profile"}>
-            {copy.editProfile}
-          </button>
-        ) : null}
-        {passwordEditable ? (
-          <button type="button" onClick={() => setEditor(editor === "password" ? null : "password")} aria-expanded={editor === "password"}>
-            {copy.passwordChange}
-          </button>
-        ) : null}
-      </div>
-      {profileEditable && editor === "profile" ? (
-        <form className="account-security-form" onSubmit={submitProfile}>
-          <h4>{copy.profile}</h4>
-          <label><span>{copy.displayName}</span><input name="display-name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} autoComplete="off" maxLength={80} required /></label>
-          <button type="submit" disabled={controller.busy}>{copy.saveProfile}</button>
-        </form>
-      ) : null}
-      {passwordEditable && editor === "password" ? (
-        <form className="account-security-form" onSubmit={submitPassword}>
-          <h4>{copy.passwordChange}</h4>
-          <label><span>{copy.currentPassword}</span><input name="current-password" type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" required /></label>
-          <label><span>{copy.newPassword}</span><input name="new-password" type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" minLength={6} required /></label>
-          <label><span>{copy.confirmNewPassword}</span><input name="new-password-confirmation" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} autoComplete="new-password" minLength={6} required /></label>
-          {passwordMismatch ? <p className="account-form-error" role="alert">{copy.passwordMismatch}</p> : null}
-          <button type="submit" disabled={controller.busy}>{copy.changePasswordAction}</button>
-        </form>
-      ) : null}
-      {controller.securityNotice === "profileUpdated" ? <p className="account-form-notice" role="status">{copy.profileUpdated}</p> : null}
-      {revokeAllEnabled ? (
-        <button type="button" className="account-danger-button" onClick={() => setConfirming("logoutAll")}>{copy.logoutAll}</button>
-      ) : null}
-      <ConfirmDialog
-        open={confirming !== null}
-        title={confirming === "revokeCredential" ? copy.revokeCredentialConfirmTitle : copy.logoutAllConfirmTitle}
-        body={confirming === "revokeCredential" ? copy.revokeCredentialConfirmBody : copy.logoutAllConfirmBody}
-        confirmText={confirming === "revokeCredential" ? copy.confirmRevokeCredential : copy.confirmLogoutAll}
-        cancelText={copy.cancel}
-        danger
-        onCancel={() => setConfirming(null)}
-        onConfirm={() => {
-          const action = confirming;
-          setConfirming(null);
-          if (action === "revokeCredential") void controller.revokeManagedKey();
-          if (action === "logoutAll") void controller.logout("allSessions");
-        }}
-      />
-    </div>
   );
 }
 

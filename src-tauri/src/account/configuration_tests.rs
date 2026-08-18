@@ -3,6 +3,32 @@ use serde_json::{json, Value};
 use std::fs;
 
 #[test]
+fn atomic_write_replaces_an_existing_user_profile_target() {
+    let root = std::env::temp_dir().join(format!(
+        "doge-account-existing-config-test-{}",
+        uuid::Uuid::new_v4()
+    ));
+    let target = root.join(".doge/config.json");
+    fs::create_dir_all(target.parent().expect("target parent")).expect("create profile dir");
+    fs::write(&target, "before").expect("write existing config");
+
+    atomic_write(&target, "after").expect("replace existing config as current user");
+
+    assert_eq!(
+        fs::read_to_string(&target).expect("read replaced config"),
+        "after"
+    );
+    assert_eq!(
+        fs::read_dir(target.parent().expect("target parent"))
+            .expect("read profile dir")
+            .count(),
+        1,
+        "staged temporary files must be cleaned"
+    );
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
 fn provider_recipe_has_fixed_authority_and_no_secret() {
     assert!(ACCOUNT_CODEX_CONFIG_TOML.contains("https://token-matrix.com"));
     assert!(ACCOUNT_CODEX_CONFIG_TOML.contains("wire_api = \"responses\""));

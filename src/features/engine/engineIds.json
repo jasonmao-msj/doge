@@ -4,8 +4,8 @@
   "engines": [
     {
       "id": "claude",
-      "displayName": "Claude Code",
-      "shortName": "Claude Code",
+      "displayName": "Claude",
+      "shortName": "Claude",
       "adapterId": "builtin.claude",
       "protocolFamily": "stream-json-cli",
       "executionModel": "one-shot",
@@ -13,7 +13,7 @@
     },
     {
       "id": "codex",
-      "displayName": "Codex CLI",
+      "displayName": "Codex",
       "shortName": "Codex",
       "adapterId": "builtin.codex",
       "protocolFamily": "app-server-json-rpc",
@@ -22,7 +22,7 @@
     },
     {
       "id": "gemini",
-      "displayName": "Gemini CLI",
+      "displayName": "Gemini",
       "shortName": "Gemini",
       "adapterId": "builtin.gemini",
       "protocolFamily": "stream-json-cli",
@@ -31,7 +31,7 @@
     },
     {
       "id": "grok",
-      "displayName": "Grok CLI",
+      "displayName": "Grok",
       "shortName": "Grok",
       "adapterId": "builtin.grok",
       "protocolFamily": "stream-json-cli",
@@ -40,7 +40,7 @@
     },
     {
       "id": "kimi",
-      "displayName": "Kimi CLI",
+      "displayName": "Kimi",
       "shortName": "Kimi",
       "adapterId": "builtin.kimi",
       "protocolFamily": "stream-json-cli",

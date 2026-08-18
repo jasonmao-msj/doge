@@ -1,4 +1,5 @@
 import {
+  abandonAccountEngineCheckoutV1,
   createAccountEngineCheckoutV1,
   prepareAccountEngineV1,
   readAccountEngineCatalogV1,
@@ -10,6 +11,10 @@ import {
 
 export const MANAGED_ENGINE_IDS_V1 = ["codex", "claude-code"] as const;
 export type ManagedEngineIdV1 = (typeof MANAGED_ENGINE_IDS_V1)[number];
+
+export function managedEngineDisplayNameV1(engineId: ManagedEngineIdV1): string {
+  return engineId === "codex" ? "Codex" : "Claude";
+}
 
 export type EngineEntitlementV1 = {
   readonly status: "active" | "none";
@@ -53,6 +58,7 @@ export type CheckoutViewV1 = {
   readonly checkoutId: number;
   readonly status: "pending" | "processing" | "paid" | "cancelled" | "expired" | "failed";
   readonly expiresAt: string;
+  readonly planName: string | null;
   readonly action: null | {
     readonly kind: "open_url" | "show_qr" | "unsupported";
     readonly url: string | null;
@@ -89,6 +95,7 @@ export type AccountEngineOnboardingClientV1 = {
   ) => Promise<EngineOnboardingResultV1<CheckoutViewV1>>;
   readonly readCheckout: (checkoutId: number) => Promise<EngineOnboardingResultV1<CheckoutViewV1>>;
   readonly resumeCheckout: () => Promise<EngineOnboardingResultV1<PendingEngineCheckoutViewV1 | null>>;
+  readonly abandonCheckout: (checkoutId: number) => Promise<EngineOnboardingResultV1<null>>;
   readonly prepare: (engineId: ManagedEngineIdV1) => Promise<EngineOnboardingResultV1<EngineReadinessViewV1>>;
 };
 
@@ -111,10 +118,19 @@ export function createAccountEngineOnboardingClientV1(): AccountEngineOnboarding
     resumeCheckout: async () => parsePendingCheckout(
       await readPendingAccountEngineCheckoutV1(),
     ),
+    abandonCheckout: async (checkoutId) => parseAcknowledgement(
+      await abandonAccountEngineCheckoutV1(checkoutId),
+    ),
     prepare: async (engineId) => parseReadiness(
       await prepareAccountEngineV1(engineId, newOperationId()),
     ),
   };
+}
+
+function parseAcknowledgement(value: unknown): EngineOnboardingResultV1<null> {
+  const envelope = readEnvelope(value);
+  if (!envelope.ok) return envelope;
+  return envelope.value === null ? { ok: true, value: null } : protocolFailure();
 }
 
 function parsePendingCheckout(
@@ -158,7 +174,7 @@ function parseEngine(value: unknown): ManagedEngineViewV1 | null {
   if (!isNullish(expiresAt) && typeof expiresAt !== "string") return null;
   return {
     id,
-    displayName: object.display_name,
+    displayName: managedEngineDisplayNameV1(id),
     entitlement: { status, expiresAt: expiresAt ?? null },
   };
 }
@@ -228,12 +244,17 @@ function parseCheckout(value: unknown): EngineOnboardingResultV1<CheckoutViewV1>
   if (checkout.action !== undefined && checkout.action !== null && action === null) {
     return protocolFailure();
   }
+  if (!isNullish(checkout.plan_name) &&
+    (typeof checkout.plan_name !== "string" || checkout.plan_name.trim().length === 0)) {
+    return protocolFailure();
+  }
   return {
     ok: true,
     value: {
       checkoutId: checkout.checkout_id,
       status: checkout.status as CheckoutViewV1["status"],
       expiresAt: checkout.expires_at,
+      planName: typeof checkout.plan_name === "string" ? checkout.plan_name : null,
       action,
     },
   };

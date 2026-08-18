@@ -1,4 +1,4 @@
-import { Fragment, memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, memo, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import CheckIcon from 'lucide-react/dist/esm/icons/check';
 import ChevronDownIcon from 'lucide-react/dist/esm/icons/chevron-down';
@@ -19,6 +19,11 @@ import {
   OPENCODE_LOCAL_PROVIDER_PROFILE_ID,
 } from '../../../../threads/constants/codexProviderProfiles';
 import { EngineIcon } from '../../../../engine/components/EngineIcon';
+import {
+  managedEngineIdForRuntimeV1,
+  readManagedEngineEntitlementsV1,
+  subscribeManagedEngineEntitlementsV1,
+} from '../../../../account/runtime/engineEntitlementStore';
 import { ProviderBrandIconImg } from '../../../../vendors/components/ProviderBrandIconImg';
 import {
   PROVIDER_BRAND_ICON_SRC,
@@ -500,6 +505,11 @@ export const ModelSelect = memo(({
   onReloadProviderConfig,
 }: ModelSelectProps) => {
   const { t } = useTranslation();
+  const managedEntitlements = useSyncExternalStore(
+    subscribeManagedEngineEntitlementsV1,
+    readManagedEngineEntitlementsV1,
+    readManagedEngineEntitlementsV1,
+  );
   const [isOpen, setIsOpen] = useState(false);
   const [refreshConfigError, setRefreshConfigError] = useState<string | null>(null);
   const [modelMappingVersion, setModelMappingVersion] = useState(0);
@@ -1089,6 +1099,10 @@ export const ModelSelect = memo(({
               const groupRefresh = resolveGroupRefresh(group);
               const hasChannelSwitcher =
                 hasTargetGroups && group.profiles.length > 0;
+              const managedEngineId = managedEngineIdForRuntimeV1(group.providerId);
+              const entitlementStatus = managedEngineId
+                ? managedEntitlements[managedEngineId]
+                : 'unknown';
               return (
                 <Fragment key={group.providerId}>
                   {groupIndex > 0 && <DropdownMenuSeparator />}
@@ -1102,6 +1116,11 @@ export const ModelSelect = memo(({
                     >
                       <ModelIcon provider={group.providerId} size={18} />
                       <span className="min-w-0 flex-1 truncate">{group.providerLabel}</span>
+                      {entitlementStatus === 'none' ? (
+                        <span className="shrink-0 text-[11px] font-medium text-muted-foreground">
+                          {t('models.subscribeToUse')}
+                        </span>
+                      ) : null}
                       {isGroupCurrent(group) && (
                         <span
                           className="size-1.5 shrink-0 rounded-full bg-emerald-500"

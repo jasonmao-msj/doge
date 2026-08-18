@@ -26,6 +26,7 @@ import {
   validateAccountPersistenceSchemaV1,
   validateAccountSafeArtifactV1,
   validateAccountSessionViewV1,
+  validateSafeLabelForFieldV1,
   validateAuthorityCapabilityDescriptorV1,
   brokerOperationIdV1,
   transportRequestIdV1,
@@ -135,6 +136,38 @@ describe("Good/Base/Bad executable schema fixtures", () => {
     expect(validateAccountGatewayEventV1(
       ACCOUNT_BASE_CONTRACT_FIXTURES_V1.quotaPullOnlyEvent,
     ).ok).toBe(true);
+  });
+
+  it("accepts a signed-in bootstrap with a masked primary email label", () => {
+    const fixture = ACCOUNT_GOOD_CONTRACT_FIXTURES_V1.ipcResponse;
+    if (!fixture.ok) throw new Error("Good bootstrap fixture must be successful");
+    const response = {
+      ...fixture,
+      value: {
+        ...fixture.value,
+        session: {
+          status: "authenticated",
+          accountEpoch: 1,
+          sessionCapability: "persistent",
+          profileLabel: "Token Matrix",
+          primaryEmailLabel: "a***@token-matrix.com",
+        },
+      },
+    } as const;
+
+    expect(validateSafeLabelForFieldV1(
+      "primaryEmailLabel",
+      response.value.session.primaryEmailLabel,
+    ).ok).toBe(true);
+    expect(validateAccountIpcResponseV1(
+      response,
+      ACCOUNT_GOOD_IPC_RESPONSE_CONTEXT_V1,
+    ).ok).toBe(true);
+    expect(validateSafeLabelForFieldV1(
+      "primaryEmailLabel",
+      "user@example.com",
+    ).ok).toBe(false);
+    expect(validateSafeLabelForFieldV1("profileDisplayName", "A***").ok).toBe(false);
   });
 
   it.each([

@@ -60,7 +60,7 @@ const sidebar = {
     "codexProviderChoiceTitle": "Selección de proveedor",
     "codexProviderSelectedTip": "Seleccionado. Haz clic en Codex a la izquierda para iniciar una sesión.",
     "grokProviderChoiceTitle": "Selección de proveedor",
-    "grokProviderSelectedTip": "Seleccionado. Haz clic en Grok CLI a la izquierda para iniciar una sesión.",
+    "grokProviderSelectedTip": "Seleccionado. Haz clic en Grok a la izquierda para iniciar una sesión.",
     "opencodeProviderChoiceTitle": "Selección de proveedor",
     "opencodeProviderSelectedTip": "Seleccionado. Haz clic en OpenCode a la izquierda para iniciar una sesión.",
     "providerFollowsGlobalLabel": "Sigue la configuración global",
@@ -162,7 +162,7 @@ const sidebar = {
       "title": "MCPs",
       "refresh": "Actualizar",
       "tabs": {
-        "claude": "Claude Code",
+        "claude": "Claude",
         "codex": "Codex"
       },
       "filter": {

@@ -394,7 +394,7 @@ async fn ensure_codex_session_with_mode(
         )
         .await?;
 
-        let (default_bin, base_codex_args) = {
+        let (mut default_bin, base_codex_args) = {
             let settings = state.app_settings.lock().await;
             (
                 settings.codex_bin.clone(),
@@ -405,6 +405,11 @@ async fn ensure_codex_session_with_mode(
         let materialized_profile = materialize_codex_provider_profile(profile.clone())?;
         let mut launch_env = materialized_profile.launch_env.clone();
         if profile.id() == crate::account::configuration::ACCOUNT_CODEX_PROVIDER_ID {
+            default_bin = state
+                .account_runtime
+                .managed_engine_binary_for_launch("codex")
+                .await
+                .or(default_bin);
             let managed_key = state.account_runtime.managed_codex_key_for_launch().await?;
             launch_env.insert("OPENAI_API_KEY".to_string(), managed_key.to_string());
         }

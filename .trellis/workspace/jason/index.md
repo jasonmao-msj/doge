@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 17
-- **Last Active**: 2026-08-16
+- **Total Sessions**: 30
+- **Last Active**: 2026-08-17
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~580 | Active |
+| `journal-1.md` | ~1009 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,19 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 30 | 2026-08-17 | 记录 token2api 生产发布证据 | `c67c997a3` | `codex/fix-account-masked-email-bootstrap` |
+| 29 | 2026-08-17 | 记录双平台内置引擎产物 | `1540773b1` | `codex/fix-account-masked-email-bootstrap` |
+| 28 | 2026-08-17 | 修复 Windows 跨卷引擎打包 | `e06a03bc0` | `codex/fix-account-masked-email-bootstrap` |
+| 27 | 2026-08-17 | 加固 Windows artifact 构建入口 | `76007cc53` | `codex/fix-account-masked-email-bootstrap` |
+| 26 | 2026-08-17 | 内置订阅引擎与版本选择 | `40f9ee78e` | `codex/fix-account-masked-email-bootstrap` |
+| 25 | 2026-08-17 | 完善账号多订阅用量与 Keychain 恢复 | `8e8b165c4` | `codex/fix-account-masked-email-bootstrap` |
+| 24 | 2026-08-16 | 打通第二引擎订阅闭环并生成 macOS 体验包 | `177720cc1` | `codex/fix-account-masked-email-bootstrap` |
+| 23 | 2026-08-16 | 清理引擎界面并加固桌面启动 | `31498df79` | `codex/fix-account-masked-email-bootstrap` |
+| 22 | 2026-08-16 | 完成双平台本地试用包交付 | `c37cf1c27` | `codex/fix-account-masked-email-bootstrap` |
+| 21 | 2026-08-16 | 修复退出登录永久连接竞态 | `fe5a70b82` | `codex/fix-account-masked-email-bootstrap` |
+| 20 | 2026-08-16 | 补全无订阅账号退出入口并重新打包 | `af809d10b` | `codex/fix-account-masked-email-bootstrap` |
+| 19 | 2026-08-16 | 补全支付恢复退出动线并生成本地包 | `f8cc2082b` | `codex/fix-account-masked-email-bootstrap` |
+| 18 | 2026-08-16 | 修复账号恢复脱敏邮箱误判并验证本地包 | `520a19ade` | `codex/fix-account-masked-email-bootstrap` |
 | 17 | 2026-08-16 | 记录跨平台发布证据 | `2693045ae` | `codex/account-release-evidence` |
 | 16 | 2026-08-16 | 验证 Windows 应用启动 | `7a9d9b3cb` | `codex/windows-launch-smoke` |
 | 15 | 2026-08-16 | 修复 macOS 嵌套签名顺序 | `2f672fc67` | `codex/macos-sign-nested-first` |

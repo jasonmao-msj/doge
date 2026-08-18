@@ -58,7 +58,7 @@ export const PromptEnhancerDialog = ({
   const getEngineLabel = (engine: EngineType) => {
     switch (engine) {
       case 'claude':
-        return 'Claude Code';
+        return 'Claude';
       case 'codex':
         return 'Codex';
       case 'gemini':

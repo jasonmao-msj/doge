@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
 import Check from "lucide-react/dist/esm/icons/check";
 import CircleAlert from "lucide-react/dist/esm/icons/circle-alert";
 import LoaderCircle from "lucide-react/dist/esm/icons/loader-circle";
-import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
-import QRCode from "qrcode";
-import dogeMascot from "../../../assets/brand/doge-mascot-avatar.png";
 import type { AccountGatewayV1 } from "../contracts";
 import { AccountGatewayProvider } from "../gateway/AccountGatewayProvider";
 import { useAccountExperienceControllerV1 } from "../hooks/useAccountExperienceController";
 import { useAccountExperienceCopyV1 } from "../hooks/useAccountExperienceCopy";
-import type { AccountExperienceCopyV1 } from "../locale/accountExperienceCopy";
 import {
   createAccountEngineOnboardingClientV1,
+  managedEngineDisplayNameV1,
   type AccountEngineOnboardingClientV1,
   type CheckoutViewV1,
   type EnginePlansViewV1,
@@ -21,13 +17,43 @@ import {
   type PaymentMethodViewV1,
   type SubscriptionPlanViewV1,
 } from "../runtime/engineOnboardingClient";
-import { subscribeAccountEngineSwitchV1 } from "../runtime/engineSwitchSignal";
+import {
+  publishAccountEngineReadyV1,
+  subscribeAccountEngineSwitchV1,
+  type AccountEngineSwitchIntentV1,
+} from "../runtime/engineSwitchSignal";
+import {
+  clearManagedEngineEntitlementsV1,
+  markManagedEngineEntitledV1,
+  publishManagedEngineEntitlementsV1,
+} from "../runtime/engineEntitlementStore";
 import {
   readLastManagedEnginePreferenceV1,
   writeLastManagedEnginePreferenceV1,
 } from "../runtime/enginePreference";
+import {
+  createManagedEngineToolchainClientV1,
+  type ManagedEngineToolchainChoiceV1,
+  type ManagedEngineToolchainClientV1,
+  type ManagedEngineToolchainViewV1,
+} from "../runtime/managedEngineToolchain";
 import { AccountAuthPanel } from "./AccountExperience";
-import { AccountHelpTooltip } from "./AccountHelpTooltip";
+import {
+  CheckoutQrCode,
+  GateEmptyPlans,
+  GateFailure,
+  GateFailureBody,
+  GateFrame,
+  GateHeading,
+  GateInlineFailure,
+  GateLoading,
+  GateStepBack,
+  GateToolchainChoice,
+  PaymentMethodList,
+  PlanButton,
+  interpolate,
+  type GateAccountExit,
+} from "./AccountAppGateViews";
 import { EngineIcon } from "../../engine/components/EngineIcon";
 import { activateAccountManagedEngine } from "../../../services/accountEngineActivation";
 import { openAccountExternalUrl } from "../../../services/accountExternalLinks";
@@ -39,6 +65,7 @@ type GatePhase =
   | "plans"
   | "paymentMethod"
   | "checkout"
+  | "toolchainChoice"
   | "preparing"
   | "ready";
 
@@ -46,6 +73,7 @@ export type AccountAppGateProps = {
   readonly gateway: AccountGatewayV1;
   readonly engineClient?: AccountEngineOnboardingClientV1;
   readonly engineActivator?: (engineId: ManagedEngineIdV1) => Promise<void>;
+  readonly engineToolchain?: ManagedEngineToolchainClientV1;
   readonly readyContent?: ReactNode;
 };
 
@@ -53,17 +81,23 @@ export function AccountAppGate({
   gateway,
   engineClient,
   engineActivator,
+  engineToolchain,
   readyContent,
 }: AccountAppGateProps) {
   const client = useMemo(
     () => engineClient ?? createAccountEngineOnboardingClientV1(),
     [engineClient],
   );
+  const toolchainClient = useMemo(
+    () => engineToolchain ?? createManagedEngineToolchainClientV1(),
+    [engineToolchain],
+  );
   return (
     <AccountGatewayProvider gateway={gateway}>
       <AccountAppGateInner
         client={client}
         activateEngine={engineActivator ?? activateManagedEngine}
+        toolchain={toolchainClient}
         readyContent={readyContent}
       />
     </AccountGatewayProvider>
@@ -73,53 +107,148 @@ export function AccountAppGate({
 function AccountAppGateInner({
   client,
   activateEngine,
+  toolchain,
   readyContent,
 }: {
   readonly client: AccountEngineOnboardingClientV1;
   readonly activateEngine: (engineId: ManagedEngineIdV1) => Promise<void>;
+  readonly toolchain: ManagedEngineToolchainClientV1;
   readonly readyContent?: React.ReactNode;
 }) {
   const controller = useAccountExperienceControllerV1({ loadAuthenticatedExtras: false });
   const copy = useAccountExperienceCopyV1();
+  const accountBusy = controller.busy;
+  const accountLogout = controller.logout;
   const [phase, setPhase] = useState<GatePhase>("catalog");
   const [engines, setEngines] = useState<readonly ManagedEngineViewV1[]>([]);
   const [selectedEngine, setSelectedEngine] = useState<ManagedEngineIdV1 | null>(null);
   const [plans, setPlans] = useState<EnginePlansViewV1 | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlanViewV1 | null>(null);
   const [checkout, setCheckout] = useState<CheckoutViewV1 | null>(null);
+  const [toolchainChoice, setToolchainChoice] = useState<ManagedEngineToolchainViewV1 | null>(null);
+  const [checkoutActionBusy, setCheckoutActionBusy] = useState(false);
+  const [logoutBusy, setLogoutBusy] = useState(false);
+  const [logoutFailure, setLogoutFailure] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  const [hasEnteredApp, setHasEnteredApp] = useState(false);
   const catalogGeneration = useRef(0);
+  const flowGeneration = useRef(0);
+  const checkoutActionBusyRef = useRef(false);
+  const inAppFlow = useRef(false);
+  const activeIntent = useRef<AccountEngineSwitchIntentV1 | null>(null);
 
-  const commitReady = useCallback(async (engineId: ManagedEngineIdV1) => {
+  const commitReady = useCallback(async (
+    engineId: ManagedEngineIdV1,
+    generation = flowGeneration.current,
+  ) => {
     try {
       await activateEngine(engineId);
     } catch {
+      if (flowGeneration.current !== generation) return;
       setFailure("engineUnavailable");
       setSelectedEngine(engineId);
       setPhase("preparing");
       return;
     }
+    if (flowGeneration.current !== generation) return;
     writeLastManagedEnginePreferenceV1(engineId);
+    markManagedEngineEntitledV1(engineId);
+    const completion = activeIntent.current;
+    const shouldPublishCompletion = inAppFlow.current && completion !== null;
+    inAppFlow.current = false;
+    activeIntent.current = null;
+    setHasEnteredApp(true);
     setPhase("ready");
+    if (shouldPublishCompletion && completion) {
+      publishAccountEngineReadyV1({
+        engineId,
+        openNewConversation: completion.openNewConversation,
+      });
+    }
   }, [activateEngine]);
 
-  const prepare = useCallback(async (engineId: ManagedEngineIdV1) => {
-    setSelectedEngine(engineId);
+  const finishPreparation = useCallback(async (
+    engineId: ManagedEngineIdV1,
+    generation = flowGeneration.current,
+  ) => {
     setPhase("preparing");
     setFailure(null);
-    const result = await client.prepare(engineId);
+    let result: Awaited<ReturnType<AccountEngineOnboardingClientV1["prepare"]>>;
+    try {
+      result = await client.prepare(engineId);
+    } catch {
+      if (flowGeneration.current !== generation) return;
+      setFailure("serviceUnavailable");
+      return;
+    }
+    if (flowGeneration.current !== generation) return;
     if (!result.ok || result.value.status !== "ready") {
       setFailure(result.ok ? "configurationRejected" : result.error.code);
       return;
     }
-    await commitReady(engineId);
+    await commitReady(engineId, generation);
   }, [client, commitReady]);
 
-  const openPlans = useCallback(async (engineId: ManagedEngineIdV1) => {
+  const prepare = useCallback(async (
+    engineId: ManagedEngineIdV1,
+    generation = flowGeneration.current,
+  ) => {
+    setSelectedEngine(engineId);
+    setToolchainChoice(null);
+    setPhase("preparing");
+    setFailure(null);
+    let resolution: Awaited<ReturnType<ManagedEngineToolchainClientV1["inspect"]>>;
+    try {
+      resolution = await toolchain.inspect(engineId);
+    } catch {
+      if (flowGeneration.current !== generation) return;
+      setFailure("engineBundleUnavailable");
+      return;
+    }
+    if (flowGeneration.current !== generation) return;
+    if (!resolution.ok) {
+      setFailure(resolution.error.code);
+      return;
+    }
+    if (resolution.value.status === "choiceRequired") {
+      setToolchainChoice(resolution.value);
+      setPhase("toolchainChoice");
+      return;
+    }
+    await finishPreparation(engineId, generation);
+  }, [finishPreparation, toolchain]);
+
+  const chooseToolchain = useCallback(async (choice: ManagedEngineToolchainChoiceV1) => {
+    if (!selectedEngine || !toolchainChoice) return;
+    const generation = flowGeneration.current;
+    setPhase("preparing");
+    setFailure(null);
+    let resolution: Awaited<ReturnType<ManagedEngineToolchainClientV1["choose"]>>;
+    try {
+      resolution = await toolchain.choose(selectedEngine, choice, toolchainChoice);
+    } catch {
+      if (flowGeneration.current !== generation) return;
+      setFailure("engineBundleUnavailable");
+      return;
+    }
+    if (flowGeneration.current !== generation) return;
+    if (!resolution.ok || resolution.value.status !== "ready") {
+      setFailure(resolution.ok ? "protocolMismatch" : resolution.error.code);
+      return;
+    }
+    setToolchainChoice(null);
+    await finishPreparation(selectedEngine, generation);
+  }, [finishPreparation, selectedEngine, toolchain, toolchainChoice]);
+
+  const openPlans = useCallback(async (
+    engineId: ManagedEngineIdV1,
+    generation = flowGeneration.current,
+  ) => {
     setSelectedEngine(engineId);
     setPhase("catalog");
     setFailure(null);
     const result = await client.plans(engineId);
+    if (flowGeneration.current !== generation) return;
     if (!result.ok) {
       setFailure(result.error.code);
       setPhase("plans");
@@ -129,22 +258,134 @@ function AccountAppGateInner({
     setPhase("plans");
   }, [client]);
 
-  const chooseEngine = useCallback(async (engine: ManagedEngineViewV1) => {
+  const chooseEngine = useCallback(async (
+    engine: ManagedEngineViewV1,
+    generation = flowGeneration.current,
+  ) => {
     setSelectedEngine(engine.id);
     if (engine.entitlement.status !== "active") {
-      await openPlans(engine.id);
+      await openPlans(engine.id, generation);
       return;
     }
     // A local vault/config hit is not enough to prove the credential still
     // belongs to the account's current subscription group. The Native prepare
     // operation is idempotent and re-confirms the server-owned binding before
     // AppShell is mounted.
-    await prepare(engine.id);
+    await prepare(engine.id, generation);
   }, [openPlans, prepare]);
+
+  const returnToPlans = useCallback(async () => {
+    if (selectedEngine === null || checkout === null || checkoutActionBusyRef.current) return;
+    checkoutActionBusyRef.current = true;
+    setCheckoutActionBusy(true);
+    setFailure(null);
+    try {
+      const result = await client.abandonCheckout(checkout.checkoutId);
+      if (!result.ok) {
+        setFailure(result.error.code);
+        return;
+      }
+      setCheckout(null);
+      setToolchainChoice(null);
+      setSelectedPlan(null);
+      await openPlans(selectedEngine, flowGeneration.current);
+    } catch {
+      setFailure("serviceUnavailable");
+    } finally {
+      checkoutActionBusyRef.current = false;
+      setCheckoutActionBusy(false);
+    }
+  }, [checkout, client, openPlans, selectedEngine]);
+
+  const returnToApp = useCallback(async () => {
+    if (!inAppFlow.current || checkoutActionBusyRef.current) return;
+    checkoutActionBusyRef.current = true;
+    setCheckoutActionBusy(true);
+    setFailure(null);
+    setToolchainChoice(null);
+    try {
+      if (checkout !== null) {
+        const result = await client.abandonCheckout(checkout.checkoutId);
+        if (!result.ok) {
+          setFailure(result.error.code);
+          return;
+        }
+      }
+      flowGeneration.current += 1;
+      catalogGeneration.current += 1;
+      inAppFlow.current = false;
+      activeIntent.current = null;
+      setSelectedEngine(null);
+      setPlans(null);
+      setSelectedPlan(null);
+      setCheckout(null);
+      setPhase("ready");
+    } catch {
+      setFailure("serviceUnavailable");
+    } finally {
+      checkoutActionBusyRef.current = false;
+      setCheckoutActionBusy(false);
+    }
+  }, [checkout, client]);
+
+  const beginCheckout = useCallback(async (
+    engineId: ManagedEngineIdV1,
+    plan: SubscriptionPlanViewV1,
+    method: PaymentMethodViewV1,
+  ) => {
+    if (checkoutActionBusyRef.current) return;
+    checkoutActionBusyRef.current = true;
+    setCheckoutActionBusy(true);
+    try {
+      await startCheckout(
+        client,
+        engineId,
+        plan,
+        method,
+        setCheckout,
+        setFailure,
+        setPhase,
+      );
+    } catch {
+      setFailure("serviceUnavailable");
+    } finally {
+      checkoutActionBusyRef.current = false;
+      setCheckoutActionBusy(false);
+    }
+  }, [client]);
+
+  const logoutFromGate = useCallback(async () => {
+    if (checkoutActionBusy || logoutBusy || accountBusy) return;
+    setLogoutBusy(true);
+    setLogoutFailure(null);
+    const signedOut = await accountLogout("thisDevice");
+    if (signedOut) {
+      catalogGeneration.current += 1;
+      flowGeneration.current += 1;
+      inAppFlow.current = false;
+      activeIntent.current = null;
+      setToolchainChoice(null);
+      clearManagedEngineEntitlementsV1();
+    }
+    else setLogoutFailure("serviceUnavailable");
+    setLogoutBusy(false);
+  }, [accountBusy, accountLogout, checkoutActionBusy, logoutBusy]);
+
+  const accountExit: GateAccountExit = {
+    copy,
+    busy: checkoutActionBusy || logoutBusy || accountBusy,
+    failureCode: logoutFailure,
+    onLogout: () => void logoutFromGate(),
+  };
 
   const loadCatalog = useCallback(async () => {
     const generation = catalogGeneration.current + 1;
+    const nextFlowGeneration = flowGeneration.current + 1;
     catalogGeneration.current = generation;
+    flowGeneration.current = nextFlowGeneration;
+    inAppFlow.current = false;
+    activeIntent.current = null;
+    setToolchainChoice(null);
     setPhase("catalog");
     setFailure(null);
     const result = await client.catalog();
@@ -154,7 +395,9 @@ function AccountAppGateInner({
       return;
     }
     setEngines(result.value);
+    publishManagedEngineEntitlementsV1(result.value);
     const pending = await client.resumeCheckout();
+    if (catalogGeneration.current !== generation) return;
     if (!pending.ok) {
       setFailure(pending.error.code);
       return;
@@ -163,7 +406,7 @@ function AccountAppGateInner({
       setSelectedEngine(pending.value.engineId);
       setCheckout(pending.value.checkout);
       if (pending.value.checkout.status === "paid") {
-        await prepare(pending.value.engineId);
+        await prepare(pending.value.engineId, nextFlowGeneration);
       } else {
         setPhase("checkout");
         await openCheckoutAction(pending.value.checkout, setFailure);
@@ -173,24 +416,66 @@ function AccountAppGateInner({
     const remembered = readLastManagedEnginePreferenceV1();
     const rememberedEngine = result.value.find((engine) => engine.id === remembered);
     if (rememberedEngine?.entitlement.status === "active") {
-      await chooseEngine(rememberedEngine);
+      await chooseEngine(rememberedEngine, nextFlowGeneration);
       return;
     }
     setPhase("engine");
   }, [chooseEngine, client, prepare]);
 
   useEffect(() => {
-    if (controller.bootstrap?.session.status !== "authenticated") return;
+    if (controller.bootstrap?.session.status !== "authenticated") {
+      clearManagedEngineEntitlementsV1();
+      return;
+    }
     void loadCatalog();
   }, [controller.bootstrap?.session.status, loadCatalog]);
 
-  useEffect(() => subscribeAccountEngineSwitchV1(() => {
+  const requestCatalogForActiveIntent = useCallback((
+    nextIntent: AccountEngineSwitchIntentV1 | null = activeIntent.current,
+  ) => {
+    if (nextIntent === null) return;
+    const generation = catalogGeneration.current + 1;
+    const nextFlowGeneration = flowGeneration.current + 1;
+    catalogGeneration.current = generation;
+    flowGeneration.current = nextFlowGeneration;
+    inAppFlow.current = true;
+    activeIntent.current = nextIntent;
     setFailure(null);
-    setSelectedEngine(null);
+    setSelectedEngine(nextIntent.targetEngineId);
     setPlans(null);
+    setSelectedPlan(null);
     setCheckout(null);
-    setPhase("engine");
-  }), []);
+    setToolchainChoice(null);
+    setPhase("catalog");
+    void client.catalog().then(async (result) => {
+      if (
+        catalogGeneration.current !== generation ||
+        flowGeneration.current !== nextFlowGeneration
+      ) return;
+      if (!result.ok) {
+        setFailure(result.error.code);
+        return;
+      }
+      setEngines(result.value);
+      publishManagedEngineEntitlementsV1(result.value);
+      if (nextIntent.targetEngineId === null) {
+        setPhase("engine");
+        return;
+      }
+      const target = result.value.find((engine) => engine.id === nextIntent.targetEngineId);
+      if (!target) {
+        setFailure("protocolMismatch");
+        setPhase("engine");
+        return;
+      }
+      await chooseEngine(target, nextFlowGeneration);
+    });
+  }, [chooseEngine, client]);
+
+  useEffect(() => subscribeAccountEngineSwitchV1((intent) => {
+    if (controller.bootstrap?.session.status !== "authenticated" || !hasEnteredApp) return;
+    requestCatalogForActiveIntent(intent);
+  }), [controller.bootstrap?.session.status, hasEnteredApp, requestCatalogForActiveIntent]);
 
   const checkoutId = checkout?.checkoutId ?? null;
   const checkoutStatus = checkout?.status ?? null;
@@ -198,6 +483,7 @@ function AccountAppGateInner({
   useEffect(() => {
     if (phase !== "checkout" || checkoutId === null || checkoutStatus === null ||
       checkoutExpiresAt === null || !["pending", "processing"].includes(checkoutStatus)) return;
+    const generation = flowGeneration.current;
     const expiresAt = Date.parse(checkoutExpiresAt);
     if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
       setCheckout((current) => current ? { ...current, status: "expired" } : current);
@@ -215,7 +501,7 @@ function AccountAppGateInner({
       }
       setCheckout(result.value);
       if (result.value.status === "paid" && selectedEngine) {
-        await prepare(selectedEngine);
+        await prepare(selectedEngine, generation);
         return;
       }
       if (["cancelled", "expired", "failed"].includes(result.value.status)) return;
@@ -230,7 +516,18 @@ function AccountAppGateInner({
     };
   }, [checkoutExpiresAt, checkoutId, checkoutStatus, client, phase, prepare, selectedEngine]);
 
-  if (controller.loading) return <GateLoading label={copy.gateConnecting} />;
+  const keepReadyContentMounted =
+    hasEnteredApp && controller.bootstrap?.session.status === "authenticated";
+  const renderGate = (surface: ReactNode) => (
+    <>
+      {keepReadyContentMounted ? readyContent ?? null : null}
+      {surface}
+    </>
+  );
+
+  if (controller.loading) {
+    return renderGate(<GateLoading label={copy.gateConnecting} />);
+  }
   if (controller.bootstrap === null) {
     return <GateFailure copy={copy} code={controller.failure?.code ?? "serviceUnavailable"} onRetry={() => void controller.retry()} />;
   }
@@ -247,14 +544,31 @@ function AccountAppGateInner({
   if (phase === "ready") return <>{readyContent ?? null}</>;
 
   if (phase === "catalog") {
-    return failure
-      ? <GateFailure copy={copy} code={failure} onRetry={() => void loadCatalog()} />
-      : <GateLoading label={copy.gateConfirmingServices} />;
+    return renderGate(failure
+      ? <GateFailure
+          copy={copy}
+          code={failure}
+          onRetry={() => inAppFlow.current
+            ? requestCatalogForActiveIntent()
+            : void loadCatalog()}
+          accountExit={accountExit}
+          onReturnToApp={inAppFlow.current ? () => void returnToApp() : undefined}
+          returnBusy={checkoutActionBusy}
+        />
+      : <GateLoading
+          label={copy.gateConfirmingServices}
+          accountExit={accountExit}
+          onReturnToApp={inAppFlow.current ? () => void returnToApp() : undefined}
+          returnBusy={checkoutActionBusy}
+        />);
   }
   if (phase === "preparing" && selectedEngine) {
-    return (
-      <GateFrame>
-        <GateStepBack copy={copy} onClick={() => setPhase("engine")} />
+    return renderGate(
+      <GateFrame
+        accountExit={accountExit}
+        onReturnToApp={failure && inAppFlow.current ? () => void returnToApp() : undefined}
+        returnBusy={checkoutActionBusy}
+      >
         <div className="account-gate-centered" role="status">
           {failure ? (
             <>
@@ -272,16 +586,46 @@ function AccountAppGateInner({
       </GateFrame>
     );
   }
+  if (phase === "toolchainChoice" && selectedEngine && toolchainChoice) {
+    return renderGate(
+      <GateFrame
+        accountExit={accountExit}
+        onReturnToApp={inAppFlow.current ? () => void returnToApp() : undefined}
+        returnBusy={checkoutActionBusy}
+      >
+        <GateToolchainChoice
+          copy={copy}
+          engineName={engineLabel(selectedEngine)}
+          bundledVersion={toolchainChoice.bundledVersion}
+          externalVersion={toolchainChoice.externalVersion ?? ""}
+          onUseBundled={() => void chooseToolchain("bundled")}
+          onKeepExternal={() => void chooseToolchain("external")}
+        />
+        {failure ? <GateInlineFailure copy={copy} code={failure} /> : null}
+      </GateFrame>
+    );
+  }
   if (phase === "engine") {
-    return (
-      <GateFrame>
-        <GateHeading copy={copy} title={copy.gateChooseEngine} help={copy.gateEngineHelp} />
+    return renderGate(
+      <GateFrame
+        accountExit={accountExit}
+        onReturnToApp={inAppFlow.current ? () => void returnToApp() : undefined}
+        returnBusy={checkoutActionBusy}
+      >
+        <GateHeading
+          copy={copy}
+          title={inAppFlow.current ? copy.gateMyEngines : copy.gateChooseEngine}
+          help={copy.gateEngineHelp}
+        />
         <div className="account-gate-engine-grid">
           {engines.map((engine) => (
             <button key={engine.id} type="button" className="account-gate-engine" onClick={() => void chooseEngine(engine)}>
               <EngineIcon engine={engine.id === "codex" ? "codex" : "claude"} size={30} />
               <strong>{engine.displayName}</strong>
-              {engine.entitlement.status === "active" ? <span><Check size={14} aria-hidden />{copy.gateAvailable}</span> : null}
+              <span className={engine.entitlement.status === "active" ? undefined : "account-gate-engine-subscribe"}>
+                {engine.entitlement.status === "active" ? <Check size={14} aria-hidden /> : null}
+                {engine.entitlement.status === "active" ? copy.gateSubscribed : copy.gateSubscribeToUse}
+              </span>
             </button>
           ))}
         </div>
@@ -290,9 +634,18 @@ function AccountAppGateInner({
     );
   }
   if ((phase === "plans" || phase === "paymentMethod") && selectedEngine) {
-    return (
-      <GateFrame>
-        <GateStepBack copy={copy} onClick={() => { setFailure(null); setPhase("engine"); }} />
+    return renderGate(
+      <GateFrame accountExit={accountExit}>
+        <GateStepBack copy={copy} onClick={() => {
+          setFailure(null);
+          if (phase === "paymentMethod") {
+            setPhase("plans");
+          } else if (inAppFlow.current) {
+            void returnToApp();
+          } else {
+            setPhase("engine");
+          }
+        }} />
         <GateHeading copy={copy} title={interpolate(copy.gateChoosePlanTemplate, "engine", engineLabel(selectedEngine))} help={copy.gatePlanHelp} />
         {failure ? <GateFailureBody copy={copy} code={failure} onRetry={() => void openPlans(selectedEngine)} /> :
           plans?.plans.length ? (
@@ -300,7 +653,7 @@ function AccountAppGateInner({
               <PaymentMethodList
                 copy={copy}
                 methods={plans.paymentMethods}
-                onSelect={(method) => void startCheckout(client, selectedEngine, selectedPlan, method, setCheckout, setFailure, setPhase)}
+                onSelect={(method) => void beginCheckout(selectedEngine, selectedPlan, method)}
               />
             ) : (
               <div className="account-gate-plan-list">
@@ -312,7 +665,7 @@ function AccountAppGateInner({
                     onClick={() => {
                       setSelectedPlan(plan);
                       if (plans.paymentMethods.length === 1) {
-                        void startCheckout(client, selectedEngine, plan, plans.paymentMethods[0]!, setCheckout, setFailure, setPhase);
+                        void beginCheckout(selectedEngine, plan, plans.paymentMethods[0]!);
                       } else {
                         setPhase("paymentMethod");
                       }
@@ -327,55 +680,61 @@ function AccountAppGateInner({
   }
   if (phase === "checkout" && checkout) {
     const terminal = ["cancelled", "expired", "failed"].includes(checkout.status);
-    return (
-      <GateFrame>
-        <GateStepBack copy={copy} onClick={() => setPhase("plans")} />
+    const checkoutTitle = terminal
+      ? copy.gatePaymentFailed
+      : checkout.action?.kind === "show_qr" && (selectedPlan?.name || checkout.planName)
+        ? `Doge ${selectedPlan?.name ?? checkout.planName}`
+        : copy.gateWaitingPayment;
+    return renderGate(
+      <GateFrame
+        accountExit={accountExit}
+        onReturnToApp={inAppFlow.current ? () => void returnToApp() : undefined}
+        returnBusy={checkoutActionBusy}
+      >
         <div className="account-gate-centered" role="status">
           {terminal ? <CircleAlert aria-hidden /> : <LoaderCircle className="account-gate-spin" aria-hidden />}
-          <h1>{terminal ? copy.gatePaymentFailed : copy.gateWaitingPayment}</h1>
+          <h1>{checkoutTitle}</h1>
           {checkout.action?.kind === "show_qr" && checkout.action.data ? (
             <CheckoutQrCode copy={copy} value={checkout.action.data} />
           ) : null}
-          {!terminal && checkout.action?.kind === "open_url" && checkout.action.url ? (
-            <button
-              className="account-gate-secondary"
-              type="button"
-              onClick={() => void openCheckoutAction(checkout, setFailure)}
-            >
-              {copy.gateReopenPayment}
-            </button>
-          ) : null}
-          {terminal ? (
-            <button className="account-gate-primary" type="button" onClick={() => setPhase("plans")}>{copy.gateChooseAgain}</button>
-          ) : null}
+          <div className="account-gate-checkout-actions">
+            {!terminal && checkout.action?.kind === "open_url" && checkout.action.url ? (
+              <button
+                className="account-gate-secondary"
+                type="button"
+                disabled={checkoutActionBusy}
+                onClick={() => void openCheckoutAction(checkout, setFailure)}
+              >
+                {copy.gateReopenPayment}
+              </button>
+            ) : null}
+            <div className="account-gate-checkout-exits">
+              <button
+                className="account-gate-text-button"
+                type="button"
+                disabled={checkoutActionBusy}
+                onClick={() => void returnToPlans()}
+              >
+                {copy.gateBackToPlans}
+              </button>
+              {inAppFlow.current ? (
+                <button
+                  className="account-gate-text-button"
+                  type="button"
+                  disabled={checkoutActionBusy}
+                  onClick={() => void returnToApp()}
+                >
+                  {copy.gateReturnToApp}
+                </button>
+              ) : null}
+            </div>
+          </div>
           {failure ? <GateInlineFailure copy={copy} code={failure} /> : null}
         </div>
       </GateFrame>
     );
   }
-  return <GateFailure copy={copy} code="serviceUnavailable" onRetry={() => void loadCatalog()} />;
-}
-
-function CheckoutQrCode({ copy, value }: { readonly copy: AccountExperienceCopyV1; readonly value: string }) {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  useEffect(() => {
-    let disposed = false;
-    setImageUrl(null);
-    void QRCode.toDataURL(value, {
-      errorCorrectionLevel: "M",
-      margin: 2,
-      width: 320,
-      color: { dark: "#111111", light: "#ffffff" },
-    }).then((url) => {
-      if (!disposed) setImageUrl(url);
-    }).catch(() => {
-      if (!disposed) setImageUrl("");
-    });
-    return () => { disposed = true; };
-  }, [value]);
-  if (imageUrl === null) return <LoaderCircle className="account-gate-spin" aria-label={copy.gateQrGenerating} />;
-  if (imageUrl === "") return <GateInlineFailure copy={copy} code="checkoutQrUnavailable" />;
-  return <img className="account-gate-qr" src={imageUrl} alt={copy.gateQrAlt} />;
+  return renderGate(<GateFailure copy={copy} code="serviceUnavailable" onRetry={() => void loadCatalog()} accountExit={accountExit} />);
 }
 
 async function startCheckout(
@@ -411,151 +770,8 @@ async function openCheckoutAction(
   }
 }
 
-function GateFrame({ children }: { readonly children: ReactNode }) {
-  return (
-    <main className="account-app-gate">
-      <div className="account-gate-window-drag" data-tauri-drag-region />
-      <section className="account-gate-card">
-        <img className="account-gate-logo" src={dogeMascot} alt="Doge" />
-        {children}
-      </section>
-    </main>
-  );
-}
-
-function GateHeading({ copy, title, help }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly title: string;
-  readonly help: string;
-}) {
-  return (
-    <header className="account-gate-heading">
-      <h1>{title}</h1>
-      <AccountHelpTooltip label={`${title}${copy.gateHelpSuffix}`} side="bottom">{help}</AccountHelpTooltip>
-    </header>
-  );
-}
-
-function GateLoading({ label }: { readonly label: string }) {
-  return (
-    <GateFrame>
-      <div className="account-gate-centered" role="status">
-        <LoaderCircle className="account-gate-spin" aria-hidden />
-        <h1>{label}</h1>
-      </div>
-    </GateFrame>
-  );
-}
-
-function GateFailure({ copy, code, onRetry }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly code: string;
-  readonly onRetry: () => void;
-}) {
-  return <GateFrame><GateFailureBody copy={copy} code={code} onRetry={onRetry} /></GateFrame>;
-}
-
-function GateFailureBody({ copy, code, onRetry }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly code: string;
-  readonly onRetry: () => void;
-}) {
-  return (
-    <div className="account-gate-centered" role="alert">
-      <CircleAlert aria-hidden />
-      <h1>{failureMessage(code, copy)}</h1>
-      <button className="account-gate-primary" type="button" onClick={onRetry}><RefreshCw size={16} aria-hidden />{copy.retry}</button>
-    </div>
-  );
-}
-
-function GateInlineFailure({ copy, code }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly code: string;
-}) {
-  return <div className="account-gate-inline-error" role="alert"><CircleAlert size={16} aria-hidden />{failureMessage(code, copy)}</div>;
-}
-
-function GateStepBack({ copy, onClick }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly onClick: () => void;
-}) {
-  return <button type="button" className="account-gate-back" onClick={onClick} aria-label={copy.gateBack}><ArrowLeft aria-hidden /></button>;
-}
-
-function GateEmptyPlans({ copy, onRetry }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly onRetry: () => void;
-}) {
-  return (
-    <div className="account-gate-centered">
-      <CircleAlert aria-hidden />
-      <h2>{copy.gateNoPlans}</h2>
-      <button type="button" className="account-gate-secondary" onClick={onRetry}>{copy.gateRefresh}</button>
-    </div>
-  );
-}
-
-function PlanButton({ copy, plan, onClick }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly plan: SubscriptionPlanViewV1;
-  readonly onClick: () => void;
-}) {
-  const limit = plan.monthlyLimitUsd ?? plan.weeklyLimitUsd ?? plan.dailyLimitUsd;
-  return (
-    <button type="button" className="account-gate-plan" onClick={onClick}>
-      <span className="account-gate-plan-main"><strong>{plan.name}</strong><small>{plan.features.slice(0, 2).join(" · ")}</small></span>
-      <span className="account-gate-plan-price"><strong>{formatMoney(plan.price, plan.currency)}</strong><small>{validityLabel(plan, copy)}</small></span>
-      {limit !== null ? <span className="account-gate-plan-limit">${limit}</span> : null}
-    </button>
-  );
-}
-
-function PaymentMethodList({ copy, methods, onSelect }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly methods: readonly PaymentMethodViewV1[];
-  readonly onSelect: (method: PaymentMethodViewV1) => void;
-}) {
-  if (methods.length === 0) return <GateInlineFailure copy={copy} code="paymentUnavailable" />;
-  return (
-    <div className="account-gate-methods">
-      {methods.map((method) => <button type="button" key={method.id} onClick={() => onSelect(method)}>{method.displayName}</button>)}
-    </div>
-  );
-}
-
 function engineLabel(engineId: ManagedEngineIdV1) {
-  return engineId === "codex" ? "Codex" : "Claude Code";
-}
-
-function formatMoney(value: number, currency: string) {
-  try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: currency || "USD", maximumFractionDigits: 2 }).format(value);
-  } catch {
-    return `${currency} ${value.toFixed(2)}`.trim();
-  }
-}
-
-function validityLabel(plan: SubscriptionPlanViewV1, copy: AccountExperienceCopyV1) {
-  if (plan.validityDays === 30) return copy.gateMonth;
-  return interpolate(copy.gateDaysTemplate, "days", String(plan.validityDays));
-}
-
-function failureMessage(code: string, copy: AccountExperienceCopyV1) {
-  if (code === "subscriptionRequired") return copy.gateSubscriptionRequired;
-  if (code === "planUnavailable") return copy.gatePlanUnavailable;
-  if (code === "vaultUnavailable" || code === "vaultLocked") return copy.gateVaultUnavailable;
-  if (code === "credentialsRejected") return copy.gateCredentialsRejected;
-  if (code === "rateLimited") return copy.gateRateLimited;
-  if (code === "checkoutOpenFailed") return copy.gateCheckoutOpenFailed;
-  if (code === "paymentUnavailable") return copy.gatePaymentUnavailable;
-  if (code === "configurationRejected" || code === "concurrentEdit") return copy.gateConfigurationRejected;
-  if (code === "engineUnavailable") return copy.gateEngineUnavailable;
-  return copy.gateServiceUnavailable;
-}
-
-function interpolate(template: string, key: string, value: string): string {
-  return template.replace(`{${key}}`, value);
+  return managedEngineDisplayNameV1(engineId);
 }
 
 async function activateManagedEngine(engineId: ManagedEngineIdV1) {

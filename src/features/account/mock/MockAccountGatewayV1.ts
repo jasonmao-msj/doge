@@ -30,6 +30,7 @@ import {
   humanVerificationHandleV1,
   type GatewayResultV1,
   type QuotaUsageViewV1,
+  type UsageDayModelsViewV1,
 } from "../contracts/semantic";
 import {
   oneTimeTotpPresentationV1,
@@ -161,18 +162,124 @@ function accountCenterViewV1(): AccountCenterViewV1 {
 
 function quotaViewV1(runtime: ScenarioRuntimeV1): QuotaUsageViewV1 {
   const exhausted = runtime.scenario.id === "usage.exhausted";
+  const endDate = runtime.nowIso().slice(0, 10);
+  const startDate = new Date(Date.parse(`${endDate}T00:00:00Z`) - 364 * 86_400_000)
+    .toISOString().slice(0, 10);
+  const used = exhausted ? "100" : "16";
+  const remaining = exhausted ? "0" : "84";
+  const resetsAt = new Date(Date.parse(runtime.nowIso()) + 86_400_000).toISOString();
+  const totals = {
+    requests: 24,
+    inputTokens: 12_000,
+    outputTokens: 3_200,
+    cacheReadTokens: 2_400,
+    cacheWriteTokens: 800,
+    totalTokens: 18_400,
+    cost: { value: "16", unit: "usd" as const },
+    actualCost: { value: "16", unit: "usd" as const },
+  };
+  const claudeTotals = {
+    requests: 11,
+    inputTokens: 7_200,
+    outputTokens: 2_100,
+    cacheReadTokens: 1_400,
+    cacheWriteTokens: 300,
+    totalTokens: 11_000,
+    cost: { value: "8", unit: "usd" as const },
+    actualCost: { value: "6", unit: "usd" as const },
+  };
   return {
     status: "available",
-    source: "token2apiPlatformQuota",
+    source: "token2apiSubscription",
     freshness: runtime.scenario.id.includes("soft-stale")
       ? "softStale"
       : "fresh",
     observedAt: runtime.nowIso(),
     fetchedAt: runtime.nowIso(),
-    remaining: { value: exhausted ? "0" : "840", unit: "credits" },
-    used: { value: exhausted ? "1000" : "160", unit: "credits" },
-    resetsAt: new Date(Date.parse(runtime.nowIso()) + 86_400_000).toISOString(),
+    remaining: { value: remaining, unit: "usd" },
+    used: { value: used, unit: "usd" },
+    resetsAt,
     subscriptionLabel: "Synthetic plan",
+    range: { startDate, endDate, days: 365 },
+    engines: [{
+      engineId: "codex",
+      engineLabel: "Codex",
+      subscriptionLabel: "Synthetic plan",
+      expiresAt: new Date(Date.parse(runtime.nowIso()) + 30 * 86_400_000).toISOString(),
+      analyticsStatus: "available",
+      windows: {
+        daily: {
+          limit: { value: "10", unit: "usd" },
+          used: { value: "1", unit: "usd" },
+          remaining: { value: "9", unit: "usd" },
+          percentage: "10",
+          resetsAt,
+        },
+        weekly: null,
+        monthly: {
+          limit: { value: "100", unit: "usd" },
+          used: { value: used, unit: "usd" },
+          remaining: { value: remaining, unit: "usd" },
+          percentage: exhausted ? "100" : "16",
+          resetsAt: new Date(Date.parse(runtime.nowIso()) + 30 * 86_400_000).toISOString(),
+        },
+      },
+      totals,
+      days: [{
+        date: endDate,
+        intensity: exhausted ? 4 : 2,
+        ...totals,
+      }],
+      models: [{ modelLabel: "gpt-5", ...totals }],
+    }, {
+      engineId: "claude-code",
+      engineLabel: "Claude",
+      subscriptionLabel: "Synthetic Claude plan",
+      expiresAt: new Date(Date.parse(runtime.nowIso()) + 28 * 86_400_000).toISOString(),
+      analyticsStatus: "available",
+      windows: {
+        daily: {
+          limit: { value: "8", unit: "usd" },
+          used: { value: "0.75", unit: "usd" },
+          remaining: { value: "7.25", unit: "usd" },
+          percentage: "9.375",
+          resetsAt,
+        },
+        weekly: {
+          limit: { value: "40", unit: "usd" },
+          used: { value: "6", unit: "usd" },
+          remaining: { value: "34", unit: "usd" },
+          percentage: "15",
+          resetsAt: new Date(Date.parse(runtime.nowIso()) + 7 * 86_400_000).toISOString(),
+        },
+        monthly: null,
+      },
+      totals: claudeTotals,
+      days: [{
+        date: endDate,
+        intensity: 3,
+        ...claudeTotals,
+      }],
+      models: [{ modelLabel: "claude-sonnet", ...claudeTotals }],
+    }],
+  };
+}
+
+function usageDayModelsViewV1(engineId: "codex" | "claude-code", date: string): UsageDayModelsViewV1 {
+  return {
+    engineId,
+    date,
+    models: [{
+      modelLabel: engineId === "codex" ? "gpt-5" : "claude-sonnet",
+      requests: 8,
+      inputTokens: 4_000,
+      outputTokens: 1_200,
+      cacheReadTokens: 600,
+      cacheWriteTokens: 200,
+      totalTokens: 6_000,
+      cost: { value: "4", unit: "usd" },
+      actualCost: { value: "4", unit: "usd" },
+    }],
   };
 }
 
@@ -500,11 +607,19 @@ export class MockAccountGatewayV1 implements AccountGatewayV1 {
     read: (context) =>
       this.execute("profile.read", context, accountCenterViewV1),
     updateProfile: (input, context) => {
-      void input;
       return this.execute(
         "profile.updateProfile",
         context,
-        accountCenterViewV1,
+        () => {
+          const view = accountCenterViewV1();
+          return {
+            ...view,
+            profile: {
+              ...view.profile,
+              displayName: safeLabelV1(input.displayName, "profileDisplayName"),
+            },
+          };
+        },
       );
     },
     changePassword: (input, context) => {
@@ -577,6 +692,9 @@ export class MockAccountGatewayV1 implements AccountGatewayV1 {
   readonly usage: AccountGatewayV1["usage"] = {
     read: (context) =>
       this.execute("usage.read", context, () => quotaViewV1(this.runtime)),
+    readDayModels: (input, context) =>
+      this.execute("usage.readDayModels", context, () =>
+        usageDayModelsViewV1(input.engineId, input.date)),
   };
 
   readonly managedKey: AccountGatewayV1["managedKey"] = {

@@ -63,7 +63,7 @@ const runtimeNotice = {
       "resumeCommandCopied": "Claude の再開コマンドをコピーしました。TUI の /resume ピッカーにこの GUI セッションが表示されない場合は、claude --resume {{sessionId}} または /resume {{sessionId}} を明示的に実行してください。"
     },
     "grok": {
-      "providerSelected": "{{name}} を選択しました。Grok CLI のエントリをクリックしてセッションを作成してください。"
+      "providerSelected": "{{name}} を選択しました。Grok のエントリをクリックしてセッションを作成してください。"
     },
     "opencode": {
       "providerSelected": "{{name}} を選択しました。OpenCode のエントリをクリックしてセッションを作成してください。"

@@ -220,6 +220,7 @@ function materializeRuntimeFixtureV1(
     case "literal": return schema.value;
     case "enum": return schema.values[0];
     case "timestamp": return "2030-01-01T00:00:02Z";
+    case "date": return "2030-01-01";
     case "decimal": return nullableBase ? "0" : "1.25";
     case "opaqueId": return `${schema.prefix}_${nonce}`;
     case "safeLabel": return safeLabelV1(

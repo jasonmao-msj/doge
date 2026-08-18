@@ -155,6 +155,71 @@ const gateway = createProductPreviewAccountGatewayV1();
 return <AccountSettingsSection gateway={gateway} />;
 ```
 
+## Scenario: Masked account identity SafeLabel boundary
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `src/features/account/contracts/safeValues.ts`、`primaryEmailLabel` masking、`gateway.bootstrap` authenticated session projection 或 IPC privacy validation。
+- 目标：Native 已脱敏的 account label 必须能通过 renderer SafeLabel boundary；通用 label 规则不得先行否决 field-specific masking alphabet。
+
+### 2. Signatures
+
+- `validateSafeLabelForFieldV1(field, value) -> SchemaValidationV1<SafeLabelV1>`。
+- `primaryEmailLabel` renderer shape：`string | null`；masked local part MAY 包含 `*`，例如 `a***@token-matrix.com`。
+- `profileDisplayName` 等其他 SafeLabel field 继续使用不含 `*` 的通用 alphabet。
+
+### 3. Contracts
+
+- `primaryEmailLabel` MUST 使用独立 allowlist：首字符为 letter/number，总长 `1..=80`，后续只允许 letter/number、space、`._()@*+-`。
+- `*` MUST NOT 因本场景扩散到 `profileDisplayName/providerLabel/targetLabel/fieldLabel/subscriptionLabel/maskedPresentation`。
+- field-specific shape 通过后仍 MUST 执行 URL、raw email/PII、forbidden field/value privacy checks；允许 masked email 不等于允许 raw email。
+- signed-in `gateway.bootstrap` 若其他 correlation/schema 均有效，MUST 接受 masked `primaryEmailLabel` 并继续 engine catalog；不得降级成 `protocolMismatch`。
+
+### 4. Validation & Error Matrix
+
+| 输入 | Field | 结果 |
+|---|---|---|
+| `a***@token-matrix.com` | `primaryEmailLabel` | accept |
+| `user@example.com` | `primaryEmailLabel` | reject as raw PII |
+| `A***` | `profileDisplayName` | reject |
+| `https://example.com` | any SafeLabel | reject as URL |
+| 合法 masked label + wrong IPC correlation | bootstrap response | reject correlation，不得被 label acceptance 掩盖 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：field 决定 allowlist alphabet，随后统一执行 URI/PII/secret privacy scan。
+- Base：`primaryEmailLabel=null` 继续作为合法 signed-out/unknown projection。
+- Bad：把 `*` 直接加入全局 `SAFE_LABEL_PATTERN_V1`，使所有用户可见 label 的 closed alphabet 被扩大。
+- Bad：先执行全局 alphabet，再追加一个更宽的 email check；后者永远无法挽救已产生的 validation issue。
+
+### 6. Tests Required
+
+- `src/features/account/contracts/accountContracts.test.ts` MUST 构造 authenticated `gateway.bootstrap` exact envelope，并断言 masked email 与完整 IPC response 均通过。
+- 同一 regression MUST 断言 `profileDisplayName="A***"` 仍失败，锁定 field isolation。
+- privacy corpus MUST 继续证明 raw email、URL、secret/path/diff canary 被拒绝。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+if (!SAFE_LABEL_PATTERN_V1.test(value)) issues.push(forbiddenIssue);
+if (field === "primaryEmailLabel" && !MASKED_EMAIL_PATTERN.test(value)) {
+  issues.push(emailIssue);
+}
+```
+
+#### Correct
+
+```ts
+const pattern = field === "primaryEmailLabel"
+  ? MASKED_PRIMARY_EMAIL_LABEL_PATTERN_V1
+  : SAFE_LABEL_PATTERN_V1;
+if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
+  issues.push(forbiddenIssue);
+}
+```
+
 ## Scenario: Mandatory engine subscription onboarding
 
 ### Signatures
@@ -170,7 +235,7 @@ return <AccountSettingsSection gateway={gateway} />;
 - 只展示 authority 返回的当前 engine、active subscription group、`for_sale=true` plans；空列表不补 fallback。产品 UI 禁止 balance、recharge、pay-as-you-go、API Key、文件路径与 diff。
 - Checkout create 必须携带新 operation id 作为 `Idempotency-Key`；只允许 subscription order。`PAID/RECHARGING → processing`，只有 fulfillment `COMPLETED → paid`。
 - Payment navigation 在 Rust 与 TypeScript 两层校验：`open_url` 只允许无 username/password 的 HTTPS；`show_qr` 只作为 bounded QR content 编码，禁止作为 URL/src 执行。
-- Pending checkout checkpoint 按 authority/account/device 隔离并在 restart 后 authoritative read；React polling 只允许存在于 AppShell 挂载前的 gate，使用 bounded backoff + absolute server expiry，禁止进入 AppShell/root hook 链。
+- Pending checkout checkpoint 按 authority/account/device 隔离并在 restart 后 authoritative read；React polling 只允许存在于 AccountGate-owned surface，使用 bounded backoff + absolute server expiry，禁止进入 AppShell/root hook 链。首次启动 flow 在 AppShell mount 前执行；第二引擎增购 overlay 可保留 AppShell mounted，但 tick 只能更新 gate owner。
 - managed credential 在 token2api 按 user/device hash/engine/group 幂等 ensure；每次 AppShell mount 前 MUST 重新确认当前 subscription binding，并覆盖 `authority + account + device + engine` scope。raw secret 只走 Rust memory → engine-scoped OS vault。Codex/Claude config 只写 sentinel/base URL，launch 时注入 secret；launch read MUST 要求当前 active account session，MUST NOT 依赖 legacy `managed_key_id`，退出后 fail closed。
 - Claude account-managed provider id 固定 `doge-token-matrix`；desktop runtime 注入 `ANTHROPIC_AUTH_TOKEN`，daemon 必须 fail closed，不得读取或伪造 desktop vault secret。
 
@@ -180,4 +245,404 @@ return <AccountSettingsSection gateway={gateway} />;
 - Rust：checkout HTTPS/QR validator、SQLite v8 restart/secret scan、Codex/Claude config secret scan、engine-scoped vault、daemon fail closed。
 - TypeScript/React：unknown engine/protocol fail closed、exact server plans/no billing fallback、AppShell pre-ready absence、paid auto prepare、pending checkout restart recovery、internal reason 不直出。
 
+## Scenario: Bundled managed engines without runtime download or elevation
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `AccountAppGate.prepare`、bundled engine manifest/resolver、Codex/Claude binary discovery/launch、Windows account configuration commit 或 NSIS install mode。
+- 目标：active entitlement/paid checkout 后形成 `inspect bundle → detect/compare external → resolve source → verify → managed prepare → activate` 的单一闭环；普通用户无需联网下载 CLI或理解 PATH/管理员权限。
+
+### 2. Signatures
+
+- Native facade：`account_engine_v1_toolchain(engine_id, choice?) -> { status, bundledVersion, externalVersion, selectedSource }`；closed `choice` 只允许 `bundled | external`。
+- Build manifest：pinned official URL、version、target/arch、SHA-256、relative executable；generated runtime manifest 不含下载 URL。
+- Account mutation 保持 `account_engine_v1_prepare(engine_id, operation_id)`；toolchain resolution 不进入 Authority receipt、secret scope 或 account SQLite。
+
+### 3. Contracts
+
+- official artifact 只在 build 期下载；用户运行期零 engine download/install side effect。checksum/version/expected executable 任一不匹配即 build fail closed。
+- 最终 build stage 必须位于 generated output 同一 parent volume，再用 atomic rename commit；Windows runner 常见 `TEMP=C:`、workspace=`D:`，禁止从 OS temp 直接 rename 到 workspace。
+- 无 external 时选 bundled；external version `>= bundled` 时静默选 external；external `< bundled` 时要求一次 closed choice。bundled choice 不得覆盖/卸载 external；external choice必须通过 protocol verifier。
+- renderer 不接收 executable absolute path、archive URL、command preview、stdout/stderr；只接收 closed status/source/version。版本选择 generation 失效后不得 prepare/activate stale target。
+- Codex bundled sibling resources/PATH 必须随 launch 保留；Claude 使用 standalone executable。managed session 使用 resolver path，manual/local engine path 保持原行为。
+- Claude selected binary MUST 只写 `ClaudeSessionManager.provider_configs["doge-token-matrix"]`；禁止写 `EngineManager.engine_configs[Claude]` 或覆盖 `default_config`。普通 turn、manual compact 与 provider continuation 都通过 provider-scoped session 取得该 path；daemon send/compact 对 account provider fail closed。
+- Windows configuration existing target 必须在 recovery journal 管理下 staged replace + verify；access denied、sharing violation、unsafe target、rollback incomplete 分开映射。NSIS 明确 `installMode=currentUser`。
+- installer timeout/取消必须终止完整 process tree；Windows wrapper child 不得在 gate 已失败后继续写文件。
+
+### 4. Validation Matrix
+
+| 场景 | 结果 |
+|---|---|
+| external Codex 缺失 | 选择 bundled，verify 后继续 prepare；零网络 |
+| external Claude 与 bundled 同版 | 静默选择 external |
+| external Codex 高于 bundled | 静默选择 external，不降级 |
+| external Claude 低于 bundled | 一次二选一；bundled 不覆盖 external |
+| bundled Claude selected、local Claude 已配置 | account provider 使用 bundled；local/manual provider 继续使用用户 path |
+| remembered 版本组合不变 | 不重复提示 |
+| bundled checksum/version/文件不符 | build fail closed，不产出安装包 |
+| Windows temp/workspace 跨卷 | stage 位于 output sibling，same-volume rename 成功且不残留 partial output |
+| Windows 已有 `.doge/config.json` | 普通用户 staged replacement成功；不需管理员 |
+| Windows target 被锁/ACL拒绝 | typed recoverable failure；保留 journal，不假 ready |
+| install 成功但 flow generation 已失效 | 不 prepare、不 activate stale engine |
+
+### 5. Tests Required
+
+- React orchestration：missing external auto bundled、same/newer external silent reuse、older choice/remember、verifier failure、stale generation/cancel。
+- Rust resolver：manifest/target/arch validation、semver compare、closed choice、selected managed launch path、Codex sibling PATH、absolute path non-disclosure。
+- Rust Claude manager/daemon：provider override 与 local default 隔离；只清 account-provider sessions；daemon send/compact 均拒绝 `doge-token-matrix`。
+- Build script：pinned URL/checksum、cache corruption recovery、archive traversal/expected executable、same-volume output stage、macOS nested signing order、Windows resource inclusion。
+- Rust configuration：Windows replacement helper contract、write/verify/rollback、error classifier；Windows CI 使用 standard-user account执行 focused test。
+- Packaging：tauri Windows config/produced installer证明 `currentUser`，普通双击安装/启动后完成 Codex/Claude prepare；管理员运行不作为验收证据。
+
 异常、恢复与latency scenario由`AccountLab`/Vitest选择；产品页面只呈现用户任务和自然交互。
+
+## Scenario: In-App second managed engine acquisition
+
+### 1. Scope / Trigger
+
+- Trigger：修改 main engine picker、Settings Account engine 入口、`AccountAppGate` ready 后 flow、managed engine entitlement UI 或 post-prepare landing。
+- 目标：已有 Codex/Claude 用户增加第二个 engine 时复用同一 subscription/checkout/prepare authority，不修改当前 thread identity，也不卸载当前 AppShell。
+
+### 2. Signatures
+
+- Request intent：`AccountEngineSwitchIntentV1 { source: "accountCenter" | "enginePicker"; targetEngineId: "codex" | "claude-code" | null; openNewConversation: boolean }`。
+- Completion intent：`AccountEngineReadyIntentV1 { engineId: "codex" | "claude-code"; openNewConversation: boolean }`。
+- Credential-free entitlement snapshot：`Record<"codex" | "claude-code", "active" | "none" | "unknown">`；writer 仅为 authoritative catalog/prepare result。
+- Runtime mapping：`codex -> codex`、`claude -> claude-code`；display mapping：`codex -> Codex`、`claude-code -> Claude`。
+- 本场景不新增 Tauri command、IPC field、SQLite column 或 token2api route。
+
+### 3. Contracts
+
+- Settings authenticated 固定入口 MUST 使用“我的引擎/管理引擎”；catalog card MUST 区分“已订阅/订阅后使用”，不得把新增权益表达成替换原权益。
+- composer 选择不同的 managed engine 且 entitlement snapshot 已 authoritative loaded 时，MUST 在任何 engine/model/provider selection side effect 前发布 target intent；不得先改 `selectedCreationTarget`、active engine 或当前 native thread binding。
+- AccountGate 收到 target intent MUST 重新读取 catalog。active entitlement 直接 `prepare`；`none` 直接读取目标 plans；不得先展示通用 engine selector 要用户重复选择。`unknown` 不能作为 entitlement truth。
+- ready 后 flow MUST 以 fixed overlay 呈现并让既有 `readyContent` 保持同一 mounted instance。checkout polling 仍由 AccountGate owner 承担，不得把 timer/state 放入 AppShell root hook。
+- cancel/back MUST invalidate flow generation；无 checkout 时直接回原 App，有 checkout 时先 exact `abandonCheckout(checkoutId)` 成功再回原 App。迟到 catalog/read/prepare settlement 不得重新激活目标 engine。
+- prepare committed 后 completion event 只能携带 engine id 与 landing intent；AppShell consumer 负责同步 active engine、关闭 Settings 并打开空白 Home conversation。不得原地改写当前 thread engine identity。
+- entitlement/intent/completion event 禁止携带 plan、checkout URL、order payload、binding id、API key、vault scope 或 config detail。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Gate 行为 | AppShell 行为 |
+|---|---|---|
+| Codex active、Claude none | 直达 Claude plans | 保持 mounted、原 thread 不变 |
+| 目标 entitlement active | 跳过 checkout，authoritative prepare | commit 后切 engine + 新会话 |
+| plans/catalog failure | overlay safe failure + retry/cancel | 原上下文仍可返回 |
+| checkout pending 后 cancel | exact local abandon；停止 poll | 返回同一 mounted App |
+| cancel 与迟到 prepare/read race | generation mismatch 丢弃迟到结果 | 不切 engine、不打开新会话 |
+| paid + prepare success | credential-free completion | active engine 同步并打开 Home |
+| entitlement snapshot unknown | 不抢占 legacy selection callback | 不以 unknown 假装已订阅/未订阅 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：composer 在写 target 前发 `{ targetEngineId:"claude-code" }`；Gate re-read catalog 后展示 Claude plans，paid 后发 `{ engineId:"claude-code", openNewConversation:true }`。
+- Base：用户从“我的引擎”打开无 target catalog，选择已有 engine 后 prepare 并进入该 engine 新会话。
+- Bad：先把当前 Codex thread 的 engine 改成 Claude，再发现没有订阅并弹支付。
+- Bad：在 Composer/AppShell root 加 checkout polling，或把 server catalog 长期复制进 `AppSettings`。
+- Bad：completion event 携带 API key/plan/order/config payload。
+
+### 6. Tests Required
+
+- `AccountAppGate.test.tsx` MUST 覆盖 Codex ready → target Claude plans、ready DOM identity 保持、cancel 返回、paid → Claude prepare/activate/completion。
+- `Composer.file-reference-token.test.tsx` MUST 证明已知无权益 target 在 `onSelectEngine` / creation target mutation 前被拦截；snapshot unknown 保留既有 selector contract。
+- `ModelSelect.test.tsx` MUST 证明仅 `none` managed engine 显示 localized“订阅后使用”，active/unknown 不误标。
+- `useAppShellLayoutNodesSection.test.ts` MUST 证明 completion 先同步 target engine，再关闭 Settings 并进入 Home new conversation。
+- `engineSwitchSignal.test.ts` MUST 锁定 closed target/completion payload；`engineOnboardingClient.test.ts` MUST 锁定 novice display mapping。
+- Gates：focused Vitest、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`、engine registry/capability checks 与 strict OpenSpec validation。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+setSelectedCreationTarget(claudeTarget);
+setActiveEngine("claude");
+openPlans("claude-code");
+```
+
+#### Correct
+
+```ts
+requestAccountEngineSwitchV1({
+  source: "enginePicker",
+  targetEngineId: "claude-code",
+  openNewConversation: true,
+});
+// AccountGate re-reads catalog; only committed prepare publishes completion.
+```
+
+## Scenario: Recovered checkout exit and local abandonment
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `AccountAppGate` 的 pending/processing checkout recovery、checkout SQLite checkpoint、Account logout 或 checkout IPC。
+- 目标：恢复支付不能形成无出口页面；离开流程时必须处理 durable local checkpoint，不能只切 React phase 后在下次启动再次恢复同一记录。
+
+### 2. Signatures
+
+- Native command：`account_engine_v1_abandon_checkout(checkout_id: i64) -> { ok, value | error }`。
+- Runtime：`AccountRuntime::engine_checkout_abandon(checkout_id: i64) -> Value`。
+- Repository：`clear_engine_checkout_if_matches(authority_origin_id, account_link_id, device_id, checkout_id) -> Result<bool, String>`。
+- Frontend client：`AccountEngineOnboardingClientV1.abandonCheckout(checkoutId) -> EngineOnboardingResultV1<null>`。
+- UI exits：`gateBackToPlans` 与既有 `logout`；等待支付页不得依赖 icon-only back 作为唯一退出路径。
+
+### 3. Contracts
+
+- abandon 是 local-only recovery mutation：MUST 只删除当前 authenticated `authority + account + device + checkout_id` 对应的 SQLite checkpoint；MUST NOT 调用 token2api cancel、声称 remote order cancelled、删除订阅或进入 balance fallback。
+- `checkout_id <= 0` MUST `validationRejected`；当前记录属于另一个 checkout id 或 compare-and-delete 失败 MUST `concurrentEdit`；无记录 MUST 作为幂等 success 返回 `value:null`。
+- compare-and-delete MUST 在 SQL `DELETE ... AND checkout_id = ?` 中完成；禁止 read 后使用不带 checkout id 的宽删除覆盖并发新订单。
+- “返回套餐” MUST 先成功 abandon，再读取当前 engine plans；abandon 失败时保留 checkout 页面并展示 safe recovery error，不得只改 React phase。
+- “退出登录” MUST 清除当前 account/device checkout checkpoint 后提交 signed-out session；UI 随后返回登录页。Remote logout 仍遵循既有 best-effort typed-truth contract。
+- waiting/processing reconciliation effect MUST 在 phase 离开或 session signed out 后 cleanup；迟到 read 不得重建已 abandon 的 checkpoint。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Native 结果 | UI 结果 |
+|---|---|---|
+| matching active checkpoint | conditional delete，`ok:true,value:null` | authoritative 读取当前 engine plans |
+| checkpoint 已不存在 | idempotent success | 正常返回套餐 |
+| 同 account/device 已换成新 checkout id | `concurrentEdit`，不删除新记录 | 留在恢复页并提示重试 |
+| SQLite unavailable | `persistenceUnavailable` | 留在恢复页，不制造“已返回”假象 |
+| 点击退出登录 | checkout clear + signed-out commit | 显示 login/register，不再恢复旧 checkout |
+| provider 远端订单稍后完成 | 本命令不声明 cancel | 后续 entitlement authoritative read 决定可用性 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：显式“返回套餐”调用 `abandonCheckout(checkoutId)`；Native 用 isolation tuple + exact checkout id conditional delete，成功后再 `plans(engineId)`。
+- Base：terminal checkout 已由 reconciliation 清除 checkpoint；用户返回套餐时 abandon 幂等成功。
+- Bad：`setPhase("plans")` 直接离开页面但保留 SQLite row，导致 restart 再次强制进入支付。
+- Bad：把 local abandon 命名/投影为 cancel order，误导用户认为 provider-owned order 已取消。
+- Bad：只按 account/device 宽删除，使迟到的旧 UI action 可以删除并发创建的新 checkout。
+
+### 6. Tests Required
+
+- `AccountAppGate.test.tsx` MUST 覆盖 recovered checkout 同时存在“重新打开支付 / 返回套餐 / 退出登录”，返回时 exact checkout id abandon 后读取 plans，失败时留在原页，退出时调用 `auth.logout(thisDevice)` 并离开等待页。
+- `engineOnboardingClient.test.ts` MUST 只接受 `value:null` acknowledgement，拒绝 expanded success payload。
+- `src/services/tauri/accountEngine.test.ts` MUST 断言 command name 与 `{ checkoutId }` camelCase mapping。
+- Rust persistence test MUST 证明 mismatched id 不删除、matching id 删除、重复删除幂等。
+- Cross-layer gate MUST 搜索 `command_registry.rs` 注册与 runtime IPC method；required commands：focused Vitest、`cargo test ... account:: --lib`、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+<button onClick={() => setPhase("plans")}>返回套餐</button>
+```
+
+#### Correct
+
+```tsx
+const abandoned = await client.abandonCheckout(checkout.checkoutId);
+if (!abandoned.ok) return keepCheckoutRecoveryVisible(abandoned.error);
+await openPlans(selectedEngine);
+```
+
+```sql
+DELETE FROM account_engine_checkout
+WHERE authority_origin_id = ?1 AND account_link_id = ?2
+  AND device_id = ?3 AND checkout_id = ?4;
+```
+
+## Scenario: Authenticated AccountGate escape hatch
+
+### 1. Scope / Trigger
+
+- Trigger：修改 mandatory `AccountAppGate` state machine、登录后 engine/plan/payment/preparing/failure 页面，或 `useAccountExperienceControllerV1.logout`。
+- 目标：任何尚未进入 AppShell 的 authenticated blocking state 都不能成为账号死路；用户无订阅、无可售套餐或服务失败时仍能切换账号。
+
+### 2. Signatures
+
+- Controller：`logout(scope: "thisDevice" | "allSessions") -> Promise<boolean>`；`true` 仅表示 local signed-out session 已提交，remote revocation truth 仍由既有 receipt 表达。
+- Shared frame：`GateFrame({ children, accountExit?: GateAccountExit })`。
+- UI contract：`GateAccountExit { copy, busy, failureCode, onLogout }`；产品动作固定复用 localized `copy.logout`。
+
+### 3. Contracts
+
+- `accountExit` MUST 由 authenticated `AccountAppGate` shared frame owner 渲染，并覆盖 `catalog/loading`、engine selection、plans、empty plans、payment method、checkout、preparing 与 authenticated failure；`ready` AppShell 和 signed-out login/register MUST NOT 渲染该 gate action。
+- 点击 MUST 调用 `controller.logout("thisDevice")`。成功后进入 login/register；用户可换账号。不得要求先购买订阅、返回上一页或清理 API Key。
+- logout pending MUST 同时设置 `disabled` 与 `aria-busy=true`，重复点击不得产生第二个 mutation。
+- logout failure MUST 返回 `false`，Gate 留在当前 phase 并显示 mapped safe copy；禁止裸露 Native/protocol enum。
+- successful logout MUST invalidate in-flight catalog generation；迟到 catalog result 不得继续 `resumeCheckout`、打开支付 action 或恢复旧 engine path。
+- account bootstrap 的 `loading` MUST 由 exact generation owner 管理。`sessionChanged` 触发的 bootstrap 与 logout/change-password signed-out commit 竞态时，signed-out commit MUST 同步 invalidate generation、撤销旧 loading owner 并清除 loading；迟到 bootstrap 只允许静默 settle，不得恢复旧 session 或把 gate 永久留在“正在连接”。
+- checkout-local “返回套餐”继续负责 exact checkpoint abandon；全局“退出登录”不得替代该 local recovery contract。
+
+### 4. Validation & Error Matrix
+
+| 当前状态 | 退出动作 | 结果 |
+|---|---|---|
+| engine / plans / empty plans / payment method | `logout(thisDevice)` | login/register，可换账号 |
+| catalog loading / authenticated failure | shared action 始终可见 | 成功 invalidates generation；迟到 catalog 不推进 |
+| checkout pending/terminal | shared logout + leaf 返回套餐 | logout 清 session/checkpoint；返回套餐 exact abandon |
+| preparing / prepare failure | shared logout | 不挂载 AppShell，返回登录 |
+| logout pending | disabled + `aria-busy` | duplicate click 零新增 mutation |
+| logout failure | `false` + safe failure | 原 phase 与原主要动作仍可用 |
+| logout success 与 `sessionChanged` bootstrap 并发 | signed-out commit 取消旧 loading owner | 立即显示 login/register；stale bootstrap 迟到无可见副作用 |
+| signedOut / ready | 不渲染 gate logout | 登录页或 AppShell 各自拥有自己的账号入口 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：`GateFrame accountExit={accountExit}` 作为 authenticated phases 的公共 owner；新增 phase 默认必须显式选择是否属于 authenticated blocking surface。
+- Base：无订阅用户在套餐页点击“退出登录”，成功后直接看到登录/注册并换账号。
+- Bad：只在 `phase === "checkout"` 内写 logout button，导致 plans/empty/failure 仍无出口。
+- Bad：logout 失败后清空 plans 或跳回 loading，使用户既未退出又丢失当前恢复动作。
+- Bad：catalog promise 在 logout 成功后继续调用 `resumeCheckout()`，重新打开已退出账号的支付流程。
+- Bad：bootstrap 在 stale generation 分支先 `return`，把自己设置的 `loading=true` 永久遗留；或旧 generation settle 时无条件清 loading，误清除更新 generation 的 pending UI。
+
+### 6. Tests Required
+
+- `AccountAppGate.test.tsx` MUST 覆盖无订阅套餐页 visible logout、`auth.logout({scope:"thisDevice"})` exact call、成功后计划页消失。
+- 使用 deferred logout 覆盖 pending disabled、duplicate click only once、failure safe alert、plan list 保持可用。
+- 使用 deferred catalog 覆盖 catalog loading 中退出成功后迟到 response 不调用 `resumeCheckout`。
+- 使用 deferred `sessionChanged` bootstrap 覆盖 logout mutation 先发 event、后返回 success：signed-out commit 后必须立即离开 connecting，迟到 bootstrap settle 后仍保持登录页。
+- Existing checkout tests MUST 继续覆盖“返回套餐”与 shared logout；测试点击前先等待目标 phase，避免误点 catalog-loading 的同名 global action。
+- Gates：focused Vitest、`npm run typecheck`、target ESLint、full `npm run test`、`npm run lint`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+if (phase === "checkout") {
+  return <button onClick={() => void logout("thisDevice")}>退出登录</button>;
+}
+```
+
+#### Correct
+
+```tsx
+const accountExit = {
+  copy,
+  busy: logoutBusy || accountBusy,
+  failureCode: logoutFailure,
+  onLogout: () => void logoutFromGate(),
+};
+
+return <GateFrame accountExit={accountExit}>{phaseContent}</GateFrame>;
+```
+
+bootstrap loading 的 owner MUST 与 generation 绑定：
+
+```ts
+loadingGenerationRef.current = generation;
+setLoading(true);
+const result = await gateway.bootstrap({});
+if (loadingGenerationRef.current === generation) {
+  loadingGenerationRef.current = null;
+  setLoading(false);
+}
+if (generationRef.current !== generation) return;
+```
+
+## Scenario: Subscription-owned usage projection and daily model heatmap
+
+### 1. Scope / Trigger
+
+- Trigger：修改 Account `usage.read`、额度页、Desktop engine entitlement mapping，或 token2api subscription/usage API adapter。
+- 目标：额度必须来自用户当前 active subscription，而不是可为空的 user platform quota；每个已订阅 engine 独立展示额度与过去一年用量，日级 model 明细只在 hover/focus 时按需读取。
+
+### 2. Signatures
+
+- Gateway read：`usage.read({}) -> QuotaUsageViewV1`。
+- Lazy read：`usage.readDayModels({ engineId: "codex" | "claude-code", date: "YYYY-MM-DD" }) -> UsageDayModelsViewV1`。
+- Authority composition：
+  - `GET /api/v1/desktop/v1/engines`：提供 active engine 的 `engine_id + subscription_id + group_id + subscription_label + expires_at`。
+  - `GET /api/v1/subscriptions/progress`：提供 subscription `daily/weekly/monthly` 的 `limit_usd + used_usd + remaining_usd + percentage + resets_at`。
+  - `GET /api/v1/usage/dashboard/snapshot-v2?group_id=<id>&start_date=<date>&end_date=<date>`：提供 group-scoped `trend[] + models[]`。
+- Main native boundary 仍复用 `account_v1_execute`；新增 operation name 必须在 Rust `GATEWAY_OPERATIONS_V1`、TS IPC schema/transport、Real/Mock gateway 与 scenario manifest 同步登记。
+
+### 3. Contracts
+
+- `usage.read` MUST 先以 Desktop engine catalog 为 entitlement truth，只投影 `subscriptionId/groupId` 均有效的 active engine；不得从 renderer 猜测 engine→group 映射。
+- 每个 engine MUST 独立关联同一 subscription id 的 progress，并投影 `windows.daily/weekly/monthly`；不存在的窗口用 `null`，不得用 0 伪造套餐额度。
+- 年度 analytics MUST 按 engine 的 `group_id` 分别读取，返回 `range + totals + days + models`；heatmap intensity 为该 engine 日 `actualCost` 的相对 0..4 等级，不得跨 engine 混算。
+- 某个 engine dashboard 失败时，该 engine `analyticsStatus="unavailable"`，其他 engine 与已读取额度仍可显示；catalog/progress top-level 失败才使 `usage.read` 失败。
+- `usage.readDayModels` MUST 在 Native 重新读取 catalog 并验证请求 engine 当前仍有 active group，date 必须为过去 365 天内的 ISO date；禁止信任 renderer 传入 group id。
+- day-model response 只包含 `modelLabel + requests + input/output/cache/total tokens + cost + actualCost`，不得包含 API key、account id、group id、raw server error 或 credential。
+- UI 首次进入 Account Center 不自动读取 usage；只有用户打开“额度”Tab或点击刷新才调用 `usage.read`。日级 model 明细只在 activity cell hover/focus 时调用一次并按 `engineId:date` 缓存；禁止轮询与 AppShell root state。
+- Account Center Header MUST 是 usage refresh/fetched time 与 logout 的唯一 action owner：logout 常驻，refresh/fetched time 只在额度 Tab出现；两个 action 都使用有 accessible name 与 hover/focus tooltip 的 icon-only button。额度/安全内容区不得重复同名 heading。
+- active subscription engine MUST 使用 selectable card master/detail：一行最多 3 张，1/2/3 张等宽占满，更多自动换行，responsive 降为 2/1 列；card selection 只存在 component-local state，不得触发新的`usage.read`或写入持久化状态。card 摘要优先 daily，缺失时回退 weekly/monthly；detail 保留全部 available windows。
+- heatmap cell MUST 可键盘 focus，tooltip宽度自适应且无固定高度；无 activity 的日期不发 day-model request。
+- token2api 已有上述三类 read API 时，本场景只改 Doge adapter/contract/UI，不要求 token2api migration 或生产发布。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Native/Gateway | UI |
+|---|---|---|
+| active subscription + platform quota 为空 | 以 subscription progress 成功投影 | 显示套餐总额/已用/剩余 |
+| Codex + Claude 均 active | 按各自 group 独立 snapshot | 两张 engine card，可独立切换 |
+| 某 engine snapshot 失败 | 仅该 engine analytics unavailable | 额度窗口保留，其他 engine 热力图正常 |
+| progress endpoint失败/畸形 | safe `serviceUnavailable/protocolMismatch` | 可重试，不展示伪造额度 |
+| renderer提交 unknown engine/group/date | boundary `validationRejected` | 不发 Authority request |
+| hover同一 engine/date 多次 | controller in-flight dedupe + cache | 最多一个请求，复用 model 明细 |
+| logout/refresh session | 清 day-model cache 与 generation | 旧响应不得写回新账号 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：catalog 给出 Codex group 11、Claude group 22；Native 分别读取两个 snapshot，UI选择 engine 后只展示该 engine 的窗口与热力图。
+- Base：套餐只有 monthly window，UI只渲染 monthly card；daily/weekly保持`null`。
+- Bad：继续读取`/api/v1/user/platform-quotas`并因null显示“暂时无法读取额度”。
+- Bad：renderer传`groupId`给Native，或一次性为365天逐日加载model明细。
+- Bad：一个 engine analytics失败后清空全部 subscription progress。
+
+### 6. Tests Required
+
+- Rust Authority test：断言 progress path、group-scoped snapshot query 与 Bearer envelope；projection test锁定 canonical decimal、windows、365-day trend。
+- Rust IPC/model test：`usage.readDayModels` 为read operation，exact payload仅允许`engineId/date`，invalid/未来/超范围date fail closed。
+- TS contract test：operation inventory、request/result schema、unknown field、privacy scan、Real/Mock transport mapping。
+- React regression：打开额度Tab前零read；Codex/Claude切换；active cell hover分别发送各自`engineId/date`；重复hover不重复读取；partial analytics failure保留额度。
+- React visual/interaction regression：Header logout/refresh icon-only 且 tooltip 可由 hover/focus 打开；refresh pending 防重复提交；额度/安全无重复 heading；多订阅 grid 锁定最多3列与 responsive 2/1列；card切换不增加`usage.read`调用。
+- Required commands：focused Vitest、`cargo test --manifest-path src-tauri/Cargo.toml account:: --lib`、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+const quota = await fetch("/api/v1/user/platform-quotas");
+if (!quota.limit) return unavailableUsage();
+```
+
+#### Correct
+
+```ts
+const view = await gateway.usage.read({});
+// Native composes active engine catalog + subscription progress + group snapshots.
+await gateway.usage.readDayModels({ engineId, date }, {}); // hover/focus only
+```
+
+## Scenario: Cold restore OS vault access budget
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `gateway.bootstrap`、`try_restore_session`、access-token refresh、`activate_auth` 或 `DurableAccountVault`。
+- 目标：macOS Keychain authorization 是用户可见的高成本 side effect；启动恢复不得对同一 credential 做重复 status/read，同时必须保留 refresh rotation durability。
+
+### 2. Signatures
+
+- `bootstrap(state) -> bootstrap projection`：每次调用最多求值一次 `vault.status()`。
+- `activate_auth(state, auth, existing_scope, previous_refresh)`：已有 session 的 caller MUST 传入刚读取的 previous refresh snapshot；新 login/OAuth MAY 传 `None` 并由 activation 读取 rollback baseline。
+
+### 3. Contracts
+
+- active-session cold restore MUST 对 refresh credential 执行 exactly one `vault.read()`；同一值同时用于 Authority refresh 与 local rollback snapshot。
+- bootstrap restore gate 与最终 projection MUST 复用同一个 `AccountVaultStatus`，禁止重复 `vault.status()`。
+- rotated refresh MUST 写回 OS vault；不得为了减少提示保留旧 refresh 或退化为 memory-only session。
+- repository commit 失败时 MUST 使用 snapshot 恢复旧 refresh；snapshot 不得进入 renderer、SQLite、log 或 error message。
+- vault locked/unavailable 继续 fail closed。该 contract 约束 Doge access count，不承诺 ad-hoc signature 下 macOS 永不显示必要的 read/write authorization。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Vault access | 结果 |
+|---|---|---|
+| signed-out bootstrap | `status=1`，无 refresh read/write | 登录页；不访问不存在的 session credential |
+| active cold restore success | `status=1, read=1, write=1` | rotated refresh durable，session restored |
+| Authority refresh failure | `status=1, read=1, write=0` | 保留旧 credential，可重试 |
+| repository commit failure | `status=1, read=1, write new + rollback old` | 不留下半提交 session |
+| vault locked/unavailable | `status=1`，不发 Authority refresh | safe `vaultUnavailable` / recoverable gate |
+
+### 5. Tests Required
+
+- Counting vault regression MUST 锁定 cold restore `status_calls == 1` 与 refresh-purpose `read_calls == 1`。
+- Activation regression MUST 证明 caller 提供 snapshot 时不再次 read，且 repository failure 仍写回旧 snapshot。
+- Required commands：`cargo test --manifest-path src-tauri/Cargo.toml account:: --lib`、`cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`、`npm run check:runtime-contracts`、OpenSpec strict validation。

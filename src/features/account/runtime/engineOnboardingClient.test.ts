@@ -6,6 +6,7 @@ const tauri = vi.hoisted(() => ({
   checkout: vi.fn(),
   readCheckout: vi.fn(),
   pendingCheckout: vi.fn(),
+  abandonCheckout: vi.fn(),
   readiness: vi.fn(),
   prepare: vi.fn(),
 }));
@@ -16,6 +17,7 @@ vi.mock("../../../services/tauri/accountEngine", () => ({
   createAccountEngineCheckoutV1: tauri.checkout,
   readAccountEngineCheckoutV1: tauri.readCheckout,
   readPendingAccountEngineCheckoutV1: tauri.pendingCheckout,
+  abandonAccountEngineCheckoutV1: tauri.abandonCheckout,
   readAccountEngineReadinessV1: tauri.readiness,
   prepareAccountEngineV1: tauri.prepare,
 }));
@@ -25,6 +27,7 @@ import { createAccountEngineOnboardingClientV1 } from "./engineOnboardingClient"
 beforeEach(() => {
   vi.clearAllMocks();
   tauri.pendingCheckout.mockResolvedValue({ ok: true, value: null });
+  tauri.abandonCheckout.mockResolvedValue({ ok: true, value: null });
 });
 
 describe("account engine onboarding client", () => {
@@ -83,6 +86,26 @@ describe("account engine onboarding client", () => {
     });
   });
 
+  it("uses novice-facing engine names instead of upstream runtime labels", async () => {
+    tauri.catalog.mockResolvedValue({
+      ok: true,
+      value: {
+        engines: [
+          { id: "codex", display_name: "Codex CLI", entitlement: { status: "active" } },
+          { id: "claude-code", display_name: "Claude Code", entitlement: { status: "none" } },
+        ],
+      },
+    });
+
+    await expect(createAccountEngineOnboardingClientV1().catalog()).resolves.toEqual({
+      ok: true,
+      value: [
+        { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+        { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+      ],
+    });
+  });
+
   it("accepts nullable optional fields emitted by the native wire contract", async () => {
     tauri.catalog.mockResolvedValue({
       ok: true,
@@ -133,6 +156,7 @@ describe("account engine onboarding client", () => {
         checkoutId: 9,
         status: "pending",
         expiresAt: "2030-01-01T00:00:00Z",
+        planName: null,
         action: {
           kind: "open_url",
           url: "https://pay.example.com/orders/9",
@@ -154,6 +178,19 @@ describe("account engine onboarding client", () => {
     });
 
     await expect(createAccountEngineOnboardingClientV1().readCheckout(9)).resolves.toEqual({
+      ok: false,
+      error: { code: "protocolMismatch" },
+    });
+  });
+
+  it("accepts only an empty local checkout abandon acknowledgement", async () => {
+    const client = createAccountEngineOnboardingClientV1();
+
+    await expect(client.abandonCheckout(9)).resolves.toEqual({ ok: true, value: null });
+    expect(tauri.abandonCheckout).toHaveBeenCalledWith(9);
+
+    tauri.abandonCheckout.mockResolvedValueOnce({ ok: true, value: { cancelled: true } });
+    await expect(client.abandonCheckout(9)).resolves.toEqual({
       ok: false,
       error: { code: "protocolMismatch" },
     });

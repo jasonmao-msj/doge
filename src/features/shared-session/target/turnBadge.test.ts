@@ -15,7 +15,7 @@ describe("resolveTurnBadge", () => {
     const badge = resolveTurnBadge(snapshot);
     expect(badge).toEqual({
       engine: "claude",
-      engineLabel: "Claude Code",
+      engineLabel: "Claude",
       providerLabel: "OpenRouter",
       modelLabel: "sonnet",
       reasoningLabel: null,
@@ -80,7 +80,7 @@ describe("resolveTurnBadge", () => {
     });
     expect(snapshot.providerProfileSource).toBe("local");
     const badge = resolveTurnBadge(snapshot);
-    expect(badge.engineLabel).toBe("Codex CLI");
+    expect(badge.engineLabel).toBe("Codex");
     expect(badge.providerLabel).toBe("本地配置");
   });
 
@@ -91,7 +91,7 @@ describe("resolveTurnBadge", () => {
       providerProfileNameSnapshot: "Grok 本地配置",
       providerProfileSource: "local",
     });
-    expect(badge.engineLabel).toBe("Grok CLI");
+    expect(badge.engineLabel).toBe("Grok");
     expect(badge.providerLabel).toBe("Grok 本地配置");
   });
 

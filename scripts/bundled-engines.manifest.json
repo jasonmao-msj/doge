@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "engines": {
+    "codex": {
+      "version": "0.147.0",
+      "variants": {
+        "aarch64-apple-darwin": {
+          "url": "https://github.com/openai/codex/releases/download/rust-v0.147.0/codex-package-aarch64-apple-darwin.tar.gz",
+          "sha256": "17b2984eb22b607e3d0c25728252fc90f510e476bad39a6d9f45cdb1aa685432",
+          "archive": "tar.gz",
+          "executable": "bin/codex"
+        },
+        "x86_64-apple-darwin": {
+          "url": "https://github.com/openai/codex/releases/download/rust-v0.147.0/codex-package-x86_64-apple-darwin.tar.gz",
+          "sha256": "d91e59133daf923bc45d76e3da4af8ae9ef62a0231da18488da0cd573b6e9d63",
+          "archive": "tar.gz",
+          "executable": "bin/codex"
+        },
+        "x86_64-pc-windows-msvc": {
+          "url": "https://github.com/openai/codex/releases/download/rust-v0.147.0/codex-package-x86_64-pc-windows-msvc.tar.gz",
+          "sha256": "c156c8feb8cb20197bf74d2c6daffed1fec0a8c21a03bc2ca90d7ff81927b0c5",
+          "archive": "tar.gz",
+          "executable": "bin/codex.exe"
+        }
+      }
+    },
+    "claude-code": {
+      "version": "2.1.233",
+      "variants": {
+        "aarch64-apple-darwin": {
+          "url": "https://github.com/anthropics/claude-code/releases/download/v2.1.233/claude-darwin-arm64.tar.gz",
+          "sha256": "5dce92ccd93173fead018f2a8262189da88c7d6fffbaa666b7a81a6b05f72afe",
+          "archive": "tar.gz",
+          "executable": "claude"
+        },
+        "x86_64-apple-darwin": {
+          "url": "https://github.com/anthropics/claude-code/releases/download/v2.1.233/claude-darwin-x64.tar.gz",
+          "sha256": "84a820ad17e08eaef497dfd8cd282b86b7a59dbedd18f2780aa7e82ef8b9373a",
+          "archive": "tar.gz",
+          "executable": "claude"
+        },
+        "x86_64-pc-windows-msvc": {
+          "url": "https://github.com/anthropics/claude-code/releases/download/v2.1.233/claude-win32-x64.zip",
+          "sha256": "f435123fcfc637598a9d70332bc1244a58cb5bc471897e21508ed3e6b8db84ae",
+          "archive": "zip",
+          "executable": "claude.exe"
+        }
+      }
+    }
+  }
+}

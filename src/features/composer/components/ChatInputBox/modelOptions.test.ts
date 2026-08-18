@@ -285,6 +285,7 @@ describe('ChatInputBox model options', () => {
     });
 
     expect(groups.map((group) => group.providerId)).toEqual(['codex']);
+    expect(groups[0]?.providerLabel).toBe('Codex');
     expect(
       groups.find((group) => group.providerId === 'codex')?.models.map((model) => model.id),
     ).toEqual([

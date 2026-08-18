@@ -109,8 +109,84 @@ pub(crate) struct LoginWire {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub(crate) struct PlatformQuotaWire {
-    pub(crate) platform_quotas: Vec<Value>,
+pub(crate) struct SubscriptionProgressEntryWire {
+    pub(crate) subscription: SubscriptionIdentityWire,
+    pub(crate) progress: SubscriptionProgressWire,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct SubscriptionIdentityWire {
+    pub(crate) id: i64,
+    pub(crate) group_id: i64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct SubscriptionProgressWire {
+    pub(crate) id: i64,
+    pub(crate) group_name: String,
+    pub(crate) expires_at: String,
+    pub(crate) daily: Option<SubscriptionUsageWindowWire>,
+    pub(crate) weekly: Option<SubscriptionUsageWindowWire>,
+    pub(crate) monthly: Option<SubscriptionUsageWindowWire>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct SubscriptionUsageWindowWire {
+    pub(crate) limit_usd: f64,
+    pub(crate) used_usd: f64,
+    pub(crate) remaining_usd: f64,
+    pub(crate) percentage: f64,
+    pub(crate) resets_at: String,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub(crate) struct UsageDashboardSnapshotWire {
+    #[serde(default)]
+    pub(crate) trend: Vec<UsageTrendWire>,
+    #[serde(default)]
+    pub(crate) models: Vec<UsageModelWire>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub(crate) struct UsageTrendWire {
+    pub(crate) date: String,
+    #[serde(default)]
+    pub(crate) requests: i64,
+    #[serde(default)]
+    pub(crate) input_tokens: i64,
+    #[serde(default)]
+    pub(crate) output_tokens: i64,
+    #[serde(default)]
+    pub(crate) cache_creation_tokens: i64,
+    #[serde(default)]
+    pub(crate) cache_read_tokens: i64,
+    #[serde(default)]
+    pub(crate) total_tokens: i64,
+    #[serde(default)]
+    pub(crate) cost: f64,
+    #[serde(default)]
+    pub(crate) actual_cost: f64,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub(crate) struct UsageModelWire {
+    pub(crate) model: String,
+    #[serde(default)]
+    pub(crate) requests: i64,
+    #[serde(default)]
+    pub(crate) input_tokens: i64,
+    #[serde(default)]
+    pub(crate) output_tokens: i64,
+    #[serde(default)]
+    pub(crate) cache_creation_tokens: i64,
+    #[serde(default)]
+    pub(crate) cache_read_tokens: i64,
+    #[serde(default)]
+    pub(crate) total_tokens: i64,
+    #[serde(default)]
+    pub(crate) cost: f64,
+    #[serde(default)]
+    pub(crate) actual_cost: f64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -197,6 +273,8 @@ pub(crate) struct DesktopCheckoutWire {
     pub(crate) checkout_id: i64,
     pub(crate) status: String,
     pub(crate) expires_at: String,
+    #[serde(default)]
+    pub(crate) plan_name: Option<String>,
     pub(crate) action: Option<DesktopCheckoutActionWire>,
 }
 
@@ -481,18 +559,34 @@ impl TokenMatrixAuthority {
         .await
     }
 
-    pub(crate) async fn quota(
+    pub(crate) async fn subscription_progress(
         &self,
         access_token: &str,
-    ) -> Result<PlatformQuotaWire, AuthorityError> {
+    ) -> Result<Vec<SubscriptionProgressEntryWire>, AuthorityError> {
         self.request(
             Method::GET,
-            "/api/v1/user/platform-quotas",
+            "/api/v1/subscriptions/progress",
             None,
             Some(access_token),
             None,
         )
         .await
+    }
+
+    pub(crate) async fn usage_dashboard_snapshot(
+        &self,
+        access_token: &str,
+        group_id: i64,
+        start_date: &str,
+        end_date: &str,
+        include_trend: bool,
+        include_models: bool,
+    ) -> Result<UsageDashboardSnapshotWire, AuthorityError> {
+        let path = format!(
+            "/api/v1/usage/dashboard/snapshot-v2?group_id={group_id}&start_date={start_date}&end_date={end_date}&granularity=day&include_trend={include_trend}&include_model_stats={include_models}&include_group_stats=false"
+        );
+        self.request(Method::GET, &path, None, Some(access_token), None)
+            .await
     }
 
     pub(crate) async fn create_managed_key(

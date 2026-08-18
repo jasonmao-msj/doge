@@ -13,7 +13,6 @@ struct EngineReadinessView<'a> {
 impl AccountRuntime {
     pub(crate) async fn engine_catalog_snapshot(&self) -> Value {
         let mut state = self.state.lock().await;
-        self.initialize_session(&mut state).await;
         if let Err(error) = self
             .require_authority_capability(
                 &mut state,
@@ -250,6 +249,45 @@ impl AccountRuntime {
         }))
     }
 
+    pub(crate) async fn engine_checkout_abandon(&self, checkout_id: i64) -> Value {
+        if checkout_id <= 0 {
+            return engine_failure(code_failure("validationRejected", "checkout", "retry"));
+        }
+        // This is a local recovery mutation. The authenticated metadata is
+        // loaded with AccountRuntime and must not trigger refresh/network IO.
+        let state = self.state.lock().await;
+        let Some((account_link_id, device_id)) =
+            checkout_identity(&state, self.device_id.as_deref())
+        else {
+            return engine_failure(session_failure());
+        };
+        let Some(repository) = self.repository.as_ref() else {
+            return engine_failure(persistence_failure());
+        };
+        let record = match repository.read_engine_checkout(
+            AUTHORITY_ORIGIN_ID,
+            account_link_id,
+            device_id,
+        ) {
+            Ok(Some(record)) => record,
+            Ok(None) => return engine_success(Value::Null),
+            Err(_) => return engine_failure(persistence_failure()),
+        };
+        if record.checkout_id != checkout_id {
+            return engine_failure(code_failure("concurrentEdit", "checkout", "retry"));
+        }
+        match repository.clear_engine_checkout_if_matches(
+            AUTHORITY_ORIGIN_ID,
+            account_link_id,
+            device_id,
+            checkout_id,
+        ) {
+            Ok(true) => engine_success(Value::Null),
+            Ok(false) => engine_failure(code_failure("concurrentEdit", "checkout", "retry")),
+            Err(_) => engine_failure(persistence_failure()),
+        }
+    }
+
     pub(crate) async fn engine_readiness_snapshot(&self, engine_id: &str) -> Value {
         if !valid_managed_engine(engine_id) {
             return engine_failure(code_failure(
@@ -375,15 +413,23 @@ impl AccountRuntime {
             now_epoch(),
         );
         match configured {
-            Ok(_) => engine_success(json!({ "engineId": engine_id, "status": "ready" })),
+            Ok(_) => {
+                if let Err(error) = configuration::commit_completed_transactions() {
+                    log::warn!(
+                        "[account] managed engine configuration committed but journal cleanup failed: {}",
+                        error
+                    );
+                }
+                engine_success(json!({ "engineId": engine_id, "status": "ready" }))
+            }
             Err(ApplyError::ConcurrentEdit) => {
                 engine_failure(code_failure("concurrentEdit", "enginePrepare", "retry"))
             }
             Err(ApplyError::RollbackIncomplete) => {
                 engine_failure(code_failure("rollbackIncomplete", "enginePrepare", "retry"))
             }
-            Err(ApplyError::Rejected(_)) => engine_failure(code_failure(
-                "configurationRejected",
+            Err(ApplyError::Rejected(reason)) => engine_failure(code_failure(
+                configuration_rejection_code(&reason),
                 "enginePrepare",
                 "retry",
             )),
@@ -449,7 +495,7 @@ impl AccountRuntime {
     }
 }
 
-fn checkout_identity<'a>(
+pub(super) fn checkout_identity<'a>(
     state: &'a RuntimeState,
     device_id: Option<&'a str>,
 ) -> Option<(&'a str, &'a str)> {
@@ -469,6 +515,26 @@ fn valid_managed_engine(engine_id: &str) -> bool {
     matches!(engine_id, "codex" | "claude-code")
 }
 
+fn configuration_rejection_code(reason: &str) -> &'static str {
+    let normalized = reason.to_ascii_lowercase();
+    if normalized.contains("access is denied")
+        || normalized.contains("permission denied")
+        || normalized.contains("os error 5")
+    {
+        return "configurationAccessDenied";
+    }
+    if normalized.contains("used by another process")
+        || normalized.contains("sharing violation")
+        || normalized.contains("os error 32")
+    {
+        return "configurationBusy";
+    }
+    if normalized.contains("unsafe") || normalized.contains("not a regular file") {
+        return "configurationUnsafeTarget";
+    }
+    "configurationRejected"
+}
+
 fn validate_desktop_checkout(value: DesktopCheckoutWire) -> Result<DesktopCheckoutWire, ()> {
     if value.checkout_id <= 0
         || !matches!(
@@ -477,6 +543,11 @@ fn validate_desktop_checkout(value: DesktopCheckoutWire) -> Result<DesktopChecko
         )
         || chrono::DateTime::parse_from_rfc3339(&value.expires_at).is_err()
     {
+        return Err(());
+    }
+    if value.plan_name.as_deref().is_some_and(|name| {
+        name.trim().is_empty() || name.len() > 160 || name.chars().any(char::is_control)
+    }) {
         return Err(());
     }
     let Some(action) = value.action.as_ref() else {
@@ -533,6 +604,7 @@ mod tests {
             checkout_id: 7,
             status: "pending".to_string(),
             expires_at: "2030-01-01T00:00:00Z".to_string(),
+            plan_name: Some("Doge 套餐".to_string()),
             action,
         }
     }
@@ -568,5 +640,21 @@ mod tests {
             data: Some("weixin://wxpay/bizpayurl?pr=opaque".to_string()),
         }));
         assert!(validate_desktop_checkout(value).is_ok());
+    }
+
+    #[test]
+    fn configuration_rejections_keep_windows_recovery_reasons_distinct() {
+        assert_eq!(
+            configuration_rejection_code("Access is denied. (os error 5)"),
+            "configurationAccessDenied"
+        );
+        assert_eq!(
+            configuration_rejection_code("file is being used by another process (os error 32)"),
+            "configurationBusy"
+        );
+        assert_eq!(
+            configuration_rejection_code("configuration target parent is unsafe"),
+            "configurationUnsafeTarget"
+        );
     }
 }

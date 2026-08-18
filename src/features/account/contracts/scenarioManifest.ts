@@ -425,7 +425,7 @@ const scenariosV1: readonly AccountScenarioV1[] = [
     productState: "authenticatedPersistent",
     terminal: "rejected",
   }),
-  scenarioV1("usage.fresh-normal", ["usage.read"], {
+  scenarioV1("usage.fresh-normal", ["usage.read", "usage.readDayModels"], {
     capabilities: ["usage.quotaPull"],
     productState: "authenticatedPersistent",
     authorityDelta: "usageObserved",

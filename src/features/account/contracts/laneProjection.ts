@@ -74,6 +74,9 @@ export const ACCOUNT_OPERATION_PROJECTIONS_V1: readonly AccountOperationProjecti
     resultNullability: "explicit-null-allowed",
     decimalEncoding: "canonical-decimal-string",
   }),
+  projectionV1("usage.readDayModels", "usage", "token2api", {
+    decimalEncoding: "canonical-decimal-string",
+  }),
   projectionV1("managedKey.readStatus", "managed-key", "composed"),
   projectionV1("managedKey.listCandidates", "managed-key", "composed"),
   projectionV1("managedKey.selectExisting", "managed-key", "composed"),

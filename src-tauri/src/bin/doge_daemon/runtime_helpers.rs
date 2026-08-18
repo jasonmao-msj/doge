@@ -78,6 +78,7 @@ impl DaemonState {
             "claude",
             None,
         )?;
+        reject_account_managed_claude_for_daemon(provider_profile_id.as_deref())?;
         let provider_launch_profile =
             engine::claude::resolve_claude_provider_launch_profile(provider_profile_id.as_deref())?;
         let session = self

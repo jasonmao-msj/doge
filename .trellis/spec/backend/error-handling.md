@@ -66,6 +66,41 @@ let payload: Settings = serde_json::from_str(&data)
 Ok(payload)
 ```
 
+## Scenario: 启动期 external probe 必须有界且清理 process tree
+
+### 1. Scope / Trigger
+
+- Trigger：启动后探测 engine binary、执行第三方 wrapper 的 `--version` / `--help`，或任何结果只用于 capability/status 的 child process。
+- 第三方 `.cmd` / `.bat` / shell wrapper 必须视为不可信：即使参数看似只读，也可能等待登录、读取 stdin、派生 descendant 或永不退出。
+
+### 2. Signatures
+
+- probe helper：`run_cli_probe(bin, args, path_env, deadline) -> Result<ProbeOutput, ProbeError>`
+- status projection：timeout / execution failure 只能投影为该 engine unavailable/unknown，不得阻塞 AppShell。
+
+### 3. Contracts
+
+- stdin MUST 为 `null`；stdout/stderr 可捕获但不得继承交互终端。
+- version/help probe deadline MUST 位于 3–5 秒；timeout 后 MUST 终止并回收整个 platform process tree，而非只 drop Future 或 kill root process。
+- Windows wrapper 使用 root PID 的 tree termination（例如 `taskkill /T /F`）；Unix child 建独立 process group 并按 group cleanup。
+- version probe timeout 后 MUST NOT 继续调用同一 binary 的 help fallback，避免把一次卡死放大为两次串行等待。
+- cleanup 失败必须写结构化 diagnostic；不得把第三方 engine status failure 升级为应用启动失败。
+
+### 4. Validation & Error Matrix
+
+| 场景 | 正确处理 | 禁止处理 |
+|---|---|---|
+| wrapper 正常返回 version | bounded success + version | 无 deadline 执行 |
+| wrapper 等待登录/stdin | deadline 内 timeout，status unavailable | 弹交互窗口或永久等待 |
+| wrapper 派生 descendant | timeout 后整棵 tree 终止 | 只 kill root 留下 `cmd.exe` / `node.exe` |
+| version timeout | 直接返回 timeout status | 再串行执行 `--help` |
+
+### 5. Tests Required
+
+- focused native test MUST 使用会派生 descendant 的 hanging wrapper，断言 deadline、timeout classification 与 process-group/tree cleanup。
+- Windows package workflow MUST 至少编译真实 `cfg(windows)` 分支；本机 Unix test 不能替代 Windows target compile。
+- single-instance regression MUST 验证第二次启动只唤醒已有 main window，不触发第二轮 engine probes。
+
 ## 传播策略
 
 - IO/serde/process 错误统一 `map_err(|e| e.to_string())` 并补充上下文。

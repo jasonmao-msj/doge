@@ -64,7 +64,7 @@ Desktop plan projection 不设本地套餐白名单、不截断 2/3 个、不补
 
 选择 plan 后，仅当 server 返回多个可用支付方式时显示一个短 method chooser；单一方式自动选中。Native 创建 subscription order，并按 provider result 打开 `pay_url`；若 provider 只支持 QR，则 gate 显示二维码这一唯一支付动作。Doge 不提供“我已支付”按钮。
 
-Rust AccountRuntime 为 pending checkout 保存 credential-free safe checkpoint；重启先用 `checkout_id` 做 authoritative read，支付 URL/QR payload 不落 SQLite。AccountGate 在 AppShell 尚未挂载时使用 2–15 秒 bounded backoff 与 server absolute expiry 对账；一旦 ready/unmount 立即停止。该 timer 不得进入 AppShell/root hook 链。未来可在不改变 IPC response shape 的前提下替换为 Native event wakeup。
+Rust AccountRuntime 为 pending checkout 保存 credential-free safe checkpoint；重启先用 `checkout_id` 做 authoritative read，支付 URL/QR payload 不落 SQLite。AccountGate 使用 2–15 秒 bounded backoff 与 server absolute expiry 对账：首次启动 checkout 时 AppShell 尚未挂载；登录后的第二引擎增购可让 AppShell 保持 mounted，但 polling state 仍只属于 AccountGate overlay，不得进入 AppShell/root hook 链。一旦 flow ready/cancel/unmount 立即停止。未来可在不改变 IPC response shape 的前提下替换为 Native event wakeup。
 
 ### 5. managed binding 复用受保护 API key 的 durable uniqueness
 
@@ -83,11 +83,27 @@ vault scope 由 `authority_origin + account_id + device_id + engine_id` 组成�
 
 配置成功需做 syntax + semantic verifier；UI 只显示“正在准备/已准备”，不展示 file list 或 diff。底层 journal/receipt 仍保留给恢复与诊断。
 
+Bundled engine preparation 与 credential/config transaction 分域，但由同一 AccountGate orchestration 串联。Build 在 Tauri bundle 前从官方 release 获取 pinned artifact、校验 SHA-256、解包到 generated resources，并让签名流程先签 nested executable 再签 App。Gate 在 active entitlement 或 paid receipt 后调用 credential-free toolchain facade：
+
+`inspect bundled manifest → detect external engine → compare semantic version → resolve/confirm source → bounded verifier → account_engine_v1_prepare → activate`。
+
+运行时不下载、不复制到 system location，也不修改用户全局 engine：无 external binary 时直接选择 bundled；external version 等于或高于 bundled 时静默选择 external；external version 低于 bundled 时展示一次二选一。选择 bundled 只改变 Doge managed session 的 launch path，不覆盖 external binary；选择 external 只有通过当前 protocol verifier 才能继续，否则必须回到 bundled。选择偏好按 `engine + external version + bundled version` 记忆，任一版本变化后重新决策。
+
+Codex bundle 保留 package 内的 helper/resources，并为 launch `PATH` 加入其 sibling resource directory；Claude 使用官方 standalone executable。Renderer 只接收 engine、版本、source 和 closed decision，不接收 absolute path、command preview、stdout/stderr 或 archive URL。构建脚本和 checked-in manifest 是版本与 checksum 的事实源，下载缓存/generated resources 不入库。最终 generated resource stage 必须创建在 output sibling directory，再用 same-volume rename commit；不得依赖 OS temp volume 与 workspace 在同一文件系统。
+
+Windows configuration commit 必须显式支持替换当前用户已有的 `.doge` target，并由现有 recovery journal 保持 rollback truth；普通用户 access denied、file sharing violation、unsafe parent 与 rollback incomplete 必须分开分类，不能全部折叠为 `configurationRejected`。NSIS 明确使用 `currentUser`，管理员启动不属于恢复路径。
+
 ### 7. 最近引擎与状态机
 
 credential-free preference 只保存 `engine_id`，不保存 plan/order/key。状态机为：
 
 `bootstrapping → signedOut → authenticating → choosingEngine → checkingEntitlement → choosingPlan → choosingPaymentMethod → awaitingPayment → preparing → ready`，并有 `recoverableFailure`。所有 transition 由 authoritative read 或 typed mutation receipt 驱动；网络、vault、CLI missing、subscription unavailable、payment cancelled 分开投影，只有 `noEntitlement` 才进入 plans。
+
+登录后新增 engine 使用 typed in-process intent 衔接 AppShell 与 AccountGate：`source` 仅区分 `accountCenter` / `enginePicker`，`targetEngineId` 只允许 managed engine id，`openNewConversation` 表达成功落点；event 不携带 entitlement、plan、order 或 secret。AccountGate 收到目标后必须重新读取 authoritative catalog：目标已有权益则直接 `prepare`，无权益则直接读取该目标 plans，禁止先让用户再点一次 engine。
+
+首次启动仍由 gate 在 ready 前阻止 AppShell mount；已经进入 App 后的增购/切换采用 overlay，AppShell 保持 mounted，当前 workspace、conversation 与 draft 不被销毁。用户 cancel 时只关闭 overlay 并回到原上下文；成功时 Native 完成 ensure/vault/config 后发布 credential-free completion intent，由 AppShell 更新 active engine 并打开该 engine 的空白新会话。该行为创建新的会话落点，不原地篡改已有 Codex thread 的 execution identity。
+
+Account Center 固定入口命名为“我的引擎”，用于查看/增加 engine；engine catalog 卡片明确区分“已订阅”和“订阅后使用”。composer picker 选择未订阅的 managed engine 时复用同一 AccountGate flow，不建立第二套 checkout 状态机。
 
 ### 8. Rollout 与 compatibility
 
@@ -99,6 +115,42 @@ Doge 的 mandatory gate 是本产品 fork 的默认行为；保留 build-time em
 
 邮件中的 reset link 继续由固定 `token-matrix.com` HTTPS 页面完成，新密码和 raw reset token 不进入 Doge WebView、React state、SQLite、event 或日志。完成后用户回到 Doge 重新登录；`auth.inspectExternalIntent` 与 `auth.resetPassword` 在 Native Desktop ticket contract 上线前保持 disabled，不用 legacy Web link 冒充 Native completion。
 
+### 10. Release-facing UI 与 Windows startup 采用 fail-open hardening
+
+composer 移除每日古诗的 data、daily rotation、dismiss persistence、render branch、专用 CSS 与 tests；`ChatInputBoxHeader` 继续保留 SDK warning 等通用 header composition，未来公告必须以独立 product requirement 接入，不能复活诗词轮换。
+
+面向用户的 engine identity 与内部 runtime terminology 解耦：picker、Settings navigation/page title、search placeholder 与 engine heading 使用 `Claude / Codex / Grok / Kimi / OpenCode` 和“引擎管理”；Rust symbol、IPC field、configuration schema、binary path 与诊断信息仍可保留 `CLI`，避免无收益的内部 contract rename。QR checkout 标题从当前用户已选择的 server plan projection 读取 `plan.name`，渲染为 `Doge {plan.name}`，不得由 price、plan id 或本地商业表推导。
+
+二维码标题在 Doge gate 继续读取当前选择流程已有的 `SubscriptionPlanViewV1.name`；token2api provider-owned QR/payment page 同步从 order 关联的 authoritative plan 读取并渲染 `Doge {plan.name}`。managed credential display name 改为 `Doge {engine display name} {plan.name}`。deterministic key material 仍只由 `user/device/engine/group` 决定；已有 credential 命中后只能执行 field-mask `Name` update，不重新创建或旋转 secret。两项上游改动在最新 `origin/main` 独立 worktree 完成，以 focused tests、生产迁移兼容、server-first deploy 和健康检查收口。
+
+Windows engine probe 视所有 external wrapper 为不可信：stdin 关闭、version/help probe 使用 4 秒 deadline、timeout 后按 root pid 终止整个 Windows process tree 并回收 child；单项失败只形成 unavailable/timeout status。Tauri `single-instance` plugin 作为首个 plugin 注册，第二次启动仅恢复、显示并聚焦已有 main window。Release notes 已有 viewport-bounded card、内部 scroll 与 Escape close，因此本批次只保留 regression gate，不重复重构。
+
+### 11. 订阅用量采用 engine-owned summary + pull-only daily drill-down
+
+现有 `usage.read` 错把 `/api/v1/user/platform-quotas` 的 account/platform record 当作 subscription quota。订阅套餐的 daily/weekly/monthly usage truth 实际位于 `user_subscriptions`，因此 active Codex/Claude subscription 可能同时得到 `platform_quotas=[]` 或全部 limit 为 `null`，最终被 Doge 投影为 unavailable。
+
+修复后 Native Broker 先读取 Desktop engine catalog，以 server-owned `subscription_id/group_id` 作为 correlation：`/api/v1/subscriptions/progress` 提供 quota windows 与 resets，`/api/v1/usage/dashboard/snapshot-v2?group_id=...` 提供最近 365 天 daily trend 与 period model totals。renderer 只接收 credential-free engine id、safe labels、canonical decimal strings、token/request counts 与 dates；不得接收 access token、API Key、raw group id 或 subscription id。
+
+日历 cell intensity 使用该 engine 当前 range 内 daily `actual_cost` 的 bounded projection，仅作为展示值，额度扣减 truth 仍来自 subscription progress。hover/focus 当天时调用独立 pull-only `usage.readDayModels({engineId,date})`：Native 每次重新由 catalog 解析 active entitlement，再用 authoritative `group_id` 查询单日 models；renderer 不能自行提交 group id。controller 以 `engineId + date` 做 session-memory request de-dup/cache，页面关闭后不 polling，logout 清空 cache。
+
+热力图视觉必须使用全局已定义的 theme token，零用量日期仍显示低对比度 cell；禁止引用 feature scope 外未定义的 custom property 导致 grid 透明。月份只在 month boundary 出现一次，横向 overflow 初次进入时定位到最近日期。月份、星期、日期、数字与货币 formatter 必须显式绑定 Doge 当前 `zh-CN/en-US` locale，不能回落到操作系统语言。颜色强度已经由 cell 自身表达，因此不再展示“少/多”说明图例。
+
+partial failure 保留局部真相：progress 成功但 trend 失败时仍展示日/周/月额度；一个 engine 失败不清空其他 engine；单日 model fetch 失败时 tooltip 仍展示 daily aggregate，并允许后续 hover/focus 重试。Doge 本轮只复用 token2api existing API，不修改、不提交、不部署 token2api。
+
+### 12. Account Center 使用 Header actions + selected-engine master/detail
+
+Account Center Header 是账号 identity 与页面级 action 的唯一 owner：左侧显示 server-safe display name 与 account identity；右侧常驻 icon-only logout，额度 Tab 再显示短格式 `fetchedAt` 与 icon-only refresh。图标必须有 accessible name，并通过自适应 hover/focus tooltip 披露动作；不得使用带文字和外框的 Header button。读取时间只表示最近一次成功 `usage.read`，不能伪装成 live status。
+
+额度 Tab 使用 master/detail：上方 subscription cards 只承担 engine selection 与最关键的当前窗口摘要，默认优先 `daily`，缺失时依次回退 `weekly/monthly`；下方单一 detail surface 展示所选 engine 的全部 available windows、年度 heatmap 与 model drill-down。列表最多 3 columns，1/2/3 张 card 分别使用 1/2/3 等宽列，更多 card 自动换行，窄屏收敛到 2/1 列。切换 selected card 是 component-local transient state，不重新调用 `usage.read`，也不进入 persistent store 或 AppShell root。
+
+额度与安全 Tab 都不再重复与 Tab 同名的 section heading。安全内容从 preference rows 开始，资料/密码编辑器保持 action-triggered progressive disclosure；危险操作与既有 capability guards 不变。该调整只改变 Doge renderer composition/CSS，不新增 IPC、Authority route、SQLite 字段或 token2api 发布要求。
+
+### 13. Cold restore 复用单次 Keychain credential snapshot
+
+`gateway.bootstrap` 先把 `vault.status()` 缓存在本次调用的 local variable，后续 restore gate 与 bootstrap projection 共用同一结果，禁止为了状态投影再次访问 OS vault。`try_restore_session` / access-token refresh 已经读取到旧 refresh credential，因此把该值作为 `activate_auth` 的 rollback snapshot 传入；`activate_auth` 只有在 login/OAuth 等没有旧 snapshot 的路径才主动读取现有 item。
+
+该优化删除重复 Keychain read，但不会跳过 rotated refresh 写回。若 SQLite session commit 失败，Native 使用传入 snapshot 恢复旧 credential；若 vault locked/unavailable，仍按既有 `vaultUnavailable` fail closed。ad-hoc build 的签名身份仍可能让 macOS 对 read/write 各自请求授权，完全消除跨版本提示依赖稳定 Developer ID；本 change 只保证 Doge 不制造可避免的重复访问。
+
 ## Risks / Trade-offs
 
 - [Risk] token2api 的 `group.platform` 不能表达未来一个套餐覆盖多个 engine → [Mitigation] 首期 server-owned catalog 固定一对一 mapping；未来新增显式 plan-engine relation migration，不让客户端推断。
@@ -107,14 +159,20 @@ Doge 的 mandatory gate 是本产品 fork 的默认行为；保留 build-time em
 - [Risk] server ensure 成功、vault/config 失败会留下 orphan binding → [Mitigation] 持久化 outcomeUnknown/quarantine receipt，重试同 binding rotate/handoff，不创建第二个 active binding。
 - [Risk] mandatory login 暂时降低离线可用性 → [Mitigation] 已 ready 的 session 可在 refresh grace 内恢复 UI，但启动 engine 前仍需可验证 subscription；该取舍由本 change 的产品决策接受。
 - [Risk] 上游同步与新增 Desktop schema 冲突 → [Mitigation] 独立 migration、handler/service 与 additive route，避免修改通用 payment response；merge 时按 capability matrix semantic merge。
+- [Risk] 第三方 wrapper 在 `--version` 下等待登录、继承 pipe 或留下 `cmd.exe/node.exe` descendant → [Mitigation] non-interactive spawn、短 deadline、Windows `/T /F` tree termination、single-instance wakeup 与 focused hanging-wrapper regression。
+- [Risk] Windows 普通用户无法下载/安装 CLI，管理员运行又切换到另一个 profile → [Mitigation] 正式包内置官方 binary，运行时不写 `Program Files`/npm prefix；配置目标只解析当前进程用户 profile，Windows standard-user E2E 校验无 elevation、无跨 profile side effect。
+- [Risk] 一年 daily trend 与 hover model drill-down 增加 authority reads → [Mitigation] 额度页只在用户主动打开/刷新时读取；单日 models 按 hover/focus lazy load、session-memory 去重，绝不进入 AppShell root polling。
+- [Risk] 365 个日期在高 UI scale 下横向溢出，默认停在最旧日期会隐藏最近用量 → [Mitigation] 保留可滚动历史并在 engine/range 变化时将 scroll owner 定位到末尾，不做 JS 尺寸驱动布局。
+- [Risk] refresh rotation 同时包含 Keychain read/write，ad-hoc 签名仍可能触发平台授权 → [Mitigation] 删除所有重复 status/read，保留必要 write；正式发行使用稳定 Developer ID + notarization，不伪造“零提示”保证。
 
 ## Migration Plan
 
 1. token2api 先部署 additive Desktop plan/checkout/managed-access contract、truthful password-reset request capability 与 descriptor；protected API-key migration/guarantees 已具备时才打开 managed capability。
 2. Doge 实现新 gateway validator、Native runtime、AccountGate 与 Codex/Claude recipes；在 capability 不足时显示服务升级中，不挂载 AppShell。
 3. 使用 staging/production-safe fixture 验证 login、existing entitlement、public plans、checkout terminal、ensure、vault、两种 engine launch。
-4. 发布 Doge macOS/Windows 包；观察 contract mismatch、checkout terminal latency、managed ensure 与 config failure metrics。
-5. 回滚时先回滚 Doge 到旧版；token2api additive endpoints/schema 可保留。若关闭 server capability，新 Doge fail closed，不降级到余额或手动 key。
+4. 在 token2api 最新主分支部署 payment title / managed key name 的 additive patch，先跑 focused Go/frontend tests，再按 AWS runbook health-check；失败时回滚到部署前 image/task definition。
+5. 发布 Doge macOS/Windows 包；观察 bundled manifest/verifier failure、version-choice、contract mismatch、checkout terminal latency、managed ensure 与 config failure metrics。
+6. 回滚时先回滚 Doge 到旧版；token2api additive endpoints/schema 与无损名称更新可保留。若关闭 server capability，新 Doge fail closed，不降级到余额或手动 key。
 
 ## Open Questions
 

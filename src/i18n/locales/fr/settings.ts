@@ -407,7 +407,7 @@ const settings = {
     "ungroupedTitle": "NON GROUPÉS",
     "sidebarBasic": "Paramètres de base",
     "sidebarShortcuts": "Raccourcis",
-    "sidebarProviders": "Fournisseurs",
+    "sidebarProviders": "Gestion des moteurs",
     "sidebarMcp": "Serveurs MCP",
     "sidebarPermissions": "Permissions",
     "sidebarCommit": "IA de commit",
@@ -420,7 +420,7 @@ const settings = {
     "sidebarGit": "Git",
     "sidebarOther": "Autre",
     "sidebarReleaseNotes": "Notes de version",
-    "sidebarVendors": "Fournisseurs tiers",
+    "sidebarVendors": "Gestion des moteurs",
     "sidebarExperimental": "Expérimental",
     "sidebarAbout": "À propos",
     "sidebarCommunity": "Communauté",
@@ -1011,8 +1011,8 @@ const settings = {
     "openInTarget": "Ouvrir dans {{target}}",
     "gitTitle": "Git",
     "gitDescription": "Gérez la façon dont les diffs sont chargés dans la barre latérale Git.",
-    "vendorsTitle": "Gestion des fournisseurs",
-    "vendorsDescription": "Gérez les configurations de fournisseurs pour Claude et Codex.",
+    "vendorsTitle": "Gestion des moteurs",
+    "vendorsDescription": "Gérez les moteurs, les fournisseurs et les paramètres locaux.",
     "vendor": {
       "ccSwitchImport": {
         "entry": "Importer",

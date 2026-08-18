@@ -68,7 +68,7 @@ pub(super) fn authority_requirement(operation: &str) -> Option<AuthorityRequirem
                 "stable_account_reasons_v1",
             ],
         ),
-        "usage.read" => AuthorityRequirement::new("quotaPull", stable),
+        "usage.read" | "usage.readDayModels" => AuthorityRequirement::new("quotaPull", stable),
         "managedKey.listCandidates" => AuthorityRequirement::new(
             "apiKeyList",
             &[
@@ -216,44 +216,265 @@ pub(super) fn is_authenticated(state: &RuntimeState) -> bool {
         })
 }
 
-pub(super) fn quota_value(rows: &[Value], fetched_at: &str) -> Value {
-    for row in rows {
-        for prefix in ["monthly", "weekly", "daily"] {
-            let limit_key = format!("{prefix}_limit_usd");
-            let usage_key = format!("{prefix}_usage_usd");
-            let reset_key = format!("{prefix}_window_resets_at");
-            let Some(limit) = row.get(&limit_key).and_then(Value::as_f64) else {
-                continue;
-            };
-            let used = row
-                .get(&usage_key)
-                .and_then(Value::as_f64)
-                .unwrap_or(0.0)
-                .max(0.0);
-            return json!({
-                "status": "available",
-                "source": "token2apiPlatformQuota",
-                "freshness": "fresh",
-                "observedAt": fetched_at,
-                "fetchedAt": fetched_at,
-                "remaining": { "value": canonical_decimal((limit - used).max(0.0)), "unit": "usd" },
-                "used": { "value": canonical_decimal(used), "unit": "usd" },
-                "resetsAt": row.get(&reset_key).cloned().unwrap_or(Value::Null),
-                "subscriptionLabel": row.get("platform").and_then(Value::as_str).map(safe_label).map(Value::String).unwrap_or(Value::Null),
-            });
+pub(super) fn subscription_usage_value(
+    catalog: &DesktopEngineCatalogWire,
+    progress_entries: &[SubscriptionProgressEntryWire],
+    snapshots: &HashMap<String, Option<UsageDashboardSnapshotWire>>,
+    fetched_at: &str,
+    start_date: &str,
+    end_date: &str,
+) -> Value {
+    let mut engines = Vec::new();
+    for engine in &catalog.engines {
+        if engine.entitlement.status != "active"
+            || !matches!(engine.id.as_str(), "codex" | "claude-code")
+        {
+            continue;
         }
+        let Some(subscription_id) = engine
+            .entitlement
+            .subscription_id
+            .filter(|value| *value > 0)
+        else {
+            continue;
+        };
+        let Some(group_id) = engine.entitlement.group_id.filter(|value| *value > 0) else {
+            continue;
+        };
+        let progress = progress_entries.iter().find(|entry| {
+            entry.subscription.id == subscription_id
+                && entry.subscription.group_id == group_id
+                && entry.progress.id == subscription_id
+        });
+        let snapshot = snapshots.get(&engine.id).and_then(Option::as_ref);
+        let windows = progress
+            .map(|entry| {
+                json!({
+                    "daily": entry.progress.daily.as_ref().and_then(usage_window_value),
+                    "weekly": entry.progress.weekly.as_ref().and_then(usage_window_value),
+                    "monthly": entry.progress.monthly.as_ref().and_then(usage_window_value),
+                })
+            })
+            .unwrap_or_else(
+                || json!({ "daily": Value::Null, "weekly": Value::Null, "monthly": Value::Null }),
+            );
+        let totals = snapshot
+            .map(|value| usage_totals_value(&value.trend))
+            .unwrap_or_else(empty_usage_totals_value);
+        let max_actual_cost = snapshot
+            .map(|value| {
+                value
+                    .trend
+                    .iter()
+                    .map(|day| finite_non_negative(day.actual_cost))
+                    .fold(0.0, f64::max)
+            })
+            .unwrap_or(0.0);
+        let days = snapshot
+            .map(|value| {
+                let mut values = value
+                    .trend
+                    .iter()
+                    .take(366)
+                    .map(|day| {
+                        usage_day_value(day, usage_intensity(day.actual_cost, max_actual_cost))
+                    })
+                    .collect::<Vec<_>>();
+                values.sort_by(|left, right| {
+                    left.get("date")
+                        .and_then(Value::as_str)
+                        .cmp(&right.get("date").and_then(Value::as_str))
+                });
+                values
+            })
+            .unwrap_or_default();
+        let models = snapshot
+            .map(|value| usage_model_values(&value.models))
+            .unwrap_or_default();
+        let engine_label = match engine.id.as_str() {
+            "codex" => "Codex".to_string(),
+            "claude-code" => "Claude".to_string(),
+            _ => safe_label(&engine.display_name),
+        };
+        let subscription_label = progress
+            .map(|entry| safe_label(&entry.progress.group_name))
+            .filter(|label| !label.is_empty())
+            .unwrap_or_else(|| engine_label.clone());
+        let expires_at = progress
+            .and_then(|entry| normalize_authority_timestamp(&entry.progress.expires_at))
+            .or_else(|| {
+                engine
+                    .entitlement
+                    .expires_at
+                    .as_deref()
+                    .and_then(normalize_authority_timestamp)
+            });
+        engines.push(json!({
+            "engineId": engine.id,
+            "engineLabel": engine_label,
+            "subscriptionLabel": subscription_label,
+            "expiresAt": expires_at,
+            "analyticsStatus": if snapshot.is_some() { "available" } else { "unavailable" },
+            "windows": windows,
+            "totals": totals,
+            "days": days,
+            "models": models,
+        }));
     }
+
+    let summary_window = engines.first().and_then(|engine| {
+        let windows = engine.get("windows")?;
+        ["monthly", "weekly", "daily"]
+            .iter()
+            .find_map(|key| windows.get(*key).filter(|value| !value.is_null()))
+    });
+    let summary_label = engines
+        .first()
+        .and_then(|engine| engine.get("subscriptionLabel"))
+        .cloned()
+        .unwrap_or(Value::Null);
     json!({
-        "status": "unavailable",
-        "source": "token2apiPlatformQuota",
+        "status": if engines.is_empty() { "unavailable" } else { "available" },
+        "source": "token2apiSubscription",
         "freshness": "fresh",
         "observedAt": fetched_at,
         "fetchedAt": fetched_at,
-        "remaining": Value::Null,
-        "used": Value::Null,
-        "resetsAt": Value::Null,
-        "subscriptionLabel": Value::Null,
+        "remaining": summary_window.and_then(|window| window.get("remaining")).cloned().unwrap_or(Value::Null),
+        "used": summary_window.and_then(|window| window.get("used")).cloned().unwrap_or(Value::Null),
+        "resetsAt": summary_window.and_then(|window| window.get("resetsAt")).cloned().unwrap_or(Value::Null),
+        "subscriptionLabel": summary_label,
+        "range": { "startDate": start_date, "endDate": end_date, "days": 365 },
+        "engines": engines,
     })
+}
+
+pub(super) fn usage_day_models_value(
+    engine_id: &str,
+    date: &str,
+    snapshot: &UsageDashboardSnapshotWire,
+) -> Value {
+    json!({
+        "engineId": engine_id,
+        "date": date,
+        "models": usage_model_values(&snapshot.models),
+    })
+}
+
+fn usage_window_value(window: &SubscriptionUsageWindowWire) -> Option<Value> {
+    let resets_at = normalize_authority_timestamp(&window.resets_at)?;
+    Some(json!({
+        "limit": money_measure(window.limit_usd),
+        "used": money_measure(window.used_usd),
+        "remaining": money_measure(window.remaining_usd),
+        "percentage": canonical_decimal(window.percentage.clamp(0.0, 100.0)),
+        "resetsAt": resets_at,
+    }))
+}
+
+fn usage_totals_value(rows: &[UsageTrendWire]) -> Value {
+    let mut requests = 0_i64;
+    let mut input_tokens = 0_i64;
+    let mut output_tokens = 0_i64;
+    let mut cache_read_tokens = 0_i64;
+    let mut cache_write_tokens = 0_i64;
+    let mut total_tokens = 0_i64;
+    let mut cost = 0.0;
+    let mut actual_cost = 0.0;
+    for row in rows {
+        requests = requests.saturating_add(row.requests.max(0));
+        input_tokens = input_tokens.saturating_add(row.input_tokens.max(0));
+        output_tokens = output_tokens.saturating_add(row.output_tokens.max(0));
+        cache_read_tokens = cache_read_tokens.saturating_add(row.cache_read_tokens.max(0));
+        cache_write_tokens = cache_write_tokens.saturating_add(row.cache_creation_tokens.max(0));
+        total_tokens = total_tokens.saturating_add(row.total_tokens.max(0));
+        cost += finite_non_negative(row.cost);
+        actual_cost += finite_non_negative(row.actual_cost);
+    }
+    json!({
+        "requests": requests,
+        "inputTokens": input_tokens,
+        "outputTokens": output_tokens,
+        "cacheReadTokens": cache_read_tokens,
+        "cacheWriteTokens": cache_write_tokens,
+        "totalTokens": total_tokens,
+        "cost": money_measure(cost),
+        "actualCost": money_measure(actual_cost),
+    })
+}
+
+fn empty_usage_totals_value() -> Value {
+    usage_totals_value(&[])
+}
+
+fn usage_day_value(row: &UsageTrendWire, intensity: u8) -> Value {
+    json!({
+        "date": row.date,
+        "intensity": intensity,
+        "requests": row.requests.max(0),
+        "inputTokens": row.input_tokens.max(0),
+        "outputTokens": row.output_tokens.max(0),
+        "cacheReadTokens": row.cache_read_tokens.max(0),
+        "cacheWriteTokens": row.cache_creation_tokens.max(0),
+        "totalTokens": row.total_tokens.max(0),
+        "cost": money_measure(row.cost),
+        "actualCost": money_measure(row.actual_cost),
+    })
+}
+
+fn usage_model_values(rows: &[UsageModelWire]) -> Vec<Value> {
+    let mut rows = rows.iter().collect::<Vec<_>>();
+    rows.sort_by(|left, right| {
+        finite_non_negative(right.actual_cost)
+            .partial_cmp(&finite_non_negative(left.actual_cost))
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
+    rows.into_iter()
+        .take(24)
+        .map(|row| {
+            json!({
+                "modelLabel": safe_label(&row.model),
+                "requests": row.requests.max(0),
+                "inputTokens": row.input_tokens.max(0),
+                "outputTokens": row.output_tokens.max(0),
+                "cacheReadTokens": row.cache_read_tokens.max(0),
+                "cacheWriteTokens": row.cache_creation_tokens.max(0),
+                "totalTokens": row.total_tokens.max(0),
+                "cost": money_measure(row.cost),
+                "actualCost": money_measure(row.actual_cost),
+            })
+        })
+        .collect()
+}
+
+fn usage_intensity(value: f64, maximum: f64) -> u8 {
+    let value = finite_non_negative(value);
+    let maximum = finite_non_negative(maximum);
+    if value == 0.0 || maximum == 0.0 {
+        return 0;
+    }
+    (((value.ln_1p() / maximum.ln_1p()) * 4.0).ceil() as u8).clamp(1, 4)
+}
+
+fn money_measure(value: f64) -> Value {
+    json!({ "value": canonical_decimal(finite_non_negative(value)), "unit": "usd" })
+}
+
+fn finite_non_negative(value: f64) -> f64 {
+    if value.is_finite() {
+        value.max(0.0)
+    } else {
+        0.0
+    }
+}
+
+fn normalize_authority_timestamp(value: &str) -> Option<String> {
+    chrono::DateTime::parse_from_rfc3339(value)
+        .ok()
+        .map(|timestamp| {
+            timestamp
+                .with_timezone(&Utc)
+                .to_rfc3339_opts(SecondsFormat::Secs, true)
+        })
 }
 
 pub(super) fn oauth_binding_views(settings: Option<&PublicSettingsWire>) -> Vec<Value> {
@@ -598,7 +819,7 @@ pub(super) fn stage_for_operation(operation: &str) -> &'static str {
         }
     } else if operation.starts_with("managedKey.") {
         "managedKey"
-    } else if operation == "usage.read" {
+    } else if matches!(operation, "usage.read" | "usage.readDayModels") {
         "usage"
     } else if operation.starts_with("profile.") {
         "security"
@@ -634,6 +855,7 @@ pub(super) fn merge_object(mut left: Value, right: Value) -> Value {
 }
 
 pub(super) fn canonical_decimal(value: f64) -> String {
+    let value = finite_non_negative(value);
     let formatted = format!("{value:.6}");
     let trimmed = formatted.trim_end_matches('0').trim_end_matches('.');
     if trimmed.is_empty() {

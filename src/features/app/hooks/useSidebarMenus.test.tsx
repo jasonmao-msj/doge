@@ -80,12 +80,12 @@ vi.mock("react-i18next", () => ({
         "sidebar.assignWorkspaceGroup": "Change project group",
         "settings.ungrouped": "Ungrouped",
         "sidebar.newSessionFolder": "New folder",
-        "workspace.engineClaudeCode": "Claude Code",
+        "workspace.engineClaudeCode": "Claude",
         "workspace.engineCodex": "Codex",
         "workspace.engineOpenCode": "OpenCode",
         "workspace.engineGemini": "Gemini",
-        "workspace.engineKimi": "Kimi CLI",
-        "workspace.engineGrok": "Grok CLI",
+        "workspace.engineKimi": "Kimi",
+        "workspace.engineGrok": "Grok",
         "workspace.engineStatusLoading": "Checking...",
         "workspace.engineStatusRequiresLogin": "Sign in required",
         "threads.reloadThreads": "Reload threads",
@@ -172,8 +172,8 @@ function createHandlers() {
   const engineOptions: EngineDisplayInfo[] = [
     {
       type: "claude",
-      displayName: "Claude Code",
-      shortName: "Claude Code",
+      displayName: "Claude",
+      shortName: "Claude",
       installed: true,
       version: "1.0.0",
       error: null,
@@ -202,8 +202,8 @@ function createHandlers() {
     },
     {
       type: "kimi",
-      displayName: "Kimi CLI",
-      shortName: "Kimi CLI",
+      displayName: "Kimi",
+      shortName: "Kimi",
       installed: true,
       version: "1.0.0",
       error: null,
@@ -212,8 +212,8 @@ function createHandlers() {
     },
     {
       type: "grok",
-      displayName: "Grok CLI",
-      shortName: "Grok CLI",
+      displayName: "Grok",
+      shortName: "Grok",
       installed: true,
       version: "1.0.0",
       error: null,
@@ -428,14 +428,14 @@ describe("useSidebarMenus", () => {
     expect(pushGlobalRuntimeNoticeMock).toHaveBeenCalledWith(
       expect.objectContaining({
         messageKey: "runtimeNotice.engine.checking",
-        messageParams: { engine: "Claude Code" },
+        messageParams: { engine: "Claude" },
       }),
     );
     expect(result.current.workspaceMenuState?.workspaceId).toBe(workspace.id);
   });
 
   it.each([
-    ["claude", "Claude Code", "new-session-claude"],
+    ["claude", "Claude", "new-session-claude"],
     ["codex", "Codex", "new-session-codex"],
     ["kimi", "Kimi", "new-session-kimi"],
   ] as const)(
@@ -1694,8 +1694,8 @@ describe("useSidebarMenus", () => {
       expect(result.current.providerContinuationDialogState).toMatchObject({
         sourceSessionId: "claude:source-1",
         sourceTitle: "threads.untitled",
-        sourceLabel: "Claude Code · Provider A",
-        destinationLabel: "Codex CLI · Provider B · gpt-target",
+        sourceLabel: "Claude · Provider A",
+        destinationLabel: "Codex · Provider B · gpt-target",
         stage: "confirm",
         request: {
           source: {

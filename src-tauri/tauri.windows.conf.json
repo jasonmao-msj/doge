@@ -5,6 +5,9 @@
   "bundle": {
     "createUpdaterArtifacts": false,
     "windows": {
+      "nsis": {
+        "installMode": "currentUser"
+      },
       "webviewInstallMode": {
         "type": "embedBootstrapper"
       }

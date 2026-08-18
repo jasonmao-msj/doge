@@ -60,7 +60,7 @@ const sidebar = {
     "codexProviderChoiceTitle": "プロバイダーの選択",
     "codexProviderSelectedTip": "選択しました。左側の Codex をクリックしてセッションを開始します。",
     "grokProviderChoiceTitle": "プロバイダーの選択",
-    "grokProviderSelectedTip": "選択しました。左側の Grok CLI をクリックしてセッションを開始します。",
+    "grokProviderSelectedTip": "選択しました。左側の Grok をクリックしてセッションを開始します。",
     "opencodeProviderChoiceTitle": "プロバイダーの選択",
     "opencodeProviderSelectedTip": "選択しました。左側の OpenCode をクリックしてセッションを開始します。",
     "providerFollowsGlobalLabel": "グローバル設定に従う",
@@ -162,7 +162,7 @@ const sidebar = {
       "title": "MCPs",
       "refresh": "更新",
       "tabs": {
-        "claude": "Claude Code",
+        "claude": "Claude",
         "codex": "Codex"
       },
       "filter": {

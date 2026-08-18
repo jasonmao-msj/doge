@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "node scripts/tauri-dev-frontend.mjs",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "npm run prepare:bundled-engines && npm run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -37,10 +37,11 @@
       "infoplist/**/*": "./",
       "resources/agent-catalogs": "agent-catalogs",
       "resources/curated-skills": "curated-skills",
+      "resources/bundled-engines": "bundled-engines",
       "../skills-lock.json": "."
     },
     "macOS": {
-      "minimumSystemVersion": "10.13",
+      "minimumSystemVersion": "13.0",
       "entitlements": "./Entitlements.plist",
       "infoPlist": "./Info.plist",
       "dmg": {

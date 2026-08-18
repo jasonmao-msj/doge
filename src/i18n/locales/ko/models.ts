@@ -5,10 +5,11 @@
 const models = {
   "models": {
     "selectModel": "모델 선택",
+    "subscribeToUse": "구독 후 사용",
     "engineHeader": "{{name}} 엔진",
     "addModel": "모델 추가",
 
-    "openCliSettings": "CLI 설정",
+    "openCliSettings": "엔진 관리",
     "switchChannel": "채널 전환",
     "selectChannel": "채널 선택",
     "refreshConfig": "설정 새로고침",

@@ -60,7 +60,7 @@ const sidebar = {
     "codexProviderChoiceTitle": "Выбор провайдера",
     "codexProviderSelectedTip": "Выбрано. Нажмите Codex слева, чтобы начать сессию.",
     "grokProviderChoiceTitle": "Выбор провайдера",
-    "grokProviderSelectedTip": "Выбрано. Нажмите Grok CLI слева, чтобы начать сессию.",
+    "grokProviderSelectedTip": "Выбрано. Нажмите Grok слева, чтобы начать сессию.",
     "opencodeProviderChoiceTitle": "Выбор провайдера",
     "opencodeProviderSelectedTip": "Выбрано. Нажмите OpenCode слева, чтобы начать сессию.",
     "providerFollowsGlobalLabel": "Следует глобальной конфигурации",
@@ -162,7 +162,7 @@ const sidebar = {
       "title": "MCPs",
       "refresh": "Обновить",
       "tabs": {
-        "claude": "Claude Code",
+        "claude": "Claude",
         "codex": "Codex"
       },
       "filter": {

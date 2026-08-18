@@ -63,7 +63,7 @@ const runtimeNotice = {
       "resumeCommandCopied": "Claude resume 명령이 복사되었습니다. TUI /resume 선택기에 이 GUI 세션이 표시되지 않으면 claude --resume {{sessionId}} 또는 /resume {{sessionId}}를 명시적으로 실행하세요."
     },
     "grok": {
-      "providerSelected": "{{name}}이(가) 선택되었습니다. Grok CLI 항목을 클릭하여 세션을 생성하세요."
+      "providerSelected": "{{name}}이(가) 선택되었습니다. Grok 항목을 클릭하여 세션을 생성하세요."
     },
     "opencode": {
       "providerSelected": "{{name}}이(가) 선택되었습니다. OpenCode 항목을 클릭하여 세션을 생성하세요."

@@ -98,7 +98,7 @@ function resolveDedupeKey(input: GlobalRuntimeNoticeInput) {
 function resolveRuntimeNoticeEngineLabel(engine: ThreadFailureRuntimeNoticeInput["engine"]) {
   switch (engine?.trim().toLowerCase()) {
     case "claude":
-      return "Claude Code";
+      return "Claude";
     case "gemini":
       return "Gemini";
     case "grok":

@@ -254,7 +254,7 @@ impl AccountRuntime {
             return Err(protocol_failure("oauth"));
         }
         let auth = auth_from_login(login)?;
-        let next = self.activate_auth(state, auth, None).await?;
+        let next = self.activate_auth(state, auth, None, None).await?;
         self.settle_oauth_flow(handle, "terminal", "consumed")?;
         let _ = self
             .desktop_continuations

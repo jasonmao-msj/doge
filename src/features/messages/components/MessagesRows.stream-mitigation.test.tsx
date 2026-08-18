@@ -98,7 +98,7 @@ describe("MessagesRows stream mitigation", () => {
     );
 
     const badge = screen.getByTestId("message-turn-target-badge");
-    expect(badge.textContent).toContain("Claude Code");
+    expect(badge.textContent).toContain("Claude");
     expect(badge.textContent).toContain("OpenRouter");
     expect(badge.textContent).toContain("claude-sonnet-4-5");
     expect(badge.textContent).toContain("high");
@@ -123,7 +123,7 @@ describe("MessagesRows stream mitigation", () => {
     );
 
     const badge = screen.getByTestId("message-turn-target-badge");
-    expect(badge.textContent).toContain("Codex CLI");
+    expect(badge.textContent).toContain("Codex");
     expect(badge.textContent).toContain("Kimi Coding");
     expect(badge.textContent).toContain("kimi-for-coding");
     expect(screen.queryByTestId("markdown")).toBeNull();
@@ -215,8 +215,8 @@ describe("MessagesRows stream mitigation", () => {
         Array.from(badge.querySelectorAll("span"), (part) => part.textContent)
       );
     const expectedHistoricalBadges = [
-      ["Claude Code", "Provider A", "sonnet-a", "high"],
-      ["Codex CLI", "Provider B", "gpt-b", "medium"],
+      ["Claude", "Provider A", "sonnet-a", "high"],
+      ["Codex", "Provider B", "gpt-b", "medium"],
     ];
     const { rerender } = render(renderHistory());
 
@@ -284,8 +284,8 @@ describe("MessagesRows stream mitigation", () => {
 
     const badges = screen.getAllByTestId("message-turn-target-badge");
     expect(badges).toHaveLength(2);
-    expect(badges[0]?.textContent).toContain("Grok CLI");
-    expect(badges[1]?.textContent).toContain("Grok CLI");
+    expect(badges[0]?.textContent).toContain("Grok");
+    expect(badges[1]?.textContent).toContain("Grok");
     expect(screen.getByText("second same target")).toBeTruthy();
   });
 

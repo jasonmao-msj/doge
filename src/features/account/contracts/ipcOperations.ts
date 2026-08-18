@@ -8,6 +8,7 @@ export const ACCOUNT_IPC_READ_OPERATIONS_V1 = [
   "auth.inspectExternalIntent",
   "profile.read",
   "usage.read",
+  "usage.readDayModels",
   "managedKey.readStatus",
   "managedKey.listCandidates",
   "configuration.readOffer",

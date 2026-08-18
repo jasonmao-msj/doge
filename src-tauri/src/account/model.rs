@@ -102,6 +102,7 @@ pub(crate) enum GatewayOperationV1 {
     ProfileUnbindIdentity,
     ProfileRevokeAllSessions,
     UsageRead,
+    UsageReadDayModels,
     ManagedKeyReadStatus,
     ManagedKeyListCandidates,
     ManagedKeySelectExisting,
@@ -117,7 +118,7 @@ pub(crate) enum GatewayOperationV1 {
     ConfigurationHardDismiss,
 }
 
-pub(crate) const GATEWAY_OPERATIONS_V1: [GatewayOperationV1; 41] = [
+pub(crate) const GATEWAY_OPERATIONS_V1: [GatewayOperationV1; 42] = [
     GatewayOperationV1::GatewayBootstrap,
     GatewayOperationV1::GatewayReconcileIntent,
     GatewayOperationV1::HumanVerificationReadRequirement,
@@ -146,6 +147,7 @@ pub(crate) const GATEWAY_OPERATIONS_V1: [GatewayOperationV1; 41] = [
     GatewayOperationV1::ProfileUnbindIdentity,
     GatewayOperationV1::ProfileRevokeAllSessions,
     GatewayOperationV1::UsageRead,
+    GatewayOperationV1::UsageReadDayModels,
     GatewayOperationV1::ManagedKeyReadStatus,
     GatewayOperationV1::ManagedKeyListCandidates,
     GatewayOperationV1::ManagedKeySelectExisting,
@@ -192,6 +194,7 @@ impl GatewayOperationV1 {
             Self::ProfileUnbindIdentity => "profile.unbindIdentity",
             Self::ProfileRevokeAllSessions => "profile.revokeAllSessions",
             Self::UsageRead => "usage.read",
+            Self::UsageReadDayModels => "usage.readDayModels",
             Self::ManagedKeyReadStatus => "managedKey.readStatus",
             Self::ManagedKeyListCandidates => "managedKey.listCandidates",
             Self::ManagedKeySelectExisting => "managedKey.selectExisting",
@@ -218,6 +221,7 @@ impl GatewayOperationV1 {
                 | Self::AuthInspectExternalIntent
                 | Self::ProfileRead
                 | Self::UsageRead
+                | Self::UsageReadDayModels
                 | Self::ManagedKeyReadStatus
                 | Self::ManagedKeyListCandidates
                 | Self::ConfigurationReadOffer

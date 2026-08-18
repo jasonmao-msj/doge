@@ -94,23 +94,52 @@ impl DurableAccountVault for OsAccountVault {
 pub(crate) mod tests {
     use super::*;
     use std::collections::HashMap;
-    use std::sync::Mutex;
+    use std::sync::{
+        atomic::{AtomicUsize, Ordering},
+        Mutex,
+    };
+
+    #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+    pub(crate) struct VaultAccessCounts {
+        pub(crate) status: usize,
+        pub(crate) reads: usize,
+        pub(crate) writes: usize,
+        pub(crate) deletes: usize,
+    }
 
     #[derive(Default)]
     pub(crate) struct MemoryVault {
         values: Mutex<HashMap<String, String>>,
+        status_calls: AtomicUsize,
+        read_calls: AtomicUsize,
+        write_calls: AtomicUsize,
+        delete_calls: AtomicUsize,
+    }
+
+    impl MemoryVault {
+        pub(crate) fn access_counts(&self) -> VaultAccessCounts {
+            VaultAccessCounts {
+                status: self.status_calls.load(Ordering::SeqCst),
+                reads: self.read_calls.load(Ordering::SeqCst),
+                writes: self.write_calls.load(Ordering::SeqCst),
+                deletes: self.delete_calls.load(Ordering::SeqCst),
+            }
+        }
     }
 
     impl DurableAccountVault for MemoryVault {
         fn status(&self) -> AccountVaultStatus {
+            self.status_calls.fetch_add(1, Ordering::SeqCst);
             AccountVaultStatus::Ready
         }
 
         fn read(&self, purpose: &str) -> Result<Option<String>, String> {
+            self.read_calls.fetch_add(1, Ordering::SeqCst);
             Ok(self.values.lock().unwrap().get(purpose).cloned())
         }
 
         fn write(&self, purpose: &str, secret: &str) -> Result<(), String> {
+            self.write_calls.fetch_add(1, Ordering::SeqCst);
             self.values
                 .lock()
                 .unwrap()
@@ -119,6 +148,7 @@ pub(crate) mod tests {
         }
 
         fn delete(&self, purpose: &str) -> Result<(), String> {
+            self.delete_calls.fetch_add(1, Ordering::SeqCst);
             self.values.lock().unwrap().remove(purpose);
             Ok(())
         }

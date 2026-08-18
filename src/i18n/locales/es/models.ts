@@ -5,10 +5,11 @@
 const models = {
   "models": {
     "selectModel": "Seleccionar modelo",
+    "subscribeToUse": "Suscríbete para usar",
     "engineHeader": "{{name}} Engine",
     "addModel": "Añadir modelo",
 
-    "openCliSettings": "Configuración CLI",
+    "openCliSettings": "Gestión de motores",
     "switchChannel": "Cambiar canal",
     "selectChannel": "Seleccionar canal",
     "refreshConfig": "Actualizar configuración",

@@ -407,7 +407,7 @@ const settings = {
     "ungroupedTitle": "БЕЗ ГРУППЫ",
     "sidebarBasic": "Основные настройки",
     "sidebarShortcuts": "Горячие клавиши",
-    "sidebarProviders": "Провайдеры",
+    "sidebarProviders": "Управление движками",
     "sidebarMcp": "Серверы MCP",
     "sidebarPermissions": "Разрешения",
     "sidebarCommit": "Commit AI",
@@ -420,7 +420,7 @@ const settings = {
     "sidebarGit": "Git",
     "sidebarOther": "Прочее",
     "sidebarReleaseNotes": "Заметки о выпуске",
-    "sidebarVendors": "Поставщики",
+    "sidebarVendors": "Управление движками",
     "sidebarExperimental": "Экспериментальное",
     "sidebarAbout": "О программе",
     "sidebarCommunity": "Сообщество",
@@ -1011,8 +1011,8 @@ const settings = {
     "openInTarget": "Открыть в {{target}}",
     "gitTitle": "Git",
     "gitDescription": "Управляйте тем, как diff загружаются на панели Git.",
-    "vendorsTitle": "Управление поставщиками",
-    "vendorsDescription": "Управление конфигурациями поставщиков для Claude и Codex.",
+    "vendorsTitle": "Управление движками",
+    "vendorsDescription": "Управляйте движками, провайдерами и локальными настройками.",
     "vendor": {
       "ccSwitchImport": {
         "entry": "Импорт",

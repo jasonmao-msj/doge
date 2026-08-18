@@ -578,3 +578,432 @@ GitHub Actions run 31449894326 在 windows-latest 成功生成 unsigned doge_0.1
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: 修复账号恢复脱敏邮箱误判并验证本地包
+
+**Date**: 2026-08-16
+**Task**: 修复账号恢复脱敏邮箱误判并验证本地包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+修复 masked primaryEmailLabel 被通用 SafeLabel 拒绝导致服务暂时不可用的问题；新增 exact IPC bootstrap 回归测试，更新 OpenSpec/Trellis contract，并完成 macOS arm64 DMG 构建、签名校验与真实会话恢复冒烟。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `520a19ade` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 19: 补全支付恢复退出动线并生成本地包
+
+**Date**: 2026-08-16
+**Task**: 补全支付恢复退出动线并生成本地包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+为 recovered checkout 增加返回套餐与退出登录；新增 account/device/checkout-scoped 本地 checkpoint abandon，logout 清理旧 checkpoint；补齐跨层测试与 OpenSpec/Trellis contract，并生成且验证 macOS arm64 DMG。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f8cc2082b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 20: 补全无订阅账号退出入口并重新打包
+
+**Date**: 2026-08-16
+**Task**: 补全无订阅账号退出入口并重新打包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+将退出登录提升为 authenticated AccountAppGate 的统一逃生口，覆盖套餐、空态、加载、异常、支付与准备状态；补齐 pending/失败/stale checkout 回归，更新 OpenSpec 与 Trellis contract，完成全量 1098 文件测试并生成验证 macOS arm64 DMG。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `af809d10b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 21: 修复退出登录永久连接竞态
+
+**Date**: 2026-08-16
+**Task**: 修复退出登录永久连接竞态
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+定位 logout 本地 sessionChanged 触发 bootstrap 后被 generation 作废但 loading 未释放的竞态；用 exact loading generation owner 修复 logout/change-password signed-out 收敛，新增 deferred event 回归测试并同步 OpenSpec/Trellis contract。验证 focused 28 tests、全量 1098 test files、typecheck、lint 0 errors、Rust account 73 tests、OpenSpec strict、runtime contracts/doctor；macOS arm64 DMG 已通过 hdiutil、deep codesign、Mach-O/OpenSSL 与 8 秒启动 smoke，Windows x64 artifact 待同 commit CI 构建。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fe5a70b82` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 22: 完成双平台本地试用包交付
+
+**Date**: 2026-08-16
+**Task**: 完成双平台本地试用包交付
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+完成 task 6.9 双平台交付闭环：macOS arm64 DMG 通过 hdiutil verify、deep codesign、Mach-O/OpenSSL 和 8 秒启动 smoke；Windows x64 unsigned NSIS 在 GitHub windows-latest 对同一修复 commit 构建，doge.exe 启动 smoke、artifact upload 与本地 SHA-256 复核通过。交付目录 release-local/fix-logout-loading-20260816。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c37cf1c27` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 23: 清理引擎界面并加固桌面启动
+
+**Date**: 2026-08-16
+**Task**: 清理引擎界面并加固桌面启动
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+删除古诗词轮换与相关持久化/测试，统一面向用户的简洁引擎名称和引擎管理文案；二维码使用当前选中套餐名；外部 engine probe 增加 4 秒 deadline、进程树清理和 single-instance 唤醒。focused tests、typecheck、Rust check、OpenSpec validate 通过并生成验证 macOS arm64 DMG；token2api 改动保持独立 worktree 未提交未发布，Windows 本地包受 macOS host gate 限制。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `31498df79` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 24: 打通第二引擎订阅闭环并生成 macOS 体验包
+
+**Date**: 2026-08-16
+**Task**: 打通第二引擎订阅闭环并生成 macOS 体验包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+实现 Codex 已订阅用户在应用内选择 Claude、查看订阅套餐、支付后自动准备凭据与配置并进入 Claude 新会话的闭环；保留原 AppShell 上下文和取消返回能力，补充 entitlement store、事件契约、多语言文案、focused regression 与 OpenSpec/Trellis executable contract；相关测试、typecheck、lint、runtime/engine contract gates、OpenSpec strict validate 均通过，并生成校验有效的 macOS arm64 DMG。token2api 未修改。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `177720cc1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 25: 完善账号多订阅用量与 Keychain 恢复
+
+**Date**: 2026-08-17
+**Task**: 完善账号多订阅用量与 Keychain 恢复
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+实现多订阅额度/安全中心与年度用量视图，扩展账号 usage contract 和 mock/native projection，并将 macOS 冷启动 vault 访问收敛为一次状态检查、一次 refresh 读取和一次轮换写入。验证：lint/typecheck、账号前端 65/65、Rust account 76/76、runtime/release contracts、OpenSpec strict 均通过；全量测试因未修改的 pricing fixture 时间漂移在第 67/274 批次出现 3 个 stale 断言失败。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8e8b165c4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 26: 内置订阅引擎与版本选择
+
+**Date**: 2026-08-17
+**Task**: 内置订阅引擎与版本选择
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+将 Codex 0.147.0 与 Claude Code 2.1.233 按平台打包进安装器；账号启动按本机版本静默复用或提示选择，不覆盖用户安装；隔离 account provider runtime binary，修复 Windows current-user 配置替换与稳定错误；完成前后端 focused tests、Rust account suite、macOS arm64 DMG 构建和签名/架构校验。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `40f9ee78e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 27: 加固 Windows artifact 构建入口
+
+**Date**: 2026-08-17
+**Task**: 加固 Windows artifact 构建入口
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+GitHub hosted runner 连续因第三方 action codeload 429/502 在 setup 阶段失败；Windows artifact-only job 改用 runner 预装 rustup stable，移除非必要 rust-cache 与 sccache third-party actions，降低发布链外部故障点，不改应用代码。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `76007cc53` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 28: 修复 Windows 跨卷引擎打包
+
+**Date**: 2026-08-17
+**Task**: 修复 Windows 跨卷引擎打包
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+真实 Windows runner 发现 TEMP 位于 C 盘、workspace 位于 D 盘，OS temp staging 到 generated resources 的 rename 返回 EXDEV；最终 stage 改为 output sibling same-volume atomic rename，增加回归测试与 OpenSpec/Trellis contract。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e06a03bc0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 29: 记录双平台内置引擎产物
+
+**Date**: 2026-08-17
+**Task**: 记录双平台内置引擎产物
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+回写 macOS arm64 与真实 Windows x64 bundled-engine release evidence；Windows runner 通过 NSIS current-user bundle、existing-target regression、8 秒启动 smoke 与 artifact 上传，完成 OpenSpec 双平台验证任务。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1540773b1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 30: 记录 token2api 生产发布证据
+
+**Date**: 2026-08-17
+**Task**: 记录 token2api 生产发布证据
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge OpenSpec 的 immutable artifact、PostgreSQL backup、EBS snapshot、SSM deploy/verify 与 health evidence，并完成任务 6.22。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c67c997a3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

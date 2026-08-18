@@ -203,7 +203,10 @@ async function buildMacOS(arch, options = {}) {
 
   // Build the app
   const buildEnv = arch === "arm64" ? "" : `X86_64_APPLE_DARWIN_OPENSSL_DIR=${CONFIG.openssl.x64} `;
-  exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app`);
+  const bundledEngineEnv = { DOGE_BUNDLED_ENGINE_TARGET: target };
+  exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app`, {
+    env: bundledEngineEnv,
+  });
 
   // For universal builds, merge daemon binary
   if (arch === "universal") {
@@ -214,7 +217,9 @@ async function buildMacOS(arch, options = {}) {
       -output ${TAURI_DIR}/target/universal-apple-darwin/release/doge_daemon`);
 
     // Rebuild bundle
-    exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app`);
+    exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app`, {
+      env: bundledEngineEnv,
+    });
   }
 
   // Bundle OpenSSL for both formal and artifact-only builds. `--skip-sign`
@@ -256,6 +261,7 @@ async function buildMacOS(arch, options = {}) {
       const entitlements = CONFIG.entitlements;
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${frameworksPath}/libcrypto.3.dylib"`);
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${frameworksPath}/libssl.3.dylib"`);
+      exec(`bash scripts/sign-bundled-engines-macos.sh "${bundlePath}" developer-id "${identity}"`);
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/doge"`);
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}/Contents/MacOS/doge_daemon"`);
       exec(`codesign --force --options runtime --sign "${identity}" --entitlements "${entitlements}" --timestamp "${bundlePath}"`);
@@ -263,6 +269,7 @@ async function buildMacOS(arch, options = {}) {
       const entitlements = CONFIG.entitlements;
       exec(`codesign --force --sign - "${frameworksPath}/libcrypto.3.dylib"`);
       exec(`codesign --force --sign - "${frameworksPath}/libssl.3.dylib"`);
+      exec(`bash scripts/sign-bundled-engines-macos.sh "${bundlePath}" adhoc`);
       exec(`codesign --force --sign - --entitlements "${entitlements}" "${bundlePath}/Contents/MacOS/doge"`);
       exec(`codesign --force --sign - --entitlements "${entitlements}" "${bundlePath}/Contents/MacOS/doge_daemon"`);
       exec(`codesign --force --sign - "${bundlePath}"`);
@@ -320,7 +327,9 @@ async function buildWindows(arch, options = {}) {
   }
 
   // Build on Windows
-  exec("npm run tauri:build:win -- --bundles msi,nsis");
+  exec("npm run tauri:build:win -- --bundles msi,nsis", {
+    env: { DOGE_BUNDLED_ENGINE_TARGET: "x86_64-pc-windows-msvc" },
+  });
 
   const installerPath = join(
     TAURI_DIR,

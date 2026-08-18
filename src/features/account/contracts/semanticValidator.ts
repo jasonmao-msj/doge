@@ -3,6 +3,7 @@ import type {
   GatewayFailureV1,
   QuotaMeasureV1,
   QuotaUsageViewV1,
+  UsageDayModelsViewV1,
 } from "./semantic";
 import {
   ACCOUNT_FAILURE_CODES_V1,
@@ -163,6 +164,8 @@ export function validateQuotaUsageViewV1(
       "used",
       "resetsAt",
       "subscriptionLabel",
+      "range",
+      "engines",
     ],
     "$",
     issues,
@@ -193,11 +196,197 @@ export function validateQuotaUsageViewV1(
   if (value.status === "available" && value.fetchedAt === null) {
     issues.push(issueV1("$.fetchedAt", "invariant", "available quota requires broker fetch time"));
   }
+  validateUsageRangeV1(value.range, "$.range", issues);
+  if (!Array.isArray(value.engines)) {
+    issues.push(issueV1("$.engines", "type", "expected engine usage array"));
+  } else {
+    const engineIds = new Set<string>();
+    value.engines.forEach((engine, index) => {
+      validateSubscriptionEngineUsageV1(engine, `$.engines[${index}]`, issues);
+      if (isRecordV1(engine) && typeof engine.engineId === "string") {
+        if (engineIds.has(engine.engineId)) {
+          issues.push(issueV1(`$.engines[${index}].engineId`, "duplicate", "duplicate engine usage"));
+        }
+        engineIds.add(engine.engineId);
+      }
+    });
+  }
+  if (value.status === "available" && (!Array.isArray(value.engines) || value.engines.length === 0)) {
+    issues.push(issueV1("$.engines", "invariant", "available usage requires an entitled engine"));
+  }
   const privacy = validateAccountSafeArtifactV1(value);
   if (!privacy.ok) {
     issues.push(...privacy.issues);
   }
   return validationV1(value as QuotaUsageViewV1, issues);
+}
+
+export function validateUsageDayModelsViewV1(
+  value: unknown,
+): SchemaValidationV1<UsageDayModelsViewV1> {
+  const issues: SchemaIssueV1[] = [];
+  if (!isRecordV1(value)) {
+    return { ok: false, issues: [issueV1("$", "type", "expected day model usage object")] };
+  }
+  validateKeysV1(value, ["engineId", "date", "models"], "$", issues);
+  validateManagedUsageEngineIdV1(value.engineId, "$.engineId", issues);
+  validateIsoDateV1(value.date, "$.date", issues);
+  if (!Array.isArray(value.models)) {
+    issues.push(issueV1("$.models", "type", "expected model usage array"));
+  } else {
+    value.models.forEach((model, index) => {
+      validateUsageModelV1(model, `$.models[${index}]`, issues);
+    });
+  }
+  const privacy = validateAccountSafeArtifactV1(value);
+  if (!privacy.ok) issues.push(...privacy.issues);
+  return validationV1(value as UsageDayModelsViewV1, issues);
+}
+
+function validateUsageRangeV1(value: unknown, path: string, issues: SchemaIssueV1[]): void {
+  if (value === null) return;
+  if (!isRecordV1(value)) {
+    issues.push(issueV1(path, "type", "expected null or usage range"));
+    return;
+  }
+  validateKeysV1(value, ["startDate", "endDate", "days"], path, issues);
+  validateIsoDateV1(value.startDate, `${path}.startDate`, issues);
+  validateIsoDateV1(value.endDate, `${path}.endDate`, issues);
+  if (!isNonNegativeIntegerV1(value.days) || value.days < 1 || value.days > 366) {
+    issues.push(issueV1(`${path}.days`, "range", "expected usage range between 1 and 366 days"));
+  }
+}
+
+function validateSubscriptionEngineUsageV1(
+  value: unknown,
+  path: string,
+  issues: SchemaIssueV1[],
+): void {
+  if (!isRecordV1(value)) {
+    issues.push(issueV1(path, "type", "expected engine usage object"));
+    return;
+  }
+  validateKeysV1(value, [
+    "engineId", "engineLabel", "subscriptionLabel", "expiresAt", "analyticsStatus",
+    "windows", "totals", "days", "models",
+  ], path, issues);
+  validateManagedUsageEngineIdV1(value.engineId, `${path}.engineId`, issues);
+  for (const key of ["engineLabel", "subscriptionLabel"] as const) {
+    if (typeof value[key] !== "string" || value[key].length === 0 || value[key].length > 80) {
+      issues.push(issueV1(`${path}.${key}`, "format", "expected safe non-empty label"));
+    }
+  }
+  if (value.expiresAt !== null && !isRfc3339UtcV1(value.expiresAt)) {
+    issues.push(issueV1(`${path}.expiresAt`, "format", "expected null or RFC 3339 UTC timestamp"));
+  }
+  if (value.analyticsStatus !== "available" && value.analyticsStatus !== "unavailable") {
+    issues.push(issueV1(`${path}.analyticsStatus`, "enum", "unknown analytics status"));
+  }
+  if (!isRecordV1(value.windows)) {
+    issues.push(issueV1(`${path}.windows`, "type", "expected usage windows"));
+  } else {
+    validateKeysV1(value.windows, ["daily", "weekly", "monthly"], `${path}.windows`, issues);
+    for (const key of ["daily", "weekly", "monthly"] as const) {
+      validateUsageWindowV1(value.windows[key], `${path}.windows.${key}`, issues);
+    }
+  }
+  validateUsageTotalsV1(value.totals, `${path}.totals`, issues);
+  if (!Array.isArray(value.days)) {
+    issues.push(issueV1(`${path}.days`, "type", "expected daily usage array"));
+  } else {
+    const dates = new Set<string>();
+    value.days.forEach((day, index) => {
+      const dayPath = `${path}.days[${index}]`;
+      if (!isRecordV1(day)) {
+        issues.push(issueV1(dayPath, "type", "expected daily usage object"));
+        return;
+      }
+      validateKeysV1(day, [
+        "date", "intensity", "requests", "inputTokens", "outputTokens", "cacheReadTokens",
+        "cacheWriteTokens", "totalTokens", "cost", "actualCost",
+      ], dayPath, issues);
+      validateIsoDateV1(day.date, `${dayPath}.date`, issues);
+      if (!isNonNegativeIntegerV1(day.intensity) || day.intensity > 4) {
+        issues.push(issueV1(`${dayPath}.intensity`, "range", "expected intensity from 0 to 4"));
+      }
+      validateUsageTotalsV1(day, dayPath, issues);
+      if (typeof day.date === "string") {
+        if (dates.has(day.date)) issues.push(issueV1(`${dayPath}.date`, "duplicate", "duplicate usage date"));
+        dates.add(day.date);
+      }
+    });
+  }
+  if (!Array.isArray(value.models)) {
+    issues.push(issueV1(`${path}.models`, "type", "expected model usage array"));
+  } else {
+    value.models.forEach((model, index) => validateUsageModelV1(model, `${path}.models[${index}]`, issues));
+  }
+}
+
+function validateUsageWindowV1(value: unknown, path: string, issues: SchemaIssueV1[]): void {
+  if (value === null) return;
+  if (!isRecordV1(value)) {
+    issues.push(issueV1(path, "type", "expected null or usage window"));
+    return;
+  }
+  validateKeysV1(value, ["limit", "used", "remaining", "percentage", "resetsAt"], path, issues);
+  validateQuotaMeasureV1(value.limit, `${path}.limit`, issues);
+  validateQuotaMeasureV1(value.used, `${path}.used`, issues);
+  validateQuotaMeasureV1(value.remaining, `${path}.remaining`, issues);
+  if (!isCanonicalDecimalStringV1(value.percentage)) {
+    issues.push(issueV1(`${path}.percentage`, "format", "expected canonical percentage"));
+  }
+  if (!isRfc3339UtcV1(value.resetsAt)) {
+    issues.push(issueV1(`${path}.resetsAt`, "format", "expected RFC 3339 UTC timestamp"));
+  }
+}
+
+function validateUsageModelV1(value: unknown, path: string, issues: SchemaIssueV1[]): void {
+  if (!isRecordV1(value)) {
+    issues.push(issueV1(path, "type", "expected model usage object"));
+    return;
+  }
+  validateKeysV1(value, [
+    "modelLabel", "requests", "inputTokens", "outputTokens", "cacheReadTokens",
+    "cacheWriteTokens", "totalTokens", "cost", "actualCost",
+  ], path, issues);
+  if (typeof value.modelLabel !== "string" || value.modelLabel.length === 0 || value.modelLabel.length > 80) {
+    issues.push(issueV1(`${path}.modelLabel`, "format", "expected safe model label"));
+  }
+  validateUsageTotalsV1(value, path, issues);
+}
+
+function validateUsageTotalsV1(value: unknown, path: string, issues: SchemaIssueV1[]): void {
+  if (!isRecordV1(value)) {
+    issues.push(issueV1(path, "type", "expected usage totals object"));
+    return;
+  }
+  for (const key of [
+    "requests", "inputTokens", "outputTokens", "cacheReadTokens", "cacheWriteTokens", "totalTokens",
+  ] as const) {
+    if (!isNonNegativeIntegerV1(value[key])) {
+      issues.push(issueV1(`${path}.${key}`, "range", "expected non-negative safe integer"));
+    }
+  }
+  validateQuotaMeasureV1(value.cost, `${path}.cost`, issues);
+  validateQuotaMeasureV1(value.actualCost, `${path}.actualCost`, issues);
+}
+
+function validateManagedUsageEngineIdV1(value: unknown, path: string, issues: SchemaIssueV1[]): void {
+  if (value !== "codex" && value !== "claude-code") {
+    issues.push(issueV1(path, "enum", "unknown managed usage engine"));
+  }
+}
+
+function validateIsoDateV1(value: unknown, path: string, issues: SchemaIssueV1[]): void {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    issues.push(issueV1(path, "format", "expected YYYY-MM-DD date"));
+    return;
+  }
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    issues.push(issueV1(path, "format", "expected valid calendar date"));
+  }
 }
 
 function validateQuotaMeasureV1(

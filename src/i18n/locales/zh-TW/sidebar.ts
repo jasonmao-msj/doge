@@ -60,7 +60,7 @@ const sidebar = {
     "codexProviderChoiceTitle": "供應商選擇",
     "codexProviderSelectedTip": "已選取。點擊左側的 Codex 以開始工作階段。",
     "grokProviderChoiceTitle": "供應商選擇",
-    "grokProviderSelectedTip": "已選取。點擊左側的 Grok CLI 以開始工作階段。",
+    "grokProviderSelectedTip": "已選取。點擊左側的 Grok 以開始工作階段。",
     "opencodeProviderChoiceTitle": "供應商選擇",
     "opencodeProviderSelectedTip": "已選取。點擊左側的 OpenCode 以開始工作階段。",
     "providerFollowsGlobalLabel": "跟隨全域設定",
@@ -162,7 +162,7 @@ const sidebar = {
       "title": "MCPs",
       "refresh": "重新整理",
       "tabs": {
-        "claude": "Claude Code",
+        "claude": "Claude",
         "codex": "Codex"
       },
       "filter": {

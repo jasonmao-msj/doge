@@ -63,7 +63,7 @@ const runtimeNotice = {
       "resumeCommandCopied": "Commande de reprise Claude copiée. Si le sélecteur /resume du TUI n'affiche pas cette session GUI, exécutez explicitement claude --resume {{sessionId}} ou /resume {{sessionId}}."
     },
     "grok": {
-      "providerSelected": "{{name}} sélectionné. Cliquez sur l'entrée Grok CLI pour créer une session."
+      "providerSelected": "{{name}} sélectionné. Cliquez sur l'entrée Grok pour créer une session."
     },
     "opencode": {
       "providerSelected": "{{name}} sélectionné. Cliquez sur l'entrée OpenCode pour créer une session."

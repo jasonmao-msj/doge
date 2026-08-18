@@ -9,6 +9,11 @@ import { GIT_GRAPH_TAB_ID } from "../features/git-history/types";
 import { WorkspaceAliasPrompt } from "../features/workspaces/components/WorkspaceAliasPrompt";
 import { useClientUiVisibility } from "../features/client-ui-visibility/hooks/useClientUiVisibility";
 import { isAccountConvenienceV1Enabled } from "../features/account/runtime/featureFlag";
+import { managedEngineIdForRuntimeV1 } from "../features/account/runtime/engineEntitlementStore";
+import {
+  requestAccountEngineSwitchV1,
+  subscribeAccountEngineReadyV1,
+} from "../features/account/runtime/engineSwitchSignal";
 import { useProjectMapDataset } from "../features/project-map/hooks/useProjectMapDataset";
 import {
   buildIntentCanvasContextAttachment,
@@ -777,6 +782,15 @@ export function useAppShellLayoutNodesSection(
       if (thread?.threadKind === "shared") {
         return;
       }
+      const managedEngineId = managedEngineIdForRuntimeV1(engine);
+      if (accountConvenienceV1Enabled && managedEngineId !== null) {
+        requestAccountEngineSwitchV1({
+          source: "enginePicker",
+          targetEngineId: managedEngineId,
+          openNewConversation: true,
+        });
+        return;
+      }
       await setActiveEngine(engine);
       if (!activeWorkspaceId || !activeThreadId) {
         return;
@@ -789,6 +803,22 @@ export function useAppShellLayoutNodesSection(
       threadsByWorkspace,
     ],
   );
+  useEffect(() => {
+    let disposed = false;
+    const unsubscribe = subscribeAccountEngineReadyV1((intent) => {
+      void (async () => {
+        const engine = intent.engineId === "claude-code" ? "claude" : "codex";
+        await setActiveEngine(engine);
+        if (disposed || !intent.openNewConversation) return;
+        closeSettings();
+        handleOpenHomeChat();
+      })();
+    });
+    return () => {
+      disposed = true;
+      unsubscribe();
+    };
+  }, [closeSettings, handleOpenHomeChat, setActiveEngine]);
   const mainFileExternalChangeAwarenessEnabled =
     appSettings.detachedExternalChangeAwarenessEnabled !== false;
   const mainFileExternalChangeWatcherEnabled =
