@@ -46,3 +46,7 @@ export function resolveAccountEngineToolchainV1(
 ): Promise<unknown> {
   return invoke("account_engine_v1_toolchain", { engineId, choice });
 }
+
+export function activateAccountEngineV1(engineId: "codex" | "claude-code"): Promise<void> {
+  return invoke("account_engine_v1_activate", { engineId });
+}

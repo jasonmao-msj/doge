@@ -150,6 +150,22 @@ impl EngineManager {
         Ok(())
     }
 
+    /// Activate an engine whose executable was verified by the account toolchain.
+    ///
+    /// The account toolchain validates a provider-scoped binary without updating the
+    /// user's global CLI configuration. Its result must not be invalidated by an
+    /// unrelated background refresh of the global engine status cache.
+    pub(crate) async fn set_active_engine_after_account_toolchain_verification(
+        &self,
+        engine_type: EngineType,
+    ) {
+        debug_assert!(matches!(
+            engine_type,
+            EngineType::Claude | EngineType::Codex
+        ));
+        *self.active_engine.write().await = engine_type;
+    }
+
     /// Detect a single engine's status
     async fn detect_single_engine(&self, engine_type: EngineType) -> EngineStatus {
         self.detect_single_engine_with_gates(engine_type, true)
@@ -1067,6 +1083,33 @@ mod tests {
             retrieved.unwrap().bin_path,
             Some("/custom/claude".to_string())
         );
+    }
+
+    #[tokio::test]
+    async fn account_verified_activation_ignores_unavailable_global_status() {
+        let manager = EngineManager::new();
+        manager.engine_statuses.write().await.insert(
+            EngineType::Codex,
+            EngineStatus {
+                engine_type: EngineType::Codex,
+                installed: false,
+                version: None,
+                bin_path: None,
+                home_dir: None,
+                models: Vec::new(),
+                default_model: None,
+                features: Default::default(),
+                error: Some("global CLI is unavailable".to_string()),
+            },
+        );
+
+        assert!(manager.set_active_engine(EngineType::Codex).await.is_err());
+
+        manager
+            .set_active_engine_after_account_toolchain_verification(EngineType::Codex)
+            .await;
+
+        assert_eq!(manager.get_active_engine().await, EngineType::Codex);
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]

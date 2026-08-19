@@ -78,6 +78,9 @@ React Component
     请求前设置 `loading/busy/pending`，必须把该 flag 绑定到 exact generation/request id；
     stale settle 仅清理自己仍拥有的 flag，显式 lifecycle commit（如 logout/change-password
     signed-out）必须同步 invalidate owner 并收敛 UI，避免永久 spinner 或旧请求误清新请求。
+25. Tauri debug resource 若也被 bundle resources copy 消费，staging destination 必须是与 source
+    独立的 real tree，禁止 symlink。启动前验证 generated manifest 非空且合法；否则后续 copy
+    可能把 source/destination 解析为同一文件并截断 runtime resource。
 
 ## 常见失败模式
 
