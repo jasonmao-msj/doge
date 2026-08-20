@@ -1073,3 +1073,37 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 33: 恢复新会话托管渠道默认并建立分层测试
+
+**Date**: 2026-08-20
+**Task**: 恢复新会话托管渠道默认并建立分层测试
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+新建会话按各引擎订阅默认使用 Doge Token Matrix；同引擎 local/manual 切到托管渠道前重新 prepare 原生凭据；建立 L0-L4 按影响面验证规则。L3 focused tests、typecheck、targeted ESLint 与 strict OpenSpec 已通过，L4 交由 PR/Release CI。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3865ba37b` | (see git log) |
+| `2e3bd5db2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

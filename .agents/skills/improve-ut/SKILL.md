@@ -26,6 +26,7 @@ This repository currently has `frontend`, `backend`, and `guides` layers rather 
 
 - `.trellis/spec/frontend/quality-guidelines.md` for Vitest/frontend changes
 - `.trellis/spec/backend/quality-guidelines.md` for Rust/backend changes
+- `.trellis/spec/guides/risk-based-test-strategy.md` for L0–L4 validation scope
 - existing colocated `*.test.ts`, `*.test.tsx`, and Rust module tests in the touched domain
 
 > If a package later introduces a dedicated test-spec layer, that package-local spec wins.
@@ -40,13 +41,15 @@ This repository currently has `frontend`, `backend`, and `guides` layers rather 
    - unit vs integration vs regression
    - mock vs real filesystem flow
 3. Add/update tests using existing project test patterns
-4. Run validation:
+4. Select the risk-based verification level and run only its validation. For the common L1/L2 case:
 
 ```bash
-npm run lint
-npm run typecheck
-npm run test
+npx vitest run <affected-test-files>
+npx eslint <changed-ts-tsx-files>
+npm run typecheck # L2/L3 or exported type/contract changes
 ```
+
+`npm run test` is reserved for L4 Release/CI or an explicit user request; do not use it as the default UT completion gate.
 
 5. Summarize decisions, updates, and remaining test gaps.
 
@@ -64,9 +67,9 @@ npm run test
 - Updated: ...
 
 ## Validation
-- npm run lint: pass/fail
-- npm run typecheck: pass/fail
-- npm run test: pass/fail
+- Verification level + rationale: ...
+- Focused commands: pass/fail
+- L4 not run: ...
 
 ## Gaps / Follow-ups
 - <none or explicit rationale>

@@ -753,6 +753,16 @@ function ComposerImpl({
   );
   const requestedProviderProfileId = providerProfileId?.trim() || null;
   const managedEngineId = managedEngineIdForRuntimeV1(selectedEngine ?? "");
+  const managedEngineEntitlementStatus =
+    managedEngineId === null
+      ? "unknown"
+      : readManagedEngineEntitlementsV1()[managedEngineId];
+  const needsManagedCreationPreparation =
+    createSessionTargetPicker &&
+    requestedProviderProfileId === null &&
+    managedEngineId !== null &&
+    managedEngineEntitlementStatus === "active" &&
+    managedEnginePreparation[managedEngineId] !== "prepared";
   const usesManagedCreationDefault =
     createSessionTargetPicker &&
     requestedProviderProfileId === null &&
@@ -792,7 +802,43 @@ function ComposerImpl({
   ]);
   const effectiveCreationTarget =
     selectedCreationTarget ?? defaultCreationTarget;
+  const requestedManagedCreationPreparationRef = useRef<string | null>(null);
   useEffect(() => {
+    if (!needsManagedCreationPreparation || managedEngineId === null) {
+      if (
+        !createSessionTargetPicker ||
+        managedEngineId === null ||
+        managedEnginePreparation[managedEngineId] === "prepared"
+      ) {
+        requestedManagedCreationPreparationRef.current = null;
+      }
+      return;
+    }
+    if (requestedManagedCreationPreparationRef.current === managedEngineId) {
+      return;
+    }
+    requestedManagedCreationPreparationRef.current = managedEngineId;
+    requestAccountEngineSwitchV1({
+      source: "enginePicker",
+      targetEngineId: managedEngineId,
+      openNewConversation: true,
+    });
+  }, [
+    createSessionTargetPicker,
+    managedEngineId,
+    managedEnginePreparation,
+    needsManagedCreationPreparation,
+  ]);
+  useEffect(() => {
+    if (!createSessionTargetPicker) {
+      // Creation target is transient by definition. Existing sessions read
+      // their durable provider binding from thread metadata, while the next
+      // Home/new-session entry must resolve its default again (including the
+      // prepared Doge Token Matrix default) instead of inheriting a previous
+      // creation attempt's explicit local/manual choice.
+      setSelectedCreationTarget(null);
+      return;
+    }
     if (createSessionTargetPicker && usesManagedCreationDefault) {
       return;
     }
@@ -1292,13 +1338,25 @@ function ComposerImpl({
     },
     [activeThreadId, activeWorkspaceId, isSharedSessionResolved],
   );
-  const requestManagedEngineAccess = useCallback((engine: EngineType) => {
-    if (!isAccountConvenienceV1Enabled() || engine === selectedEngine) {
+  const requestManagedEngineAccess = useCallback((
+    target: ExecutionTarget,
+    revalidateManagedCredential = false,
+  ) => {
+    if (!isAccountConvenienceV1Enabled()) {
       return false;
     }
-    const targetEngineId = managedEngineIdForRuntimeV1(engine);
+    const targetEngineId = managedEngineIdForRuntimeV1(target.engine);
     if (targetEngineId === null) return false;
     if (readManagedEngineEntitlementsV1()[targetEngineId] === "unknown") {
+      return false;
+    }
+    const selectsManagedProvider =
+      target.providerProfileId?.trim() === MANAGED_PROVIDER_PROFILE_ID_V1;
+    const needsManagedPreparation =
+      selectsManagedProvider &&
+      (revalidateManagedCredential ||
+        managedEnginePreparation[targetEngineId] !== "prepared");
+    if (target.engine === selectedEngine && !needsManagedPreparation) {
       return false;
     }
     requestAccountEngineSwitchV1({
@@ -1307,7 +1365,7 @@ function ComposerImpl({
       openNewConversation: true,
     });
     return true;
-  }, [selectedEngine]);
+  }, [managedEnginePreparation, selectedEngine]);
   /**
    * Native 会话也走首页同款 Atomic 双栏 picker（含「本地配置」渠道）。
    * 同 engine+profile 只切模型；跨 managed profile 走续接；其余走 engine/model 切换。
@@ -1348,7 +1406,10 @@ function ComposerImpl({
         }
         return;
       }
-      if (requestManagedEngineAccess(target.engine)) {
+      // Engine identity does not prove managed credential readiness. A Native
+      // local/manual -> Token Matrix transition always re-confirms the native
+      // vault binding before a Provider Continuation can be created.
+      if (requestManagedEngineAccess(target, true)) {
         return;
       }
       // 跨渠道时清掉本会话点选覆盖，避免沿用旧模型 id
@@ -1393,7 +1454,7 @@ function ComposerImpl({
       if (!createSessionTargetPicker || !isResolvedExecutionTarget(target)) {
         return;
       }
-      if (requestManagedEngineAccess(target.engine)) {
+      if (requestManagedEngineAccess(target)) {
         return;
       }
       // 首页 engine 选择必须同步全局 activeEngine + client store，否则重启后首页

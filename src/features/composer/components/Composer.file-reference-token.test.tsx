@@ -191,6 +191,21 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
           })
         }
       />
+      <button
+        type="button"
+        data-testid="select-codex-token-matrix-target"
+        onClick={() =>
+          onExecutionTargetChange?.({
+            engine: "codex",
+            providerProfileId: "doge-token-matrix",
+            modelCatalogEntryId: "matrix-codex",
+            model: "gpt-5.5-codex",
+            reasoning: { effort: "medium" },
+            providerProfileNameSnapshot: "Doge Token Matrix",
+            providerProfileSource: "managed",
+          })
+        }
+      />
     </>
   ),
 }));
@@ -479,6 +494,33 @@ describe("Composer file reference token", () => {
     );
   });
 
+  it("automatically prepares an active Home subscription before using a local fallback", () => {
+    publishManagedEngineEntitlementsV1([
+      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+      { id: "claude-code", displayName: "Claude", entitlement: { status: "active", expiresAt: null } },
+    ]);
+    markManagedEnginePreparedV1("claude-code");
+    const switchIntent = vi.fn();
+    const unsubscribe = subscribeAccountEngineSwitchV1(switchIntent);
+
+    render(
+      <ComposerHarness
+        onSend={vi.fn()}
+        createSessionTargetPicker
+        selectedEngine="codex"
+        activeThreadId={null}
+      />,
+    );
+
+    expect(switchIntent).toHaveBeenCalledTimes(1);
+    expect(switchIntent).toHaveBeenCalledWith({
+      source: "enginePicker",
+      targetEngineId: "codex",
+      openNewConversation: true,
+    });
+    unsubscribe();
+  });
+
   it("blocks a prepared managed default until its scoped catalog resolves", async () => {
     publishManagedEngineEntitlementsV1([
       { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
@@ -541,6 +583,70 @@ describe("Composer file reference token", () => {
           providerProfileSource: "disk",
         }),
       }),
+    );
+  });
+
+  it("resets an explicit local creation target before the next managed session", async () => {
+    publishManagedEngineEntitlementsV1([
+      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+    ]);
+    markManagedEnginePreparedV1("codex");
+    const onSend = vi.fn();
+    const managedModels = [
+      {
+        id: "matrix-codex",
+        displayName: "GPT-5.5 Codex",
+        model: "gpt-5.5-codex",
+        providerProfileId: "doge-token-matrix",
+      },
+    ];
+    const view = render(
+      <ComposerHarness
+        onSend={onSend}
+        createSessionTargetPicker
+        selectedEngine="codex"
+        activeThreadId={null}
+        selectedModelId="matrix-codex"
+        models={managedModels}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(view.getByTestId("select-codex-local-target"));
+      await Promise.resolve();
+    });
+    expect(getTextarea(view.container).dataset.providerProfileId).toBe("null");
+
+    await act(async () => {
+      view.rerender(
+        <ComposerHarness
+          onSend={onSend}
+          selectedEngine="codex"
+          activeThreadId="codex:local-session"
+          providerProfileId={null}
+        />,
+      );
+      await Promise.resolve();
+    });
+    expect(getTextarea(view.container).dataset.providerProfileId).toBe("null");
+
+    await act(async () => {
+      view.rerender(
+        <ComposerHarness
+          onSend={onSend}
+          createSessionTargetPicker
+          selectedEngine="codex"
+          activeThreadId={null}
+          selectedModelId="matrix-codex"
+          models={managedModels}
+        />,
+      );
+      await Promise.resolve();
+    });
+
+    expect(getTextarea(view.container).dataset.providerProfileId).toBe(
+      "doge-token-matrix",
     );
   });
 
@@ -1037,6 +1143,37 @@ describe("Composer file reference token", () => {
       },
     });
     unsubscribe();
+  });
+
+  it("revalidates a same-engine Token Matrix credential before creating a continuation", () => {
+    publishManagedEngineEntitlementsV1([
+      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+    ]);
+    // Renderer readiness can be stale when the OS vault entry disappears.
+    markManagedEnginePreparedV1("codex");
+    const switchIntent = vi.fn();
+    const continuation = vi.fn();
+    const unsubscribeSwitch = subscribeAccountEngineSwitchV1(switchIntent);
+    const unsubscribeContinuation = subscribeProviderContinuationDialogRequests(continuation);
+    const view = render(
+      <ComposerHarness
+        onSend={() => {}}
+        selectedEngine="codex"
+        providerProfileId={null}
+      />,
+    );
+
+    fireEvent.click(view.getByTestId("select-codex-token-matrix-target"));
+
+    expect(switchIntent).toHaveBeenCalledWith({
+      source: "enginePicker",
+      targetEngineId: "codex",
+      openNewConversation: true,
+    });
+    expect(continuation).not.toHaveBeenCalled();
+    unsubscribeContinuation();
+    unsubscribeSwitch();
   });
 
   // fix-shared-session-identity-id-first：isSharedSession prop 退化（false）+

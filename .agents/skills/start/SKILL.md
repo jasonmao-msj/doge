@@ -292,7 +292,7 @@ Implement the task described in `prd.md`.
 
 - Follow all specs injected into implement context
 - Keep changes scoped to requirements
-- Run lint and typecheck before finishing
+- 按 `.trellis/spec/guides/risk-based-test-strategy.md` 选择 L0–L3，运行该等级要求的 focused verification
 
 **Step 9: Check Quality** `[AI]`
 
@@ -300,11 +300,11 @@ Run a quality pass against check context:
 
 - Review all code changes against the specs
 - Fix issues directly
-- Ensure lint and typecheck pass
+- Ensure the selected verification level's tests/lint/typecheck/contracts pass
 
 **Step 10: Complete** `[AI]`
 
-1. Verify lint and typecheck pass
+1. Verify the selected verification level passes and record untested L4 Release/CI scope
 2. Report what was implemented
 3. Remind user to:
    - Test the changes

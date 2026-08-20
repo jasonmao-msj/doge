@@ -216,7 +216,8 @@ python3 ./.trellis/scripts/task.py create "<title>" --slug <task-name>
    --> For cross-layer or governance tasks: read the relevant guide under .trellis/spec/guides/
 
 5. Self-test
-   --> Run project's lint/test commands (see spec docs)
+   --> 按 `.trellis/spec/guides/risk-based-test-strategy.md` 声明 L0–L3 verification level，运行受影响 surface 的 focused checks
+   --> L4 全量 tests/build/smoke 由 Release/CI 执行，除非用户明确要求本地全量
    --> Manual feature testing
 
 6. Commit code
@@ -245,9 +246,10 @@ python3 ./.trellis/scripts/task.py create "<title>" --slug <task-name>
 ### Code Quality Checklist
 
 **Must pass before commit**:
-- [OK] Lint checks pass (project-specific command)
-- [OK] Type checks pass (if applicable)
+- [OK] 当前 verification level 要求的 focused lint/tests/contracts 通过
+- [OK] Type checks pass（L2/L3 或 type/contract 影响时）
 - [OK] Manual feature testing passes
+- [OK] 已记录未运行的 L4 Release/CI 项
 
 **Project-specific checks**:
 - See `.trellis/spec/frontend/quality-guidelines.md` or `.trellis/spec/backend/quality-guidelines.md` as applicable

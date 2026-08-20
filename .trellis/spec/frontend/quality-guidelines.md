@@ -217,11 +217,15 @@ if (isSevere && cooldownElapsed && !hasDiagnosticsOwnedHotspot(hotspots)) {
 
 ## 标准验证命令
 
+验证范围 MUST 先按 [Risk-Based Test Strategy](../guides/risk-based-test-strategy.md) 选择 L0–L4。以下全量命令只作为 L4 Release/CI gate，不再是每次本地修改的默认要求：
+
 ```bash
 npm run lint
 npm run typecheck
 npm run test
 ```
+
+L1–L3 MUST 优先运行 changed/nearest focused Vitest 与 targeted ESLint；L2/L3 或 exported type/contract 变更追加 `npm run typecheck`。交付记录必须写明等级、命令和未跑的 L4 项。
 
 涉及大文件或样式重构时：
 

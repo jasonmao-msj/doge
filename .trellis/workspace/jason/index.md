@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 32
-- **Last Active**: 2026-08-19
+- **Total Sessions**: 33
+- **Last Active**: 2026-08-20
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1075 | Active |
+| `journal-1.md` | ~1109 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 33 | 2026-08-20 | 恢复新会话托管渠道默认并建立分层测试 | `3865ba37b`, `2e3bd5db2` | `codex/fix-account-masked-email-bootstrap` |
 | 32 | 2026-08-19 | 收口账号订阅额度与引擎默认流程 | `6e649e5ac` | `codex/fix-account-masked-email-bootstrap` |
 | 31 | 2026-08-17 | 记录 Shared 会话额度投影问题 | `83fdbab1e` | `codex/fix-account-masked-email-bootstrap` |
 | 30 | 2026-08-17 | 记录 token2api 生产发布证据 | `c67c997a3` | `codex/fix-account-masked-email-bootstrap` |

@@ -9,6 +9,7 @@
 | [Project Instruction Layering Guide](./project-instruction-layering-guide.md) | 固化规则入口、更新边界与 single source of truth | 修改项目规则文档、治理入口、ignore policy、host hook 入口 |
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | 降低 duplication 和 drift | 同类逻辑出现 2 次以上 |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | 保护 UI-runtime-backend contract | 触及 component + service + tauri/rust |
+| [Risk-Based Test Strategy](./risk-based-test-strategy.md) | 按影响面选择 L0–L4 验证，避免 leaf fix 无条件跑全量 | 所有代码、规则、测试与 Release 任务 |
 | [Codex Unified Exec Override Contract](./codex-unified-exec-override-contract.md) | 固化 unified_exec 的 settings/runtime/global-config 边界 | 触及 experimental settings、Codex args、global config repair |
 | [Terminal Shell Configuration Contract](./terminal-shell-configuration.md) | 固化 built-in terminal shell path override 与平台 fallback 边界 | 触及 terminal shell path 设置或 `terminal_open` shell 解析 |
 | [Workspace Session Catalog Contract](./workspace-session-catalog-contract.md) | 固化 workspace session membership、ownership、metadata overlay、source-fact cache 边界 | 触及工作区会话列表、Claude history、Session Management、Sidebar session merge |
@@ -39,3 +40,4 @@ rg -n "<keyword>" src
 - 已列出 cross-layer 影响面。
 - 已评估 reuse 机会。
 - 已定义验证命令与关键测试点。
+- 已声明 verification level、判定理由与未覆盖范围。

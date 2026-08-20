@@ -23,6 +23,7 @@ type ComposerReadinessBarProps = {
   models?: ModelInfo[];
   modelGroups?: ProviderModelGroup[];
   targetGroups?: ProviderTargetGroup[];
+  preferManagedProviderDefaults?: boolean;
   executionTarget?: ExecutionTarget | null;
   onExecutionTargetChange?: (target: ExecutionTarget) => void;
   onOpenTargetCatalog?: () => Promise<void> | void;
@@ -52,6 +53,7 @@ export function ComposerReadinessBar({
   models,
   modelGroups,
   targetGroups,
+  preferManagedProviderDefaults,
   executionTarget,
   onExecutionTargetChange,
   onOpenTargetCatalog,
@@ -112,6 +114,7 @@ export function ComposerReadinessBar({
             models={models}
             modelGroups={modelGroups}
             targetGroups={targetGroups}
+            preferManagedProviderDefaults={preferManagedProviderDefaults}
             executionTarget={executionTarget}
             onExecutionTargetChange={onExecutionTargetChange}
             onOpenTargetCatalog={onOpenTargetCatalog}
