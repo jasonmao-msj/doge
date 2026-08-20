@@ -13,18 +13,14 @@ Before submitting or committing, use this checklist to ensure work completeness.
 
 ## Checklist
 
-### 1. Code Quality
+### 1. Code Quality — Risk-Based Verification
 
-```bash
-# Must pass
-npm run lint
-npm run typecheck
-npm run test
-```
+Read `.trellis/spec/guides/risk-based-test-strategy.md` and select L0–L4 before running checks. Full `npm run lint && npm run typecheck && npm run test` is an L4 Release/CI gate, not the default for every local change.
 
-- [ ] `npm run lint` passes with 0 errors?
-- [ ] `npm run typecheck` passes with no type errors?
-- [ ] Tests pass?
+- [ ] Verification level and highest-risk trigger are stated?
+- [ ] Changed files, callers/consumers, persistence and platform impact are bounded?
+- [ ] Required focused tests/lint/typecheck/contracts for that level pass?
+- [ ] Commands actually run and untested L4 scope are recorded?
 - [ ] No `console.log` statements (use logger)?
 - [ ] No non-null assertions (the `x!` operator)?
 - [ ] No `any` types?
@@ -106,8 +102,9 @@ If the change spans multiple layers:
 ## Quick Check Flow
 
 ```bash
-# 1. Code checks
-npm run lint && npm run typecheck
+# 1. Select level and run its checks
+cat .trellis/spec/guides/risk-based-test-strategy.md
+npx vitest run <affected-tests>
 
 # 2. View changes
 git status
@@ -126,7 +123,7 @@ git diff --name-only
 | Spec text is abstract only | Easy regressions in infra/cross-layer changes | Require signature/contract/matrix/cases/tests |
 | Migration not created | Schema out of sync | Check db/migrations/ |
 | Types not synced | Runtime errors | Check shared types |
-| Tests not updated | False confidence | Run full test suite |
+| Tests not updated | False confidence | Add/run the nearest regression and expand only when impact evidence requires it |
 | Console.log left in | Noisy production logs | Search for console.log |
 
 ---

@@ -16,6 +16,8 @@
 
 ## 推荐验证命令
 
+先按 [Risk-Based Test Strategy](../guides/risk-based-test-strategy.md) 选择 L0–L4。Backend 本地开发默认运行受影响 module/contract 的 focused commands；以下全量命令属于 L4 Release/CI，不再是所有修改的默认前置条件：
+
 ```bash
 npm run check:runtime-contracts
 npm run doctor:strict
@@ -28,6 +30,8 @@ npm run typecheck
 ```bash
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
+
+L3 IPC/runtime/auth/vault/persistence/installer 变更 MUST 覆盖各受影响层的 focused tests、相关 contract checks，并按 compile surface 追加 `cargo check --lib`；除非影响面无法界定或用户明确要求，不默认执行全量 `cargo test` / `npm run test`。
 
 ## Review Checklist
 

@@ -6,7 +6,7 @@
 
 - 代码范围：`src/**`（重点 `src/features/**`、`src/services/**`、`src/styles/**`）
 - 运行边界：`src/services/tauri.ts`（frontend 与 Rust command 的 bridge）
-- 质量门禁：`npm run lint && npm run typecheck && npm run test`
+- 质量门禁：本地按 [Risk-Based Test Strategy](../guides/risk-based-test-strategy.md) 执行 L0–L3 focused verification；`npm run lint && npm run typecheck && npm run test` 属于 L4 Release/CI 全量门禁。
 
 ## 规范目录
 
@@ -43,6 +43,7 @@
 
 ## Pre-Development Checklist（开始开发前必读）
 
+- 所有实现任务先按 [Risk-Based Test Strategy](../guides/risk-based-test-strategy.md) 声明 verification level 与预计命令。
 - 若任务同时涉及项目规则入口或文档治理边界，先读 `../guides/project-instruction-layering-guide.md`。
 - 先读 [Directory Structure](./directory-structure.md)，确认文件放在哪个 feature slice。
 - 涉及设置页 / 偏好列表 / 表单型管理 UI 时，先读 [Preference Settings UI / UX Guide](../../../docs/ui-ux/preference-settings-ui-guide.md)。

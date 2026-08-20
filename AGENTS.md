@@ -99,6 +99,12 @@ Keep this managed block so 'trellis update' can refresh the instructions.
 - 任何代码、配置、规范落盘前，先给出 `PLAN` 或等价 OpenSpec artifact。
 - 若任务已进入 OpenSpec workflow，则以 OpenSpec artifact 作为 plan 载体。
 
+### Risk-Based Test Gate
+
+- 本地验证必须按 `.trellis/spec/guides/risk-based-test-strategy.md` 依据影响面选择 L0–L3；禁止把 `npm run test` / `cargo test` 全量执行作为所有改动的默认前置条件。
+- 每次交付必须报告 verification level、判定理由、实际命令与未覆盖范围。
+- L4 全量测试、跨平台 build 与 smoke test 由 Release/CI 承担；用户明确要求全量时例外。
+
 ### Engine Onboarding Gate
 
 - 接入新 CLI engine（或恢复/变更既有 engine 的接入面）前，必读 `docs/research/mossx-multi-cli-provider-session-foundation-design.md`（基石设计）与 `docs/research/mossx-new-cli-onboarding-guide.md`（全量接入点核对矩阵）。

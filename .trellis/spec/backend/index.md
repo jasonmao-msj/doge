@@ -33,6 +33,7 @@
 
 ## Pre-Development Checklist
 
+- 所有实现任务先按 [Risk-Based Test Strategy](../guides/risk-based-test-strategy.md) 声明 verification level 与预计命令。
 - 若任务同时涉及项目规则入口或文档治理边界，先读 `../guides/project-instruction-layering-guide.md`。
 - 新增 `#[tauri::command]` 前先核对是否已有近似 command。
 - 涉及文件写入时，先阅读 `storage.rs` 的 lock + atomic write 模式。
