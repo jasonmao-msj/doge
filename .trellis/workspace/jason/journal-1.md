@@ -1040,3 +1040,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 32: 收口账号订阅额度与引擎默认流程
+
+**Date**: 2026-08-19
+**Task**: 收口账号订阅额度与引擎默认流程
+**Branch**: `codex/fix-account-masked-email-bootstrap`
+
+### Summary
+
+完成账号中心订阅与额度交互、账号快捷入口、托管引擎默认配置、额度请求刷新回归测试及跨层 contract 更新；排除 Trellis 执行中间文档，不纳入代码提交。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6e649e5ac` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
