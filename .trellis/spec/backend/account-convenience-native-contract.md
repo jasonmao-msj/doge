@@ -255,6 +255,7 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 ### 2. Signatures
 
 - Native facade：`account_engine_v1_toolchain(engine_id, choice?) -> { status, bundledVersion, externalVersion, selectedSource }`；closed `choice` 只允许 `bundled | external`。
+- Native activation：`account_engine_v1_activate(engine_id) -> Result<(), String>`；closed `engine_id` 只允许 `codex | claude-code`。renderer 通过 `activateAccountEngineV1(engineId)` 调用，payload 只含 camelCase `engineId`。
 - Build manifest：pinned official URL、version、target/arch、SHA-256、relative executable；generated runtime manifest 不含下载 URL。
 - Account mutation 保持 `account_engine_v1_prepare(engine_id, operation_id)`；toolchain resolution 不进入 Authority receipt、secret scope 或 account SQLite。
 
@@ -264,6 +265,8 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 - 最终 build stage 必须位于 generated output 同一 parent volume，再用 atomic rename commit；Windows runner 常见 `TEMP=C:`、workspace=`D:`，禁止从 OS temp 直接 rename 到 workspace。
 - 无 external 时选 bundled；external version `>= bundled` 时静默选 external；external `< bundled` 时要求一次 closed choice。bundled choice 不得覆盖/卸载 external；external choice必须通过 protocol verifier。
 - renderer 不接收 executable absolute path、archive URL、command preview、stdout/stderr；只接收 closed status/source/version。版本选择 generation 失效后不得 prepare/activate stale target。
+- `account_engine_v1_toolchain` 通过 manifest/path/`--version` verification 后，才可将 selected binary 写入当前进程 `AccountRuntime.managed_engine_binaries`。`account_engine_v1_activate` 必须只读取同一 closed engine id 的该 mapping，重新调用 `EngineManager::refresh_engine_status_for_binary`，成功后调用 `set_active_engine_after_account_toolchain_verification`；不得将 renderer 提供的路径写入 global config，也不得依赖可被后台 PATH/config detection 覆盖的 `engine_statuses` cache。
+- Tauri `beforeDevCommand` 必须先执行 `prepare:bundled-engines`。debug `resource_dir/bundled-engines/current` 必须是 prepared source 的 independent real tree；不得使用指向 source 的 symlink。Tauri 后续 resources copy 会跟随 symlink，将 source/destination 解析为同一文件并截断 bundled manifest/binaries。空或非法 runtime manifest 必须阻断 frontend/native startup。
 - Codex bundled sibling resources/PATH 必须随 launch 保留；Claude 使用 standalone executable。managed session 使用 resolver path，manual/local engine path 保持原行为。
 - Claude selected binary MUST 只写 `ClaudeSessionManager.provider_configs["doge-token-matrix"]`；禁止写 `EngineManager.engine_configs[Claude]` 或覆盖 `default_config`。普通 turn、manual compact 与 provider continuation 都通过 provider-scoped session 取得该 path；daemon send/compact 对 account provider fail closed。
 - Windows configuration existing target 必须在 recovery journal 管理下 staged replace + verify；access denied、sharing violation、unsafe target、rollback incomplete 分开映射。NSIS 明确 `installMode=currentUser`。
@@ -280,6 +283,9 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 | bundled Claude selected、local Claude 已配置 | account provider 使用 bundled；local/manual provider 继续使用用户 path |
 | remembered 版本组合不变 | 不重复提示 |
 | bundled checksum/version/文件不符 | build fail closed，不产出安装包 |
+| dev source 缺失、manifest 为空或非法 | `prepare:bundled-engines` 失败并阻断 Vite/Tauri 启动 |
+| legacy debug resource 为 source symlink | 启动前替换为 independent copied tree，source 保持完整 |
+| toolchain 已验证、global Codex/Claude cache 后续变为 unavailable | `account_engine_v1_activate` 仍可设置 active engine；无 verified mapping 的普通 switch 保持 installed check |
 | Windows temp/workspace 跨卷 | stage 位于 output sibling，same-volume rename 成功且不残留 partial output |
 | Windows 已有 `.doge/config.json` | 普通用户 staged replacement成功；不需管理员 |
 | Windows target 被锁/ACL拒绝 | typed recoverable failure；保留 journal，不假 ready |
@@ -293,6 +299,31 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 - Build script：pinned URL/checksum、cache corruption recovery、archive traversal/expected executable、same-volume output stage、macOS nested signing order、Windows resource inclusion。
 - Rust configuration：Windows replacement helper contract、write/verify/rollback、error classifier；Windows CI 使用 standard-user account执行 focused test。
 - Packaging：tauri Windows config/produced installer证明 `currentUser`，普通双击安装/启动后完成 Codex/Claude prepare；管理员运行不作为验收证据。
+- Dev resources：`scripts/tauri-dev-resources.test.mjs` MUST 覆盖 full tree staging、stale replacement、legacy symlink replacement、missing/invalid manifest rejection；在 macOS debug tree 运行 Codex/Claude `--version` 作为 actual binary evidence。
+- Activation boundary：`src/services/tauri/accountEngine.test.ts` MUST 锁定 `account_engine_v1_activate` + `{ engineId }`；`src/services/accountEngineActivation.test.ts` MUST 锁定 AccountGate 使用 account-scoped command；`EngineManager` Rust test MUST 证明 verified activation ignores unavailable global status。
+
+### 6. Good / Base / Bad Cases
+
+- Good：`beforeDevCommand -> prepare:bundled-engines -> tauri-dev-resources` 形成 independent debug tree；toolchain verified mapping 后，`account_engine_v1_activate("codex")` 复验 binary 并设置 active engine。
+- Base：global detection 把用户 PATH 的 Codex 标记 unavailable；未进入 account gate 的普通 `switch_engine` 仍拒绝该 engine。
+- Bad：debug staging 使用 `symlink(source, destination)`；Tauri resource copy 将 bundled manifest 和 binaries 写成 0 byte。
+- Bad：renderer 调用 generic `switch_engine` 来完成账号激活；全局 `engine_statuses` cache 可覆盖 toolchain verification 结果。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+await switchEngine(engineId === "claude-code" ? "claude" : "codex");
+```
+
+#### Correct
+
+```ts
+await invoke("account_engine_v1_activate", { engineId });
+```
+
+Native command 只接受 closed engine id，并从本进程已经验证的 account mapping 取得 binary；renderer 永远不传递 executable path。
 
 异常、恢复与latency scenario由`AccountLab`/Vitest选择；产品页面只呈现用户任务和自然交互。
 

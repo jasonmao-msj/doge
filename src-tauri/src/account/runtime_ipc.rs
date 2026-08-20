@@ -247,6 +247,40 @@ pub(crate) async fn account_engine_v1_toolchain(
     Ok(json!({ "ok": true, "value": resolution }))
 }
 
+#[tauri::command]
+pub(crate) async fn account_engine_v1_activate(
+    engine_id: String,
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<(), String> {
+    require_main_account_window(&window)?;
+    let (managed_engine_id, engine_type) = match engine_id.as_str() {
+        "codex" => ("codex", crate::engine::EngineType::Codex),
+        "claude-code" => ("claude-code", crate::engine::EngineType::Claude),
+        _ => return Err("Account engine activation was rejected".to_string()),
+    };
+    let Some(binary) = state
+        .account_runtime
+        .managed_engine_binary_for_launch(managed_engine_id)
+        .await
+    else {
+        return Err("Account engine activation requires verified toolchain".to_string());
+    };
+
+    let verified = state
+        .engine_manager
+        .refresh_engine_status_for_binary(engine_type, &binary)
+        .await;
+    if !verified.installed {
+        return Err("Account engine verification failed".to_string());
+    }
+    state
+        .engine_manager
+        .set_active_engine_after_account_toolchain_verification(engine_type)
+        .await;
+    Ok(())
+}
+
 pub(super) fn require_main_account_window(window: &tauri::Window) -> Result<(), String> {
     if window.label() == "main" {
         Ok(())

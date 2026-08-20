@@ -84,6 +84,9 @@ React Component
     logout、account switch 或外部清理改变，显式 managed transition 必须在创建 Session/
     Continuation 前通过 native owner 重新校验或幂等 prepare，禁止拿内存 `prepared` snapshot
     直接放行 Runtime launch。
+26. Tauri debug resource 若也被 bundle resources copy 消费，staging destination 必须是与 source
+    独立的 real tree，禁止 symlink。启动前验证 generated manifest 非空且合法；否则后续 copy
+    可能把 source/destination 解析为同一文件并截断 runtime resource。
 
 ## 常见失败模式
 

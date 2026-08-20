@@ -597,6 +597,7 @@ function AccountAppGateInner({
             <>
               <CircleAlert aria-hidden />
               <h1>{copy.gatePreparationFailed}</h1>
+              <GateInlineFailure copy={copy} code={failure} />
               <button className="account-gate-primary" type="button" onClick={() => void prepare(selectedEngine)}>{copy.retry}</button>
             </>
           ) : (

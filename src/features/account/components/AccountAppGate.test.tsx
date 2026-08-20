@@ -151,6 +151,27 @@ describe("AccountAppGate", () => {
     expect(client.prepare).toHaveBeenCalledWith("codex");
   });
 
+  it("shows a recoverable bundled-engine failure and retries toolchain inspection", async () => {
+    const client = engineClient({ codexEntitled: true });
+    vi.mocked(resolveAccountEngineToolchainV1).mockResolvedValue({
+      ok: false,
+      error: { code: "engineBundleUnavailable" },
+    });
+    render(<AccountAppGate gateway={authenticatedGateway()} engineClient={client} engineActivator={async () => undefined} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Codex/ }));
+
+    expect(await screen.findByRole("heading", { name: "准备没有完成" })).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toContain("内置引擎暂时不可用");
+    expect(client.prepare).not.toHaveBeenCalled();
+
+    const inspectionsBeforeRetry = vi.mocked(resolveAccountEngineToolchainV1).mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    await waitFor(() => expect(resolveAccountEngineToolchainV1).toHaveBeenCalledTimes(
+      inspectionsBeforeRetry + 1,
+    ));
+  });
+
   it("shows exactly the server plans when the engine has no entitlement", async () => {
     const client = engineClient({ codexEntitled: false });
     render(<AccountAppGate gateway={authenticatedGateway()} engineClient={client} engineActivator={async () => undefined} readyContent={<div>主应用已挂载</div>} />);
