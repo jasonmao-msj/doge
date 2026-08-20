@@ -4,6 +4,11 @@ import {
   type CodingPlanQuotaSnapshot,
 } from "../../../services/tauri";
 import type { SessionQuotaTarget } from "../utils/sessionQuotaTargets";
+import {
+  isManagedAccountQuotaTarget,
+  loadManagedAccountQuotaSnapshots,
+  TOKEN_MATRIX_UNAVAILABLE_MESSAGE,
+} from "../utils/managedAccountQuota";
 
 export type SessionQuotaListEntry = {
   target: SessionQuotaTarget;
@@ -57,8 +62,12 @@ export function useSessionQuotaList({
       return next;
     });
 
-    const results = await Promise.all(
-      targets.map(async (target) => {
+    const managedTargets = targets.filter(isManagedAccountQuotaTarget);
+    const localOrProviderTargets = targets.filter(
+      (target) => !isManagedAccountQuotaTarget(target),
+    );
+    const localOrProviderPromise = Promise.all(
+      localOrProviderTargets.map(async (target) => {
         try {
           const snapshot = await getCodingPlanQuota(
             target.engine,
@@ -81,6 +90,37 @@ export function useSessionQuotaList({
         }
       }),
     );
+    const managedPromise =
+      managedTargets.length === 0
+        ? Promise.resolve([])
+        : loadManagedAccountQuotaSnapshots(managedTargets)
+            .then((results) =>
+              results.map((result) => ({
+                target: result.target,
+                snapshot: result.snapshot,
+                error: result.snapshot.success
+                  ? null
+                  : (result.snapshot.error ?? TOKEN_MATRIX_UNAVAILABLE_MESSAGE),
+              })),
+            )
+            .catch(() =>
+              managedTargets.map((target) => ({
+                target,
+                snapshot: {
+                  source: "token_matrix",
+                  success: false,
+                  error: TOKEN_MATRIX_UNAVAILABLE_MESSAGE,
+                  windows: [],
+                  queriedAt: Date.now(),
+                } satisfies CodingPlanQuotaSnapshot,
+                error: TOKEN_MATRIX_UNAVAILABLE_MESSAGE,
+              })),
+            );
+    const [localOrProviderResults, managedResults] = await Promise.all([
+      localOrProviderPromise,
+      managedPromise,
+    ]);
+    const results = [...localOrProviderResults, ...managedResults];
 
     if (gen !== requestGenRef.current) {
       return;

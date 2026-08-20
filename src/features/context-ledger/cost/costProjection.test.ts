@@ -35,6 +35,8 @@ const usage: ThreadTokenUsage = {
   modelContextWindow: 200_000,
 };
 
+const FRESH_FIXTURE_NOW = new Date("2026-05-20T00:00:00.000Z");
+
 describe("context ledger cost projection", () => {
   it("projects turn cost from ThreadTokenUsage and embeds pricing source metadata", () => {
     const record = projectCostRecord({
@@ -42,6 +44,7 @@ describe("context ledger cost projection", () => {
       model: "gpt-5.4",
       usage,
       scope: "turn",
+      pricingOptions: { now: FRESH_FIXTURE_NOW },
     });
 
     expect(record.amountUsd).toBeCloseTo(0.01455, 6);
@@ -75,6 +78,7 @@ describe("context ledger cost projection", () => {
         model: "gemini-2.5-flash",
         usage,
         scope: "turn",
+        pricingOptions: { now: FRESH_FIXTURE_NOW },
       }),
       projectCostRecord({
         engine: "opencode",

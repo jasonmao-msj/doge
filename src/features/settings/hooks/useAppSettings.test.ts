@@ -39,7 +39,8 @@ vi.mock("../../../services/tauri", () => ({
 }));
 
 vi.mock("../../theme/utils/dockIcon", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../theme/utils/dockIcon")>();
+  const actual =
+    await importOriginal<typeof import("../../theme/utils/dockIcon")>();
   return {
     ...actual,
     applyDockIconPreference: vi.fn(async () => undefined),
@@ -126,7 +127,11 @@ describe("useAppSettings", () => {
     expect(result.current.settings.codexUnifiedExecPolicy).toBe("inherit");
     expect(result.current.settings.backendMode).toBe("remote");
     expect(result.current.settings.remoteBackendHost).toBe("example:1234");
-    expect(result.current.settings.disabledCliEngines).toEqual([]);
+    expect(result.current.settings.disabledCliEngines).toEqual([
+      "grok",
+      "kimi",
+      "opencode",
+    ]);
     expect(result.current.settings.claudeBin).toBeNull();
     expect(result.current.settings.codexAutoCompactionEnabled).toBe(true);
     expect(result.current.settings.codexAutoCompactionThresholdPercent).toBe(
@@ -239,9 +244,7 @@ describe("useAppSettings", () => {
     const { result } = renderHook(() => useAppSettings());
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    await waitFor(() =>
-      expect(pushErrorToastMock).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(pushErrorToastMock).toHaveBeenCalledTimes(1));
 
     expect(takeSettingsRecoveryNoticeMock).toHaveBeenCalledTimes(1);
     expect(pushErrorToastMock).toHaveBeenCalledWith(
@@ -271,9 +274,7 @@ describe("useAppSettings", () => {
     const { result } = renderHook(() => useAppSettings());
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    await waitFor(() =>
-      expect(pushErrorToastMock).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(pushErrorToastMock).toHaveBeenCalledTimes(1));
 
     const toast = pushErrorToastMock.mock.calls[0]?.[0];
     expect(toast?.message).toEqual(expect.any(String));
@@ -620,7 +621,11 @@ describe("useAppSettings", () => {
       DEFAULT_CODE_FONT_FAMILY,
     );
     expect(result.current.settings.backendMode).toBe("local");
-    expect(result.current.settings.disabledCliEngines).toEqual([]);
+    expect(result.current.settings.disabledCliEngines).toEqual([
+      "grok",
+      "kimi",
+      "opencode",
+    ]);
     expect(result.current.settings.dictationModelId).toBe("base");
     expect(result.current.settings.interruptShortcut).toBeTruthy();
     expect(result.current.settings.performanceCompatibilityModeEnabled).toBe(

@@ -2,6 +2,9 @@ import type { EngineType } from "../../../types";
 import type { ExecutionTarget } from "../../shared-session/target/types";
 import { isSharedSessionSupportedEngine } from "../../shared-session/utils/sharedSessionEngines";
 import {
+  isManagedProviderProfileIdV1,
+} from "../../account/runtime/engineEntitlementStore";
+import {
   CLAUDE_LOCAL_PROVIDER_PROFILE_ID,
   CODEX_DISK_PROVIDER_PROFILE_ID,
   GROK_LOCAL_PROVIDER_PROFILE_ID,
@@ -17,6 +20,7 @@ import {
 export type CreationTargetModelLike = {
   id: string;
   model?: string | null;
+  providerProfileId?: string | null;
   isDefault?: boolean;
 };
 
@@ -46,6 +50,8 @@ export function resolveDefaultCreationExecutionTarget(input: {
   selectedModelId: string | null | undefined;
   selectedEffort?: string | null;
   providerProfileId?: string | null;
+  /** Explicitly mark a provider-scoped refresh as unavailable. */
+  providerCatalogAvailable?: boolean;
   models: readonly CreationTargetModelLike[];
 }): ExecutionTarget | null {
   if (!input.enabled) {
@@ -57,7 +63,23 @@ export function resolveDefaultCreationExecutionTarget(input: {
   }
 
   const requestedId = input.selectedModelId?.trim() || "";
-  const models = input.models;
+  const rawProviderProfileId = input.providerProfileId?.trim() || null;
+  const isManaged = isManagedProviderProfileIdV1(rawProviderProfileId);
+  if (isManaged && input.providerCatalogAvailable === false) {
+    return null;
+  }
+  // Managed targets may only consume rows explicitly stamped with their own
+  // provider identity. An untagged row is not enough evidence that it came
+  // from the provider-scoped request and may be a disk/global row.
+  const models = isManaged
+    ? input.models.filter((candidate) => {
+        const candidateProvider = candidate.providerProfileId?.trim() || null;
+        return candidateProvider === rawProviderProfileId;
+      })
+    : input.models;
+  if (isManaged && models.length === 0) {
+    return null;
+  }
   const matched =
     (requestedId
       ? (models.find((candidate) => candidate.id === requestedId) ??
@@ -79,7 +101,6 @@ export function resolveDefaultCreationExecutionTarget(input: {
   }
 
   const localProfileId = LOCAL_PROFILE_IDS[engine];
-  const rawProviderProfileId = input.providerProfileId?.trim() || null;
   const isLocal =
     !rawProviderProfileId || rawProviderProfileId === localProfileId;
   const effort = input.selectedEffort?.trim() || "";

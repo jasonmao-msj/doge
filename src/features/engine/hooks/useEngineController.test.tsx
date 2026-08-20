@@ -1278,6 +1278,61 @@ describe("useEngineController", () => {
     );
   });
 
+  it("fails closed for the managed provider instead of exposing local models", async () => {
+    const localModels: EngineStatus["models"] = [
+      {
+        id: "settings-main",
+        model: "stale-local-model",
+        displayName: "Local settings",
+        description: "disk",
+        isDefault: true,
+      },
+    ];
+    detectEnginesMock.mockResolvedValue([
+      createEngineStatus("claude", true, localModels),
+    ]);
+    getActiveEngineMock.mockResolvedValue("claude");
+    getEngineModelsMock.mockResolvedValueOnce(localModels);
+
+    const { result } = renderHook(() =>
+      useEngineController({ activeWorkspace: null }),
+    );
+    await waitFor(() => expect(result.current.isInitialized).toBe(true));
+
+    getEngineModelsMock.mockResolvedValueOnce([
+      {
+        id: "matrix-model",
+        model: "gpt-5.5-codex",
+        displayName: "Managed model",
+        description: "provider",
+        isDefault: true,
+      },
+    ]);
+    await act(async () => {
+      await result.current.refreshEngineModels("claude", {
+        providerProfileId: "doge-token-matrix",
+      });
+    });
+    expect(result.current.engineModelsAsOptions[0]).toEqual(
+      expect.objectContaining({ providerProfileId: "doge-token-matrix" }),
+    );
+
+    getEngineModelsMock.mockRejectedValueOnce(new Error("managed catalog unavailable"));
+    await act(async () => {
+      await result.current.refreshEngineModels("claude", {
+        forceRefresh: true,
+        providerProfileId: "doge-token-matrix",
+      });
+    });
+
+    expect(result.current.engineModelsAsOptions).toEqual([]);
+    expect(
+      result.current.engineModelsAsOptions.some(
+        (model) => model.model === "stale-local-model",
+      ),
+    ).toBe(false);
+  });
+
   it("preserves model state identity when a refresh is semantically unchanged", async () => {
     const models: EngineStatus["models"] = [
       {

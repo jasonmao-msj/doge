@@ -18,7 +18,7 @@ export type AccountAuthSurfaceV1 =
   | "resetRequested"
   | "resetPassword";
 
-export type AccountCenterTabV1 = "overview" | "usage" | "security";
+export type AccountCenterTabV1 = "subscription" | "usage";
 
 export type AccountConfigurationSurfaceV1 = {
   readonly open: boolean;

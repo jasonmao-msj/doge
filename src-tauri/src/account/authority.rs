@@ -140,6 +140,37 @@ pub(crate) struct SubscriptionUsageWindowWire {
 }
 
 #[derive(Clone, Debug, Default, Deserialize)]
+pub(crate) struct SubscriptionSummaryWire {
+    #[serde(default)]
+    pub(crate) subscriptions: Vec<SubscriptionSummaryItemWire>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub(crate) struct SubscriptionSummaryItemWire {
+    #[serde(default)]
+    pub(crate) id: i64,
+    #[serde(default)]
+    pub(crate) group_id: i64,
+    #[serde(default)]
+    pub(crate) group_name: String,
+    #[serde(default)]
+    pub(crate) status: String,
+    #[serde(default)]
+    pub(crate) daily_used_usd: f64,
+    #[serde(default)]
+    pub(crate) daily_limit_usd: f64,
+    #[serde(default)]
+    pub(crate) weekly_used_usd: f64,
+    #[serde(default)]
+    pub(crate) weekly_limit_usd: f64,
+    #[serde(default)]
+    pub(crate) monthly_used_usd: f64,
+    #[serde(default)]
+    pub(crate) monthly_limit_usd: f64,
+    pub(crate) expires_at: Option<String>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
 pub(crate) struct UsageDashboardSnapshotWire {
     #[serde(default)]
     pub(crate) trend: Vec<UsageTrendWire>,
@@ -566,6 +597,20 @@ impl TokenMatrixAuthority {
         self.request(
             Method::GET,
             "/api/v1/subscriptions/progress",
+            None,
+            Some(access_token),
+            None,
+        )
+        .await
+    }
+
+    pub(crate) async fn subscription_summary(
+        &self,
+        access_token: &str,
+    ) -> Result<SubscriptionSummaryWire, AuthorityError> {
+        self.request(
+            Method::GET,
+            "/api/v1/subscriptions/summary",
             None,
             Some(access_token),
             None,

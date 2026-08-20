@@ -67,6 +67,7 @@ const ALLOWED_NOTIFICATION_SOUND_IDS = new Set([
 const allowedEmailSenderProviders = new Set(["126", "163", "qq", "custom"]);
 const allowedEmailSenderSecurity = new Set(["ssl_tls", "start_tls", "none"]);
 const DEFAULT_ENABLED_CURATED_SKILL_IDS = ["lazy-senior-dev", "caveman"];
+const DEFAULT_DISABLED_CLI_ENGINES = ["grok", "kimi", "opencode"];
 
 function defaultEnabledCuratedSkillIds(): string[] {
   return [...DEFAULT_ENABLED_CURATED_SKILL_IDS];
@@ -196,6 +197,9 @@ function normalizeEnabledBuiltInAgentIds(value: unknown): string[] {
 }
 
 function normalizeDisabledCliEngines(value: unknown): string[] {
+  if (value === undefined) {
+    return [...DEFAULT_DISABLED_CLI_ENGINES];
+  }
   if (!Array.isArray(value)) {
     return [];
   }
@@ -223,7 +227,7 @@ const defaultSettings: AppSettings = {
   codexBin: null,
   codexArgs: null,
   terminalShellPath: null,
-  disabledCliEngines: [],
+  disabledCliEngines: [...DEFAULT_DISABLED_CLI_ENGINES],
   sessionAttributionMode: "related",
   backendMode: "local",
   remoteBackendHost: "127.0.0.1:4732",
@@ -520,16 +524,23 @@ function normalizeAppSettings(
     },
     emailInbound: {
       enabled: inboundSettings?.enabled === true,
-      provider: inboundSettings?.provider && allowedEmailSenderProviders.has(inboundSettings.provider)
-        ? inboundSettings.provider
-        : "custom",
+      provider:
+        inboundSettings?.provider &&
+        allowedEmailSenderProviders.has(inboundSettings.provider)
+          ? inboundSettings.provider
+          : "custom",
       imapHost: inboundSettings?.imapHost?.trim() ?? "",
       imapPort: Number.isFinite(inboundSettings?.imapPort)
-        ? Math.max(1, Math.min(65535, Math.trunc(inboundSettings?.imapPort ?? 993)))
+        ? Math.max(
+            1,
+            Math.min(65535, Math.trunc(inboundSettings?.imapPort ?? 993)),
+          )
         : 993,
-      security: inboundSettings?.security && allowedEmailSenderSecurity.has(inboundSettings.security)
-        ? inboundSettings.security
-        : "ssl_tls",
+      security:
+        inboundSettings?.security &&
+        allowedEmailSenderSecurity.has(inboundSettings.security)
+          ? inboundSettings.security
+          : "ssl_tls",
       username: inboundSettings?.username?.trim() ?? "",
       mailboxFolder: inboundSettings?.mailboxFolder?.trim() || "INBOX",
       allowedSenders: Array.isArray(inboundSettings?.allowedSenders)
@@ -538,11 +549,20 @@ function normalizeAppSettings(
             .filter(Boolean)
         : [],
       pollIntervalSeconds: Number.isFinite(inboundSettings?.pollIntervalSeconds)
-        ? Math.max(10, Math.min(3600, Math.trunc(inboundSettings?.pollIntervalSeconds ?? 300)))
+        ? Math.max(
+            10,
+            Math.min(
+              3600,
+              Math.trunc(inboundSettings?.pollIntervalSeconds ?? 300),
+            ),
+          )
         : 300,
       readOnlyMode: true,
       actionWindowHours: Number.isFinite(inboundSettings?.actionWindowHours)
-        ? Math.max(1, Math.min(168, Math.trunc(inboundSettings?.actionWindowHours ?? 24)))
+        ? Math.max(
+            1,
+            Math.min(168, Math.trunc(inboundSettings?.actionWindowHours ?? 24)),
+          )
         : 24,
       debugStorageEnabled: inboundSettings?.debugStorageEnabled === true,
     },
@@ -598,8 +618,11 @@ export function useAppSettings() {
 
   useEffect(() => {
     let active = true;
-    const request = initialSettingsRequestRef.current ??=
-      traceStartupCommand("get_app_settings", "global", getAppSettings);
+    const request = (initialSettingsRequestRef.current ??= traceStartupCommand(
+      "get_app_settings",
+      "global",
+      getAppSettings,
+    ));
     void request
       .then((response) => {
         if (!active) {
@@ -621,7 +644,9 @@ export function useAppSettings() {
         setSettings(normalized);
         // The bundled default icon is already installed by native window creation.
         // Only a persisted custom choice needs a cold-start replay.
-        if (sanitizeDockIconId(normalized.dockIconId) !== DEFAULT_DOCK_ICON_ID) {
+        if (
+          sanitizeDockIconId(normalized.dockIconId) !== DEFAULT_DOCK_ICON_ID
+        ) {
           void applyDockIconPreference(normalized.dockIconId).catch((error) => {
             console.error("[useAppSettings] failed to apply dock icon", error);
           });
@@ -629,8 +654,8 @@ export function useAppSettings() {
 
         // Recovery notice is secondary startup work. Start it without awaiting,
         // so it cannot extend isLoading; the ref also deduplicates StrictMode replay.
-        const noticeRequest = recoveryNoticeRequestRef.current ??=
-          takeSettingsRecoveryNotice();
+        const noticeRequest = (recoveryNoticeRequestRef.current ??=
+          takeSettingsRecoveryNotice());
         void noticeRequest
           .then((notice) => {
             if (!active || !notice) {
@@ -697,34 +722,37 @@ export function useAppSettings() {
     };
   }, []);
 
-  const saveSettings = useCallback(async (next: AppSettings) => {
-    // Composer per-engine prefs live in an external store (composerEnginePrefsStore) so a
-    // switch-button click never re-renders the app-shell root. The backend replaces the
-    // whole settings file, so overlay the live snapshot here to keep an unrelated settings
-    // save from clobbering newer prefs on disk. Skip the overlay before the store is seeded
-    // (empty snapshot) to avoid wiping loaded prefs.
-    const snapshot = getComposerEnginePrefsSnapshot();
-    const hasSnapshot = Object.keys(snapshot).length > 0;
-    const previousDockIconId = sanitizeDockIconId(settings.dockIconId);
-    const normalized = normalizeAppSettings(
-      hasSnapshot ? { ...next, lastComposerPrefsByEngine: snapshot } : next,
-    );
-    const saved = await updateAppSettings(normalized);
-    const nextSettings = normalizeAppSettings({
-      ...defaultSettings,
-      ...saved,
-    });
-    // Avoid the whole-tree re-render when the round-trip echoed back an identical value.
-    setSettings((current) =>
-      areAppSettingsEqual(current, nextSettings) ? current : nextSettings,
-    );
-    if (sanitizeDockIconId(nextSettings.dockIconId) !== previousDockIconId) {
-      void applyDockIconPreference(nextSettings.dockIconId).catch((error) => {
-        console.error("[useAppSettings] failed to apply dock icon", error);
+  const saveSettings = useCallback(
+    async (next: AppSettings) => {
+      // Composer per-engine prefs live in an external store (composerEnginePrefsStore) so a
+      // switch-button click never re-renders the app-shell root. The backend replaces the
+      // whole settings file, so overlay the live snapshot here to keep an unrelated settings
+      // save from clobbering newer prefs on disk. Skip the overlay before the store is seeded
+      // (empty snapshot) to avoid wiping loaded prefs.
+      const snapshot = getComposerEnginePrefsSnapshot();
+      const hasSnapshot = Object.keys(snapshot).length > 0;
+      const previousDockIconId = sanitizeDockIconId(settings.dockIconId);
+      const normalized = normalizeAppSettings(
+        hasSnapshot ? { ...next, lastComposerPrefsByEngine: snapshot } : next,
+      );
+      const saved = await updateAppSettings(normalized);
+      const nextSettings = normalizeAppSettings({
+        ...defaultSettings,
+        ...saved,
       });
-    }
-    return saved;
-  }, [settings.dockIconId]);
+      // Avoid the whole-tree re-render when the round-trip echoed back an identical value.
+      setSettings((current) =>
+        areAppSettingsEqual(current, nextSettings) ? current : nextSettings,
+      );
+      if (sanitizeDockIconId(nextSettings.dockIconId) !== previousDockIconId) {
+        void applyDockIconPreference(nextSettings.dockIconId).catch((error) => {
+          console.error("[useAppSettings] failed to apply dock icon", error);
+        });
+      }
+      return saved;
+    },
+    [settings.dockIconId],
+  );
 
   const doctor = useCallback(
     async (codexBin: string | null, codexArgs: string | null) => {

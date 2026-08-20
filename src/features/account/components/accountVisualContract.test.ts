@@ -17,6 +17,14 @@ const centerSource = readFileSync(
   new URL("./AccountCenter.tsx", import.meta.url),
   "utf8",
 );
+const headerSource = readFileSync(
+  new URL("./AccountCenterHeader.tsx", import.meta.url),
+  "utf8",
+);
+const subscriptionSource = readFileSync(
+  new URL("./AccountSubscriptionPanel.tsx", import.meta.url),
+  "utf8",
+);
 const previewSource = readFileSync(
   new URL("./AccountPreviewSettingsSection.tsx", import.meta.url),
   "utf8",
@@ -63,9 +71,9 @@ describe("Account visual contract", () => {
   });
 
   it("uses the Codex engine mark and the host theme instead of mixing product identities", () => {
-    expect(centerSource).toContain('<EngineIcon engine="codex"');
-    expect(`${experienceSource}\n${centerSource}`).not.toContain("DOGE_PRODUCT_ICON_SRC");
-    expect(`${experienceSource}\n${centerSource}`).not.toContain("assets/icon.png");
+    expect(subscriptionSource).toContain('subscription.engineId === "claude-code" ? "claude" : "codex"');
+    expect(`${experienceSource}\n${centerSource}\n${subscriptionSource}`).not.toContain("DOGE_PRODUCT_ICON_SRC");
+    expect(`${experienceSource}\n${centerSource}\n${subscriptionSource}`).not.toContain("assets/icon.png");
     expect(experienceCss).not.toMatch(/--account-accent|#ca5b2e|#b64b22/);
   });
 
@@ -104,5 +112,12 @@ describe("Account visual contract", () => {
     expect(experienceCss).toContain('@media (min-width: 681px) and (max-width: 860px)');
     expect(usageSource).not.toContain("<h3>{copy.usage}</h3>");
     expect(securitySource).not.toContain("<h3>{copy.security}</h3>");
+    expect(headerSource).toContain("MoreHorizontal");
+    expect(headerSource).toContain("aria-label={copy.security}");
+    expect(headerSource).not.toContain("ShieldCheck");
+    expect(centerSource).toContain('value="subscription"');
+    expect(centerSource).not.toContain('value="security"');
+    expect(centerSource).not.toContain("account-overview-list");
+    expect(experienceCss).toContain(".account-subscription-engine-list");
   });
 });

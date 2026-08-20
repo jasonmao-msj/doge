@@ -134,9 +134,9 @@ function receiptV1() {
   } as const;
 }
 
-describe("A: IPC identity and 42 operation runtime schemas", () => {
-  it("freezes exactly 42 request/result schema pairs", () => {
-    expect(ACCOUNT_GATEWAY_OPERATION_NAMES_V1).toHaveLength(42);
+describe("A: IPC identity and 43 operation runtime schemas", () => {
+  it("freezes exactly 43 request/result schema pairs", () => {
+    expect(ACCOUNT_GATEWAY_OPERATION_NAMES_V1).toHaveLength(43);
     expect(Object.keys(ACCOUNT_IPC_OPERATION_SCHEMAS_V1)).toEqual(
       [...ACCOUNT_GATEWAY_OPERATION_NAMES_V1],
     );
@@ -333,9 +333,9 @@ describe("B2: orthogonal Account feature state", () => {
   });
 });
 
-describe("C: exact 89-scenario real payload parity", () => {
+describe("C: exact 92-scenario real payload parity", () => {
   it("freezes every ID/revision and runs Good/Base/Bad through both adapters", () => {
-    expect(ACCOUNT_CANONICAL_SCENARIO_IDS_V1).toHaveLength(89);
+    expect(ACCOUNT_CANONICAL_SCENARIO_IDS_V1).toHaveLength(92);
     expect(ACCOUNT_SCENARIO_MANIFEST_V1.scenarios.map((scenario) => scenario.id))
       .toEqual(ACCOUNT_CANONICAL_SCENARIO_IDS_V1);
     const parity = validateScenarioManifestParityV1(
@@ -345,29 +345,29 @@ describe("C: exact 89-scenario real payload parity", () => {
     expect(parity.ok, parity.ok ? undefined : JSON.stringify(parity.issues.slice(0, 10)))
       .toBe(true);
     if (parity.ok) {
-      expect(parity.value).toHaveLength(89);
+      expect(parity.value).toHaveLength(92);
       expect(parity.value.reduce((count, scenario) => count + scenario.steps.length, 0))
-        .toBe(160);
+        .toBe(163);
     }
   });
 
-  it("keeps manifest secret-free and resolves 160 private fixture references", () => {
+  it("keeps manifest secret-free and resolves 163 private fixture references", () => {
     const operations = new Set(
       ACCOUNT_SCENARIO_MANIFEST_V1.scenarios.flatMap((scenario) =>
         scenario.steps.map((step) => step.operation)),
     );
-    expect(operations.size).toBe(42);
+    expect(operations.size).toBe(43);
     expect(operations.has("managedKey.readStatus")).toBe(true);
     expect(operations.has("managedKey.listCandidates")).toBe(true);
     expect(operations.has("managedKey.selectExisting")).toBe(true);
-    expect(Object.keys(ACCOUNT_IPC_OPERATION_RUNTIME_SCHEMAS_V1)).toHaveLength(42);
+    expect(Object.keys(ACCOUNT_IPC_OPERATION_RUNTIME_SCHEMAS_V1)).toHaveLength(43);
     const serializedManifest = JSON.stringify(ACCOUNT_SCENARIO_MANIFEST_V1);
     expect(serializedManifest).not.toMatch(/synthetic-transient-input|totp-(?:svg|manual)|@example\.invalid/i);
     expect(serializedManifest).not.toContain('"request":');
     expect(serializedManifest).not.toContain('"result":');
     expect(serializedManifest).not.toContain('"event":');
     expect(ACCOUNT_SCENARIO_MANIFEST_V1.scenarios
-      .reduce((count, scenario) => count + scenario.steps.length, 0)).toBe(160);
+      .reduce((count, scenario) => count + scenario.steps.length, 0)).toBe(163);
     for (const scenario of ACCOUNT_SCENARIO_MANIFEST_V1.scenarios) {
       for (const step of scenario.steps) {
         for (const fixtureClass of ["Good", "Base", "Bad"] as const) {

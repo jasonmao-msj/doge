@@ -16,6 +16,8 @@ const windowsQuota: SessionOverviewQuotaView = {
       displayPercent: 42,
       usedPercent: 42,
       resetsAt: null,
+      usedAmount: null,
+      limitAmount: null,
     },
   ],
   creditsBalance: null,
@@ -63,9 +65,8 @@ const sub2apiQuota: SessionOverviewQuotaView = {
 
 describe("formatCompactTokenCount", () => {
   it("uses B for billion-scale tokens", async () => {
-    const { formatCompactTokenCount } = await import(
-      "./SessionControlQuotaPane"
-    );
+    const { formatCompactTokenCount } =
+      await import("./SessionControlQuotaPane");
     expect(formatCompactTokenCount(2_419_000_000)).toMatch(/2\.42B|2\.4B/);
     expect(formatCompactTokenCount(6608)).toBe("6.6K");
   });

@@ -35,6 +35,7 @@ import { SidebarTopbarSlot } from "./SidebarTopbarSlot";
 import { SidebarVersionTag } from "./SidebarVersionTag";
 import { SidebarWorkspaceDropOverlay } from "./SidebarWorkspaceDropOverlay";
 import { SidebarWorkspaceMenuOverlay } from "./SidebarWorkspaceMenuOverlay";
+import { AccountSidebarShortcut } from "../../account/components/AccountSidebarShortcut";
 import {
   SidebarWorkspaceSortableList,
   type SidebarWorkspaceDragChrome,
@@ -165,6 +166,8 @@ type SidebarProps = {
   onCancelSwitchAccount: () => void;
   accountSwitching: boolean;
   onOpenSettings: () => void;
+  /** Optional because Local Mode / feature-disabled hosts do not expose Account. */
+  onOpenAccount?: () => void;
   onOpenDebug: () => void;
   showDebugButton?: boolean;
   showTerminalButton?: boolean;
@@ -309,6 +312,7 @@ function SidebarImpl({
   onCancelSwitchAccount: _onCancelSwitchAccount,
   accountSwitching: _accountSwitching,
   onOpenSettings,
+  onOpenAccount,
   onOpenDebug: _onOpenDebug,
   showTerminalButton: _showTerminalButton,
   isTerminalOpen: _isTerminalOpen,
@@ -2427,6 +2431,9 @@ function SidebarImpl({
             </div>
           </ScrollArea>
           <div className="sidebar-bottom-nav">
+            {onOpenAccount ? (
+              <AccountSidebarShortcut onOpenAccount={onOpenAccount} />
+            ) : null}
             <SidebarSettingsMenu
               isOpen={isSettingsMenuOpen}
               appMode={appMode}

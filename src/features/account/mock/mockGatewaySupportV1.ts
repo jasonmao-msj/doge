@@ -102,7 +102,12 @@ export function stageForOperationV1(
     return "reset";
   if (operation === "auth.logout") return "logout";
   if (operation.startsWith("profile.")) return "security";
-  if (operation === "usage.read" || operation === "usage.readDayModels") return "usage";
+  if (
+    operation === "usage.read" ||
+    operation === "usage.readDayModels" ||
+    operation === "subscription.read"
+  )
+    return "usage";
   if (operation.startsWith("managedKey.")) return "managedKey";
   if (
     operation === "configuration.createPlan" ||

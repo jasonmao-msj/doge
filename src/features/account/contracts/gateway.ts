@@ -9,6 +9,7 @@ import type {
   ConfigPlanHandleV1,
   ConfigResultHandleV1,
   ExternalIntentHandleV1,
+  AccountSubscriptionSummaryViewV1,
   GatewayIntentIdV1,
   GatewayResultV1,
   HumanVerificationHandleV1,
@@ -56,6 +57,7 @@ export const ACCOUNT_GATEWAY_OPERATION_NAMES_V1 = [
   "profile.revokeAllSessions",
   "usage.read",
   "usage.readDayModels",
+  "subscription.read",
   "managedKey.readStatus",
   "managedKey.listCandidates",
   "managedKey.selectExisting",
@@ -493,6 +495,13 @@ export interface AccountUsagePortV1 {
   }, context: GatewayReadContextV1): Promise<GatewayResultV1<UsageDayModelsViewV1>>;
 }
 
+export interface AccountSubscriptionPortV1 {
+  /** Pull-only compact facts. Call only for an open subscription surface. */
+  read(
+    context: GatewayReadContextV1,
+  ): Promise<GatewayResultV1<AccountSubscriptionSummaryViewV1>>;
+}
+
 export interface AccountManagedKeyPortV1 {
   readStatus(input: {
     readonly recipeId: "doge.account.codex-token-service";
@@ -562,6 +571,7 @@ export interface AccountGatewayV1 {
   readonly auth: AccountAuthPortV1;
   readonly profile: AccountProfilePortV1;
   readonly usage: AccountUsagePortV1;
+  readonly subscription: AccountSubscriptionPortV1;
   readonly managedKey: AccountManagedKeyPortV1;
   readonly configuration: AccountConfigurationPortV1;
 }

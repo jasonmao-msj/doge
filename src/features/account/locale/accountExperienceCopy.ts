@@ -9,7 +9,8 @@ export const accountExperienceCopyV1 = {
     retrying: "正在重试",
     retryAgain: "再次重试",
     accountTitle: "Doge 账号",
-    accountDescription: "登录后可快捷接入 Token 服务、查看额度，并一键配置 Codex。",
+    accountDescription:
+      "登录后可快捷接入 Token 服务、查看额度，并一键配置 Codex。",
     login: "登录",
     register: "注册",
     recover: "找回密码",
@@ -49,6 +50,7 @@ export const accountExperienceCopyV1 = {
     signedInAs: "已连接 Token 服务",
     accountCenter: "账号中心",
     overview: "概览",
+    subscription: "订阅",
     usage: "额度",
     security: "安全",
     profile: "账号资料",
@@ -105,16 +107,19 @@ export const accountExperienceCopyV1 = {
     passwordChanged: "密码已修改，请重新登录。",
     passwordMismatch: "两次输入的新密码不一致。",
     configureTitle: "一键配置 Codex",
-    configureBody: "Doge 已准备好安全配置方案。确认后会自动写入，并保留你未冲突的现有设置。",
+    configureBody:
+      "Doge 已准备好安全配置方案。确认后会自动写入，并保留你未冲突的现有设置。",
     selectApiKeyTitle: "选择 API Key",
-    selectApiKeyHelp: "选择 Token Matrix 账号中已有的 API Key。这里只显示名称和前缀，Key 内容不会出现在页面上。",
+    selectApiKeyHelp:
+      "选择 Token Matrix 账号中已有的 API Key。这里只显示名称和前缀，Key 内容不会出现在页面上。",
     loadingApiKeys: "正在读取 API Key…",
     refreshApiKeys: "刷新",
     openTokenMatrix: "前往 Token Matrix 创建",
     useSelectedApiKey: "使用此 API Key",
     selectingApiKey: "正在安全绑定…",
     apiKeyUnavailable: "暂不可用于一键配置",
-    provisionCredentialBody: "先创建一枚只给 Codex 使用的专用凭据，并安全保存到系统凭据库。这一步不会修改任何配置文件。",
+    provisionCredentialBody:
+      "先创建一枚只给 Codex 使用的专用凭据，并安全保存到系统凭据库。这一步不会修改任何配置文件。",
     provisionCredential: "同意创建 Codex 专用凭据",
     provisioningCredential: "正在创建专用凭据…",
     changedFiles: "将修改的文件",
@@ -149,9 +154,11 @@ export const accountExperienceCopyV1 = {
     dismissConfiguration: "不再提示 Codex 配置",
     configureCodexAction: "配置 Codex",
     logoutAllConfirmTitle: "退出所有设备？",
-    logoutAllConfirmBody: "所有设备上的 Token 服务登录都会失效，需要重新登录。Doge 的本地功能不受影响。",
+    logoutAllConfirmBody:
+      "所有设备上的 Token 服务登录都会失效，需要重新登录。Doge 的本地功能不受影响。",
     revokeCredentialConfirmTitle: "移除 Codex API Key？",
-    revokeCredentialConfirmBody: "只会移除本机保存的凭据，Token Matrix 中的 API Key 不会被删除。现有 Codex 配置需要重新选择 Key 后才能继续使用。",
+    revokeCredentialConfirmBody:
+      "只会移除本机保存的凭据，Token Matrix 中的 API Key 不会被删除。现有 Codex 配置需要重新选择 Key 后才能继续使用。",
     confirmLogoutAll: "退出所有设备",
     confirmRevokeCredential: "撤销凭据",
     fileApplied: "已修改",
@@ -211,7 +218,8 @@ export const accountExperienceCopyV1 = {
     retrying: "Retrying",
     retryAgain: "Retry again",
     accountTitle: "Doge Account",
-    accountDescription: "Sign in for Token service setup, on-demand quota, and one-click Codex configuration.",
+    accountDescription:
+      "Sign in for Token service setup, on-demand quota, and one-click Codex configuration.",
     login: "Sign in",
     register: "Register",
     recover: "Recover password",
@@ -227,9 +235,11 @@ export const accountExperienceCopyV1 = {
     submitRegister: "Create account",
     sendReset: "Send recovery email",
     resetRequestedTitle: "Check your email",
-    resetRequestedBody: "If the account exists, recovery instructions have been sent.",
+    resetRequestedBody:
+      "If the account exists, recovery instructions have been sent.",
     resetPasswordTitle: "Set a new password",
-    resetPasswordBody: "The recovery link returned safely to Doge. Sign in again after setting a new password.",
+    resetPasswordBody:
+      "The recovery link returned safely to Doge. Sign in again after setting a new password.",
     resetPasswordAction: "Reset password",
     retryResetLink: "Retry recovery link",
     verificationTitle: "Verify email",
@@ -243,14 +253,18 @@ export const accountExperienceCopyV1 = {
     oauthWaitingTitle: "Continue in your browser",
     oauthWaitingBody: "Return to Doge after authorization.",
     oauthCompletionTitle: "Finish account connection",
-    oauthCompletionBody: "The Token service needs a little more information before sign-in can finish.",
-    oauthBindConfirmation: "I confirm linking this sign-in method to the current account",
+    oauthCompletionBody:
+      "The Token service needs a little more information before sign-in can finish.",
+    oauthBindConfirmation:
+      "I confirm linking this sign-in method to the current account",
     checkOAuth: "I finished authorization",
     cancel: "Cancel",
-    safeFailure: "The operation did not complete. Follow the recovery hint and retry.",
+    safeFailure:
+      "The operation did not complete. Follow the recovery hint and retry.",
     signedInAs: "Token service connected",
     accountCenter: "Account center",
     overview: "Overview",
+    subscription: "Subscriptions",
     usage: "Quota",
     security: "Security",
     profile: "Profile",
@@ -261,7 +275,8 @@ export const accountExperienceCopyV1 = {
     remaining: "Remaining",
     used: "Used",
     resetsAt: "Resets",
-    usageUnavailable: "Quota is unavailable right now. Local features are unaffected.",
+    usageUnavailable:
+      "Quota is unavailable right now. Local features are unaffected.",
     usageEmpty: "Use the action above to fetch current quota",
     usageToday: "Today",
     usageWeek: "This week",
@@ -307,16 +322,19 @@ export const accountExperienceCopyV1 = {
     passwordChanged: "Password changed. Sign in again.",
     passwordMismatch: "The new passwords do not match.",
     configureTitle: "Configure Codex in one click",
-    configureBody: "Doge prepared a safe configuration plan. Confirm to write it automatically while preserving unrelated settings.",
+    configureBody:
+      "Doge prepared a safe configuration plan. Confirm to write it automatically while preserving unrelated settings.",
     selectApiKeyTitle: "Choose an API Key",
-    selectApiKeyHelp: "Choose an existing API Key from your Token Matrix account. Only its name and prefix appear here; the key itself never enters the page.",
+    selectApiKeyHelp:
+      "Choose an existing API Key from your Token Matrix account. Only its name and prefix appear here; the key itself never enters the page.",
     loadingApiKeys: "Reading API Keys…",
     refreshApiKeys: "Refresh",
     openTokenMatrix: "Create one in Token Matrix",
     useSelectedApiKey: "Use this API Key",
     selectingApiKey: "Binding securely…",
     apiKeyUnavailable: "Unavailable for one-click setup",
-    provisionCredentialBody: "First create a credential dedicated to Codex and secure it in the operating system vault. This step does not change any configuration file.",
+    provisionCredentialBody:
+      "First create a credential dedicated to Codex and secure it in the operating system vault. This step does not change any configuration file.",
     provisionCredential: "Agree to create a dedicated Codex credential",
     provisioningCredential: "Creating dedicated credential…",
     changedFiles: "Files to change",
@@ -351,9 +369,11 @@ export const accountExperienceCopyV1 = {
     dismissConfiguration: "Stop showing Codex configuration",
     configureCodexAction: "Configure Codex",
     logoutAllConfirmTitle: "Sign out everywhere?",
-    logoutAllConfirmBody: "Token service sessions on every device will end and require sign-in again. Doge local features remain available.",
+    logoutAllConfirmBody:
+      "Token service sessions on every device will end and require sign-in again. Doge local features remain available.",
     revokeCredentialConfirmTitle: "Remove the Codex API Key?",
-    revokeCredentialConfirmBody: "This only removes the credential saved on this device. The API Key remains in Token Matrix; choose a key again before Codex can use the Token service.",
+    revokeCredentialConfirmBody:
+      "This only removes the credential saved on this device. The API Key remains in Token Matrix; choose a key again before Codex can use the Token service.",
     confirmLogoutAll: "Sign out everywhere",
     confirmRevokeCredential: "Revoke credential",
     fileApplied: "Changed",
@@ -361,7 +381,8 @@ export const accountExperienceCopyV1 = {
     fileRolledBack: "Rolled back",
     fileFailed: "Needs attention",
     close: "Close",
-    localModeNote: "Doge remains fully usable without signing in. This page adds optional conveniences.",
+    localModeNote:
+      "Doge remains fully usable without signing in. This page adds optional conveniences.",
     gateConnecting: "Connecting",
     gateConfirmingServices: "Checking available services",
     gatePreparationFailed: "Setup did not finish",
@@ -370,7 +391,8 @@ export const accountExperienceCopyV1 = {
     gateUseBundledVersion: "Use Doge version {version}",
     gateKeepExternalVersion: "Keep existing version {version}",
     gateChooseEngine: "Choose an engine",
-    gateEngineHelp: "You can switch later in Settings. Doge handles subscription checks and setup automatically.",
+    gateEngineHelp:
+      "You can switch later in Settings. Doge handles subscription checks and setup automatically.",
     gateAvailable: "Available",
     gateMyEngines: "My engines",
     gateManageEngines: "Manage engines",
@@ -400,7 +422,8 @@ export const accountExperienceCopyV1 = {
     gateCheckoutOpenFailed: "The payment page could not be opened",
     gatePaymentUnavailable: "No payment method is available right now",
     gateConfigurationRejected: "Engine setup did not finish. Retry.",
-    gateEngineUnavailable: "The bundled engine is unavailable. Reinstall Doge and retry",
+    gateEngineUnavailable:
+      "The bundled engine is unavailable. Reinstall Doge and retry",
     gateServiceUnavailable: "Service is temporarily unavailable",
   },
 } as const;

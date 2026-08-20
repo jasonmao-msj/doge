@@ -218,7 +218,7 @@ describe("single canonical ScenarioManifestV1", () => {
     expect(result.ok, result.ok ? undefined : JSON.stringify(result.issues)).toBe(true);
     expect(new Set(ACCOUNT_SCENARIO_MANIFEST_V1.scenarios.map((entry) => entry.id)).size)
       .toBe(ACCOUNT_SCENARIO_MANIFEST_V1.scenarios.length);
-    expect(ACCOUNT_SCENARIO_MANIFEST_V1.scenarios).toHaveLength(89);
+    expect(ACCOUNT_SCENARIO_MANIFEST_V1.scenarios).toHaveLength(92);
     expect(ACCOUNT_SCENARIO_MANIFEST_V1.scenarios.every((entry) => entry.semanticRevision === 1))
       .toBe(true);
   });

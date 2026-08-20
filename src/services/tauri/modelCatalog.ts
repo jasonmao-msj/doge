@@ -74,6 +74,9 @@ export type CodingPlanQuotaWindow = {
   usedPercent: number;
   remainingPercent: number;
   resetsAt?: string | null;
+  /** Authority-sanitized amount labels for subscription-owned windows. */
+  usedAmount?: string | null;
+  limitAmount?: string | null;
 };
 
 /** 余额型供应商条目（DeepSeek GET /user/balance） */

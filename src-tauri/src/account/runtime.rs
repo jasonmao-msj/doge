@@ -1,6 +1,7 @@
 use super::authority::{
     AuthWire, AuthorityCapabilityDescriptor, AuthorityError, DesktopEngineCatalogWire, LoginWire,
-    PublicSettingsWire, SubscriptionProgressEntryWire, SubscriptionUsageWindowWire,
+    PublicSettingsWire, SubscriptionProgressEntryWire, SubscriptionSummaryWire,
+    SubscriptionUsageWindowWire,
     TokenMatrixAuthority, UsageDashboardSnapshotWire, UsageModelWire, UsageTrendWire,
 };
 use super::configuration::{self, ConfigurationPlanState, ACCOUNT_RECIPE_ID};
@@ -38,6 +39,7 @@ pub(super) const READ_OPERATIONS: &[&str] = &[
     "profile.read",
     "usage.read",
     "usage.readDayModels",
+    "subscription.read",
     "managedKey.readStatus",
     "managedKey.listCandidates",
     "configuration.readOffer",
@@ -75,6 +77,7 @@ pub(super) const OPERATIONS: &[&str] = &[
     "profile.revokeAllSessions",
     "usage.read",
     "usage.readDayModels",
+    "subscription.read",
     "managedKey.readStatus",
     "managedKey.listCandidates",
     "managedKey.selectExisting",

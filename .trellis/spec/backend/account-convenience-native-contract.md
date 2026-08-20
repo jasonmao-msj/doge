@@ -41,7 +41,7 @@
 - durable configuration result MUST 在 restart/unmount 后可经 `configuration.readCurrentTask` 取回；跨进程展示前重新签发当前 generation 的 handle，旧 handle失效。
 - build-time renderer flag `VITE_DOGE_ACCOUNT_CONVENIENCE_V1=0` 不得被 localStorage重新开启；Rust `--no-default-features` 不构造 Authority、不打开 Account SQLite、不触碰 OS vault。
 - M0 UI Review Package 只允许由 exact build-time flag `VITE_DOGE_ACCOUNT_UI_PREVIEW_V1=1` 产生：Settings Account 与App-level configuration bubble都使用compile-time conditional Mock chunk和同一个process-lifetime Preview Gateway instance，但可见页面 MUST 与真实产品信息架构一致，禁止暴露 `scenario id`、scenario selector、`交互预览`或zero-call调试标签。zero-call只能由build metadata、自动化guard与验收记录证明；同一 flag 必须让 Rust Account Core 不构造 Authority、不打开 Account SQLite、不触碰 OS vault。正常 build 不得通过 localStorage/runtime 切换为 Mock，且 bundler 必须可排除 preview/Mock reachable graph。
-- Signed-out Account 主导航 MUST 只保留 `login / register` 两个浅量 Tab；password recovery 作为 login 内次级 action进入focused subflow，不得与主Tab并列。Authenticated Account Center MUST 只保留 `overview / usage / security` 三个Tab；Codex配置从overview CTA或App-level bubble进入 `select existing API Key → file list → lazy safe detail → exact consent → result`闭环。产品页禁止自动创建专用 Key。
+- Signed-out Account 主导航 MUST 只保留 `login / register` 两个浅量 Tab；password recovery 作为 login 内次级 action进入focused subflow，不得与主Tab并列。Authenticated Account Center MUST 只保留 `subscription / usage` 两个 Tab：subscription 直接呈现已订阅引擎，且不得自动触发 `usage.read`；display name 只在 Header 原地编辑，password 是带 hover/focus tooltip 的常驻 Header icon，低频 security action 收入按需 Header popover。Codex 配置 offer 只经 App-level bubble 进入 `select existing API Key → file list → lazy safe detail → exact consent → result` 闭环。产品页禁止自动创建专用 Key。
 - Native Account commands MUST限制 `window.label() == "main"`。
 - logout、password change、remote session revocation 只清除 account refresh session，保留已经配置的 Codex API Key，确保 Local Codex provider 不因账号 UI session 变化失效。`managedKey.revoke(consent=removeLocalKey)` 只移除当前 account/device 的 OS-vault binding 与 safe metadata，MUST NOT删除用户在 Token Matrix 中选中的 remote API Key；更换 Key 必须重新进入 existing-key selection，不得调用 remote rotate/delete。
 - OAuth callback、普通 Account mutation 共享一个 per-process monotonic `eventSeq`；`RealAccountGatewayV1` 必须先校验完整 event envelope/cursor，再把事件作为 wakeup 分发。React controller 使用 exact-attempt coordinator：early event 先进入 bounded `Set`，start response activate 后重放；同 attempt 只允许一个 authoritative read in flight；不增加 polling。
@@ -560,7 +560,7 @@ if (generationRef.current !== generation) return;
 - `usage.readDayModels` MUST 在 Native 重新读取 catalog 并验证请求 engine 当前仍有 active group，date 必须为过去 365 天内的 ISO date；禁止信任 renderer 传入 group id。
 - day-model response 只包含 `modelLabel + requests + input/output/cache/total tokens + cost + actualCost`，不得包含 API key、account id、group id、raw server error 或 credential。
 - UI 首次进入 Account Center 不自动读取 usage；只有用户打开“额度”Tab或点击刷新才调用 `usage.read`。日级 model 明细只在 activity cell hover/focus 时调用一次并按 `engineId:date` 缓存；禁止轮询与 AppShell root state。
-- Account Center Header MUST 是 usage refresh/fetched time 与 logout 的唯一 action owner：logout 常驻，refresh/fetched time 只在额度 Tab出现；两个 action 都使用有 accessible name 与 hover/focus tooltip 的 icon-only button。额度/安全内容区不得重复同名 heading。
+- Account Center Header MUST 是 usage refresh/fetched time 与 logout 的唯一 action owner：logout 常驻，refresh/fetched time 只在额度 Tab出现；两个 action 都使用有 accessible name 与 hover/focus tooltip 的 icon-only button。额度内容区与按需打开的 security popover不得重复同名 heading。
 - active subscription engine MUST 使用 selectable card master/detail：一行最多 3 张，1/2/3 张等宽占满，更多自动换行，responsive 降为 2/1 列；card selection 只存在 component-local state，不得触发新的`usage.read`或写入持久化状态。card 摘要优先 daily，缺失时回退 weekly/monthly；detail 保留全部 available windows。
 - heatmap cell MUST 可键盘 focus，tooltip宽度自适应且无固定高度；无 activity 的日期不发 day-model request。
 - token2api 已有上述三类 read API 时，本场景只改 Doge adapter/contract/UI，不要求 token2api migration 或生产发布。
@@ -591,7 +591,7 @@ if (generationRef.current !== generation) return;
 - Rust IPC/model test：`usage.readDayModels` 为read operation，exact payload仅允许`engineId/date`，invalid/未来/超范围date fail closed。
 - TS contract test：operation inventory、request/result schema、unknown field、privacy scan、Real/Mock transport mapping。
 - React regression：打开额度Tab前零read；Codex/Claude切换；active cell hover分别发送各自`engineId/date`；重复hover不重复读取；partial analytics failure保留额度。
-- React visual/interaction regression：Header logout/refresh icon-only 且 tooltip 可由 hover/focus 打开；refresh pending 防重复提交；额度/安全无重复 heading；多订阅 grid 锁定最多3列与 responsive 2/1列；card切换不增加`usage.read`调用。
+- React visual/interaction regression：authenticated Account 仅有 `subscription/usage` Tab；subscription 首次渲染不调用 `usage.read`；Header logout/refresh icon-only 且 tooltip 可由 hover/focus 打开；Header display name edit、password/security popover 可达；refresh pending 防重复提交；额度内容区无重复 heading；多订阅 grid 锁定最多3列与 responsive 2/1列；card切换不增加`usage.read`调用。
 - Required commands：focused Vitest、`cargo test --manifest-path src-tauri/Cargo.toml account:: --lib`、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`。
 
 ### 7. Wrong vs Correct
@@ -610,6 +610,119 @@ const view = await gateway.usage.read({});
 // Native composes active engine catalog + subscription progress + group snapshots.
 await gateway.usage.readDayModels({ engineId, date }, {}); // hover/focus only
 ```
+
+## Scenario: Lightweight subscription facts and prepared managed Home defaults
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `subscription.read`、Account subscription surface、Sidebar account shortcut、`AccountAppGate` preparation，或 Home/create-session 的 managed provider target。
+- 目标：以一次轻量 authority read 展示每个订阅的套餐事实；只有真正完成 prepare 的 Codex/Claude 新会话才能使用 `doge-token-matrix`，provider-scoped catalog 不可用时必须 fail closed。
+
+### 2. Signatures
+
+- Gateway read：`subscription.read({ signal? }) -> AccountSubscriptionSummaryViewV1`；对应 Rust `GatewayOperationV1::SubscriptionRead`，是 read operation。
+- Authority composition：`GET /api/v1/subscriptions/summary` 加现有 `GET /api/v1/desktop/v1/engines`；禁止读取 `usage/dashboard`、日趋势或 model analytics。
+- Preparation snapshot：`readManagedEnginePreparationV1() -> Record<"codex" | "claude-code", "prepared" | "unprepared" | "unknown">`；唯一 managed profile 为 `MANAGED_PROVIDER_PROFILE_ID_V1 = "doge-token-matrix"`。
+- Create resolver：`resolveDefaultCreationExecutionTarget({ enabled, selectedEngine, selectedModelId, providerProfileId, providerCatalogAvailable, models }) -> ExecutionTarget | null`。
+
+### 3. Contracts
+
+- Native 必须以 desktop engine catalog 的 active `subscriptionId + groupId` 做 attribution。每个 summary identity 独立投影套餐 label、available daily/weekly/monthly windows 与 expiry；无法可靠匹配的套餐保留事实但 `engineId = null`，禁止以名称猜 Codex/Claude。
+- Account subscription surface 可在 mounted 时读取一次；Sidebar shortcut 必须 `autoLoad: false`，仅在用户打开后发起一次 pull。两者都不得用 `usage.read` 替代 summary，也不得轮询、写入 AppShell root state 或暴露 authority raw error/account/group/credential。
+- 只有 account `prepare`、engine activation 与 `doge-token-matrix` provider activation 全部成功，才可把 active entitlement 标记为 `prepared`。重新 prepare、sign-out、inactive entitlement 或失败必须清除该状态；active entitlement 本身不能推断为 prepared。
+- Home/new-session 在没有 explicit provider 时，可为 prepared Codex/Claude 使用 managed profile，并必须等待同 profile catalog。managed resolver 只能消费 `providerProfileId === "doge-token-matrix"` 的 catalog rows；missing/empty/failed catalog 返回 `null` target 并禁发，禁止把 global/disk model 或旧 Key 冒充 managed target。
+- Existing thread binding、Local Mode、signed-out、inactive/unprepared engine，以及 explicit local/disk/manual target 均优先于 implicit managed default，且不得被该 flow 改写。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Summary 行为 | Home/new-session 行为 |
+|---|---|---|
+| active Codex/Claude subscription | 投影 stable subscription identity、套餐/窗口/expiry | prepare 成功后可请求 managed catalog |
+| multiple/unmapped subscriptions | 分卡保留；unmapped 无 `engineId` | 不猜测或注入 managed default |
+| summary authority/vault/session 不可用 | typed unavailable，无伪造额度 | 不影响 existing/local session |
+| prepared + managed catalog available | n/a | 只用同 profile catalog row 创建 target |
+| prepared + catalog pending/failed | n/a | target 为 `null`、禁发，绝不回退 local |
+| explicit local/manual 或 existing thread | n/a | 用户/会话选择保持原样 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：Sidebar 打开后调用一次 `gateway.subscription.read`；Codex prepare 完成后 Home catalog row 带 `providerProfileId: "doge-token-matrix"`，创建 target 也带相同 identity。
+- Base：Account Center 只显示 authority 提供的 monthly window；daily/weekly 为 `null`，不显示假 0。
+- Bad：只因 entitlement 为 active 就标记 prepared，或 catalog 加载失败后用 disk/global `models[0]` 创建 managed session。
+- Bad：把 subscription summary 接到 365-day dashboard、root polling 或 Sidebar mount prefetch。
+
+### 6. Tests Required
+
+- Rust：`SubscriptionRead` 在 inventory 中为 read，operation count 与 canonical TS inventory 同步；authority/projection 覆盖 active、multiple、unmapped、unavailable。
+- React：`AccountSubscriptionPanel` 覆盖套餐/窗口/expiry 与多卡；`AccountSidebarShortcut` 覆盖 user-open 后才读取和 Settings handoff；summary hook 覆盖 abort/generation stale guard。
+- Composer/catalog：覆盖 prepared managed target、pending catalog 禁发、explicit local 可发送，以及 fallback profile resolver 不把 managed 标为本地。
+- Gates：focused Vitest、`cargo test --manifest-path src-tauri/Cargo.toml account:: --lib`、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`、strict OpenSpec validation。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+const providerProfileId = entitlement.status === "active" ? "doge-token-matrix" : null;
+const target = resolveDefaultCreationExecutionTarget({
+  providerProfileId,
+  models: globalModels,
+  // catalog failure silently falls back to a local row
+});
+```
+
+#### Correct
+
+```ts
+const providerProfileId = preparation[managedEngineId] === "prepared"
+  ? MANAGED_PROVIDER_PROFILE_ID_V1
+  : null;
+const target = resolveDefaultCreationExecutionTarget({
+  providerProfileId,
+  providerCatalogAvailable: models.some(
+    (model) => model.providerProfileId === providerProfileId,
+  ),
+  models,
+  // null target keeps submit disabled until the managed catalog is trustworthy
+});
+```
+
+## Scenario: Shared managed session quota projection
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `useSessionQuotaList`、`managedAccountQuota`、Shared Session quota target 或 Composer 的 `SessionControlQuotaPane`。
+- 目标：Shared 的 Token Matrix managed Codex/Claude target 复用现有 credential-free `usage.read` projection，不能误走 local CLI credentials，也不能为没有 managed target 的会话产生 Account authority read。
+
+### 2. Signatures
+
+- Managed adapter：`loadManagedAccountQuotaSnapshots(targets: SessionQuotaTarget[]) -> ManagedAccountQuotaResult[]`。
+- Managed identity：`providerProfileId === "doge-token-matrix"` 且 engine 为 `codex | claude`。
+- Renderer snapshot：`CodingPlanQuotaSnapshot`，source 为 `token_matrix | token_matrix_not_subscribed`；不得包含 credential、account id、group id、raw server error。
+
+### 3. Contracts
+
+- 每次 refresh 必须先按 managed identity 切分 target。存在一个或多个 managed target 时，整个 managed group 只调用一次 `usage.read({})`；没有 managed target 时调用次数必须为零。
+- Managed group 的 authority read 与 non-managed `getCodingPlanQuota(engine, providerProfileId)` 可以并行；各 target 的 loading/error/snapshot 仍按 `engine + providerProfileId` 独立投影，返回 UI 时必须保持调用方 target 顺序。
+- authority 返回 active subscription 时，managed target 必须投影 Token Matrix、套餐 label、daily/weekly/monthly window、used/limit/reset 和 credential-free totals；不得把 `empty` 或 `empty_credentials` 展示为 provider label。
+- authority 明确缺少该 engine entitlement 时，必须返回 `token_matrix_not_subscribed`；authority 暂不可用或 adapter reject 时只返回固定 safe message `Token Matrix 额度暂时不可用，请稍后重试`，不得将 raw exception/server response 暴露到 renderer。
+- Local Mode 与所有 non-managed provider 必须保留既有 `getCodingPlanQuota` path；打开 Account Center subscription Tab 不得因本场景产生 `usage.read`。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Authority / provider reads | Shared panel |
+|---|---|---|
+| Codex + Claude 均为 managed | 一次 `usage.read({})`，无 local CLI quota read | 每项独立显示对应套餐或未订阅状态 |
+| 仅 local / non-managed target | 零 `usage.read`，逐 target 调 `getCodingPlanQuota` | 保留原有额度投影 |
+| mixed managed + local target | 一次 authority read 与 local reads 并行 | target 顺序稳定，任何单项失败不清空其他项 |
+| managed authority reject | 固定 safe error snapshot | 可重试错误，不泄露 exception 文本 |
+
+### 5. Tests Required
+
+- `managedAccountQuota.test.ts` 覆盖 Codex/Claude mapping、not subscribed 与一个 managed group 仅一次 `usage.read`。
+- `useSessionQuotaList.test.tsx` 覆盖 mixed target group、零 managed target 零 authority read、stable ordering 和 safe error projection。
+- `SessionControlQuotaPane.test.tsx` / `sessionOverviewViewModel.test.ts` 继续覆盖 loading、Token Matrix、plan/window 和 provider label 不为 `empty`。
+- Required commands：focused Vitest、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`。
 
 ## Scenario: Cold restore OS vault access budget
 

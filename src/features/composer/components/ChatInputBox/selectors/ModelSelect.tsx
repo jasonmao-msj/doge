@@ -148,6 +148,7 @@ export function resolveActiveProviderProfileId(
     ExecutionTarget,
     'engine' | 'providerProfileId'
   > | null | undefined,
+  fallbackProviderProfileId?: string | null,
 ): string | null {
   const targetProfileId =
     executionTarget?.engine === providerId
@@ -156,7 +157,16 @@ export function resolveActiveProviderProfileId(
           executionTarget.providerProfileId,
         )
       : null;
-  return targetProfileId ?? LOCAL_PROVIDER_PROFILE_IDS[providerId] ?? null;
+  const fallbackProfileId = normalizeExecutionProviderProfileId(
+    providerId,
+    fallbackProviderProfileId,
+  );
+  return (
+    targetProfileId ??
+    fallbackProfileId ??
+    LOCAL_PROVIDER_PROFILE_IDS[providerId] ??
+    null
+  );
 }
 
 /**

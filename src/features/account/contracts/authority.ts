@@ -102,6 +102,7 @@ export const AUTHORITY_OPERATION_NAMES_V1 = [
   "security.identityUnbind",
   "usage.read",
   "usage.readDayModels",
+  "subscription.read",
   "apiKey.listMetadata",
   "apiKey.handoffDesktop",
   "managedKey.readMetadata",

@@ -90,6 +90,7 @@ type AdapterModelOption = {
   model?: string;
   description?: string;
   source?: string;
+  providerProfileId?: string | null;
 };
 
 function normalizeAdapterModelOptions(
@@ -109,6 +110,7 @@ function normalizeAdapterModelOptions(
         modelOption.description ||
         (runtimeModel && runtimeModel !== label ? runtimeModel : undefined),
       source: modelOption.source,
+      providerProfileId: modelOption.providerProfileId?.trim() || undefined,
     };
   });
 }

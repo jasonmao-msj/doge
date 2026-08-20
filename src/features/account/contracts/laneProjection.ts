@@ -16,6 +16,7 @@ export type AccountOperationProjectionV1 = {
     | "auth-flow"
     | "profile-security"
     | "usage"
+    | "subscription"
     | "managed-key"
     | "configuration";
   readonly authorityOwner: "token2api" | "doge-local" | "composed";
@@ -75,6 +76,9 @@ export const ACCOUNT_OPERATION_PROJECTIONS_V1: readonly AccountOperationProjecti
     decimalEncoding: "canonical-decimal-string",
   }),
   projectionV1("usage.readDayModels", "usage", "token2api", {
+    decimalEncoding: "canonical-decimal-string",
+  }),
+  projectionV1("subscription.read", "subscription", "token2api", {
     decimalEncoding: "canonical-decimal-string",
   }),
   projectionV1("managedKey.readStatus", "managed-key", "composed"),

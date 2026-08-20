@@ -382,6 +382,14 @@ describe("AccountExperience", () => {
     await waitFor(() => expect(refreshButton.getAttribute("aria-busy")).toBe("false"));
   });
 
+  it("keeps subscription and quota as the only account tabs", async () => {
+    renderScenarioV1("subscription.summary");
+    expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "订阅" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "额度" })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: "安全" })).toBeNull();
+  });
+
   it("lists files before lazily loading safe change details", async () => {
     const { gateway } = renderScenarioV1("configuration.no-config-success");
     const readFileDetail = vi.spyOn(gateway.configuration, "readFileDetail");
@@ -487,13 +495,10 @@ describe("AccountExperience", () => {
     expect(screen.queryByRole("button", { name: "重新打开 Codex 配置" })).toBeNull();
   });
 
-  it("updates profile through the security surface", async () => {
+  it("updates profile in the account header and keeps low-frequency security in its own action", async () => {
     const { gateway } = renderScenarioV1("account.profile-update-happy");
     const updateProfile = vi.spyOn(gateway.profile, "updateProfile");
     expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: "安全" }));
-    expect(screen.queryByRole("heading", { name: "安全" })).toBeNull();
-    expect(screen.getByText("GitHub")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "编辑资料" }));
     fireEvent.change(screen.getByLabelText("显示名称"), {
       target: { value: "Doge User" },
@@ -505,15 +510,73 @@ describe("AccountExperience", () => {
       { displayName: "Doge User" },
       expect.objectContaining({ intent: expect.any(String) }),
     );
-    expect(await screen.findByText("账号资料已更新。")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Doge User" })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: "安全" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "安全" })).toBeNull();
+  });
+
+  it("keeps logout-all reachable from the generic security overflow", async () => {
+    const { gateway } = renderScenarioV1("session.revoke-all-confirmed");
+    const logout = vi.spyOn(gateway.auth, "logout");
+    expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
+
+    const overflow = await screen.findByRole("button", { name: "安全" });
+    expect(screen.queryByRole("tab", { name: "安全" })).toBeNull();
+    expect(screen.getByRole("button", { name: "退出登录" })).toBeTruthy();
+    fireEvent.click(overflow);
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "退出所有设备" }),
+    );
+    const dialog = await screen.findByRole("alertdialog");
+    expect(
+      within(dialog).getByRole("heading", { name: "退出所有设备？" }),
+    ).toBeTruthy();
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "退出所有设备" }),
+    );
+    await waitFor(() =>
+      expect(logout).toHaveBeenCalledWith(
+        { scope: "allSessions" },
+        expect.objectContaining({ intent: expect.any(String) }),
+      ),
+    );
+  });
+
+  it("keeps managed-key revoke reachable from the security overflow", async () => {
+    const runtime = createScenarioRuntimeV1("managed-key.revoke");
+    if (!runtime.ok) throw new Error("missing managed-key revoke scenario");
+    const gateway = createMockAccountGatewayV1(runtime.value);
+    vi.spyOn(gateway.managedKey, "readStatus").mockResolvedValue({
+      ok: true,
+      value: {
+        status: "ready",
+        recipeId: "doge.account.codex-token-service",
+        recipeVersion: 1,
+      },
+    });
+    const revoke = vi.spyOn(gateway.managedKey, "revoke");
+    render(
+      <AccountGatewayProvider gateway={gateway}>
+        <AccountExperience showLegacyConfiguration />
+      </AccountGatewayProvider>,
+    );
+
+    expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
+    fireEvent.click(await screen.findByRole("button", { name: "安全" }));
+    fireEvent.click(await screen.findByRole("button", { name: "移除 API Key" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(
+      within(dialog).getByRole("heading", { name: "移除 Codex API Key？" }),
+    ).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "撤销凭据" }));
+    await waitFor(() => expect(revoke).toHaveBeenCalledTimes(1));
   });
 
   it("keeps password fields local, validates confirmation, and signs out after change", async () => {
     const { gateway } = renderScenarioV1("account.change-password-happy");
     const changePassword = vi.spyOn(gateway.profile, "changePassword");
     expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
-    fireEvent.click(screen.getByRole("tab", { name: "安全" }));
     fireEvent.click(screen.getByRole("button", { name: "修改密码" }));
     fireEvent.change(screen.getByLabelText("当前密码"), { target: { value: "old-password" } });
     fireEvent.change(screen.getByLabelText("新密码"), { target: { value: "new-password" } });

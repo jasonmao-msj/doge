@@ -78,10 +78,7 @@ function UsageSummaryRows({
       value: `$${summary.totalActualCost}`,
     });
   }
-  if (
-    summary.totalInputTokens != null ||
-    summary.totalOutputTokens != null
-  ) {
+  if (summary.totalInputTokens != null || summary.totalOutputTokens != null) {
     const input =
       summary.totalInputTokens != null
         ? formatCompactTokenCount(summary.totalInputTokens)
@@ -199,6 +196,14 @@ export function SessionControlQuotaPane({
         })
       );
     }
+    if (quota.source === "not_subscribed") {
+      return (
+        quota.error ??
+        t("statusPanel.sessionOverview.quota.notSubscribed", {
+          defaultValue: "当前引擎未订阅",
+        })
+      );
+    }
     // none：官方无额度块 / 无可查 plan
     if (quota.source === "none") {
       return t("statusPanel.sessionOverview.quota.codingPlanEmpty");
@@ -266,7 +271,9 @@ export function SessionControlQuotaPane({
             <span className="composer-session-hud-quota-key">
               {t("composer.quotaProvider", { defaultValue: "Provider" })}
             </span>
-            <span className="composer-session-hud-quota-val">{providerText}</span>
+            <span className="composer-session-hud-quota-val">
+              {providerText}
+            </span>
           </div>
         </div>
       ) : showWindows ? (
@@ -282,6 +289,16 @@ export function SessionControlQuotaPane({
                   : "--"}
               </span>
             </div>
+            {primaryWindow?.usedAmount && primaryWindow.limitAmount ? (
+              <div className="composer-session-hud-quota-row">
+                <span className="composer-session-hud-quota-key">
+                  {t("composer.quotaAmount", { defaultValue: "额度" })}
+                </span>
+                <span className="composer-session-hud-quota-val">
+                  {primaryWindow.usedAmount} / {primaryWindow.limitAmount}
+                </span>
+              </div>
+            ) : null}
             <div className="composer-session-hud-quota-row">
               <span className="composer-session-hud-quota-key">
                 {t("composer.quotaReset", { defaultValue: "Reset" })}
@@ -315,7 +332,10 @@ export function SessionControlQuotaPane({
             </div>
           </div>
 
-          <div className="composer-session-hud-quota-progress" aria-hidden="true">
+          <div
+            className="composer-session-hud-quota-progress"
+            aria-hidden="true"
+          >
             <span
               className="composer-session-hud-quota-progress-fill"
               style={{ width: `${primaryWindow?.displayPercent ?? 0}%` }}
@@ -371,7 +391,9 @@ export function SessionControlQuotaPane({
             <span className="composer-session-hud-quota-key">
               {t("composer.quotaProvider", { defaultValue: "Provider" })}
             </span>
-            <span className="composer-session-hud-quota-val">{providerText}</span>
+            <span className="composer-session-hud-quota-val">
+              {providerText}
+            </span>
           </div>
         </div>
       )}

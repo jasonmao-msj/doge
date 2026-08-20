@@ -19,6 +19,18 @@ import { pushErrorToast } from "../../../services/toasts";
 import { Sidebar } from "./Sidebar";
 import { isSessionCatalogNotReadyError } from "./sidebarInternals";
 
+vi.mock("../../account/components/AccountSidebarShortcut", () => ({
+  AccountSidebarShortcut: ({
+    onOpenAccount,
+  }: {
+    onOpenAccount: () => void;
+  }) => (
+    <button type="button" aria-label="Open account" onClick={onOpenAccount}>
+      Account
+    </button>
+  ),
+}));
+
 afterEach(() => {
   cleanup();
 });
@@ -58,6 +70,17 @@ describe("sidebarInternals", () => {
 });
 
 describe("Sidebar", () => {
+  it("renders the account shortcut only when an account handoff is available", () => {
+    const onOpenAccount = vi.fn();
+    const { rerender } = render(<Sidebar {...baseProps} />);
+
+    expect(screen.queryByRole("button", { name: "Open account" })).toBeNull();
+
+    rerender(<Sidebar {...baseProps} onOpenAccount={onOpenAccount} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open account" }));
+    expect(onOpenAccount).toHaveBeenCalledTimes(1);
+  });
+
   it("loads Claude, Codex, and Kimi provider catalogs once on mount", async () => {
     render(<Sidebar {...baseProps} />);
 

@@ -727,6 +727,7 @@ export function useLayoutNodes(input: LayoutNodesOptions): LayoutNodesResult {
         onCancelSwitchAccount={options.onCancelSwitchAccount}
         accountSwitching={options.accountSwitching}
         onOpenSettings={options.onOpenSettings}
+        onOpenAccount={options.onOpenAccount}
         onOpenDebug={options.onOpenDebug}
         showDebugButton={options.showDebugButton}
         onAddWorkspace={options.onAddWorkspace}
