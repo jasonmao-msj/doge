@@ -1130,6 +1130,10 @@ function buildAtomicGroups(): ProviderTargetGroup[] {
 }
 
 describe("ModelSelect atomic target groups", () => {
+  afterEach(() => {
+    act(() => clearManagedEngineEntitlementsV1());
+  });
+
   // Radix 子菜单在 jsdom 下的 hover 开启依赖真实定时器,容易抖动;
   // 直接 click SubTrigger 是确定性的打开方式。
   // 注意:jsdom 下 Radix modal layer 会给「后打开」的子菜单留下
@@ -1139,6 +1143,75 @@ describe("ModelSelect atomic target groups", () => {
     fireEvent.click(trigger);
     return trigger;
   }
+
+  it("defaults every actively subscribed Home engine submenu to Doge Token Matrix", async () => {
+    act(() => {
+      publishManagedEngineEntitlementsV1([
+        { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+        { id: "claude-code", displayName: "Claude", entitlement: { status: "active", expiresAt: null } },
+      ]);
+    });
+    const groups = buildAtomicGroups();
+    groups[0].profiles.push({
+      id: "doge-token-matrix",
+      label: "Doge Token Matrix",
+      source: "managed",
+      loading: false,
+      error: null,
+      models: [{
+        id: "claude-fable-5",
+        label: "Fable 5",
+        providerProfileId: "doge-token-matrix",
+      }],
+    });
+    groups[1].profiles.push({
+      id: "doge-token-matrix",
+      label: "Doge Token Matrix",
+      source: "managed",
+      loading: false,
+      error: null,
+      models: [{
+        id: "gpt-5.6-sol",
+        label: "gpt-5.6-sol",
+        providerProfileId: "doge-token-matrix",
+      }],
+    });
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+
+    render(
+      <ModelSelect
+        value="gpt-5.6-sol"
+        currentProvider="codex"
+        triggerVariant="readiness"
+        onChange={vi.fn()}
+        onExecutionTargetChange={vi.fn()}
+        executionTarget={{
+          engine: "codex",
+          providerProfileId: "doge-token-matrix",
+          modelCatalogEntryId: "gpt-5.6-sol",
+          model: "gpt-5.6-sol",
+          providerProfileNameSnapshot: "Doge Token Matrix",
+          providerProfileSource: "managed",
+        }}
+        targetGroups={groups}
+        preferManagedProviderDefaults
+      />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "chat.currentModel:gpt-5.6-sol" }),
+    );
+    await screen.findByRole("menuitem", { name: /Claude Code/ });
+    openPickerSubmenu(/Claude Code/);
+
+    expect(await screen.findByRole("menuitem", { name: /Fable 5/ })).toBeTruthy();
+    expect(screen.queryByRole("menuitem", { name: /Opus 4.8/ })).toBeNull();
+    const claudeChannel = document.querySelector(
+      "[data-submenu-footer='claude'] [data-channel-select-trigger='claude'][data-provider-profile-id='doge-token-matrix']",
+    );
+    expect(claudeChannel?.textContent).toContain("Doge Token Matrix");
+
+  });
 
   it("opens the active channel models with footer channel switcher and no profile list rows", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });

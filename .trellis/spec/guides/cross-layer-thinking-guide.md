@@ -78,6 +78,12 @@ React Component
     请求前设置 `loading/busy/pending`，必须把该 flag 绑定到 exact generation/request id；
     stale settle 仅清理自己仍拥有的 flag，显式 lifecycle commit（如 logout/change-password
     signed-out）必须同步 invalidate owner 并收敛 UI，避免永久 spinner 或旧请求误清新请求。
+25. Renderer readiness 不是 native credential readiness。Engine identity、Provider identity
+    与 OS-vault secret availability 必须分别建模；同 engine 的 local/manual → managed Provider
+    切换仍是 capability transition。若凭据可被 Keychain/Credential Manager/Secret Service、
+    logout、account switch 或外部清理改变，显式 managed transition 必须在创建 Session/
+    Continuation 前通过 native owner 重新校验或幂等 prepare，禁止拿内存 `prepared` snapshot
+    直接放行 Runtime launch。
 
 ## 常见失败模式
 
@@ -124,6 +130,9 @@ React Component
   全绿但完整 state machine 仍存在 dead end。
 - stale generation 分支直接 `return`，忘记释放该 request 设置的 `loading=true`；或旧
   request 在 settle 时无 owner compare 地清 loading，造成新 request 的 spinner 被误清。
+- 把 `target.engine === selectedEngine` 当成 managed access 已就绪；同 engine 从本地渠道切到
+  托管渠道时绕过 native prepare，直到 CLI launch 才发现 OS vault secret 缺失并向用户暴露
+  raw `credential is unavailable`。
 
 ## Optional Payload Contract
 
@@ -167,6 +176,9 @@ React Component
   state，成功后 stale catalog/checkout completion 不得重新推进旧流程。
 - async loading ownership 至少覆盖：old request stale settle 不清 new owner；显式
   signed-out commit 取消旧 owner 后立即离开 loading；迟到旧 response 不恢复旧 session。
+- managed Provider transition 至少覆盖：同 engine local/manual → managed、renderer
+  `prepared` stale 但 native credential 缺失、prepare 失败时零 Session/Continuation side
+  effect、prepare ready 后才建立新的 durable Provider binding。
 - mocked RPC 只能证明 mapping，不能代替 fake Runtime side-effect assertion。关键
   routing change 至少留一个可观察实际 Provider process/session key 与 Runtime model 的
   focused test。

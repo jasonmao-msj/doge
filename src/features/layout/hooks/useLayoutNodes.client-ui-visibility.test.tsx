@@ -239,6 +239,8 @@ vi.mock("../../composer/components/Composer", async () => {
     createSessionTargetPicker = false,
     onCreationTargetEngineChange,
     isSharedSession = false,
+    providerProfileId = null,
+    providerProfileName = null,
     submitDisabled = false,
     isContextCompacting = false,
     codexCompactionLifecycleState = "idle",
@@ -256,6 +258,8 @@ vi.mock("../../composer/components/Composer", async () => {
       engine: "claude" | "codex" | "gemini" | "kimi" | "opencode" | null,
     ) => void;
     isSharedSession?: boolean;
+    providerProfileId?: string | null;
+    providerProfileName?: string | null;
     submitDisabled?: boolean;
     isContextCompacting?: boolean;
     codexCompactionLifecycleState?: string;
@@ -271,6 +275,8 @@ vi.mock("../../composer/components/Composer", async () => {
         )}
         data-create-session-target-picker={String(createSessionTargetPicker)}
         data-is-shared-session={String(isSharedSession)}
+        data-provider-profile-id={providerProfileId ?? ""}
+        data-provider-profile-name={providerProfileName ?? ""}
         data-submit-disabled={String(submitDisabled)}
         data-is-context-compacting={String(isContextCompacting)}
         data-codex-compaction-lifecycle={codexCompactionLifecycleState}
@@ -1123,6 +1129,8 @@ describe("useLayoutNodes client UI visibility", () => {
             updatedAt: 1,
             engineSource: "claude",
             threadKind: "shared",
+            providerProfileId: "__local_settings_json__",
+            providerProfileName: "Local Settings",
           },
         ],
       },
@@ -1137,6 +1145,12 @@ describe("useLayoutNodes client UI visibility", () => {
     expect(
       normalComposer.getByTestId("composer").dataset.isSharedSession,
     ).toBe("true");
+    expect(
+      normalComposer.getByTestId("composer").dataset.providerProfileId,
+    ).toBe("__local_settings_json__");
+    expect(
+      normalComposer.getByTestId("composer").dataset.providerProfileName,
+    ).toBe("Local Settings");
     normalComposer.unmount();
 
     const homeComposer = render(<>{result.current.homeNode}</>);
@@ -1146,6 +1160,12 @@ describe("useLayoutNodes client UI visibility", () => {
     expect(
       homeComposer.getByTestId("composer").dataset.isSharedSession,
     ).toBe("false");
+    expect(
+      homeComposer.getByTestId("composer").dataset.providerProfileId,
+    ).toBe("");
+    expect(
+      homeComposer.getByTestId("composer").dataset.providerProfileName,
+    ).toBe("");
   });
 
   it("allows Shared running follow-up queue and projects compaction lifecycle", async () => {

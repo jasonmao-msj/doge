@@ -20,6 +20,7 @@ import {
 } from '../../../../threads/constants/codexProviderProfiles';
 import { EngineIcon } from '../../../../engine/components/EngineIcon';
 import {
+  MANAGED_PROVIDER_PROFILE_ID_V1,
   managedEngineIdForRuntimeV1,
   readManagedEngineEntitlementsV1,
   subscribeManagedEngineEntitlementsV1,
@@ -75,6 +76,8 @@ interface ModelSelectProps {
   // 共享会话(atomic)目标选择:与 legacy 相同的「引擎子菜单 → 平铺模型」
   // 交互,数据来自 target catalog,选中产出完整 ExecutionTarget。
   targetGroups?: ProviderTargetGroup[];
+  /** Home only: each actively subscribed engine starts from Doge Token Matrix. */
+  preferManagedProviderDefaults?: boolean;
   executionTarget?: ExecutionTarget | null;
   onExecutionTargetChange?: (target: ExecutionTarget) => void;
   onOpenTargetCatalog?: () => Promise<void> | void;
@@ -507,6 +510,7 @@ export const ModelSelect = memo(({
   isRefreshingConfig = false,
   onOpenCliSettings,
   targetGroups,
+  preferManagedProviderDefaults = false,
   executionTarget,
   onExecutionTargetChange,
   onOpenTargetCatalog,
@@ -608,9 +612,17 @@ export const ModelSelect = memo(({
   const pickerGroups = useMemo<PickerModelGroup[]>(() => {
     if (targetGroups && targetGroups.length > 0) {
       return targetGroups.map((group) => {
+        const managedEngineId = managedEngineIdForRuntimeV1(group.providerId);
+        const managedDefaultProfileId =
+          preferManagedProviderDefaults &&
+          managedEngineId !== null &&
+          managedEntitlements[managedEngineId] === 'active'
+            ? MANAGED_PROVIDER_PROFILE_ID_V1
+            : null;
         const defaultProfileId = resolveActiveProviderProfileId(
           group.providerId,
           executionTarget,
+          managedDefaultProfileId,
         );
         const overrideProfileId = profileOverrides[group.providerId];
         const activeProfileId = overrideProfileId ?? defaultProfileId;
@@ -677,7 +689,14 @@ export const ModelSelect = memo(({
       targetProfileId: null,
       profiles: [],
     }));
-  }, [executionTarget, modelGroups, profileOverrides, targetGroups]);
+  }, [
+    executionTarget,
+    managedEntitlements,
+    modelGroups,
+    preferManagedProviderDefaults,
+    profileOverrides,
+    targetGroups,
+  ]);
 
   const hasPickerGroups = pickerGroups.length > 0;
 

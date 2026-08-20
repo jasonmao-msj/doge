@@ -38,15 +38,28 @@ The account-ready signal provides an eligible managed engine set after successfu
 
 Existing thread bindings always win. Local Mode, signed-out sessions, inactive entitlements, failed preparation and an explicit local/manual provider remain local. Catalog failure must produce the established unavailable/error behavior rather than silently switching to disk configuration.
 
+The explicit provider selected in Home is transient to that single creation attempt. Once the app leaves create-session mode, it MUST discard that transient target. Re-entering Home resolves a fresh default, so an eligible prepared subscription returns to `doge-token-matrix`; the session just created keeps the user's explicit provider through its durable thread binding.
+
+Preparation is engine-scoped and only the last managed engine is guaranteed to be ready after startup. If Home currently selects another engine with an active entitlement, Composer requests the existing Account Gate preparation transaction once for that engine instead of exposing local/disk as a silent default. The managed target and provider-scoped catalog are resolved only after the ready signal; preparation failure remains fail-closed and does not fabricate a managed credential.
+
+Home 的 engine submenu 也必须按每个 engine 自己的 entitlement 投影默认渠道，而不是只看当前 `executionTarget.engine`。因此，当 Codex 与 Claude 都有 active entitlement 时，即使当前闭合 target 是 Codex，Claude submenu 仍以 `doge-token-matrix` 加载和展示 model catalog；该 projection 仅用于 create-session，existing Native / Shared session 继续服从 durable target。
+
+Provider identity is independent from engine identity. When an existing Native local/manual session explicitly selects `doge-token-matrix`, Composer MUST route through the existing Account Gate prepare transaction even if the target engine equals the active engine. This explicit cross-provider transition MUST re-confirm server-owned binding and OS-vault readiness rather than trusting a renderer-only `prepared` snapshot, because the credential may have been removed or become unavailable after the snapshot was published. Only the resulting ready signal may open the managed new-conversation surface; the source session keeps its durable provider binding.
+
 ## Contract And Error Matrix
 
 | Case | `subscription.read` | new-session target |
 | --- | --- | --- |
 | Authenticated + active Codex/Claude subscription | canonical cards and compact summary | managed provider default for that engine |
+| Active entitlement, but another engine was prepared at startup | n/a | automatically prepare the selected engine before resolving the managed default |
+| Another subscribed engine is opened from the Home picker | n/a | its submenu defaults to `doge-token-matrix`, not local/disk |
 | Summary unavailable / malformed | typed unavailable state, no fake values | no impact on existing session/default |
 | Multiple subscriptions for one engine | each subscription remains a separate card | one eligible provider default per selected engine |
 | Future/unmapped subscription | plan facts visible, `engineId = null` | never guessed as a managed engine |
 | Explicit local/manual provider | n/a | explicit profile wins |
+| Explicit local/manual provider used for one new session, then Home is reopened | n/a | created session keeps its binding; next creation resolves the managed default again |
+| Existing local/manual Native session explicitly selects Token Matrix on the same engine | idempotent managed prepare re-confirms binding and vault credential | ready signal opens a new managed conversation; no failing continuation is created first |
+| Renderer says prepared but managed credential is missing | prepare repairs/reissues the credential before runtime launch | raw `ambiguous-runtime` credential error is not used as the interaction path |
 | Existing thread / Local Mode / signed out | n/a | no managed default injection |
 | Provider catalog failure | n/a | fail closed / show existing diagnostic; never fall back silently |
 
@@ -56,4 +69,5 @@ Existing thread bindings always win. Local Mode, signed-out sessions, inactive e
 - Account UI tests for card details, responsive card data and header action removal.
 - Sidebar tests for lazy load, successful summary and account-page handoff.
 - `resolveDefaultCreationExecutionTarget` tests for eligible managed selection, explicit local precedence, Local Mode and catalog-safe model handling.
+- Composer regression for same-engine local -> Token Matrix selection: it emits Account Gate intent, does not emit Provider Continuation first, and re-confirms even from a stale renderer `prepared` state.
 - Run focused Vitest, `npm run typecheck`, `npm run lint`, `npm run check:runtime-contracts`, and strict OpenSpec validation.

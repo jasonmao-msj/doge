@@ -1643,6 +1643,9 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
         selectedModel={selectedModel}
         models={availableModels}
         targetGroups={atomicProviderTargetCatalog.groups}
+        preferManagedProviderDefaults={
+          providerTargetPickerMode === "create-session"
+        }
         executionTarget={executionTarget}
         onExecutionTargetChange={handleProviderTargetSelect}
         onOpenTargetCatalog={atomicProviderTargetCatalog.ensureProfiles}

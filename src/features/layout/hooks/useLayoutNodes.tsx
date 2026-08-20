@@ -1628,8 +1628,16 @@ export function useLayoutNodes(input: LayoutNodesOptions): LayoutNodesResult {
           onSelectEngine={options.onSelectEngine}
           models={options.models}
           providerModelCatalogs={options.providerModelCatalogs}
-          providerProfileId={activeThreadSummary?.providerProfileId ?? null}
-          providerProfileName={activeThreadSummary?.providerProfileName ?? null}
+          providerProfileId={
+            createSessionTargetPicker
+              ? null
+              : activeThreadSummary?.providerProfileId ?? null
+          }
+          providerProfileName={
+            createSessionTargetPicker
+              ? null
+              : activeThreadSummary?.providerProfileName ?? null
+          }
           selectedModelId={options.selectedModelId}
           onSelectModel={options.onSelectModel}
           reasoningOptions={options.reasoningOptions}
