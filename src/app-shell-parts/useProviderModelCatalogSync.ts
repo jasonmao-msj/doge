@@ -1,10 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { useEngineController } from "../features/engine/hooks/useEngineController";
 import type { DebugEntry, EngineType } from "../types";
 import {
   activateEngineProviderProfileAndNotify,
   isActivatableProviderEngine,
 } from "../features/vendors/activateEngineProviderProfile";
+import {
+  managedEngineIdForRuntimeV1,
+  MANAGED_PROVIDER_PROFILE_ID_V1,
+  readManagedEnginePreparationV1,
+  subscribeManagedEnginePreparationV1,
+} from "../features/account/runtime/engineEntitlementStore";
 
 type EngineControllerSection = ReturnType<typeof useEngineController>;
 
@@ -42,15 +48,38 @@ export function useProviderModelCatalogSync({
   refreshEngineModels,
 }: ProviderModelCatalogSyncParams) {
   const activeCatalogKeyRef = useRef<string | null>(null);
+  const managedPreparation = useSyncExternalStore(
+    subscribeManagedEnginePreparationV1,
+    readManagedEnginePreparationV1,
+    readManagedEnginePreparationV1,
+  );
 
   useEffect(() => {
     const normalizedThreadId = activeThreadId?.trim();
-    const normalizedProviderProfileId = providerProfileId?.trim() || null;
+    const hasActiveThread = Boolean(normalizedThreadId);
+    const requestedProviderProfileId = providerProfileId?.trim() || null;
+    const managedEngineId = managedEngineIdForRuntimeV1(activeEngine);
+    const preparedManagedEngine =
+      !hasActiveThread &&
+      managedEngineId !== null &&
+      managedPreparation[managedEngineId] === "prepared" &&
+      (requestedProviderProfileId === null ||
+        requestedProviderProfileId === MANAGED_PROVIDER_PROFILE_ID_V1);
+    const normalizedProviderProfileId =
+      requestedProviderProfileId ??
+      (preparedManagedEngine ? MANAGED_PROVIDER_PROFILE_ID_V1 : null);
     const catalogEngine =
       activeThreadEngineSource ??
-      (normalizedProviderProfileId ? null : activeEngine);
+      (hasActiveThread
+        ? (normalizedProviderProfileId ? null : activeEngine)
+        : (preparedManagedEngine ? activeEngine : null));
+    if (!hasActiveThread && !preparedManagedEngine) {
+      // A signed-out/account-replaced preparation snapshot must release the
+      // old key so the next account can refresh the same managed scope.
+      activeCatalogKeyRef.current = null;
+      return;
+    }
     if (
-      !normalizedThreadId ||
       !catalogEngine ||
       !PROVIDER_SCOPED_ENGINES.has(catalogEngine)
     ) {
@@ -79,6 +108,7 @@ export function useProviderModelCatalogSync({
     // 有会话绑定 profile 时：对齐 L1 启动配置 + 模型映射（老会话切换适配）
     // 无 profile 的遗留会话：不强制 switch，仅刷全局 catalog
     if (
+      hasActiveThread &&
       normalizedProviderProfileId &&
       isActivatableProviderEngine(catalogEngine)
     ) {
@@ -113,5 +143,6 @@ export function useProviderModelCatalogSync({
     addDebugEntry,
     providerProfileId,
     refreshEngineModels,
+    managedPreparation,
   ]);
 }

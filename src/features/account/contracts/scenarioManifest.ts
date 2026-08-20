@@ -430,6 +430,22 @@ const scenariosV1: readonly AccountScenarioV1[] = [
     productState: "authenticatedPersistent",
     authorityDelta: "usageObserved",
   }),
+  scenarioV1("subscription.summary", ["subscription.read"], {
+    capabilities: ["usage.quotaPull"],
+    productState: "authenticatedPersistent",
+    authorityDelta: "usageObserved",
+  }),
+  scenarioV1("subscription.summary-multiple", ["subscription.read"], {
+    capabilities: ["usage.quotaPull"],
+    productState: "authenticatedPersistent",
+    authorityDelta: "usageObserved",
+  }),
+  scenarioV1("subscription.summary-unavailable", ["subscription.read"], {
+    capabilities: ["usage.quotaPull"],
+    productState: "authenticatedPersistent",
+    authorityState: "serviceUnavailable",
+    terminal: "rejected",
+  }),
   scenarioV1("usage.soft-stale-refresh-fails", ["usage.read"], {
     capabilities: ["usage.quotaPull"],
     productState: "authenticatedPersistent",

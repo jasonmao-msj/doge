@@ -2043,6 +2043,19 @@ describe("resolveActiveProviderProfileId", () => {
     ).toBe("__local_opencode_json__");
   });
 
+  it("uses a supplied creation-profile default when no target exists", () => {
+    expect(
+      resolveActiveProviderProfileId("codex", null, "doge-token-matrix"),
+    ).toBe("doge-token-matrix");
+    expect(
+      resolveActiveProviderProfileId(
+        "codex",
+        { engine: "codex", providerProfileId: "provider-explicit" },
+        "doge-token-matrix",
+      ),
+    ).toBe("provider-explicit");
+  });
+
   it("returns null for engines without provider profiles", () => {
     expect(resolveActiveProviderProfileId("gemini", null)).toBeNull();
   });

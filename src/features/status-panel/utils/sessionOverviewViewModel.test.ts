@@ -111,29 +111,24 @@ describe("buildSessionOverviewQuota", () => {
   });
 
   it("maps coding-plan windows for kimi/minimax style payloads on claude", () => {
-    const quota = buildSessionOverviewQuota(
-      "claude",
-      null,
-      true,
-      {
-        source: "minimax",
-        success: true,
-        windows: [
-          {
-            id: "five_hour",
-            usedPercent: 1,
-            remainingPercent: 99,
-            resetsAt: "2026-08-02T12:00:00Z",
-          },
-          {
-            id: "weekly_limit",
-            usedPercent: 11,
-            remainingPercent: 89,
-            resetsAt: null,
-          },
-        ],
-      },
-    );
+    const quota = buildSessionOverviewQuota("claude", null, true, {
+      source: "minimax",
+      success: true,
+      windows: [
+        {
+          id: "five_hour",
+          usedPercent: 1,
+          remainingPercent: 99,
+          resetsAt: "2026-08-02T12:00:00Z",
+        },
+        {
+          id: "weekly_limit",
+          usedPercent: 11,
+          remainingPercent: 89,
+          resetsAt: null,
+        },
+      ],
+    });
 
     expect(quota.source).toBe("coding_plan");
     expect(quota.providerLabel).toBe("minimax");
@@ -147,12 +142,11 @@ describe("buildSessionOverviewQuota", () => {
   });
 
   it("hides quota for official claude none route", () => {
-    const quota = buildSessionOverviewQuota(
-      "claude",
-      null,
-      false,
-      { source: "none", success: true, windows: [] },
-    );
+    const quota = buildSessionOverviewQuota("claude", null, false, {
+      source: "none",
+      success: true,
+      windows: [],
+    });
     expect(quota.source).toBe("none");
     expect(quota.windows).toEqual([]);
   });
@@ -201,17 +195,12 @@ describe("buildSessionOverviewQuota", () => {
   });
 
   it("maps deepseek auth failure to error without unsupported host", () => {
-    const quota = buildSessionOverviewQuota(
-      "codex",
-      null,
-      false,
-      {
-        source: "deepseek",
-        success: false,
-        error: "Authentication failed (HTTP 401 Unauthorized)",
-        windows: [],
-      },
-    );
+    const quota = buildSessionOverviewQuota("codex", null, false, {
+      source: "deepseek",
+      success: false,
+      error: "Authentication failed (HTTP 401 Unauthorized)",
+      windows: [],
+    });
     expect(quota.source).toBe("error");
     expect(quota.error).toMatch(/Authentication failed/);
     expect(quota.hasCredits).toBe(false);
@@ -334,7 +323,9 @@ describe("buildSessionOverview multi quota entries", () => {
     const deepseek = overview.quotaEntries.find((e) =>
       e.key.includes("deepseek"),
     );
-    const minimax = overview.quotaEntries.find((e) => e.key.includes("minimax"));
+    const minimax = overview.quotaEntries.find((e) =>
+      e.key.includes("minimax"),
+    );
     expect(deepseek?.quota.source).toBe("coding_plan");
     expect(deepseek?.quota.providerLabel).toBe("deepseek");
     expect(deepseek?.quota.hasCredits).toBe(true);

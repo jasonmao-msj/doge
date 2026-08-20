@@ -215,6 +215,8 @@ export type LayoutNodesFlatOptions = {
     mode: Extract<AccessMode, "default" | "full-access">,
   ) => Promise<void> | void;
   onOpenSettings: () => void;
+  /** Account shortcut opens the fixed Settings > account destination. */
+  onOpenAccount?: () => void;
   onOpenShortcutsSettings?: () => void;
   onOpenExperimentalSettings: () => void;
   onOpenDictationSettings?: () => void;
@@ -857,6 +859,7 @@ export type RuntimeLayoutNodesOptions = Pick<
 export type ChromeLayoutNodesOptions = Pick<
   LayoutNodesFlatOptions,
   | "onOpenSettings"
+  | "onOpenAccount"
   | "onOpenShortcutsSettings"
   | "onOpenAgentSettings"
   | "onOpenPromptSettings"

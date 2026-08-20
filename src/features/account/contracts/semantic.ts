@@ -542,6 +542,37 @@ export type SubscriptionEngineUsageV1 = {
   readonly models: readonly SubscriptionUsageModelV1[];
 };
 
+/** Compact authority facts used outside the full usage dashboard. */
+export type SubscriptionSummaryWindowV1 = {
+  readonly limit: QuotaMeasureV1;
+  readonly used: QuotaMeasureV1;
+  readonly remaining: QuotaMeasureV1;
+  readonly percentage: string;
+};
+
+export type AccountSubscriptionSummaryItemV1 = {
+  /** Stable renderer-only identity; never an authority credential. */
+  readonly id: string;
+  /** Null means Doge cannot reliably map this subscription to a supported engine. */
+  readonly engineId: ManagedUsageEngineIdV1 | null;
+  readonly engineLabel: string | null;
+  readonly subscriptionLabel: string;
+  readonly status: "active" | "unknown";
+  readonly expiresAt: string | null;
+  readonly windows: {
+    readonly daily: SubscriptionSummaryWindowV1 | null;
+    readonly weekly: SubscriptionSummaryWindowV1 | null;
+    readonly monthly: SubscriptionSummaryWindowV1 | null;
+  };
+};
+
+export type AccountSubscriptionSummaryViewV1 = {
+  readonly status: "available" | "unavailable";
+  readonly source: "token2apiSubscription";
+  readonly fetchedAt: string | null;
+  readonly subscriptions: readonly AccountSubscriptionSummaryItemV1[];
+};
+
 export type QuotaUsageViewV1 = {
   readonly status: "available" | "unavailable";
   readonly source:

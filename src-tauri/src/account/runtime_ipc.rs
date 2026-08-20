@@ -400,6 +400,7 @@ pub(super) fn validate_operation_payload(operation: &str, payload: &Value) -> Re
         "gateway.bootstrap"
         | "profile.read"
         | "usage.read"
+        | "subscription.read"
         | "configuration.readOffer"
         | "configuration.readCurrentTask"
         | "profile.requestTotpEmailCode" => null(),

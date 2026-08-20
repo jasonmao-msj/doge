@@ -54,6 +54,7 @@ import {
 import { useAtomicProviderTargetCatalog } from './hooks/useProviderTargetCatalogOwners';
 import {
   buildProviderExecutionTarget,
+  normalizeExecutionProviderProfileId,
   resolveActiveProviderProfileId,
 } from './selectors/ModelSelect';
 import { LOCAL_PROVIDER_PROFILE_DISPLAY_NAME } from '../../../threads/constants/codexProviderProfiles';
@@ -457,6 +458,7 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
       const profileId = resolveActiveProviderProfileId(
         engine as ProviderId,
         executionTarget?.engine === engine ? executionTarget : null,
+        currentProviderProfileId,
       );
       if (!profileId) {
         return;
@@ -500,6 +502,11 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
           const profile = group?.profiles.find(
             (entry) => entry.id === profileId,
           );
+          const isLocalProfile =
+            normalizeExecutionProviderProfileId(
+              engine as ProviderId,
+              profileId,
+            ) === null;
           // groups 可能尚未投影出 profile label/source：本地渠道回落「本地配置」+ disk，
           // 保证 isResolvedExecutionTarget 可通过，否则 handleCreationTargetChange 会静默丢弃。
           createSessionTargetSeedKeyRef.current = seedKey;
@@ -509,8 +516,11 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
               engine as ProviderId,
               profileId,
               picked.id,
-              profile?.label || LOCAL_PROVIDER_PROFILE_DISPLAY_NAME,
-              profile?.source ?? "disk",
+              profile?.label ||
+                (isLocalProfile
+                  ? LOCAL_PROVIDER_PROFILE_DISPLAY_NAME
+                  : profileId),
+              profile?.source ?? (isLocalProfile ? "disk" : "managed"),
               true,
               runtimeModel,
             ),

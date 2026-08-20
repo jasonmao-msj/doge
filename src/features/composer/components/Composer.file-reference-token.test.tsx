@@ -31,6 +31,7 @@ import { subscribeProviderContinuationDialogRequests } from "../../threads/servi
 import { pushErrorToast } from "../../../services/toasts";
 import {
   clearManagedEngineEntitlementsV1,
+  markManagedEnginePreparedV1,
   publishManagedEngineEntitlementsV1,
 } from "../../account/runtime/engineEntitlementStore";
 import { subscribeAccountEngineSwitchV1 } from "../../account/runtime/engineSwitchSignal";
@@ -175,6 +176,21 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
           })
         }
       />
+      <button
+        type="button"
+        data-testid="select-codex-local-target"
+        onClick={() =>
+          onExecutionTargetChange?.({
+            engine: "codex",
+            providerProfileId: null,
+            modelCatalogEntryId: "local-codex",
+            model: "gpt-5.5-codex",
+            reasoning: null,
+            providerProfileNameSnapshot: "本地配置",
+            providerProfileSource: "disk",
+          })
+        }
+      />
     </>
   ),
 }));
@@ -190,6 +206,9 @@ function ComposerHarness({
   selectedEngine = "claude",
   activeThreadId = "thread-1",
   sharedTargetPickerLocked = false,
+  models = [],
+  selectedModelId = null,
+  providerProfileId = null,
 }: {
   onSend: (text: string, options?: MessageSendOptions) => void;
   pendingCodeAnnotation?: CodeAnnotationDraftInput | null;
@@ -204,8 +223,16 @@ function ComposerHarness({
   onCreationTargetEngineChange?: (engine: EngineType | null) => void;
   onSelectEngine?: (engine: EngineType) => void;
   selectedEngine?: EngineType;
-  activeThreadId?: string;
+  activeThreadId?: string | null;
   sharedTargetPickerLocked?: boolean;
+  models?: Array<{
+    id: string;
+    displayName: string;
+    model: string;
+    providerProfileId?: string | null;
+  }>;
+  selectedModelId?: string | null;
+  providerProfileId?: string | null;
 }) {
   const [selectedCodeAnnotations, setSelectedCodeAnnotations] = useState<CodeAnnotationSelection[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -260,7 +287,7 @@ function ComposerHarness({
       sharedTargetPickerLocked={sharedTargetPickerLocked}
       createSessionTargetPicker={createSessionTargetPicker}
       onCreationTargetEngineChange={onCreationTargetEngineChange}
-      providerProfileId={sharedTarget?.providerProfileId ?? null}
+      providerProfileId={sharedTarget?.providerProfileId ?? providerProfileId}
       models={
         sharedTarget
           ? [
@@ -270,9 +297,9 @@ function ComposerHarness({
                 model: sharedTarget.runtimeModel ?? sharedTarget.model,
               },
             ]
-          : []
+          : models
       }
-      selectedModelId={sharedTarget?.model ?? null}
+      selectedModelId={sharedTarget?.model ?? selectedModelId}
       onSelectModel={() => {}}
       reasoningOptions={[]}
       selectedEffort={sharedTarget?.effort ?? null}
@@ -400,6 +427,119 @@ describe("Composer file reference token", () => {
           model: "deepseek-v4-pro",
           effort: "high",
         },
+      }),
+    );
+  });
+
+  it("sends a prepared Codex subscription through the managed provider", async () => {
+    publishManagedEngineEntitlementsV1([
+      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+    ]);
+    markManagedEnginePreparedV1("codex");
+    const onSend = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={onSend}
+        createSessionTargetPicker
+        selectedEngine="codex"
+        activeThreadId={null}
+        selectedModelId="matrix-codex"
+        models={[
+          {
+            id: "matrix-codex",
+            displayName: "GPT-5.5 Codex",
+            model: "gpt-5.5-codex",
+            providerProfileId: "doge-token-matrix",
+          },
+        ]}
+      />,
+    );
+
+    expect(getTextarea(view.container).dataset.providerProfileId).toBe(
+      "doge-token-matrix",
+    );
+    await act(async () => {
+      const textarea = getTextarea(view.container);
+      fireEvent.change(textarea, { target: { value: "managed target" } });
+      fireEvent.keyDown(textarea, { key: "Enter" });
+      await Promise.resolve();
+    });
+
+    expect(onSend).toHaveBeenCalledWith(
+      "managed target",
+      expect.objectContaining({
+        createSessionTarget: expect.objectContaining({
+          engine: "codex",
+          providerProfileId: "doge-token-matrix",
+          modelCatalogEntryId: "matrix-codex",
+          model: "gpt-5.5-codex",
+        }),
+      }),
+    );
+  });
+
+  it("blocks a prepared managed default until its scoped catalog resolves", async () => {
+    publishManagedEngineEntitlementsV1([
+      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+    ]);
+    markManagedEnginePreparedV1("codex");
+    const onSend = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={onSend}
+        createSessionTargetPicker
+        selectedEngine="codex"
+        activeThreadId={null}
+      />,
+    );
+
+    await act(async () => {
+      const textarea = getTextarea(view.container);
+      fireEvent.change(textarea, { target: { value: "must not fall back" } });
+      fireEvent.keyDown(textarea, { key: "Enter" });
+      await Promise.resolve();
+    });
+
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
+  it("keeps an explicit local target usable while the managed catalog is pending", async () => {
+    publishManagedEngineEntitlementsV1([
+      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
+      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+    ]);
+    markManagedEnginePreparedV1("codex");
+    const onSend = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={onSend}
+        createSessionTargetPicker
+        selectedEngine="codex"
+        activeThreadId={null}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(view.getByTestId("select-codex-local-target"));
+      await Promise.resolve();
+    });
+    await act(async () => {
+      const textarea = getTextarea(view.container);
+      fireEvent.change(textarea, { target: { value: "explicit local" } });
+      fireEvent.keyDown(textarea, { key: "Enter" });
+      await Promise.resolve();
+    });
+
+    expect(onSend).toHaveBeenCalledWith(
+      "explicit local",
+      expect.objectContaining({
+        createSessionTarget: expect.objectContaining({
+          engine: "codex",
+          providerProfileId: null,
+          providerProfileSource: "disk",
+        }),
       }),
     );
   });

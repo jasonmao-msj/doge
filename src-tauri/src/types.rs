@@ -892,6 +892,10 @@ fn default_opencode_enabled() -> bool {
     true
 }
 
+fn default_disabled_cli_engines() -> Vec<String> {
+    vec!["grok".to_string(), "kimi".to_string(), "opencode".to_string()]
+}
+
 fn default_email_sender_smtp_port() -> u16 {
     465
 }
@@ -936,7 +940,7 @@ pub(crate) struct AppSettings {
     pub(crate) gemini_enabled: bool,
     #[serde(default = "default_opencode_enabled", rename = "opencodeEnabled")]
     pub(crate) opencode_enabled: bool,
-    #[serde(default, rename = "disabledCliEngines")]
+    #[serde(default = "default_disabled_cli_engines", rename = "disabledCliEngines")]
     pub(crate) disabled_cli_engines: Vec<String>,
     #[serde(default, rename = "sessionAttributionMode")]
     pub(crate) session_attribution_mode: WorkspaceSessionAttributionMode,
@@ -1959,7 +1963,7 @@ impl Default for AppSettings {
             terminal_shell_path: None,
             gemini_enabled: default_gemini_enabled(),
             opencode_enabled: default_opencode_enabled(),
-            disabled_cli_engines: Vec::new(),
+            disabled_cli_engines: default_disabled_cli_engines(),
             session_attribution_mode: WorkspaceSessionAttributionMode::Related,
             backend_mode: BackendMode::Local,
             remote_backend_host: default_remote_backend_host(),
@@ -2384,7 +2388,14 @@ mod tests {
         assert!(!settings.system_proxy_enabled);
         assert!(!settings.gemini_enabled);
         assert!(settings.opencode_enabled);
-        assert!(settings.disabled_cli_engines.is_empty());
+        assert_eq!(
+            settings.disabled_cli_engines,
+            vec![
+                "grok".to_string(),
+                "kimi".to_string(),
+                "opencode".to_string(),
+            ]
+        );
         assert_eq!(
             settings.session_attribution_mode,
             WorkspaceSessionAttributionMode::Related

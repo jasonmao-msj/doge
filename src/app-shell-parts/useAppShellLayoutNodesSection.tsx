@@ -2016,6 +2016,7 @@ export function useAppShellLayoutNodesSection(
     },
     chrome: {
       onOpenSettings: handleOpenSettings,
+      onOpenAccount: accountConvenienceV1Enabled ? handleOpenAccount : undefined,
       onOpenShortcutsSettings: handleOpenShortcutsSettings,
       onOpenAgentSettings: handleOpenAgentSettings,
       onOpenPromptSettings: handleOpenPromptSettings,

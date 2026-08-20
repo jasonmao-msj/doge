@@ -29,6 +29,7 @@ import {
   configResultHandleV1,
   humanVerificationHandleV1,
   type GatewayResultV1,
+  type AccountSubscriptionSummaryViewV1,
   type QuotaUsageViewV1,
   type UsageDayModelsViewV1,
 } from "../contracts/semantic";
@@ -262,6 +263,86 @@ function quotaViewV1(runtime: ScenarioRuntimeV1): QuotaUsageViewV1 {
       }],
       models: [{ modelLabel: "claude-sonnet", ...claudeTotals }],
     }],
+  };
+}
+
+function subscriptionSummaryViewV1(
+  runtime: ScenarioRuntimeV1,
+): AccountSubscriptionSummaryViewV1 {
+  const expiresAt = new Date(
+    Date.parse(runtime.nowIso()) + 30 * 86_400_000,
+  ).toISOString();
+  const subscriptions: AccountSubscriptionSummaryViewV1["subscriptions"] = [
+    {
+      id: "subscription-codex",
+      engineId: "codex",
+      engineLabel: "Codex",
+      subscriptionLabel: "Synthetic Codex plan",
+      status: "active",
+      expiresAt,
+      windows: {
+        daily: {
+          limit: { value: "10", unit: "usd" },
+          used: { value: "1", unit: "usd" },
+          remaining: { value: "9", unit: "usd" },
+          percentage: "10",
+        },
+        weekly: null,
+        monthly: null,
+      },
+    },
+    {
+      id: "subscription-claude",
+      engineId: "claude-code",
+      engineLabel: "Claude",
+      subscriptionLabel: "Synthetic Claude plan",
+      status: "active",
+      expiresAt,
+      windows: {
+        daily: {
+          limit: { value: "8", unit: "usd" },
+          used: { value: "0.75", unit: "usd" },
+          remaining: { value: "7.25", unit: "usd" },
+          percentage: "9.375",
+        },
+        weekly: null,
+        monthly: null,
+      },
+    },
+  ];
+  if (runtime.scenario.id === "subscription.summary-multiple") {
+    return {
+      status: "available",
+      source: "token2apiSubscription",
+      fetchedAt: runtime.nowIso(),
+      subscriptions: [
+        ...subscriptions,
+        {
+          id: "subscription-codex-team",
+          engineId: "codex",
+          engineLabel: "Codex",
+          subscriptionLabel: "Synthetic Codex team plan",
+          status: "active",
+          expiresAt,
+          windows: { daily: null, weekly: null, monthly: null },
+        },
+        {
+          id: "subscription-unmapped",
+          engineId: null,
+          engineLabel: null,
+          subscriptionLabel: "Synthetic future plan",
+          status: "unknown",
+          expiresAt: null,
+          windows: { daily: null, weekly: null, monthly: null },
+        },
+      ],
+    };
+  }
+  return {
+    status: "available",
+    source: "token2apiSubscription",
+    fetchedAt: runtime.nowIso(),
+    subscriptions,
   };
 }
 
@@ -695,6 +776,12 @@ export class MockAccountGatewayV1 implements AccountGatewayV1 {
     readDayModels: (input, context) =>
       this.execute("usage.readDayModels", context, () =>
         usageDayModelsViewV1(input.engineId, input.date)),
+  };
+
+  readonly subscription: AccountGatewayV1["subscription"] = {
+    read: (context) =>
+      this.execute("subscription.read", context, () =>
+        subscriptionSummaryViewV1(this.runtime)),
   };
 
   readonly managedKey: AccountGatewayV1["managedKey"] = {

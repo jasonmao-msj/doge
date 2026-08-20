@@ -47,6 +47,7 @@ impl AccountRuntime {
             "profile.revokeAllSessions" => self.revoke_all(state).await,
             "usage.read" => self.read_usage(state).await,
             "usage.readDayModels" => self.read_usage_day_models(state, payload).await,
+            "subscription.read" => self.read_subscription_summary(state).await,
             "managedKey.readStatus" => self.managed_key_status(state),
             "managedKey.listCandidates" => self.list_api_key_candidates(state).await,
             "managedKey.selectExisting" => {
@@ -824,6 +825,23 @@ impl AccountRuntime {
             &start_date,
             &end_date,
         ))
+    }
+
+    pub(super) async fn read_subscription_summary(
+        &self,
+        state: &mut RuntimeState,
+    ) -> Result<Value, Value> {
+        let access = self.authorized_access_token(state).await?;
+        let authority = self.authority_required()?;
+        let catalog = authority
+            .desktop_engines(&access)
+            .await
+            .map_err(|error| authority_failure(error, "subscription"))?;
+        let summary = authority
+            .subscription_summary(&access)
+            .await
+            .map_err(|error| authority_failure(error, "subscription"))?;
+        Ok(subscription_summary_value(&catalog, &summary, &rfc3339_now()))
     }
 
     pub(super) async fn read_usage_day_models(

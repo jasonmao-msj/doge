@@ -24,7 +24,9 @@ import {
 } from "../runtime/engineSwitchSignal";
 import {
   clearManagedEngineEntitlementsV1,
-  markManagedEngineEntitledV1,
+  clearManagedEnginePreparedV1,
+  MANAGED_PROVIDER_PROFILE_ID_V1,
+  markManagedEnginePreparedV1,
   publishManagedEngineEntitlementsV1,
 } from "../runtime/engineEntitlementStore";
 import {
@@ -55,6 +57,7 @@ import {
   type GateAccountExit,
 } from "./AccountAppGateViews";
 import { EngineIcon } from "../../engine/components/EngineIcon";
+import { activateEngineProviderProfileAndNotify } from "../../vendors/activateEngineProviderProfile";
 import { activateAccountManagedEngine } from "../../../services/accountEngineActivation";
 import { openAccountExternalUrl } from "../../../services/accountExternalLinks";
 import "./account-app-gate.css";
@@ -73,6 +76,10 @@ export type AccountAppGateProps = {
   readonly gateway: AccountGatewayV1;
   readonly engineClient?: AccountEngineOnboardingClientV1;
   readonly engineActivator?: (engineId: ManagedEngineIdV1) => Promise<void>;
+  readonly engineProviderActivator?: (
+    engine: "codex" | "claude",
+    providerProfileId: string,
+  ) => Promise<void>;
   readonly engineToolchain?: ManagedEngineToolchainClientV1;
   readonly readyContent?: ReactNode;
 };
@@ -81,6 +88,7 @@ export function AccountAppGate({
   gateway,
   engineClient,
   engineActivator,
+  engineProviderActivator,
   engineToolchain,
   readyContent,
 }: AccountAppGateProps) {
@@ -97,6 +105,7 @@ export function AccountAppGate({
       <AccountAppGateInner
         client={client}
         activateEngine={engineActivator ?? activateManagedEngine}
+        activateProvider={engineProviderActivator ?? activateEngineProviderProfileAndNotify}
         toolchain={toolchainClient}
         readyContent={readyContent}
       />
@@ -107,11 +116,16 @@ export function AccountAppGate({
 function AccountAppGateInner({
   client,
   activateEngine,
+  activateProvider,
   toolchain,
   readyContent,
 }: {
   readonly client: AccountEngineOnboardingClientV1;
   readonly activateEngine: (engineId: ManagedEngineIdV1) => Promise<void>;
+  readonly activateProvider: (
+    engine: "codex" | "claude",
+    providerProfileId: string,
+  ) => Promise<void>;
   readonly toolchain: ManagedEngineToolchainClientV1;
   readonly readyContent?: React.ReactNode;
 }) {
@@ -143,6 +157,10 @@ function AccountAppGateInner({
   ) => {
     try {
       await activateEngine(engineId);
+      await activateProvider(
+        engineId === "claude-code" ? "claude" : "codex",
+        MANAGED_PROVIDER_PROFILE_ID_V1,
+      );
     } catch {
       if (flowGeneration.current !== generation) return;
       setFailure("engineUnavailable");
@@ -152,7 +170,7 @@ function AccountAppGateInner({
     }
     if (flowGeneration.current !== generation) return;
     writeLastManagedEnginePreferenceV1(engineId);
-    markManagedEngineEntitledV1(engineId);
+    markManagedEnginePreparedV1(engineId);
     const completion = activeIntent.current;
     const shouldPublishCompletion = inAppFlow.current && completion !== null;
     inAppFlow.current = false;
@@ -165,7 +183,7 @@ function AccountAppGateInner({
         openNewConversation: completion.openNewConversation,
       });
     }
-  }, [activateEngine]);
+  }, [activateEngine, activateProvider]);
 
   const finishPreparation = useCallback(async (
     engineId: ManagedEngineIdV1,
@@ -173,6 +191,7 @@ function AccountAppGateInner({
   ) => {
     setPhase("preparing");
     setFailure(null);
+    clearManagedEnginePreparedV1(engineId);
     let result: Awaited<ReturnType<AccountEngineOnboardingClientV1["prepare"]>>;
     try {
       result = await client.prepare(engineId);
@@ -385,6 +404,7 @@ function AccountAppGateInner({
     flowGeneration.current = nextFlowGeneration;
     inAppFlow.current = false;
     activeIntent.current = null;
+    clearManagedEngineEntitlementsV1();
     setToolchainChoice(null);
     setPhase("catalog");
     setFailure(null);
@@ -440,6 +460,9 @@ function AccountAppGateInner({
     flowGeneration.current = nextFlowGeneration;
     inAppFlow.current = true;
     activeIntent.current = nextIntent;
+    if (nextIntent.targetEngineId !== null) {
+      clearManagedEnginePreparedV1(nextIntent.targetEngineId);
+    }
     setFailure(null);
     setSelectedEngine(nextIntent.targetEngineId);
     setPlans(null);

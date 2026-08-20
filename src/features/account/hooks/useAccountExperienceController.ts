@@ -60,7 +60,9 @@ export function useAccountExperienceControllerV1(
 ) {
   const gateway = useAccountGatewayV1();
   const loadExtras = options.loadAuthenticatedExtras !== false;
-  const [bootstrap, setBootstrap] = useState<AccountBootstrapViewV1 | null>(null);
+  const [bootstrap, setBootstrap] = useState<AccountBootstrapViewV1 | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [bootstrapRetrying, setBootstrapRetrying] = useState(false);
   const [bootstrapRetryCompleted, setBootstrapRetryCompleted] = useState(false);
@@ -69,26 +71,41 @@ export function useAccountExperienceControllerV1(
   const [authSurface, setAuthSurface] = useState<AccountAuthSurfaceV1>("login");
   const [authNext, setAuthNext] = useState<AuthNextViewV1 | null>(null);
   const [profile, setProfile] = useState<AccountCenterViewV1 | null>(null);
-  const [centerTab, setCenterTab] = useState<AccountCenterTabV1>("overview");
+  const [centerTab, setCenterTab] =
+    useState<AccountCenterTabV1>("subscription");
   const [usage, setUsage] = useState<QuotaUsageViewV1 | null>(null);
   const [usageLoading, setUsageLoading] = useState(false);
-  const [usageDayModelsByKey, setUsageDayModelsByKey] = useState<Readonly<Record<string, UsageDayModelsViewV1>>>(() => ({}));
-  const [usageDayModelsLoadingKeys, setUsageDayModelsLoadingKeys] = useState<ReadonlySet<string>>(() => new Set());
-  const [usageDayModelsFailedKeys, setUsageDayModelsFailedKeys] = useState<ReadonlySet<string>>(() => new Set());
-  const [securityNotice, setSecurityNotice] = useState<"profileUpdated" | "passwordChanged" | null>(null);
-  const [configuration, setConfiguration] = useState<AccountConfigurationSurfaceV1>(
-    INITIAL_CONFIGURATION_SURFACE_V1,
-  );
+  const [usageDayModelsByKey, setUsageDayModelsByKey] = useState<
+    Readonly<Record<string, UsageDayModelsViewV1>>
+  >(() => ({}));
+  const [usageDayModelsLoadingKeys, setUsageDayModelsLoadingKeys] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
+  const [usageDayModelsFailedKeys, setUsageDayModelsFailedKeys] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
+  const [securityNotice, setSecurityNotice] = useState<
+    "profileUpdated" | "passwordChanged" | null
+  >(null);
+  const [configuration, setConfiguration] =
+    useState<AccountConfigurationSurfaceV1>(INITIAL_CONFIGURATION_SURFACE_V1);
   const generationRef = useRef(0);
   const usageRequestGenerationRef = useRef(0);
   const usageDayInFlightRef = useRef(new Set<string>());
   const loadingGenerationRef = useRef<number | null>(null);
   const bootstrapRetryInFlightRef = useRef(false);
   const oauthWakeupsRef = useRef(new OAuthWakeupCoordinatorV1());
-  const readOAuthAttemptRef = useRef<(attempt: OAuthAttemptHandleV1) => void>(() => undefined);
-  const passwordResetWakeupsRef = useRef(new PasswordResetWakeupCoordinatorV1());
-  const inspectPasswordResetRef = useRef<(intent: ExternalIntentHandleV1) => void>(() => undefined);
-  const [retryableResetIntent, setRetryableResetIntent] = useState<ExternalIntentHandleV1 | null>(null);
+  const readOAuthAttemptRef = useRef<(attempt: OAuthAttemptHandleV1) => void>(
+    () => undefined,
+  );
+  const passwordResetWakeupsRef = useRef(
+    new PasswordResetWakeupCoordinatorV1(),
+  );
+  const inspectPasswordResetRef = useRef<
+    (intent: ExternalIntentHandleV1) => void
+  >(() => undefined);
+  const [retryableResetIntent, setRetryableResetIntent] =
+    useState<ExternalIntentHandleV1 | null>(null);
   const reopenRequested = useAccountConfigurationReopenRequestedV1();
 
   const readOffer = useCallback(async () => {
@@ -128,35 +145,44 @@ export function useAccountExperienceControllerV1(
       ...current,
       loadingKeys: false,
       keyCandidates: result.ok ? result.value : current.keyCandidates,
-      selectedKey: result.ok && current.selectedKey &&
-        result.value.keys.some((candidate) => candidate.key === current.selectedKey &&
-          candidate.status === "active" && candidate.availability === "selectable")
-        ? current.selectedKey
-        : null,
+      selectedKey:
+        result.ok &&
+        current.selectedKey &&
+        result.value.keys.some(
+          (candidate) =>
+            candidate.key === current.selectedKey &&
+            candidate.status === "active" &&
+            candidate.availability === "selectable",
+        )
+          ? current.selectedKey
+          : null,
     }));
     if (!result.ok) setFailure(result.error);
   }, [gateway]);
 
-  const reconcileConfigurationTask = useCallback((task: ConfigurationTaskViewV1) => {
-    if ("result" in task) {
-      setConfiguration((current) => ({ ...current, result: task }));
-      if (task.acknowledged) setAccountConfigurationBubbleVisibleV1(true);
-      return;
-    }
-    if ("plan" in task) {
-      setConfiguration((current) => ({ ...current, plan: task }));
-      return;
-    }
-    if (task.status === "available") {
-      setConfiguration((current) => ({ ...current, offer: task }));
-      return;
-    }
-    if (task.status === "none") {
-      setConfiguration(INITIAL_CONFIGURATION_SURFACE_V1);
-      return;
-    }
-    setConfiguration((current) => ({ ...current, offer: null }));
-  }, []);
+  const reconcileConfigurationTask = useCallback(
+    (task: ConfigurationTaskViewV1) => {
+      if ("result" in task) {
+        setConfiguration((current) => ({ ...current, result: task }));
+        if (task.acknowledged) setAccountConfigurationBubbleVisibleV1(true);
+        return;
+      }
+      if ("plan" in task) {
+        setConfiguration((current) => ({ ...current, plan: task }));
+        return;
+      }
+      if (task.status === "available") {
+        setConfiguration((current) => ({ ...current, offer: task }));
+        return;
+      }
+      if (task.status === "none") {
+        setConfiguration(INITIAL_CONFIGURATION_SURFACE_V1);
+        return;
+      }
+      setConfiguration((current) => ({ ...current, offer: null }));
+    },
+    [],
+  );
 
   const readCurrentConfigurationTask = useCallback(async () => {
     const result = await gateway.configuration.readCurrentTask({});
@@ -171,7 +197,11 @@ export function useAccountExperienceControllerV1(
     }
     reconcileConfigurationTask(result.value);
     if (!("status" in result.value && result.value.status === "none")) {
-      setConfiguration((current) => ({ ...current, open: true, bubbleVisible: true }));
+      setConfiguration((current) => ({
+        ...current,
+        open: true,
+        bubbleVisible: true,
+      }));
       setAccountConfigurationBubbleVisibleV1(false);
     }
   }, [gateway, reconcileConfigurationTask]);
@@ -185,7 +215,8 @@ export function useAccountExperienceControllerV1(
     const taskResult = await gateway.configuration.readCurrentTask({});
     if (taskResult.ok) {
       reconcileConfigurationTask(taskResult.value);
-      if ("plan" in taskResult.value ||
+      if (
+        "plan" in taskResult.value ||
         ("result" in taskResult.value && !taskResult.value.acknowledged)
       ) {
         setConfiguration((current) => ({ ...current, open: true }));
@@ -194,34 +225,42 @@ export function useAccountExperienceControllerV1(
       if ("result" in taskResult.value) return;
     }
     await readOffer();
-  }, [gateway, loadApiKeyCandidates, loadExtras, readManagedKeyStatus, readOffer, reconcileConfigurationTask]);
+  }, [
+    gateway,
+    loadApiKeyCandidates,
+    loadExtras,
+    readManagedKeyStatus,
+    readOffer,
+    reconcileConfigurationTask,
+  ]);
 
-  const bootstrapAccount = useCallback(async (
-    options: { readonly indicateLoading?: boolean } = {},
-  ) => {
-    const generation = generationRef.current + 1;
-    generationRef.current = generation;
-    const indicateLoading = options.indicateLoading !== false;
-    if (indicateLoading) {
-      loadingGenerationRef.current = generation;
-      setLoading(true);
-    }
-    setFailure(null);
-    const result = await gateway.bootstrap({});
-    if (indicateLoading && loadingGenerationRef.current === generation) {
-      loadingGenerationRef.current = null;
-      setLoading(false);
-    }
-    if (generationRef.current !== generation) return;
-    if (!result.ok) {
-      setFailure(result.error);
-      return;
-    }
-    setBootstrap(result.value);
-    if (result.value.session.status === "authenticated") {
-      await loadAuthenticatedExtras();
-    }
-  }, [gateway, loadAuthenticatedExtras]);
+  const bootstrapAccount = useCallback(
+    async (options: { readonly indicateLoading?: boolean } = {}) => {
+      const generation = generationRef.current + 1;
+      generationRef.current = generation;
+      const indicateLoading = options.indicateLoading !== false;
+      if (indicateLoading) {
+        loadingGenerationRef.current = generation;
+        setLoading(true);
+      }
+      setFailure(null);
+      const result = await gateway.bootstrap({});
+      if (indicateLoading && loadingGenerationRef.current === generation) {
+        loadingGenerationRef.current = null;
+        setLoading(false);
+      }
+      if (generationRef.current !== generation) return;
+      if (!result.ok) {
+        setFailure(result.error);
+        return;
+      }
+      setBootstrap(result.value);
+      if (result.value.session.status === "authenticated") {
+        await loadAuthenticatedExtras();
+      }
+    },
+    [gateway, loadAuthenticatedExtras],
+  );
 
   const retryBootstrapAccount = useCallback(async () => {
     if (bootstrapRetryInFlightRef.current) return;
@@ -243,165 +282,201 @@ export function useAccountExperienceControllerV1(
     void reopenCurrentConfigurationTask();
   }, [reopenCurrentConfigurationTask, reopenRequested]);
 
-  const settleAuthNext = useCallback(async (next: AuthNextViewV1) => {
-    setAuthNext(next);
-    switch (next.next) {
-      case "verification":
-        setAuthSurface("verification");
-        break;
-      case "mfa":
-        setAuthSurface("mfa");
-        break;
-      case "oauthWaiting":
-        setAuthSurface("oauthWaiting");
-        if (oauthWakeupsRef.current.activate(next.attempt)) {
-          readOAuthAttemptRef.current(next.attempt);
-        }
-        break;
-      case "resetRequested":
-        setAuthSurface("resetRequested");
-        break;
-      case "passwordResetReady":
-        setAuthSurface("resetPassword");
-        break;
-      case "passwordResetCompleted":
-        passwordResetWakeupsRef.current.clear();
-        setAuthNext(null);
-        setAuthSurface("login");
-        setSecurityNotice("passwordChanged");
-        break;
-      case "authenticated":
-        setBootstrap((current) => current ? { ...current, session: next.session } : current);
-        setFailure(null);
-        await loadAuthenticatedExtras();
-        break;
-      case "oauthAccountCompletion":
-        setAuthSurface("oauthAccountCompletion");
-        break;
-    }
-  }, [loadAuthenticatedExtras]);
-
-  const runAuth = useCallback(async (
-    action: () => Promise<{ readonly ok: true; readonly value: AuthNextViewV1 } | { readonly ok: false; readonly error: GatewayFailureV1 }>,
-  ) => {
-    setBusy(true);
-    setFailure(null);
-    try {
-      const result = await action();
-      if (result.ok) await settleAuthNext(result.value);
-      else setFailure(result.error);
-    } finally {
-      setBusy(false);
-    }
-  }, [settleAuthNext]);
-
-  const login = useCallback((email: string, password: string) => runAuth(() =>
-    gateway.auth.login(
-      { email, password: transientSecretInputV1(password) },
-      createAccountCallContextV1(),
-    )), [gateway, runAuth]);
-
-  const register = useCallback((
-    email: string,
-    password: string,
-    options: {
-      readonly invitationCode?: string;
-      readonly promoCode?: string;
-      readonly agreementAccepted: boolean;
+  const settleAuthNext = useCallback(
+    async (next: AuthNextViewV1) => {
+      setAuthNext(next);
+      switch (next.next) {
+        case "verification":
+          setAuthSurface("verification");
+          break;
+        case "mfa":
+          setAuthSurface("mfa");
+          break;
+        case "oauthWaiting":
+          setAuthSurface("oauthWaiting");
+          if (oauthWakeupsRef.current.activate(next.attempt)) {
+            readOAuthAttemptRef.current(next.attempt);
+          }
+          break;
+        case "resetRequested":
+          setAuthSurface("resetRequested");
+          break;
+        case "passwordResetReady":
+          setAuthSurface("resetPassword");
+          break;
+        case "passwordResetCompleted":
+          passwordResetWakeupsRef.current.clear();
+          setAuthNext(null);
+          setAuthSurface("login");
+          setSecurityNotice("passwordChanged");
+          break;
+        case "authenticated":
+          setBootstrap((current) =>
+            current ? { ...current, session: next.session } : current,
+          );
+          setFailure(null);
+          await loadAuthenticatedExtras();
+          break;
+        case "oauthAccountCompletion":
+          setAuthSurface("oauthAccountCompletion");
+          break;
+      }
     },
-  ) => runAuth(() =>
-    gateway.auth.beginRegistration(
-      {
-        email,
-        password: transientSecretInputV1(password),
-        ...(options.invitationCode
-          ? { invitationCode: transientSecretInputV1(options.invitationCode) }
-          : {}),
-        ...(options.promoCode ? { promoCode: options.promoCode } : {}),
-        agreementAccepted: options.agreementAccepted,
+    [loadAuthenticatedExtras],
+  );
+
+  const runAuth = useCallback(
+    async (
+      action: () => Promise<
+        | { readonly ok: true; readonly value: AuthNextViewV1 }
+        | { readonly ok: false; readonly error: GatewayFailureV1 }
+      >,
+    ) => {
+      setBusy(true);
+      setFailure(null);
+      try {
+        const result = await action();
+        if (result.ok) await settleAuthNext(result.value);
+        else setFailure(result.error);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [settleAuthNext],
+  );
+
+  const login = useCallback(
+    (email: string, password: string) =>
+      runAuth(() =>
+        gateway.auth.login(
+          { email, password: transientSecretInputV1(password) },
+          createAccountCallContextV1(),
+        ),
+      ),
+    [gateway, runAuth],
+  );
+
+  const register = useCallback(
+    (
+      email: string,
+      password: string,
+      options: {
+        readonly invitationCode?: string;
+        readonly promoCode?: string;
+        readonly agreementAccepted: boolean;
       },
-      createAccountCallContextV1(),
-    )), [gateway, runAuth]);
+    ) =>
+      runAuth(() =>
+        gateway.auth.beginRegistration(
+          {
+            email,
+            password: transientSecretInputV1(password),
+            ...(options.invitationCode
+              ? {
+                  invitationCode: transientSecretInputV1(
+                    options.invitationCode,
+                  ),
+                }
+              : {}),
+            ...(options.promoCode ? { promoCode: options.promoCode } : {}),
+            agreementAccepted: options.agreementAccepted,
+          },
+          createAccountCallContextV1(),
+        ),
+      ),
+    [gateway, runAuth],
+  );
 
   const resendRegistrationCode = useCallback(() => {
     if (!authNext || authNext.next !== "verification") return;
-    void runAuth(() => gateway.auth.resendRegistrationCode(
-      { attempt: authNext.attempt },
-      createAccountCallContextV1(),
-    ));
+    void runAuth(() =>
+      gateway.auth.resendRegistrationCode(
+        { attempt: authNext.attempt },
+        createAccountCallContextV1(),
+      ),
+    );
   }, [authNext, gateway, runAuth]);
 
-  const requestPasswordReset = useCallback(async (email: string) => {
-    passwordResetWakeupsRef.current.startRequest();
-    setBusy(true);
-    setFailure(null);
-    const result = await gateway.auth.requestPasswordReset(
-      { email },
-      createAccountCallContextV1(),
-    );
-    if (!result.ok) {
-      passwordResetWakeupsRef.current.finishRequest(false);
-      setFailure(result.error);
-      setBusy(false);
-      return;
-    }
-    await settleAuthNext(result.value);
-    const queuedIntent = passwordResetWakeupsRef.current.finishRequest(
-      result.value.next === "resetRequested",
-    );
-    setBusy(false);
-    if (queuedIntent) {
-      setRetryableResetIntent(queuedIntent);
-      inspectPasswordResetRef.current(queuedIntent);
-    }
-  }, [gateway, settleAuthNext]);
-
-  const inspectPasswordReset = useCallback(async (intent: ExternalIntentHandleV1) => {
-    if (!passwordResetWakeupsRef.current.beginRead(intent)) return;
-    setRetryableResetIntent(intent);
-    setBusy(true);
-    let terminal = false;
-    try {
-      const result = await gateway.auth.inspectExternalIntent({ intent }, {});
+  const requestPasswordReset = useCallback(
+    async (email: string) => {
+      passwordResetWakeupsRef.current.startRequest();
+      setBusy(true);
+      setFailure(null);
+      const result = await gateway.auth.requestPasswordReset(
+        { email },
+        createAccountCallContextV1(),
+      );
       if (!result.ok) {
-        terminal = isTerminalPasswordResetFailureV1(result.error.code);
-        if (terminal) {
-          setRetryableResetIntent(null);
-          setAuthNext(null);
-          setAuthSurface("recover");
+        passwordResetWakeupsRef.current.finishRequest(false);
+        setFailure(result.error);
+        setBusy(false);
+        return;
+      }
+      await settleAuthNext(result.value);
+      const queuedIntent = passwordResetWakeupsRef.current.finishRequest(
+        result.value.next === "resetRequested",
+      );
+      setBusy(false);
+      if (queuedIntent) {
+        setRetryableResetIntent(queuedIntent);
+        inspectPasswordResetRef.current(queuedIntent);
+      }
+    },
+    [gateway, settleAuthNext],
+  );
+
+  const inspectPasswordReset = useCallback(
+    async (intent: ExternalIntentHandleV1) => {
+      if (!passwordResetWakeupsRef.current.beginRead(intent)) return;
+      setRetryableResetIntent(intent);
+      setBusy(true);
+      let terminal = false;
+      try {
+        const result = await gateway.auth.inspectExternalIntent({ intent }, {});
+        if (!result.ok) {
+          terminal = isTerminalPasswordResetFailureV1(result.error.code);
+          if (terminal) {
+            setRetryableResetIntent(null);
+            setAuthNext(null);
+            setAuthSurface("recover");
+          }
+          setFailure(result.error);
+          return;
         }
+        terminal = result.value.next !== "passwordResetReady";
+        if (result.value.next === "passwordResetReady") {
+          setRetryableResetIntent(null);
+        }
+        await settleAuthNext(result.value);
+      } finally {
+        passwordResetWakeupsRef.current.finishRead(intent, terminal);
+        setBusy(false);
+      }
+    },
+    [gateway, settleAuthNext],
+  );
+
+  const resetPassword = useCallback(
+    async (newPassword: string) => {
+      if (!authNext || authNext.next !== "passwordResetReady") return;
+      setBusy(true);
+      setFailure(null);
+      const result = await gateway.auth.resetPassword(
+        {
+          intent: authNext.intent,
+          newPassword: transientSecretInputV1(newPassword),
+        },
+        createAccountCallContextV1(),
+      );
+      setBusy(false);
+      if (!result.ok) {
         setFailure(result.error);
         return;
       }
-      terminal = result.value.next !== "passwordResetReady";
-      if (result.value.next === "passwordResetReady") {
-        setRetryableResetIntent(null);
-      }
       await settleAuthNext(result.value);
-    } finally {
-      passwordResetWakeupsRef.current.finishRead(intent, terminal);
-      setBusy(false);
-    }
-  }, [gateway, settleAuthNext]);
-
-  const resetPassword = useCallback(async (newPassword: string) => {
-    if (!authNext || authNext.next !== "passwordResetReady") return;
-    setBusy(true);
-    setFailure(null);
-    const result = await gateway.auth.resetPassword(
-      {
-        intent: authNext.intent,
-        newPassword: transientSecretInputV1(newPassword),
-      },
-      createAccountCallContextV1(),
-    );
-    setBusy(false);
-    if (!result.ok) {
-      setFailure(result.error);
-      return;
-    }
-    await settleAuthNext(result.value);
-  }, [authNext, gateway, settleAuthNext]);
+    },
+    [authNext, gateway, settleAuthNext],
+  );
 
   const cancelPasswordReset = useCallback(() => {
     passwordResetWakeupsRef.current.clear();
@@ -410,93 +485,118 @@ export function useAccountExperienceControllerV1(
     setAuthSurface("login");
   }, []);
 
-  const submitCode = useCallback((code: string) => {
-    if (!authNext || (authNext.next !== "verification" && authNext.next !== "mfa")) return;
-    const attempt = authNext.attempt;
-    void runAuth(() => authNext.next === "verification"
-      ? gateway.auth.submitRegistrationCode(
-        { attempt, code: transientSecretInputV1(code) },
-        createAccountCallContextV1(),
+  const submitCode = useCallback(
+    (code: string) => {
+      if (
+        !authNext ||
+        (authNext.next !== "verification" && authNext.next !== "mfa")
       )
-      : gateway.auth.verifyMfa(
-        { attempt, code: transientSecretInputV1(code) },
-        createAccountCallContextV1(),
-      ));
-  }, [authNext, gateway, runAuth]);
+        return;
+      const attempt = authNext.attempt;
+      void runAuth(() =>
+        authNext.next === "verification"
+          ? gateway.auth.submitRegistrationCode(
+              { attempt, code: transientSecretInputV1(code) },
+              createAccountCallContextV1(),
+            )
+          : gateway.auth.verifyMfa(
+              { attempt, code: transientSecretInputV1(code) },
+              createAccountCallContextV1(),
+            ),
+      );
+    },
+    [authNext, gateway, runAuth],
+  );
 
-  const startOAuth = useCallback(() => runAuth(() => gateway.auth.startOAuth(
-    { provider: "auth.oauth.github" },
-    createAccountCallContextV1(),
-  )), [gateway, runAuth]);
+  const startOAuth = useCallback(
+    () =>
+      runAuth(() =>
+        gateway.auth.startOAuth(
+          { provider: "auth.oauth.github" },
+          createAccountCallContextV1(),
+        ),
+      ),
+    [gateway, runAuth],
+  );
 
-  const completeOAuthAccount = useCallback((input: {
-    readonly email?: string;
-    readonly invitationCode?: string;
-    readonly mfaCode?: string;
-    readonly bindConfirmed?: boolean;
-  }) => {
-    if (!authNext || authNext.next !== "oauthAccountCompletion") return;
-    void runAuth(() => gateway.auth.completeOAuthAccount(
-      {
-        attempt: authNext.attempt,
-        ...(input.email ? { email: input.email } : {}),
-        ...(input.invitationCode
-          ? { invitationCode: transientSecretInputV1(input.invitationCode) }
-          : {}),
-        ...(input.mfaCode ? { mfaCode: transientSecretInputV1(input.mfaCode) } : {}),
-        ...(input.bindConfirmed === undefined
-          ? {}
-          : { bindConfirmed: input.bindConfirmed }),
-      },
-      createAccountCallContextV1(),
-    ));
-  }, [authNext, gateway, runAuth]);
+  const completeOAuthAccount = useCallback(
+    (input: {
+      readonly email?: string;
+      readonly invitationCode?: string;
+      readonly mfaCode?: string;
+      readonly bindConfirmed?: boolean;
+    }) => {
+      if (!authNext || authNext.next !== "oauthAccountCompletion") return;
+      void runAuth(() =>
+        gateway.auth.completeOAuthAccount(
+          {
+            attempt: authNext.attempt,
+            ...(input.email ? { email: input.email } : {}),
+            ...(input.invitationCode
+              ? { invitationCode: transientSecretInputV1(input.invitationCode) }
+              : {}),
+            ...(input.mfaCode
+              ? { mfaCode: transientSecretInputV1(input.mfaCode) }
+              : {}),
+            ...(input.bindConfirmed === undefined
+              ? {}
+              : { bindConfirmed: input.bindConfirmed }),
+          },
+          createAccountCallContextV1(),
+        ),
+      );
+    },
+    [authNext, gateway, runAuth],
+  );
 
-  const readOAuthAttempt = useCallback(async (attempt: OAuthAttemptHandleV1) => {
-    if (!oauthWakeupsRef.current.beginRead(attempt)) return;
-    setBusy(true);
-    let terminal = false;
-    try {
-      const result = await gateway.auth.readOAuthAttempt({ attempt }, {});
-      if (!result.ok) {
-        terminal = isTerminalOAuthFailureV1(result.error.code);
-        if (terminal) {
+  const readOAuthAttempt = useCallback(
+    async (attempt: OAuthAttemptHandleV1) => {
+      if (!oauthWakeupsRef.current.beginRead(attempt)) return;
+      setBusy(true);
+      let terminal = false;
+      try {
+        const result = await gateway.auth.readOAuthAttempt({ attempt }, {});
+        if (!result.ok) {
+          terminal = isTerminalOAuthFailureV1(result.error.code);
+          if (terminal) {
+            setAuthNext(null);
+            setAuthSurface("login");
+          }
+          setFailure(result.error);
+          return;
+        }
+        const next = oauthAttemptToAuthNextV1(result.value);
+        if (next) await settleAuthNext(next);
+        terminal = result.value.status !== "waiting";
+        if (result.value.status === "denied") {
+          setAuthNext(null);
+          setAuthSurface("login");
+          setFailure({
+            code: "oauthDenied",
+            stage: "oauth",
+            recovery: { action: "retry", afterMs: null },
+          });
+        }
+        if (result.value.status === "expired") {
+          setAuthNext(null);
+          setAuthSurface("login");
+          setFailure({
+            code: "externalIntentExpired",
+            stage: "oauth",
+            recovery: { action: "loginAgain" },
+          });
+        }
+        if (result.value.status === "cancelled") {
           setAuthNext(null);
           setAuthSurface("login");
         }
-        setFailure(result.error);
-        return;
+      } finally {
+        oauthWakeupsRef.current.finishRead(attempt, terminal);
+        setBusy(false);
       }
-      const next = oauthAttemptToAuthNextV1(result.value);
-      if (next) await settleAuthNext(next);
-      terminal = result.value.status !== "waiting";
-      if (result.value.status === "denied") {
-        setAuthNext(null);
-        setAuthSurface("login");
-        setFailure({
-          code: "oauthDenied",
-          stage: "oauth",
-          recovery: { action: "retry", afterMs: null },
-        });
-      }
-      if (result.value.status === "expired") {
-        setAuthNext(null);
-        setAuthSurface("login");
-        setFailure({
-          code: "externalIntentExpired",
-          stage: "oauth",
-          recovery: { action: "loginAgain" },
-        });
-      }
-      if (result.value.status === "cancelled") {
-        setAuthNext(null);
-        setAuthSurface("login");
-      }
-    } finally {
-      oauthWakeupsRef.current.finishRead(attempt, terminal);
-      setBusy(false);
-    }
-  }, [gateway, settleAuthNext]);
+    },
+    [gateway, settleAuthNext],
+  );
 
   useEffect(() => {
     readOAuthAttemptRef.current = (attempt) => {
@@ -519,7 +619,10 @@ export function useAccountExperienceControllerV1(
   useEffect(() => {
     void bootstrapAccount();
     return gateway.subscribe((event) => {
-      if (event.kind === "sessionChanged" || event.kind === "capabilitiesChanged") {
+      if (
+        event.kind === "sessionChanged" ||
+        event.kind === "capabilitiesChanged"
+      ) {
         void bootstrapAccount();
       }
       if (event.kind === "configurationTaskChanged") {
@@ -530,7 +633,10 @@ export function useAccountExperienceControllerV1(
           readOAuthAttemptRef.current(event.attempt);
         }
       }
-      if (event.kind === "externalIntentReady" && event.purpose === "passwordReset") {
+      if (
+        event.kind === "externalIntentReady" &&
+        event.purpose === "passwordReset"
+      ) {
         if (passwordResetWakeupsRef.current.observe(event.intent)) {
           setRetryableResetIntent(event.intent);
           inspectPasswordResetRef.current(event.intent);
@@ -546,8 +652,12 @@ export function useAccountExperienceControllerV1(
   }, [authNext, readOAuthAttempt]);
 
   const cancelOAuth = useCallback(async () => {
-    if (!authNext || (authNext.next !== "oauthWaiting" &&
-      authNext.next !== "oauthAccountCompletion")) return;
+    if (
+      !authNext ||
+      (authNext.next !== "oauthWaiting" &&
+        authNext.next !== "oauthAccountCompletion")
+    )
+      return;
     if (authNext.next === "oauthWaiting") {
       await gateway.auth.cancelOAuth(
         { attempt: authNext.attempt },
@@ -559,40 +669,50 @@ export function useAccountExperienceControllerV1(
     setAuthSurface("login");
   }, [authNext, gateway]);
 
-  const logout = useCallback(async (scope: "thisDevice" | "allSessions") => {
-    setBusy(true);
-    const result = await gateway.auth.logout({ scope }, createAccountCallContextV1());
-    setBusy(false);
-    if (!result.ok) {
-      setFailure(result.error);
-      return false;
-    }
-    generationRef.current += 1;
-    loadingGenerationRef.current = null;
-    setLoading(false);
-    setBootstrap((current) => current ? { ...current, session: { status: "signedOut" } } : current);
-    setProfile(null);
-    setUsage(null);
-    usageRequestGenerationRef.current += 1;
-    usageDayInFlightRef.current.clear();
-    setUsageDayModelsByKey({});
-    setUsageDayModelsLoadingKeys(new Set());
-    setUsageDayModelsFailedKeys(new Set());
-    setConfiguration(INITIAL_CONFIGURATION_SURFACE_V1);
-    setAuthSurface("login");
-    return true;
-  }, [gateway]);
+  const logout = useCallback(
+    async (scope: "thisDevice" | "allSessions") => {
+      setBusy(true);
+      const result = await gateway.auth.logout(
+        { scope },
+        createAccountCallContextV1(),
+      );
+      setBusy(false);
+      if (!result.ok) {
+        setFailure(result.error);
+        return false;
+      }
+      generationRef.current += 1;
+      loadingGenerationRef.current = null;
+      setLoading(false);
+      setBootstrap((current) =>
+        current ? { ...current, session: { status: "signedOut" } } : current,
+      );
+      setProfile(null);
+      setUsage(null);
+      usageRequestGenerationRef.current += 1;
+      usageDayInFlightRef.current.clear();
+      setUsageDayModelsByKey({});
+      setUsageDayModelsLoadingKeys(new Set());
+      setUsageDayModelsFailedKeys(new Set());
+      setConfiguration(INITIAL_CONFIGURATION_SURFACE_V1);
+      setAuthSurface("login");
+      return true;
+    },
+    [gateway],
+  );
 
   const loadUsage = useCallback(async () => {
     const requestGeneration = ++usageRequestGenerationRef.current;
     const accountGeneration = generationRef.current;
     setUsageLoading(true);
     const result = await gateway.usage.read({});
-    if (usageRequestGenerationRef.current === requestGeneration) setUsageLoading(false);
+    if (usageRequestGenerationRef.current === requestGeneration)
+      setUsageLoading(false);
     if (
       generationRef.current !== accountGeneration ||
       usageRequestGenerationRef.current !== requestGeneration
-    ) return;
+    )
+      return;
     if (result.ok) {
       setUsage(result.value);
       usageDayInFlightRef.current.clear();
@@ -604,155 +724,191 @@ export function useAccountExperienceControllerV1(
     }
   }, [gateway]);
 
-  const loadUsageDayModels = useCallback(async (
-    engineId: "codex" | "claude-code",
-    date: string,
-  ) => {
-    const key = `${engineId}:${date}`;
-    if (usageDayModelsByKey[key] || usageDayInFlightRef.current.has(key)) return;
-    const accountGeneration = generationRef.current;
-    usageDayInFlightRef.current.add(key);
-    setUsageDayModelsLoadingKeys((current) => new Set(current).add(key));
-    setUsageDayModelsFailedKeys((current) => {
-      const next = new Set(current);
-      next.delete(key);
-      return next;
-    });
-    const result = await gateway.usage.readDayModels({ engineId, date }, {});
-    usageDayInFlightRef.current.delete(key);
-    if (generationRef.current !== accountGeneration) return;
-    setUsageDayModelsLoadingKeys((current) => {
-      const next = new Set(current);
-      next.delete(key);
-      return next;
-    });
-    if (result.ok) {
-      setUsageDayModelsByKey((current) => ({ ...current, [key]: result.value }));
-    } else {
-      setUsageDayModelsFailedKeys((current) => new Set(current).add(key));
-    }
-  }, [gateway, usageDayModelsByKey]);
+  const loadUsageDayModels = useCallback(
+    async (engineId: "codex" | "claude-code", date: string) => {
+      const key = `${engineId}:${date}`;
+      if (usageDayModelsByKey[key] || usageDayInFlightRef.current.has(key))
+        return;
+      const accountGeneration = generationRef.current;
+      usageDayInFlightRef.current.add(key);
+      setUsageDayModelsLoadingKeys((current) => new Set(current).add(key));
+      setUsageDayModelsFailedKeys((current) => {
+        const next = new Set(current);
+        next.delete(key);
+        return next;
+      });
+      const result = await gateway.usage.readDayModels({ engineId, date }, {});
+      usageDayInFlightRef.current.delete(key);
+      if (generationRef.current !== accountGeneration) return;
+      setUsageDayModelsLoadingKeys((current) => {
+        const next = new Set(current);
+        next.delete(key);
+        return next;
+      });
+      if (result.ok) {
+        setUsageDayModelsByKey((current) => ({
+          ...current,
+          [key]: result.value,
+        }));
+      } else {
+        setUsageDayModelsFailedKeys((current) => new Set(current).add(key));
+      }
+    },
+    [gateway, usageDayModelsByKey],
+  );
 
   const openUsage = useCallback(() => {
     setCenterTab("usage");
     if (usage === null && !usageLoading) void loadUsage();
   }, [loadUsage, usage, usageLoading]);
 
-  const updateProfile = useCallback(async (displayName: string) => {
-    setBusy(true);
-    setFailure(null);
-    setSecurityNotice(null);
-    const result = await gateway.profile.updateProfile(
-      { displayName },
-      createAccountCallContextV1(),
-    );
-    setBusy(false);
-    if (!result.ok) {
-      setFailure(result.error);
-      return;
-    }
-    setProfile(result.value);
-    setBootstrap((current) => current && current.session.status === "authenticated"
-      ? {
-          ...current,
-          session: {
-            ...current.session,
-            profileLabel: result.value.profile.displayName,
-            primaryEmailLabel: result.value.profile.primaryEmailLabel,
-          },
-        }
-      : current);
-    setSecurityNotice("profileUpdated");
-  }, [gateway]);
+  const updateProfile = useCallback(
+    async (displayName: string) => {
+      setBusy(true);
+      setFailure(null);
+      setSecurityNotice(null);
+      const result = await gateway.profile.updateProfile(
+        { displayName },
+        createAccountCallContextV1(),
+      );
+      setBusy(false);
+      if (!result.ok) {
+        setFailure(result.error);
+        return;
+      }
+      setProfile(result.value);
+      setBootstrap((current) =>
+        current && current.session.status === "authenticated"
+          ? {
+              ...current,
+              session: {
+                ...current.session,
+                profileLabel: result.value.profile.displayName,
+                primaryEmailLabel: result.value.profile.primaryEmailLabel,
+              },
+            }
+          : current,
+      );
+      setSecurityNotice("profileUpdated");
+    },
+    [gateway],
+  );
 
-  const changePassword = useCallback(async (currentPassword: string, newPassword: string) => {
-    setBusy(true);
-    setFailure(null);
-    setSecurityNotice(null);
-    const result = await gateway.profile.changePassword(
-      {
-        currentPassword: transientSecretInputV1(currentPassword),
-        newPassword: transientSecretInputV1(newPassword),
-      },
-      createAccountCallContextV1(),
-    );
-    setBusy(false);
-    if (!result.ok) {
-      setFailure(result.error);
-      return;
-    }
-    generationRef.current += 1;
-    loadingGenerationRef.current = null;
-    setLoading(false);
-    setBootstrap((current) => current ? { ...current, session: { status: "signedOut" } } : current);
-    setProfile(null);
-    setUsage(null);
-    setConfiguration(INITIAL_CONFIGURATION_SURFACE_V1);
-    setAuthSurface("login");
-    setSecurityNotice("passwordChanged");
-  }, [gateway]);
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      setBusy(true);
+      setFailure(null);
+      setSecurityNotice(null);
+      const result = await gateway.profile.changePassword(
+        {
+          currentPassword: transientSecretInputV1(currentPassword),
+          newPassword: transientSecretInputV1(newPassword),
+        },
+        createAccountCallContextV1(),
+      );
+      setBusy(false);
+      if (!result.ok) {
+        setFailure(result.error);
+        return;
+      }
+      generationRef.current += 1;
+      loadingGenerationRef.current = null;
+      setLoading(false);
+      setBootstrap((current) =>
+        current ? { ...current, session: { status: "signedOut" } } : current,
+      );
+      setProfile(null);
+      setUsage(null);
+      setConfiguration(INITIAL_CONFIGURATION_SURFACE_V1);
+      setAuthSurface("login");
+      setSecurityNotice("passwordChanged");
+    },
+    [gateway],
+  );
 
   const createConfigurationPlan = useCallback(async () => {
     if (!configuration.managedKeyReady) return;
-    await createConfigurationPlanViewV1(gateway, setBusy, setFailure, setConfiguration);
+    await createConfigurationPlanViewV1(
+      gateway,
+      setBusy,
+      setFailure,
+      setConfiguration,
+    );
   }, [configuration.managedKeyReady, gateway]);
 
-  const selectConfigurationKey = useCallback(async (key: ApiKeyCandidateHandleV1) => {
-    setConfiguration((current) => ({
-      ...current,
-      selectedKey: key,
-      selectingKey: true,
-    }));
-    setFailure(null);
-    const selected = await gateway.managedKey.selectExisting(
-      {
-        recipeId: "doge.account.codex-token-service",
-        recipeVersion: 1,
-        key,
-        consent: "useSelectedApiKey",
-      },
-      createAccountCallContextV1(),
-    );
-    const ready = selected.ok && selected.value.status === "ready";
-    setConfiguration((current) => ({
-      ...current,
-      selectingKey: false,
-      managedKeyReady: ready,
-    }));
-    if (!selected.ok) {
-      setFailure(selected.error);
-      return;
-    }
-    if (ready) {
-      await createConfigurationPlanViewV1(gateway, setBusy, setFailure, setConfiguration);
-    }
-  }, [gateway]);
+  const selectConfigurationKey = useCallback(
+    async (key: ApiKeyCandidateHandleV1) => {
+      setConfiguration((current) => ({
+        ...current,
+        selectedKey: key,
+        selectingKey: true,
+      }));
+      setFailure(null);
+      const selected = await gateway.managedKey.selectExisting(
+        {
+          recipeId: "doge.account.codex-token-service",
+          recipeVersion: 1,
+          key,
+          consent: "useSelectedApiKey",
+        },
+        createAccountCallContextV1(),
+      );
+      const ready = selected.ok && selected.value.status === "ready";
+      setConfiguration((current) => ({
+        ...current,
+        selectingKey: false,
+        managedKeyReady: ready,
+      }));
+      if (!selected.ok) {
+        setFailure(selected.error);
+        return;
+      }
+      if (ready) {
+        await createConfigurationPlanViewV1(
+          gateway,
+          setBusy,
+          setFailure,
+          setConfiguration,
+        );
+      }
+    },
+    [gateway],
+  );
 
-  const toggleFileDetail = useCallback(async (fileHandle: string) => {
-    const currentPlan = configuration.plan;
-    const file = currentPlan?.files.find((candidate) => candidate.file === fileHandle);
-    if (!currentPlan || !file) return;
-    if (configuration.expandedFile === fileHandle) {
-      setConfiguration((current) => ({ ...current, expandedFile: null, fileDetail: null }));
-      return;
-    }
-    setConfiguration((current) => ({
-      ...current,
-      expandedFile: fileHandle,
-      fileDetail: null,
-      loadingDetail: true,
-    }));
-    const result = await gateway.configuration.readFileDetail(
-      { plan: currentPlan.plan, file: file.file },
-      {},
-    );
-    setConfiguration((current) => ({
-      ...current,
-      loadingDetail: false,
-      fileDetail: result.ok ? result.value : null,
-    }));
-    if (!result.ok) setFailure(result.error);
-  }, [configuration.expandedFile, configuration.plan, gateway]);
+  const toggleFileDetail = useCallback(
+    async (fileHandle: string) => {
+      const currentPlan = configuration.plan;
+      const file = currentPlan?.files.find(
+        (candidate) => candidate.file === fileHandle,
+      );
+      if (!currentPlan || !file) return;
+      if (configuration.expandedFile === fileHandle) {
+        setConfiguration((current) => ({
+          ...current,
+          expandedFile: null,
+          fileDetail: null,
+        }));
+        return;
+      }
+      setConfiguration((current) => ({
+        ...current,
+        expandedFile: fileHandle,
+        fileDetail: null,
+        loadingDetail: true,
+      }));
+      const result = await gateway.configuration.readFileDetail(
+        { plan: currentPlan.plan, file: file.file },
+        {},
+      );
+      setConfiguration((current) => ({
+        ...current,
+        loadingDetail: false,
+        fileDetail: result.ok ? result.value : null,
+      }));
+      if (!result.ok) setFailure(result.error);
+    },
+    [configuration.expandedFile, configuration.plan, gateway],
+  );
 
   const applyConfiguration = useCallback(async () => {
     if (!configuration.plan) return;
@@ -776,7 +932,11 @@ export function useAccountExperienceControllerV1(
   }, [configuration.plan, gateway]);
 
   const closeConfiguration = useCallback(() => {
-    setConfiguration((current) => ({ ...current, open: false, bubbleVisible: true }));
+    setConfiguration((current) => ({
+      ...current,
+      open: false,
+      bubbleVisible: true,
+    }));
     setAccountConfigurationBubbleVisibleV1(true);
   }, []);
 
@@ -788,7 +948,11 @@ export function useAccountExperienceControllerV1(
         createAccountCallContextV1(),
       );
     }
-    setConfiguration((current) => ({ ...current, open: false, bubbleVisible: true }));
+    setConfiguration((current) => ({
+      ...current,
+      open: false,
+      bubbleVisible: true,
+    }));
     setAccountConfigurationBubbleVisibleV1(true);
   }, [configuration.result, gateway]);
 
@@ -893,7 +1057,9 @@ export function useAccountExperienceControllerV1(
   };
 }
 
-export type AccountExperienceControllerV1 = ReturnType<typeof useAccountExperienceControllerV1>;
+export type AccountExperienceControllerV1 = ReturnType<
+  typeof useAccountExperienceControllerV1
+>;
 
 async function createConfigurationPlanViewV1(
   gateway: AccountGatewayV1,
@@ -915,5 +1081,9 @@ async function createConfigurationPlanViewV1(
     setFailure(result.error);
     return;
   }
-  setConfiguration((current) => ({ ...current, plan: result.value, open: true }));
+  setConfiguration((current) => ({
+    ...current,
+    plan: result.value,
+    open: true,
+  }));
 }

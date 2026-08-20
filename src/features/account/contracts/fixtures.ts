@@ -33,6 +33,7 @@ export const ACCOUNT_GOOD_CONTRACT_FIXTURES_V1 = {
       identityBindings: true,
       revokeAllSessions: true,
       quotaPull: true,
+      subscriptionSummary: true,
       apiKeyList: true,
       apiKeyHandoff: true,
       managedKeyProvision: true,

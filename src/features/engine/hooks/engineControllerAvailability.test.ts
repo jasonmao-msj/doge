@@ -16,23 +16,23 @@ describe("engineControllerAvailability", () => {
     expect(buildAvailableEngines([], false)).toEqual([
       expect.objectContaining({
         type: "claude",
-        displayName: "Claude Code",
-        shortName: "Claude Code",
+        displayName: "Claude",
+        shortName: "Claude",
         availabilityState: "loading",
       }),
       expect.objectContaining({
         type: "codex",
-        displayName: "Codex CLI",
+        displayName: "Codex",
         shortName: "Codex",
       }),
       expect.objectContaining({
         type: "grok",
-        displayName: "Grok CLI",
+        displayName: "Grok",
         shortName: "Grok",
       }),
       expect.objectContaining({
         type: "kimi",
-        displayName: "Kimi CLI",
+        displayName: "Kimi",
         shortName: "Kimi",
       }),
       expect.objectContaining({

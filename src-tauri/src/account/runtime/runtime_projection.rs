@@ -68,7 +68,7 @@ pub(super) fn authority_requirement(operation: &str) -> Option<AuthorityRequirem
                 "stable_account_reasons_v1",
             ],
         ),
-        "usage.read" | "usage.readDayModels" => AuthorityRequirement::new("quotaPull", stable),
+        "usage.read" | "usage.readDayModels" | "subscription.read" => AuthorityRequirement::new("quotaPull", stable),
         "managedKey.listCandidates" => AuthorityRequirement::new(
             "apiKeyList",
             &[
@@ -160,7 +160,7 @@ pub(super) fn bootstrap_value(
             enabled(false)
         },
         "usage.quotaPull": if settings_available { guaranteed("quotaPull", &["stable_account_reasons_v1"]) } else { enabled(false) },
-        "subscription.summary": { "status": "disabled", "reason": "featureFlagOff" },
+        "subscription.summary": if settings_available { guaranteed("quotaPull", &["stable_account_reasons_v1"]) } else { enabled(false) },
         "managedKey.listCandidates": if settings_available { guaranteed("apiKeyList", &["api_key_metadata_only_reads_v1", "stable_account_reasons_v1"]) } else { enabled(false) },
         "managedKey.selectExisting": if settings_available { guaranteed("apiKeyHandoff", &["api_key_one_time_secret_v1", "api_key_metadata_only_reads_v1", "api_key_owner_handoff_v1", "api_key_recoverable_encryption_v1", "stable_account_reasons_v1"]) } else { enabled(false) },
         "managedKey.provision": if settings_available { guaranteed("managedKeyProvision", &["api_key_one_time_secret_v1", "api_key_metadata_only_reads_v1", "stable_account_reasons_v1"]) } else { enabled(false) },
@@ -348,6 +348,53 @@ pub(super) fn subscription_usage_value(
     })
 }
 
+pub(super) fn subscription_summary_value(
+    catalog: &DesktopEngineCatalogWire,
+    summary: &SubscriptionSummaryWire,
+    fetched_at: &str,
+) -> Value {
+    let subscriptions = summary
+        .subscriptions
+        .iter()
+        .filter(|subscription| subscription.id > 0 && subscription.group_id > 0)
+        .map(|subscription| {
+            let engine = catalog.engines.iter().find(|engine| {
+                engine.entitlement.status == "active"
+                    && matches!(engine.id.as_str(), "codex" | "claude-code")
+                    && engine.entitlement.subscription_id == Some(subscription.id)
+                    && engine.entitlement.group_id == Some(subscription.group_id)
+            });
+            let engine_id = engine.map(|value| value.id.as_str());
+            let engine_label = engine.map(|value| match value.id.as_str() {
+                "codex" => "Codex".to_string(),
+                "claude-code" => "Claude".to_string(),
+                _ => safe_label(&value.display_name),
+            });
+            let subscription_label = safe_label(&subscription.group_name);
+            let fallback_label = engine_label.clone().unwrap_or_else(|| "订阅套餐".to_string());
+            json!({
+                "id": format!("subscription-{}", subscription.id),
+                "engineId": engine_id,
+                "engineLabel": engine_label,
+                "subscriptionLabel": if subscription_label.is_empty() { fallback_label } else { subscription_label },
+                "status": if subscription.status == "active" { "active" } else { "unknown" },
+                "expiresAt": subscription.expires_at.as_deref().and_then(normalize_authority_timestamp),
+                "windows": {
+                    "daily": subscription_summary_window_value(subscription.daily_used_usd, subscription.daily_limit_usd),
+                    "weekly": subscription_summary_window_value(subscription.weekly_used_usd, subscription.weekly_limit_usd),
+                    "monthly": subscription_summary_window_value(subscription.monthly_used_usd, subscription.monthly_limit_usd),
+                },
+            })
+        })
+        .collect::<Vec<_>>();
+    json!({
+        "status": "available",
+        "source": "token2apiSubscription",
+        "fetchedAt": fetched_at,
+        "subscriptions": subscriptions,
+    })
+}
+
 pub(super) fn usage_day_models_value(
     engine_id: &str,
     date: &str,
@@ -368,6 +415,22 @@ fn usage_window_value(window: &SubscriptionUsageWindowWire) -> Option<Value> {
         "remaining": money_measure(window.remaining_usd),
         "percentage": canonical_decimal(window.percentage.clamp(0.0, 100.0)),
         "resetsAt": resets_at,
+    }))
+}
+
+fn subscription_summary_window_value(used_usd: f64, limit_usd: f64) -> Option<Value> {
+    let limit = finite_non_negative(limit_usd);
+    if limit <= 0.0 {
+        return None;
+    }
+    let used = finite_non_negative(used_usd);
+    let remaining = (limit - used).max(0.0);
+    let percentage = (used / limit * 100.0).clamp(0.0, 100.0);
+    Some(json!({
+        "limit": money_measure(limit),
+        "used": money_measure(used),
+        "remaining": money_measure(remaining),
+        "percentage": canonical_decimal(percentage),
     }))
 }
 
@@ -821,6 +884,8 @@ pub(super) fn stage_for_operation(operation: &str) -> &'static str {
         "managedKey"
     } else if matches!(operation, "usage.read" | "usage.readDayModels") {
         "usage"
+    } else if operation == "subscription.read" {
+        "subscription"
     } else if operation.starts_with("profile.") {
         "security"
     } else if operation.starts_with("humanVerification.") {

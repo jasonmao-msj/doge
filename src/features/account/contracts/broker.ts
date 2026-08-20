@@ -161,6 +161,7 @@ const READ_ONLY_OPERATIONS_V1 = new Set<GatewayOperationNameV1>([
   "profile.read",
   "usage.read",
   "usage.readDayModels",
+  "subscription.read",
   "managedKey.readStatus",
   "configuration.readOffer",
   "configuration.readFileDetail",

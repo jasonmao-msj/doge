@@ -7,7 +7,10 @@ import { createScenarioRuntimeV1 } from "../mock/ScenarioRuntimeV1";
 import type { AccountGatewayEventV1, AccountGatewayV1 } from "../contracts";
 import type { AccountEngineOnboardingClientV1 } from "../runtime/engineOnboardingClient";
 import { writeLastManagedEnginePreferenceV1 } from "../runtime/enginePreference";
-import { clearManagedEngineEntitlementsV1 } from "../runtime/engineEntitlementStore";
+import {
+  clearManagedEngineEntitlementsV1,
+  readManagedEnginePreparationV1,
+} from "../runtime/engineEntitlementStore";
 import {
   requestAccountEngineSwitchV1,
   subscribeAccountEngineReadyV1,
@@ -21,6 +24,11 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("@tauri-apps/plugin-opener", () => ({ openUrl: vi.fn(async () => undefined) }));
+
+const activateProviderMock = vi.hoisted(() => vi.fn(async () => undefined));
+vi.mock("../../vendors/activateEngineProviderProfile", () => ({
+  activateEngineProviderProfileAndNotify: activateProviderMock,
+}));
 
 vi.mock("../../../services/accountEngineCommands", async (importOriginal) => ({
   ...await importOriginal<typeof import("../../../services/accountEngineCommands")>(),
@@ -40,6 +48,8 @@ beforeEach(() => {
   localStorage.clear();
   resetClientStorageForTests();
   clearManagedEngineEntitlementsV1();
+  activateProviderMock.mockReset();
+  activateProviderMock.mockResolvedValue(undefined);
   vi.mocked(resolveAccountEngineToolchainV1).mockImplementation(async (engineId) => ({
     ok: true,
     value: {
@@ -54,6 +64,51 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("AccountAppGate", () => {
+  it("activates the engine before the managed provider and marks preparation last", async () => {
+    const client = engineClient({ codexEntitled: true });
+    const sequence: string[] = [];
+    const activateEngine = vi.fn(async () => {
+      sequence.push("engine");
+    });
+    activateProviderMock.mockImplementation(async () => {
+      sequence.push("provider");
+    });
+
+    render(
+      <AccountAppGate
+        gateway={authenticatedGateway()}
+        engineClient={client}
+        engineActivator={activateEngine}
+        readyContent={<div>主应用已挂载</div>}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /Codex/ }));
+    expect(await screen.findByText("主应用已挂载")).toBeTruthy();
+    expect(sequence).toEqual(["engine", "provider"]);
+    expect(activateProviderMock).toHaveBeenCalledWith("codex", "doge-token-matrix");
+    expect(readManagedEnginePreparationV1().codex).toBe("prepared");
+  });
+
+  it("does not mark preparation when managed provider activation fails", async () => {
+    const client = engineClient({ codexEntitled: true });
+    activateProviderMock.mockRejectedValueOnce(new Error("provider unavailable"));
+
+    render(
+      <AccountAppGate
+        gateway={authenticatedGateway()}
+        engineClient={client}
+        engineActivator={async () => undefined}
+        readyContent={<div>主应用已挂载</div>}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: /Codex/ }));
+    expect(await screen.findByRole("heading", { name: "准备没有完成" })).toBeTruthy();
+    expect(screen.queryByText("主应用已挂载")).toBeNull();
+    expect(readManagedEnginePreparationV1().codex).toBe("unprepared");
+  });
+
   it("asks once before using a bundled version newer than the user's engine", async () => {
     const client = engineClient({ codexEntitled: true });
     vi.mocked(resolveAccountEngineToolchainV1).mockImplementation(async (engineId, choice) => ({

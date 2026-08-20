@@ -149,4 +149,57 @@ describe("resolveDefaultCreationExecutionTarget", () => {
     expect(target?.providerProfileSource).toBe("disk");
     expect(isResolvedExecutionTarget(target)).toBe(true);
   });
+
+  it("requires explicitly scoped rows for the managed provider", () => {
+    expect(
+      resolveDefaultCreationExecutionTarget({
+        enabled: true,
+        selectedEngine: "codex",
+        selectedModelId: "local-model",
+        providerProfileId: "doge-token-matrix",
+        models: [{ id: "local-model", model: "local-model" }],
+      }),
+    ).toBeNull();
+
+    const target = resolveDefaultCreationExecutionTarget({
+      enabled: true,
+      selectedEngine: "codex",
+      selectedModelId: "matrix-model",
+      providerProfileId: "doge-token-matrix",
+      models: [
+        {
+          id: "matrix-model",
+          model: "gpt-5.5-codex",
+          providerProfileId: "doge-token-matrix",
+          isDefault: true,
+        },
+      ],
+    });
+
+    expect(target).toMatchObject({
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "matrix-model",
+      model: "gpt-5.5-codex",
+      providerProfileSource: "managed",
+    });
+  });
+
+  it("fails closed when a managed catalog is unavailable", () => {
+    expect(
+      resolveDefaultCreationExecutionTarget({
+        enabled: true,
+        selectedEngine: "claude",
+        selectedModelId: "stale-local-model",
+        providerProfileId: "doge-token-matrix",
+        providerCatalogAvailable: false,
+        models: [
+          {
+            id: "stale-local-model",
+            model: "stale-local-model",
+            providerProfileId: "doge-token-matrix",
+          },
+        ],
+      }),
+    ).toBeNull();
+  });
 });

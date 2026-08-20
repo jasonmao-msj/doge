@@ -101,7 +101,7 @@ function extensionV1(
   return (schema, value, path, issues) => {
     switch (schema.kind) {
       case "safeLabel": {
-        if (!["profileDisplayName", "primaryEmailLabel", "providerLabel", "targetLabel", "fieldLabel", "subscriptionLabel", "maskedPresentation"].includes(schema.field)) {
+        if (!["profileDisplayName", "primaryEmailLabel", "providerLabel", "targetLabel", "fieldLabel", "subscriptionLabel", "subscriptionId", "maskedPresentation"].includes(schema.field)) {
           issues.push(issueV1(path, "enum", "unknown SafeLabel field scope"));
           return;
         }

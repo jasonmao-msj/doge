@@ -31,7 +31,11 @@ import type {
   OAuthAttemptViewV1,
   TotpEnrollmentPresentationV1,
 } from "./gateway";
-import type { QuotaUsageViewV1, UsageDayModelsViewV1 } from "./semantic";
+import type {
+  AccountSubscriptionSummaryViewV1,
+  QuotaUsageViewV1,
+  UsageDayModelsViewV1,
+} from "./semantic";
 import type { SchemaValidationV1 } from "./schema";
 import { isEnumValueV1 } from "./schema";
 import { ACCOUNT_GATEWAY_OPERATION_NAMES_V1 } from "./gateway";
@@ -94,6 +98,7 @@ export type AccountIpcOperationResultMapV1 = {
   };
   readonly "usage.read": QuotaUsageViewV1;
   readonly "usage.readDayModels": UsageDayModelsViewV1;
+  readonly "subscription.read": AccountSubscriptionSummaryViewV1;
   readonly "managedKey.readStatus": ManagedKeyStatusViewV1;
   readonly "managedKey.listCandidates": ApiKeyCandidateListViewV1;
   readonly "managedKey.selectExisting": ManagedKeyStatusViewV1;
@@ -154,6 +159,7 @@ export type AccountIpcSafeRequestPayloadMapV1 = {
   readonly "profile.revokeAllSessions": Parameters<AccountProfilePortV1["revokeAllSessions"]>[0];
   readonly "usage.read": null;
   readonly "usage.readDayModels": Parameters<AccountUsagePortV1["readDayModels"]>[0];
+  readonly "subscription.read": null;
   readonly "managedKey.readStatus": Parameters<AccountManagedKeyPortV1["readStatus"]>[0];
   readonly "managedKey.listCandidates": Parameters<AccountManagedKeyPortV1["listCandidates"]>[0];
   readonly "managedKey.selectExisting": Parameters<AccountManagedKeyPortV1["selectExisting"]>[0];
@@ -266,6 +272,7 @@ const AUTHORITATIVE_AFTER_EVENT_V1 = new Set<GatewayOperationNameV1>([
   "auth.readOAuthAttempt",
   "auth.inspectExternalIntent",
   "usage.read",
+  "subscription.read",
   "configuration.readCurrentTask",
 ]);
 

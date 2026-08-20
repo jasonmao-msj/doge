@@ -55,6 +55,7 @@ const REQUIRED_MANIFEST_SCENARIOS_V1 = [
   "account.identity-bind-happy",
   "session.revoke-all-confirmed",
   "usage.fresh-normal",
+  "subscription.summary",
   "usage.soft-stale-refresh-fails",
   "usage.exhausted",
   "managed-key.provision-success",

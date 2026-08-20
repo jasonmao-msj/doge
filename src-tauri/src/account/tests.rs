@@ -715,16 +715,17 @@ fn local_mode_is_identical_across_account_failure_matrix() {
 fn operation_inventory_preserves_read_mutation_boundary() {
     assert!(GatewayOperationV1::GatewayBootstrap.is_read());
     assert!(GatewayOperationV1::UsageRead.is_read());
+    assert!(GatewayOperationV1::SubscriptionRead.is_read());
     assert!(GatewayOperationV1::ManagedKeyListCandidates.is_read());
     assert!(!GatewayOperationV1::ManagedKeySelectExisting.is_read());
     assert!(!GatewayOperationV1::AuthLogin.is_read());
     assert!(!GatewayOperationV1::ConfigurationApply.is_read());
-    assert_eq!(super::model::GATEWAY_OPERATIONS_V1.len(), 42);
+    assert_eq!(super::model::GATEWAY_OPERATIONS_V1.len(), 43);
     let names: std::collections::BTreeSet<_> = super::model::GATEWAY_OPERATIONS_V1
         .iter()
         .map(|operation| operation.as_contract_name())
         .collect();
-    assert_eq!(names.len(), 42);
+    assert_eq!(names.len(), 43);
     assert_eq!(SessionEffectV1::Refreshed, SessionEffectV1::Refreshed);
     assert_eq!(
         SessionEffectV1::LocallyCleared,

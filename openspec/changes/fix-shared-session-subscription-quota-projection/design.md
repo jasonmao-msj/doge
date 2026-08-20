@@ -32,9 +32,9 @@ Shared selectedNextTarget
 5. Token Matrix authority 返回未订阅：显示未订阅状态；不得把本地 CLI quota 或历史 provider quota 当作替代数据。
 6. Local Mode / Native Session：现有行为保持不变。
 
-## 需要先确认的问题
+## 调研结论与决策
 
-- Token Matrix authority 是否已有按 `engine` / `plan` 返回额度窗口的 Desktop endpoint，还是当前只提供 Account Center quota endpoint？
-- `getCodingPlanQuota(engine, providerProfileId)` 是否能区分 managed Token Matrix 与本地/第三方 provider？
-- Shared Session 的 `SessionQuotaTarget` 是否包含完整 managed account identity，还是只保留 provider profile id？
-- quota panel 是否需要显示当前选中的 target，还是显示 Shared Session 所有已产生过的 targets？产品默认倾向前者，展开后可查看后者。
+- `AccountRuntime::read_usage` 已通过 `/api/v1/desktop/v1/engines`、`/api/v1/subscriptions/progress` 与 `/api/v1/usage/dashboard/snapshot-v2` 获取 managed Codex / Claude 的权威订阅与 usage 数据；无需 token2api 新接口。
+- 现有 `getCodingPlanQuota(engine, providerProfileId)` 只会解析本地 provider profile / CLI credentials，因此 managed target（profile id 为空）会得到 `empty_credentials` / `empty`，随后前端把 `empty` 格式化为 provider label。这是本次根因。
+- 新增 Doge internal managed quota read：以 target engine 为输入，仅在已认证 authority session 中复用现有 account usage projection；返回 credential-free plan/windows/usage snapshot。非 managed / Local Mode 保持原 route。
+- Shared target mapping 使用 authoritative managed provider identity（`Doge Token Matrix`）而非将 `empty`、`empty_credentials` 等 outcome code 当作可见 provider。Shared 仍展示历史产生过的 targets，条目按 engine + provider profile 互相隔离。

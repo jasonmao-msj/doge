@@ -9,6 +9,7 @@ export const ACCOUNT_IPC_READ_OPERATIONS_V1 = [
   "profile.read",
   "usage.read",
   "usage.readDayModels",
+  "subscription.read",
   "managedKey.readStatus",
   "managedKey.listCandidates",
   "configuration.readOffer",

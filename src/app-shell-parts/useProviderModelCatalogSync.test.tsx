@@ -2,6 +2,11 @@
 import { renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { EngineType } from "../types";
+import {
+  clearManagedEngineEntitlementsV1,
+  markManagedEnginePreparedV1,
+  publishManagedEngineEntitlementsV1,
+} from "../features/account/runtime/engineEntitlementStore";
 import { useProviderModelCatalogSync } from "./useProviderModelCatalogSync";
 
 const activateMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
@@ -16,6 +21,7 @@ describe("useProviderModelCatalogSync", () => {
   beforeEach(() => {
     activateMock.mockClear();
     activateMock.mockResolvedValue(undefined);
+    clearManagedEngineEntitlementsV1();
   });
 
   it("refreshes catalog and activates provider when the active scope changes", async () => {
@@ -180,5 +186,59 @@ describe("useProviderModelCatalogSync", () => {
       phase: "on-demand",
     });
     expect(activateMock).not.toHaveBeenCalled();
+  });
+
+  it("refreshes the prepared managed default without an active thread", () => {
+    publishManagedEngineEntitlementsV1([
+      {
+        id: "codex",
+        displayName: "Codex",
+        entitlement: { status: "active", expiresAt: null },
+      },
+      {
+        id: "claude-code",
+        displayName: "Claude",
+        entitlement: { status: "none", expiresAt: null },
+      },
+    ]);
+    markManagedEnginePreparedV1("codex");
+    const refreshEngineModels = vi.fn().mockResolvedValue(undefined);
+
+    renderHook(() =>
+      useProviderModelCatalogSync({
+        activeEngine: "codex",
+        activeThreadEngineSource: null,
+        activeThreadId: null,
+        activeWorkspaceId: "ws-1",
+        providerProfileId: null,
+        addDebugEntry: vi.fn(),
+        refreshEngineModels,
+      }),
+    );
+
+    expect(refreshEngineModels).toHaveBeenCalledWith("codex", {
+      providerProfileId: "doge-token-matrix",
+      forceRefresh: true,
+      phase: "on-demand",
+    });
+    expect(activateMock).not.toHaveBeenCalled();
+  });
+
+  it("does not refresh a non-managed engine without an active thread", () => {
+    const refreshEngineModels = vi.fn().mockResolvedValue(undefined);
+
+    renderHook(() =>
+      useProviderModelCatalogSync({
+        activeEngine: "codex",
+        activeThreadEngineSource: null,
+        activeThreadId: null,
+        activeWorkspaceId: "ws-1",
+        providerProfileId: "provider-a",
+        addDebugEntry: vi.fn(),
+        refreshEngineModels,
+      }),
+    );
+
+    expect(refreshEngineModels).not.toHaveBeenCalled();
   });
 });

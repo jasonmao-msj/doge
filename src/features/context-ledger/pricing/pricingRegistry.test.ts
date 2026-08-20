@@ -3,10 +3,13 @@ import { lookupPricingSource } from "./pricingRegistry";
 
 describe("pricingRegistry", () => {
   it("looks up traceable fixture pricing by engine and model", () => {
-    const pricing = lookupPricingSource({
-      engine: "gemini",
-      model: "gemini-2.5-flash",
-    });
+    const pricing = lookupPricingSource(
+      {
+        engine: "gemini",
+        model: "gemini-2.5-flash",
+      },
+      { now: new Date("2026-05-20T00:00:00.000Z") },
+    );
 
     expect(pricing?.source).toMatchObject({
       engine: "gemini",

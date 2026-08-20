@@ -6,6 +6,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useEventCallback } from "../../../utils/useEventCallback";
@@ -99,8 +100,11 @@ import {
 import { isEngineCapabilityAvailable } from "../../engine/engineCapabilityMatrix";
 import { isAccountConvenienceV1Enabled } from "../../account/runtime/featureFlag";
 import {
+  MANAGED_PROVIDER_PROFILE_ID_V1,
   managedEngineIdForRuntimeV1,
+  readManagedEnginePreparationV1,
   readManagedEngineEntitlementsV1,
+  subscribeManagedEnginePreparationV1,
 } from "../../account/runtime/engineEntitlementStore";
 import { requestAccountEngineSwitchV1 } from "../../account/runtime/engineSwitchSignal";
 import { overlaySessionFileChangesWithGitStats } from "../../messages/utils/turnFileChanges";
@@ -264,7 +268,12 @@ type ComposerProps = {
   selectedEngine?: EngineType;
   onSelectEngine?: (engine: EngineType) => void;
   // Model props
-  models: { id: string; displayName: string; model: string }[];
+  models: {
+    id: string;
+    displayName: string;
+    model: string;
+    providerProfileId?: string | null;
+  }[];
   providerModelCatalogs?: Partial<Record<EngineType, ModelOption[]>>;
   providerProfileId?: string | null;
   /** 当前会话创建时的供应商显示名（切老会话时底栏渠道芯片用，避免回落到列表首项 DeepSeek） */
@@ -737,6 +746,28 @@ function ComposerImpl({
   const selectedSharedTarget = sharedTargetState.selectedNextTarget;
   const [selectedCreationTarget, setSelectedCreationTarget] =
     useState<ExecutionTarget | null>(null);
+  const managedEnginePreparation = useSyncExternalStore(
+    subscribeManagedEnginePreparationV1,
+    readManagedEnginePreparationV1,
+    readManagedEnginePreparationV1,
+  );
+  const requestedProviderProfileId = providerProfileId?.trim() || null;
+  const managedEngineId = managedEngineIdForRuntimeV1(selectedEngine ?? "");
+  const usesManagedCreationDefault =
+    createSessionTargetPicker &&
+    requestedProviderProfileId === null &&
+    managedEngineId !== null &&
+    managedEnginePreparation[managedEngineId] === "prepared";
+  const creationProviderProfileId =
+    requestedProviderProfileId ??
+    (usesManagedCreationDefault ? MANAGED_PROVIDER_PROFILE_ID_V1 : null);
+  const managedCatalogAvailable = !usesManagedCreationDefault
+    ? undefined
+    : models.some(
+        (model) =>
+          model.providerProfileId?.trim() ===
+          MANAGED_PROVIDER_PROFILE_ID_V1,
+      );
   // 首页 picker 主动切换 engine 时，parent selectedEngine 可能尚未异步跟上；
   // 用 ref 标记「等待 parent 追上的目标」，避免误清 sticky creation target。
   const pendingPickerEngineRef = useRef<EngineType | null>(null);
@@ -746,19 +777,31 @@ function ComposerImpl({
       selectedEngine,
       selectedModelId,
       selectedEffort,
-      providerProfileId,
+      providerProfileId: creationProviderProfileId,
+      providerCatalogAvailable: managedCatalogAvailable,
       models,
     });
   }, [
     createSessionTargetPicker,
+    creationProviderProfileId,
+    managedCatalogAvailable,
     models,
-    providerProfileId,
     selectedEffort,
     selectedEngine,
     selectedModelId,
   ]);
   const effectiveCreationTarget =
     selectedCreationTarget ?? defaultCreationTarget;
+  useEffect(() => {
+    if (createSessionTargetPicker && usesManagedCreationDefault) {
+      return;
+    }
+    setSelectedCreationTarget((previous) =>
+      previous?.providerProfileId === MANAGED_PROVIDER_PROFILE_ID_V1
+        ? null
+        : previous,
+    );
+  }, [createSessionTargetPicker, usesManagedCreationDefault]);
   // 只在 engine 语义变化时通知父层，避免等价 setState 触发 layout 重渲染环
   const publishedCreationTargetEngineRef = useRef<
     EngineType | null | undefined
@@ -1118,7 +1161,11 @@ function ComposerImpl({
   }, [imageInputSupported, notifyImageInputUnsupported, onPickImages]);
   const sharedTargetResolved =
     !isSharedSession || isResolvedExecutionTarget(selectedSharedTarget);
-  const effectiveSubmitDisabled = submitDisabled || !sharedTargetResolved;
+  const managedCreationTargetPending =
+    usesManagedCreationDefault &&
+    !isResolvedExecutionTarget(effectiveCreationTarget);
+  const effectiveSubmitDisabled =
+    submitDisabled || !sharedTargetResolved || managedCreationTargetPending;
   const sharedTargetPersistenceByThreadRef = useRef(
     new Map<string, Promise<void>>(),
   );
@@ -3435,7 +3482,7 @@ function ComposerImpl({
               providerProfileId={
                 selectedAtomicTarget
                   ? (selectedAtomicTarget.providerProfileId ?? null)
-                  : providerProfileId
+                  : creationProviderProfileId
               }
               executionTarget={selectedAtomicTarget}
               onExecutionTargetChange={

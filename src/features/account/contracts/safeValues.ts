@@ -20,6 +20,7 @@ export const ACCOUNT_SAFE_LABEL_FIELDS_V1 = [
   "targetLabel",
   "fieldLabel",
   "subscriptionLabel",
+  "subscriptionId",
   "maskedPresentation",
 ] as const;
 export type AccountSafeLabelFieldV1 = (typeof ACCOUNT_SAFE_LABEL_FIELDS_V1)[number];

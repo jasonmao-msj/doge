@@ -25,6 +25,7 @@ export type SessionOverviewThreadStatus = {
 export type SessionOverviewQuotaSource =
   | "official_cli"
   | "coding_plan"
+  | "not_subscribed"
   | "unsupported"
   | "empty"
   | "error"
@@ -38,6 +39,8 @@ export type SessionOverviewQuotaWindowView = {
   displayPercent: number;
   usedPercent: number;
   resetsAt: number | null;
+  usedAmount: string | null;
+  limitAmount: string | null;
 };
 
 export type SessionOverviewUsageSummaryView = {
@@ -94,6 +97,8 @@ export type CodingPlanQuotaInput = {
     usedPercent: number;
     remainingPercent: number;
     resetsAt?: string | null;
+    usedAmount?: string | null;
+    limitAmount?: string | null;
   }>;
   /** 余额型（DeepSeek 等）；与 windows 二选一或并存 */
   balance?: CodingPlanBalanceInput | null;
@@ -209,13 +214,19 @@ function resolveDurationMs(
     return Math.max(0, input.nowMs - startedAt);
   }
   const lastDuration = input.threadStatus?.lastDurationMs;
-  if (status === "idle" && typeof lastDuration === "number" && lastDuration > 0) {
+  if (
+    status === "idle" &&
+    typeof lastDuration === "number" &&
+    lastDuration > 0
+  ) {
     return lastDuration;
   }
   return null;
 }
 
-function normalizeOptionalText(value: string | null | undefined): string | null {
+function normalizeOptionalText(
+  value: string | null | undefined,
+): string | null {
   if (typeof value !== "string") {
     return null;
   }
@@ -244,10 +255,14 @@ function buildQuotaWindow(
       typeof window.resetsAt === "number" && Number.isFinite(window.resetsAt)
         ? window.resetsAt
         : null,
+    usedAmount: null,
+    limitAmount: null,
   };
 }
 
-function parseResetAtToMs(value: string | number | null | undefined): number | null {
+function parseResetAtToMs(
+  value: string | number | null | undefined,
+): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value > 1_000_000_000_000 ? value : value * 1000;
   }
@@ -289,6 +304,8 @@ function buildCodingPlanWindows(
       displayPercent: showRemaining ? remainingPercent : usedPercent,
       usedPercent,
       resetsAt: parseResetAtToMs(window.resetsAt ?? null),
+      usedAmount: normalizeOptionalText(window.usedAmount ?? null),
+      limitAmount: normalizeOptionalText(window.limitAmount ?? null),
     };
   });
 }
@@ -317,6 +334,17 @@ export function formatRelayProviderLabel(
 ): string {
   const kind = source.trim();
   const origin = (siteOrigin ?? "").trim().replace(/\/+$/, "");
+  if (kind === "token_matrix") {
+    return "Token Matrix";
+  }
+  if (
+    !origin &&
+    ["empty", "empty_credentials", "unsupported", "error", "none"].includes(
+      kind,
+    )
+  ) {
+    return "";
+  }
   if (origin && kind) {
     return `${origin} ${kind}`;
   }
@@ -554,6 +582,15 @@ export function buildSessionOverviewQuota(
     });
   }
 
+  if (codingPlanQuota?.source === "token_matrix_not_subscribed") {
+    return emptyQuotaView({
+      source: "not_subscribed",
+      providerLabel: "Token Matrix",
+      showRemaining: usageShowRemaining,
+      error: codingPlanQuota.error ?? "当前引擎未订阅 Token Matrix 套餐",
+    });
+  }
+
   if (!codingPlanQuota) {
     // 无 coding plan 响应时：仅 codex 回退 rateLimits
     if (engine === "codex") {
@@ -694,6 +731,7 @@ export function buildSessionOverview(
       q.planType != null ||
       q.loading ||
       q.source === "unsupported" ||
+      q.source === "not_subscribed" ||
       q.source === "error" ||
       q.source === "official_cli" ||
       q.source === "coding_plan"
@@ -713,9 +751,7 @@ export function buildSessionOverview(
   const engineLine =
     entryInputs.length > 1
       ? entryInputs
-          .map((e) =>
-            e.subtitle ? `${e.title} · ${e.subtitle}` : e.title,
-          )
+          .map((e) => (e.subtitle ? `${e.title} · ${e.subtitle}` : e.title))
           .join(" · ")
       : entryInputs.length === 1
         ? entryInputs[0]!.subtitle

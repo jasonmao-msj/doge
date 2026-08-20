@@ -261,6 +261,31 @@ const subscriptionEngineUsageV1 = object({
   days: array(subscriptionUsageDayV1),
   models: array(subscriptionUsageModelV1),
 });
+const subscriptionSummaryWindowV1 = object({
+  limit: quotaMeasureV1,
+  used: quotaMeasureV1,
+  remaining: quotaMeasureV1,
+  percentage: { kind: "decimal" },
+});
+const subscriptionSummaryItemV1 = object({
+  id: safeLabel("subscriptionId"),
+  engineId: nullable(enumV1(["codex", "claude-code"])),
+  engineLabel: nullable(safeLabel("targetLabel")),
+  subscriptionLabel: safeLabel("subscriptionLabel"),
+  status: enumV1(["active", "unknown"]),
+  expiresAt: nullable(timestamp),
+  windows: object({
+    daily: nullable(subscriptionSummaryWindowV1),
+    weekly: nullable(subscriptionSummaryWindowV1),
+    monthly: nullable(subscriptionSummaryWindowV1),
+  }),
+});
+const subscriptionSummaryV1 = object({
+  status: enumV1(["available", "unavailable"]),
+  source: literal("token2apiSubscription"),
+  fetchedAt: nullable(timestamp),
+  subscriptions: array(subscriptionSummaryItemV1),
+});
 const quotaV1 = object({
   status: enumV1(["available", "unavailable"]),
   source: enumV1([
@@ -596,6 +621,7 @@ export const ACCOUNT_IPC_OPERATION_SCHEMAS_V1: Readonly<
     }),
     result: usageDayModelsV1,
   },
+  "subscription.read": { request: NULL_V1, result: subscriptionSummaryV1 },
   "managedKey.readStatus": { request: recipeRefV1, result: managedKeyV1 },
   "managedKey.listCandidates": { request: recipeRefV1, result: apiKeyCandidatesV1 },
   "managedKey.selectExisting": {

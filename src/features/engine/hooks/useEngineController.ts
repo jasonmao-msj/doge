@@ -39,6 +39,7 @@ import {
 } from "./engineControllerWebRuntime";
 import { useEngineRuntimeNotices } from "./useEngineRuntimeNotices";
 import { useEngineCatalogRevision } from "./useEngineCatalogRevision";
+import { isManagedProviderProfileIdV1 } from "../../account/runtime/engineEntitlementStore";
 
 export type { EngineDisplayInfo } from "./engineControllerAvailability";
 
@@ -100,15 +101,17 @@ export function useEngineController({
         return [];
       }
       const providerProfileId = options.providerProfileId?.trim() || null;
+      const managedProviderScope = isManagedProviderProfileIdV1(providerProfileId);
       const catalogScope = providerProfileId ?? "__global__";
       const catalogRequestKey = `${engineType}:${catalogScope}`;
       const previousCatalogRequestKey = visibleCatalogRequestKeyRef.current;
       visibleCatalogRequestKeyRef.current = catalogRequestKey;
-      const scopedFallbackModels = providerProfileId
+      const scopedFallbackModels = providerProfileId && !managedProviderScope
         ? (lastGoodModelsByScopeRef.current.get(catalogRequestKey) ?? [])
         : fallbackModels;
+      const effectiveScopedFallbackModels = managedProviderScope ? [] : scopedFallbackModels;
       if (previousCatalogRequestKey !== catalogRequestKey) {
-        setEngineModels(scopedFallbackModels.map((model) => normalizeEngineModelEntry(model)));
+        setEngineModels(effectiveScopedFallbackModels.map((model) => normalizeEngineModelEntry(model)));
       }
       try {
         const phase = options.phase ?? (options.forceRefresh ? "on-demand" : "idle-prewarm");
@@ -134,13 +137,19 @@ export function useEngineController({
               ? getEngineModels(engineType, { forceRefresh: true })
               : getEngineModels(engineType);
           },
-          fallback: () => scopedFallbackModels,
+          fallback: () => effectiveScopedFallbackModels,
         });
         const sourceModels =
           models.length > 0 || options.forceRefresh || providerProfileId
             ? models
             : fallbackModels;
-        const nextModels = sourceModels.map((model) => normalizeEngineModelEntry(model));
+        const nextModels = sourceModels.map((model) =>
+          normalizeEngineModelEntry(
+            managedProviderScope && !model.providerProfileId?.trim()
+              ? { ...model, providerProfileId }
+              : model,
+          ),
+        );
         lastGoodModelsByScopeRef.current.set(catalogRequestKey, nextModels);
         if (visibleCatalogRequestKeyRef.current === catalogRequestKey) {
           setEngineModels((currentModels) =>
@@ -162,7 +171,10 @@ export function useEngineController({
             error: error instanceof Error ? error.message : String(error),
           },
         });
-        const normalizedFallback = scopedFallbackModels.map((model) => normalizeEngineModelEntry(model));
+        if (managedProviderScope) {
+          lastGoodModelsByScopeRef.current.delete(catalogRequestKey);
+        }
+        const normalizedFallback = effectiveScopedFallbackModels.map((model) => normalizeEngineModelEntry(model));
         if (visibleCatalogRequestKeyRef.current === catalogRequestKey) {
           setEngineModels((currentModels) =>
             areEngineModelCatalogsEqual(currentModels, normalizedFallback)
