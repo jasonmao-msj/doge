@@ -54,6 +54,24 @@ npm run tauri:dev:hot
 npm run dev
 ```
 
+### macOS 免钥匙串弹窗启动
+
+doge 启动时会从 login Keychain 读取账号凭据（服务名 `com.doge.account`）。默认 `tauri dev` 产物是 ad-hoc 签名，每次重编译签名都会变化，Keychain 的访问授权随之失效，导致每次启动都弹出钥匙串密码框。
+
+仓库提供基于本机稳定自签身份的开发流程，配置一次后即可免弹窗：
+
+```bash
+# 首次：创建本地开发签名身份（幂等，已存在则跳过）
+bash scripts/setup-macos-dev-signing.sh
+
+# 之后：带稳定签名的热更新开发启动
+npm run tauri:dev:hot:signed:mac
+```
+
+- 首次以签名产物启动时，系统仍会弹一次钥匙串授权，选择「始终允许」；之后无论怎么重编译都不会再弹。
+- 该流程使用本机自签的 `Doge Local Development` 身份，仅用于本地开发；正式构建与发布签名流程不受影响。
+- 非 macOS 平台继续使用 `npm run tauri:dev:hot` / `npm run tauri:dev`。
+
 ### 常用检查
 
 日常开发优先运行与改动相关的测试：
