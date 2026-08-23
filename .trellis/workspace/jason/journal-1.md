@@ -1107,3 +1107,40 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 34: 修复本地开发钥匙串重复弹窗并接入稳定签名链路
+
+**Date**: 2026-08-23
+**Task**: macOS 免钥匙串弹窗开发启动
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+诊断确认 dev 产物为 ad-hoc linker-signed，每次重编译 cdhash 变化导致 login Keychain 中 `com.doge.account` 凭据的 ACL 授权失效，启动读取凭据时重复弹密码框。接入仓库已有的稳定自签身份链路：`tauri dev --runner` 包装 cargo，经 `CARGO_TARGET_*_RUNNER` 在产物 exec 前用 `Doge Local Development` 身份签名；本机身份已就绪并对 `target/debug/doge` 完成非交互签名验证（稳定 identifier + Internal Requirements DR）。README 记录启动方式与首次「始终允许」步骤。
+
+### Main Changes
+
+- package.json 新增 `tauri:dev:hot:signed:mac`（setup 幂等 + `tauri dev --runner scripts/macos-dev-signed-cargo.sh`）
+- 纳管 `scripts/setup-macos-dev-signing.sh`、`scripts/macos-dev-signed-cargo.sh`、`scripts/macos-dev-signed-runner.sh` 与 contract test
+- `README.zh-CN.md` 本地开发新增「macOS 免钥匙串弹窗启动」
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b34b8f9ee` | build(dev): 接入稳定签名开发链路避免钥匙串重复授权弹窗 |
+| `798a02510` | docs(readme): 记录 macOS 免钥匙串弹窗开发启动方式 |
+
+### Testing
+
+- [OK] L1（dev 工具脚本 + 文档，无应用代码路径）：contract test 通过；`tauri --runner` 语义经假 runner 探针确认（替换 cargo 程序调用）；非交互 codesign + `--verify --strict` 通过；签名元数据确认稳定 identifier 与 Internal Requirements
+- [PENDING] 首次 GUI 启动点击「始终允许」由用户执行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户首次 `npm run tauri:dev:hot:signed:mac` 时在钥匙串弹窗选择「始终允许」，此后重编译不再弹窗
