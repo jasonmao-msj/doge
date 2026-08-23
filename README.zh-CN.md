@@ -54,23 +54,18 @@ npm run tauri:dev:hot
 npm run dev
 ```
 
-### macOS 免钥匙串弹窗启动
+### macOS 无交互开发凭据
 
-doge 启动时会从 login Keychain 读取账号凭据（服务名 `com.doge.account`）。默认 `tauri dev` 产物是 ad-hoc 签名，每次重编译签名都会变化，Keychain 的访问授权随之失效，导致每次启动都弹出钥匙串密码框。
-
-仓库提供基于本机稳定自签身份的开发流程，配置一次后即可免弹窗：
+macOS debug build 的账号 refresh credential 与托管 Codex / Claude / Kimi key 会写入 app data 下的开发专用文件，不访问或回退读取 login Keychain。因此日常仍直接使用：
 
 ```bash
-# 首次：创建本地开发签名身份（幂等，已存在则跳过）
-bash scripts/setup-macos-dev-signing.sh
-
-# 之后：带稳定签名的热更新开发启动
-npm run tauri:dev:hot:signed:mac
+npm run tauri:dev:hot
 ```
 
-- 首次以签名产物启动时，系统仍会弹一次钥匙串授权，选择「始终允许」；之后无论怎么重编译都不会再弹。
-- 该流程使用本机自签的 `Doge Local Development` 身份，仅用于本地开发；正式构建与发布签名流程不受影响。
-- 非 macOS 平台继续使用 `npm run tauri:dev:hot` / `npm run tauri:dev`。
+- 第一次切换到开发文件后可能需要正常登录一次；之后热更新、重编译和重启都会复用本地 session，不再弹 Keychain 密码授权。
+- 开发 vault 是明文的 owner-only 文件：目录权限 `0700`、文件权限 `0600`，只应在可信的开发 Mac 使用，禁止复制、提交或用于正式分发。
+- Release 与非目标 build 始终继续使用 OS credential vault；它们不会读取开发凭据文件，也没有 runtime 开关可以降级。
+- `npm run tauri:dev:hot:signed:mac` 仍保留给显式测试 Keychain / 本地签名链，但不再是日常开发和 E2E 的前置条件。
 
 ### 常用检查
 

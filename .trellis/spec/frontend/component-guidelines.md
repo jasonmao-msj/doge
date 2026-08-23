@@ -63,6 +63,71 @@ const sidebarNodeWithTopbar = isValidElement(props.children)
 - 大样式文件允许分片 `*.part1.css/*.part2.css`，但必须保持 selector contract 稳定。
 - 条件 class 建议复用 `src/lib/utils.ts` 的 `cn()`。
 
+## Scenario: Shared Visual Primitive MUST Own Its Stylesheet
+
+### 1. Scope / Trigger
+
+- Trigger：把 visual shell / frame / card primitive 抽到 shared module，替换其 consumer，或让多个 sibling entry 复用同一组 CSS classes。
+- 目标：consumer 替换不能让 JSX 仍存在、TypeScript/Vitest 全绿，但 production bundle 丢失 stylesheet side effect，导致 image/control 按 UA 默认尺寸渲染。
+
+### 2. Signatures
+
+- Shared owner：`SharedView.tsx` 直接 `import "./shared-view.css"`。
+- Consumers：`LegacyEntry.tsx`、`NewEntry.tsx` 只 import shared component，不重复拥有 stylesheet side effect。
+- Critical image：`<img className="feature-logo" width={N} height={N} ... />`，CSS 同步约束 `width/height/object-fit`。
+
+### 3. Contracts
+
+- 定义并渲染 feature-scoped visual classes 的最低 shared module MUST 导入对应 stylesheet；禁止把 import 留在任一 optional/legacy consumer。
+- sibling consumers MUST NOT 各自复制 stylesheet import；bundler dedupe 不能替代明确 ownership。
+- startup/gate/logo/avatar 等首屏关键图片 MUST 提供 intrinsic `width/height`，避免 CSS chunk 尚未 settle 时按原始 raster 尺寸产生 full-window flash。
+- consumer replacement review MUST 搜索 `import "*.css"` propagation；JSX/type import 可达不代表 CSS side effect 可达。
+- jsdom unit tests 不能作为 layout evidence；可见 startup shell 还 MUST 做 exact current flavor 的 Tauri visual smoke。
+
+### 4. Validation & Error Matrix
+
+| 场景 | 必须行为 | 禁止行为 |
+|---|---|---|
+| Legacy + Product entry 复用 frame | shared view 唯一导入 CSS，两条入口均有样式 | CSS 只挂在 Legacy entry |
+| Product entry 替换 Router owner | bundle graph 仍从 shared view reach stylesheet | JSX 正常但 logo 原图铺满窗口 |
+| CSS 尚未下载/热更新 | intrinsic image size 保持 layout bounded | 首屏按 raster natural size 闪烁 |
+| jsdom tests 全绿 | 继续执行 static import contract + real visual smoke | 将 jsdom 当作 CSS layout 验收 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：`AccountAppGateViews.tsx` owns `account-app-gate.css`；legacy/product gates 只 import shared views；logo 同时声明 `54×54` intrinsic size。
+- Base：single-consumer leaf component 可自行拥有同目录 stylesheet；一旦抽成 sibling-shared owner，stylesheet 随 owner 迁移。
+- Bad：新 Router 改用 `ProductGate`，但 stylesheet 仍只由不再挂载的 `LegacyGate` 导入。
+
+### 6. Tests Required
+
+- Static visual contract MUST assert shared owner contains exact stylesheet import，所有 sibling consumers 不再承担该 import。
+- Static/component contract MUST assert critical raster image 包含 bounded intrinsic dimensions。
+- Manual smoke MUST 使用当前 source 编译出的 exact app flavor；旧 `.app` / 自动启动的同名 bundle 不能作为 evidence。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+// LegacyGate.tsx
+import "./account-app-gate.css";
+import { GateFrame } from "./AccountAppGateViews";
+
+// ProductGate.tsx renders GateFrame but never reaches the stylesheet.
+```
+
+#### Correct
+
+```tsx
+// AccountAppGateViews.tsx
+import "./account-app-gate.css";
+
+export function GateFrame({ children }: Props) {
+  return <main className="account-app-gate">{children}</main>;
+}
+```
+
 ## i18n 规范
 
 - 用户可见文案必须走 `useTranslation().t("...")`。

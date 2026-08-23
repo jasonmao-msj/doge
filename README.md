@@ -48,6 +48,17 @@ npm install
 npm run tauri:dev:hot
 ```
 
+On macOS, debug builds use an owner-only development credential file under the
+app data directory instead of Keychain. This keeps the normal hot-development
+command non-interactive for local E2E agents. The first debug run may require
+one normal account login; later runs reuse that local session. Release builds
+continue to use Keychain and never read the debug credential file.
+
+The development vault is plaintext with directory mode `0700` and file mode
+`0600`, so use it only on a trusted development Mac. The optional
+`npm run tauri:dev:hot:signed:mac` workflow remains available for explicitly
+testing the Keychain/signing path, but it is not required for daily development.
+
 Run only the web frontend:
 
 ```bash

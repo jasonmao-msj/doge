@@ -1,6 +1,6 @@
 # Account Convenience Native Contract
 
-> **Current product calibration (2026-08-16):** OpenSpec `require-account-engine-subscription-onboarding` 已把 Account 从 Local Mode 之上的可选增值层改为 main-window mandatory gate。下文既有 broker/vault/secret-isolation contracts 继续有效；“Account failure 不 gate Local Mode”“用户选择 existing API Key”“展示配置 diff/bubble”只作为旧 change 的历史行为，不得用于当前产品主链。
+> **Current product calibration (2026-08-23):** OpenSpec `require-account-engine-subscription-onboarding` 已把 Account 从 Local Mode 之上的可选增值层改为 main-window mandatory gate。下文既有 broker/vault/secret-isolation contracts 继续有效；“Account failure 不 gate Local Mode”“用户选择 existing API Key”“展示配置 diff/bubble”只作为旧 change 的历史行为，不得用于当前产品主链。`doge-unified-product-subscription` 另为 macOS debug 增加 compile-time local development vault exception；Release 仍只使用 OS credential vault。
 
 ## Scenario: Local Mode 之上的 token2api Account 增值层
 
@@ -23,14 +23,14 @@
 - Public settings 只代表业务开关，不是 execution authority。每个 remote operation 必须同时通过 closed `token2api-account-authority/1.0.0` descriptor 的 capability bit 与该 operation 所需 guarantee set；descriptor缺失、unknown key/guarantee、duplicate guarantee、unsupported version 或 hard-expired cache一律只关闭Account action，Local Mode不变。
 - Authority descriptor exact production route 已冻结为 `GET /api/v1/desktop/v1/authority`，token2api handler owner 为 `backend/internal/handler/setting_handler.go::GetAccountAuthorityDescriptor`，Doge consumer 为 `src-tauri/src/account/authority.rs::ACCOUNT_AUTHORITY_DESCRIPTOR_PATH`。不得由renderer/env/localStorage注入或覆盖 path，也不得以current public settings替代descriptor；route缺失、schema漂移或guarantee不足必须fail closed。
 - Existing-key Desktop surface 已冻结为 `GET /api/v1/desktop/v1/api-keys` 与 `POST /api/v1/desktop/v1/api-keys/:id/handoffs`。handoff request exact fields=`audience, device_id, recipe_id, recipe_version`，还必须携带 `Authorization: Bearer …` 与 `Idempotency-Key`；response中的raw `secret`只能由Native HTTP adapter消费并立即写入OS vault。
-- Durable metadata：`account-v1.sqlite3`；durable secrets：OS credential vault；access token：Rust memory only。
+- Durable metadata：`account-v1.sqlite3`；durable secrets：Release 为 OS credential vault，`cfg(all(debug_assertions,target_os="macos"))` 适用下文 development file vault；access token：Rust memory only。
 - Codex child credential：仅当 `providerProfileId=doge-token-matrix` 时向该子进程注入 `OPENAI_API_KEY`。
 
 ### 3. Contracts
 
 - 每个 mutation MUST 先 `prepare`，绑定 exact `requestId + intentId + operation + accountEpoch + request fingerprint`，再 `execute`。
 - renderer 只接收 closed enum、masked label、opaque handle、semantic diff；不得接收 raw token、password、API key、filesystem path、file content 或 server message。
-- refresh credential 与 managed API key 只允许 OS vault；vault locked/unavailable 时 account capability fail closed，禁止 session-only/fallback vault。
+- refresh credential 与 managed API key 只允许 selected `DurableAccountVault` owner；Release 只能是 OS vault，macOS debug 只能是下文 file vault，禁止两者 runtime fallback、session-only 或 renderer storage。
 - SQLite schema version 8 保存 safe `authority_origin_id + account_link_id + device_id` isolation、epoch、masked/profile label、session status、random vault scope、managed key numeric id、operation ledger、configuration safe result、dismissal、external-flow digest/status receipt，以及 credential-free engine checkout checkpoint。checkout 只允许保存 `engine_id + checkout_id + pending/processing + expires_at + updated_at`，禁止保存支付 URL、QR payload、plan 文案、raw handle、credential、raw config、path 或 backup。
 - 同一 `intentId + operation + accountEpoch + semantic payload fingerprint` 的 prepare retry MUST 返回已有 `operationId`；不同 fingerprint MUST closed conflict。terminal/executing retry不得再次 dispatch，只能返回 reconcile recovery。
 - Codex plan MUST 先返回 changed-file safe labels；file detail lazy read；apply 需要 exact-plan consent，并使用 storage lock + hash recheck + same-filesystem 0700 recovery directory + 0600 backups/stages + durable journal checkpoint + atomic write + fsync + semantic verifier + rollback。
@@ -790,3 +790,257 @@ const target = resolveDefaultCreationExecutionTarget({
 - Counting vault regression MUST 锁定 cold restore `status_calls == 1` 与 refresh-purpose `read_calls == 1`。
 - Activation regression MUST 证明 caller 提供 snapshot 时不再次 read，且 repository failure 仍写回旧 snapshot。
 - Required commands：`cargo test --manifest-path src-tauri/Cargo.toml account:: --lib`、`cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`、`npm run check:runtime-contracts`、OpenSpec strict validation。
+
+## Scenario: macOS debug non-interactive development vault
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `src-tauri/src/account/vault.rs`、`AccountRuntime::load(data_dir)`、macOS hot-development command、debug/release credential selection 或 Account/Kimi managed credential persistence。
+- 目标：日常 `npm run tauri:dev:hot` 可由无人值守 E2E Agent 启动，不因 ad-hoc signature 触发 Keychain 密码授权；该便利不得进入 Release。
+
+### 2. Signatures
+
+- Shared owner：`DurableAccountVault::{status,read,write,delete}`。
+- Compile-time selector：`account_vault_for_data_dir(data_dir: &Path) -> Arc<dyn DurableAccountVault>`。
+- macOS debug backend：`DevelopmentFileAccountVault`，固定 path=`<app_data>/debug-account-vault/credentials.json`。
+- Release/other backend：`OsAccountVault(service="com.doge.account")`。
+- Persisted schema exact fields：`{ "version": 1, "entries": Record<allowlistedPurpose, secret> }`；max file `1 MiB`、max entries `128`、single secret max `64 KiB`。
+
+### 3. Contracts
+
+- 仅 `cfg(all(debug_assertions, target_os = "macos"))` 返回 file backend；selector 不读取 env、renderer flag、localStorage 或 persisted setting。所有其他 compile target 返回 `OsAccountVault`。
+- debug backend MUST NOT read/migrate/fallback to Keychain。旧 credential 只在 Keychain 时按 signed-out 处理；用户完成一次正常 debug login 后，refresh session 与 `managed-engine:{codex|claude-code|kimi}:<scope>` 均写入 file backend。
+- purpose MUST 复用与 OS vault 完全相同的 allowlist + scope validator，禁止 file backend 扩大 key alphabet。
+- dedicated directory MUST 是 regular directory、mode `0700`；credential target MUST 是 regular file、mode `0600`。directory/file symlink、non-regular target、oversize、unknown schema/field/purpose、empty/oversize secret MUST fail closed，且不得转去 Keychain。
+- mutation MUST `ensure safe directory -> with_storage_lock(target) -> parse bounded document -> same-directory create_new temp(0600) -> write -> fsync -> recheck target -> atomic rename -> target chmod(0600) -> directory fsync`。失败清理 exact temporary；error/log 禁止包含 secret、serialized payload、purpose-derived private fact 或完整 path。
+- debug file 是 repo-external development artifact，不进入 IPC、SQLite、diagnostics、backup、git 或 Release migration。Release binary 即使看到该文件也不得读取。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Selected backend / result | Keychain side effect |
+|---|---|---|
+| macOS debug + file missing | create owner-only directory；status ready；signed out until login | zero |
+| macOS debug + valid file | exact purpose round-trip / cold restore | zero |
+| file mode `0644` | read/write 前收紧到 `0600` | zero |
+| directory/file symlink or non-regular | `Unavailable` / stable safe `Err`；target unchanged | zero |
+| corrupt/oversize/unknown schema or purpose | fail closed；不得覆盖 | zero |
+| macOS Release / Linux / Windows | `OsAccountVault` | 按对应 OS vault contract |
+| only Keychain has prior debug credential | debug signed out；不迁移 | zero |
+
+### 5. Good / Base / Bad Cases
+
+- Good：开发者首次登录一次，后续 standard hot rebuild 复用 app-data debug vault；Agent 可无人值守完成 Account/Kimi E2E。
+- Base：debug file 不存在；selector 只创建 `0700` directory，不尝试探测 Keychain。
+- Bad：debug file read miss 后调用 `OsAccountVault.read()`；仍可能弹授权，破坏无人值守目标。
+- Bad：通过 env/runtime setting 让 Release 使用 plaintext file，或把 credential 写入 `config.json` / repo `.env`。
+- Bad：先以默认 umask 写出 `0644` temp，再 chmod；secret 在 commit 前已出现 group/world-readable window。
+
+### 6. Tests Required
+
+- macOS debug focused test MUST 覆盖：selector 实际生成 debug file（证明无 platform entry call）、status/read/write/delete round-trip、directory `0700`、temp/final `0600`、existing permissive mode hardening。
+- corruption/safety test MUST 覆盖 malformed JSON、unknown purpose/schema、oversize input、file symlink 与 directory symlink；断言外部 target byte-for-byte unchanged，且错误不含 secret/path。
+- compile surface MUST 运行 debug `cargo check --lib`；Release selector 至少运行 `cargo check --release --lib` 或对应 macOS Release CI compile。
+- manual smoke MUST 用 exact `npm run tauri:dev:hot` 做冷启动 + restart，观察零 Keychain authorization，并在首次 debug login 后验证 session/managed credential 恢复。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```rust
+let secret = file_vault.read(purpose)?
+    .or_else(|| OsAccountVault.read(purpose).ok().flatten());
+std::fs::write(path, serde_json::to_vec(&secret)?)?;
+```
+
+#### Correct
+
+```rust
+let vault = account_vault_for_data_dir(data_dir); // compile-time platform/build decision
+with_storage_lock(&credential_path, || {
+    secure_same_directory_atomic_write(&credential_path, 0o600, serialized)
+})?;
+```
+
+file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableAccountVault` contract，不能表达 runtime fallback。
+
+## Scenario: Product paid fulfillment reconciliation and Kimi registry verification
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `ProductAccountAppGate`、product checkout checkpoint、product catalog cache、`AccountRuntime::product_prepare`、Kimi managed provider merge 或 `verify_applied_plan`。
+- 目标：支付订单先进入 `paid`、Composite subscription 后置生效时，App 必须等待权威 entitlement 并自动继续 prepare；Kimi JSON registry 必须按自身 schema 验证，不能误走 Codex TOML verifier。
+
+### 2. Signatures
+
+- Frontend state machine：`auth -> catalog -> subscription | checkout -> fulfilling -> prepare -> ready`。
+- Catalog read：`AccountProductOnboardingClientV1.catalog({ forceRefresh?: boolean })`；`forceRefresh=true` MUST bypass process cache。
+- Native checkpoint：`product_checkout_checkpoint(status, expires_at, updated_at) -> Option<(status, expires_at)>`；`paid` 投影为 credential-free `processing` checkpoint，expiry 至少为 `updated_at + PRODUCT_FULFILLMENT_GRACE_SECONDS`。
+- Kimi registry target：`~/.doge/config.json#/kimi/providers/doge-token-matrix`，owner fields 为 `source="doge-account"`、`baseUrl="https://token-matrix.com/v1"`、`providerType="openai"`，且 `/kimi/current="doge-token-matrix"`。
+- Kimi verifier：`verify_applied_plan(plan)` 的 `file.label == "Doge Kimi provider registry"` 分支 MUST 使用 `serde_json::from_str`；只有其他 Codex TOML target 才使用 `toml::from_str`。
+
+### 3. Contracts
+
+- checkout snapshot 为 `paid` 时，Gate MUST 进入 visible `fulfilling`，以 bounded backoff 反复调用 `catalog({ forceRefresh:true })`；entitlement 未 active 不得退回订阅页、创建第二笔订单或使用旧 cache。
+- same-session paid 与 restart 恢复的 paid checkout MUST 共用同一 fulfillment path。Native checkpoint 只能保存 checkout id/status/expiry/isolation tuple；不得保存 plan 文案、payment action、secret 或 entitlement truth。
+- fulfillment 达到 bounded deadline、catalog fail 或 prepare fail 时，Gate MUST 保留 fulfillment recovery surface 与明确 retry；retry 继续权威 reconciliation，不得隐式重新 checkout。
+- entitlement active 后 `product_prepare` MUST 对 Codex、Claude、Kimi 逐引擎写入同一个 account/device scoped secret owner，再应用各自 provider config；全部配置、model catalog 与 ready projection成功后才清 product checkpoint。
+- Kimi managed merge MUST replace entire `doge-token-matrix` provider entry，并移除大小写/分隔符归一化后等价于 `apiKey`、`token`、`secret` 的 legacy secret fields。`config.json` 不得持久化 secret；launch-only owner `KIMI_CODE_HOME/config.toml` 可由 Native 从 vault 生成 owner-only `api_key`。
+- Kimi verification MUST 校验 current/source/base URL/provider type、content fingerprint 与 secret absence。任一不符必须 rollback/fail closed；禁止因为 JSON target 不可被 TOML parse 而把正确配置永久回滚。
+- Product-ready Home target MUST 先由 `resolveProductManagedExecutionTargetV1` 归一，再执行 `isResolvedExecutionTarget` guard。Kimi display catalog id `kimi-code/<model>` 可保留为 `modelCatalogEntryId`，但 runtime `model` MUST 去除该 namespace；实际 send 禁止回退全局 `selectedModelId`。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Native / Gateway | Gate / Runtime |
+|---|---|---|
+| order `paid`，subscription 尚未 active | 保存 grace checkpoint；forced catalog 返回 inactive | 保持 `fulfilling`，bounded backoff |
+| entitlement 在 backoff 内 active | prepare 三引擎；成功后清 checkpoint | 自动进入 AppShell |
+| restart 时 paid checkpoint 存在 | authoritative order read；恢复 paid truth | 直接进入 `fulfilling`，不回套餐 |
+| fulfillment deadline 到达 | checkpoint 保留到 server grace expiry | 显示 delayed + retry，不重复购买 |
+| Kimi registry 含 legacy `api_key` | managed merge 删除 secret field | JSON verifier通过；secret只在 vault/runtime home |
+| Kimi current/baseUrl/providerType 漂移 | verifier reject + transaction rollback | `productPrepare` typed retry failure |
+| Kimi JSON 被 Codex TOML verifier处理 | 禁止；regression test必须失败定位 | 不得把正确 JSON 回滚 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：payment poll 先读到 `paid`，两次 forced catalog 后 subscription active，三引擎 prepare 完成并自动进入 AppShell；checkpoint 随成功清除。
+- Base：首次 catalog 已有 active entitlement，跳过 checkout/fulfillment 并直接 prepare。
+- Bad：`paid -> loadCatalog()` 命中 30 秒 cache，看到 inactive 后 `setPhase("subscription")`，让用户以为需要再次购买。
+- Bad：paid checkpoint 立即清除，App restart 丢失“已经付款、等待履约”的真实状态。
+- Bad：Kimi JSON registry 落到 default TOML branch，或 merge 只覆盖非 secret 字段而保留旧 `apiKey`。
+
+### 6. Tests Required
+
+- React lifecycle MUST 使用 deferred catalog 证明：paid 后进入 `fulfilling`、每次 read 都带 `forceRefresh:true`、inactive 不出现订阅 CTA、active 后只 prepare 一次并 ready、stale generation 不推进。
+- React visual contract MUST 锁定 product stylesheet owner、structured plan card（plan/price/validity/engine/feature/CTA）与 bounded logo；narrow CSS breakpoint 不得把字段拼成一行。
+- Rust checkout tests MUST 锁定 `paid -> processing` grace checkpoint、restart read 与 prepare success cleanup；secret scan断言 checkpoint无 payment/plan/credential字段。
+- Rust configuration tests MUST 构造 legacy Kimi secret aliases，断言 merge 后 serialized JSON 不含 secret，并直接调用 `verify_applied_plan` 证明 Kimi-specific JSON branch成功；current/base URL/provider type 漂移分别 fail closed。
+- Required commands：focused Vitest、`cargo test --manifest-path src-tauri/Cargo.toml --lib account::`、`cargo check --manifest-path src-tauri/Cargo.toml --lib`、`npm run typecheck`、target ESLint、`npm run check:runtime-contracts`、OpenSpec strict validation。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+if (checkout.status === "paid") {
+  await loadCatalog(); // may reuse inactive cache
+  setPhase("subscription");
+}
+```
+
+```rust
+// Kimi JSON falls through to Codex TOML verification.
+let parsed: toml::Value = toml::from_str(&content)?;
+```
+
+#### Correct
+
+```ts
+setPhase("fulfilling");
+const catalog = await client.catalog({ forceRefresh: true });
+if (catalog.entitlement.status === "active") await prepare(generation);
+```
+
+```rust
+if file.label == "Doge Kimi provider registry" {
+    let root: serde_json::Value = serde_json::from_str(&content)?;
+    verify_kimi_owner_and_secret_absence(&root)?;
+}
+```
+
+`paid` 只证明订单已支付，不等于 entitlement 已完成传播；Kimi provider registry 的文件格式由 target owner 决定，不能由 default verifier 猜测。
+
+## Scenario: Dynamic product model catalog and real CLI compatibility evidence
+
+### 1. Scope / Trigger
+
+- Trigger：修改 product-ready Composer picker、`ProductEntitlementSnapshotV1`、`ExecutionTarget` repair、Claude/Codex/Kimi managed model projection，或宣称某个 product model 可由多个 CLI engine 使用。
+- 目标：product catalog 是 entitlement ceiling；上游增删 conversation model 后 Doge 无需 model-id 发版即可 bounded refresh，同时不能拿 `/v1/models` 或最小 HTTP 200 冒充 Agent runtime compatibility。
+
+### 2. Signatures
+
+- Product picker mode：`ProviderTargetPickerMode = "product"`；catalog=`ProductTargetCatalogV1 { engines[], models[], modelsStatus, modelsUpdatedAt }`。
+- Product panel：`ProductEngineModelSelect({ catalog, executionTarget, onExecutionTargetChange })`。
+- Managed target：`providerProfileId="doge-token-matrix"`、`providerProfileSource="managed"`、`modelCatalogEntryId` 与 runtime `model` 分域。
+- Claude product projection：`project_claude_model_for_managed_product(provider_profile_id, requested_model, provider_env)`；projection 只作用于 managed product profile 的 child turn。
+- Native model wire：`ProductModelWire { id, display_name?, model?, compatible_engines?, capabilities? }`；renderer view=`{ id, display_name, model, compatible_engines, capabilities }`。
+- Read-only refresh command：`account_product_v1_models() -> { ok, value: { models[], fetched_at } }`；必须限制 main window、读取当前 account scope 的 managed key、网络请求前释放 account state lock。
+- Frontend refresh owner：`refreshProductModelsV1({ force? })`；30s freshness、same-subscription single in-flight、last-known-good、focus/visibility + 60s visible fallback。
+- Product toolchain owner：`prepareProductEngineProvisioningV1({ onEngine? })`；Codex/Claude Code 复用 `account_engine_v1_toolchain`，Kimi 复用 `cli_version_status / cli_install_plan / cli_install_run`。
+- Compatibility evidence：`engine × product model × real CLI payload`，至少覆盖 Codex Responses Agent payload、Claude Code Messages payload、Kimi stream-json Chat payload。
+
+### 3. Contracts
+
+- Home create-session、Shared Next Turn 与 Account Center MUST 从同一个 refreshable product snapshot 读取 entitlement catalog，并复用同一个 compatibility helper 求 selected engine rows。
+- `ProductAccountAppGate.prepare` MUST 先完成 toolchain owner 再调用 `account_product_v1_prepare`。Codex/Claude `choiceRequired` 在产品自动准备中选择 bundled；Kimi 已安装时不得重装/升级，缺失时必须 plan.canRun + installer.ok + version installed 三段闭环。任一失败不得写 provider config 或进入 ready。
+- Native MUST preserve upstream order and separate catalog `id`、user `display_name`、callable `model`。`model/runtime_model` 缺失时回退公开 `id`；禁止从 display name 或 admin-only account mapping 猜调用名。
+- `compatible_engines` 缺失时使用 stable family fallback：GPT/OpenAI→Codex、Claude/Anthropic→Claude Code、Kimi/Moonshot/K3→Kimi CLI、豆包/Ark Coding→三种 managed adapter；unknown family fail closed。显式空/unknown-only集合时 row 不可选。`capabilities` 有 positive conversation value 时优先；image/audio/realtime/embedding-only row必须过滤，legacy catalog用 bounded negative heuristic。
+- 目录刷新 pending/error MUST 保留 last-known-good；成功刷新删除当前 model 时，在下一次发送前按同一 target repair contract 原子收敛。
+- 切换 engine 时 current model 兼容则保留；否则必须与 engine 一起原子切换为 upstream order 中第一个 compatible model。空交集 fail closed；切换 model 不得改变 engine。
+- Product surface MUST 隐藏 provider/channel/configuration/add-model controls；local/expert provider catalog owner 在 `mode="product"` MUST disabled，不发 profile/model prefetch。
+- Existing Native Session 的 engine/provider binding 保持 immutable；跨 engine 继续走 new-session/Provider Continuation，不得原地替换 Runtime owner。
+- UI selected target、readiness/accessibility projection、persisted `modelCatalogEntryId` 与 dispatched runtime `model` MUST 同源；不得出现 trigger 正确但 readiness/global model 仍旧的 split truth。
+- Runtime/provider failure MUST 保留 exact selection 并 fail closed；禁止 silent engine/model/provider fallback。
+- `/v1/models` 只证明 catalog entitlement；三种 endpoint 的 minimal 200 只证明 protocol adapter basic reachability。只有真实 CLI 发出的 system/tools/stream/client headers payload 完成 terminal response，才可标记对应组合 E2E ready。
+- token2api production `allow_messages_dispatch`、`claude_code_only/fallback`、model routing/account pool 均是 Release prerequisites；Doge 不得通过伪造/隐藏 client identity 绕过 server policy。
+
+### 4. Validation & Error Matrix
+
+| 场景 | Doge 行为 | Release truth |
+|---|---|---|
+| product Home 打开 picker | 右侧 panel；3 engines 显示当前 compatible rows | UI + catalog contract |
+| upstream 新增 `claude-opus-4-8` | bounded refresh 后进入同一 snapshot | 不修改 Doge exact-id manifest |
+| refresh pending / failure | 保留 rows，显示 refreshing/stale + retry | 不清空 Composer / Account Center |
+| fresh device 缺 Kimi | typed install + post-install version verify | 完成后才继续 provider prepare |
+| Kimi 已安装 | 零 installer mutation | 直接继续 provider prepare |
+| generic `/v1/messages` 为 200、Claude Code payload 400 | 保留 exact target typed failure并记录E2E阻塞 | NOT compatible；检查 client-sensitive routing |
+| minimal Responses 200、Codex Agent 两分钟无首包 | 保留 exact target typed failure并记录E2E阻塞 | NOT compatible；检查 tools/stream/Agent payload |
+| Kimi stream-json 返回 typed final | 正常 settle、runtime model evidence匹配 | compatible for that pair |
+| GPT account pool 503 | 保留组合、typed retry | capacity unavailable，不标 E2E ready |
+
+### 5. Good / Base / Bad Cases
+
+- Good：production `/v1/models` 新增一个 valid text row 后，Native 保留 `display_name/model`，刷新 owner 一次发布给 panel、Composer 与 Account Center；选择与发送使用同一 target identity。
+- Base：三个 engine 共享 upstream entitlement catalog 与 helper；上游可用 `compatible_engines` 收窄 subset，不需要客户端列举 id。
+- Bad：因为 `/v1/messages` curl 返回 200，就宣称 Claude Code 支持该 model；真实 client headers 可能走另一 group/fallback policy。
+- Bad：为获得 200 在 Doge 本地伪造非 Claude-Code User-Agent，绕过 token2api `ClaudeCodeOnly` policy。
+- Bad：某组合失败后自动改成 engine 默认 model，让用户看到的 Target 与计费/usage/runtime 不一致。
+
+### 6. Tests Required
+
+- React component：同一 catalog 3 engine rows、compatible preserve / incompatible atomic fallback、切 model 保留 engine、搜索/vendor grouping、empty intersection disabled、panel stays open、Escape close、无 provider/config controls。
+- Refresh coordinator：same-subscription coalescing、freshness skip、pending保留rows、success原子发布、failure stale、logout/account-switch stale settle不覆盖。
+- Product provisioning：Codex/Claude ready/choiceRequired/bundle failure；Kimi installed/missing plan blocked/install failed/post-verify failed；断言 provider prepare 只在 provisioning success 后调用。
+- Composer regression：Home dynamic product mode；Shared removed-model selection 自动 repair并持久化 managed target；readiness/display/runtime identity 跟随 `selectedAtomicTarget`。
+- Rust unit：display/runtime/engine metadata、upstream order/dedupe、non-conversation filtering、main-window IPC、managed product Claude Unicode model、Kimi Unicode bare+`doge/` alias。
+- Real E2E：当前 selectable catalog 对三 CLI 的 exact model/terminal evidence；失败不得被 minimal endpoint probe覆盖，并必须记录 upstream/config prerequisite。
+- Required commands（用户本次 L4）：全量 Vitest/Rust tests、full ESLint/typecheck、Rust check/build、runtime/engine contracts、OpenSpec strict、hot-dev visual/E2E。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+const models = STATIC_RELEASE_MODEL_IDS[selectedEngine];
+// 新上游 model 永远不可见，display/runtime identity 也丢失。
+```
+
+```text
+GET /v1/models contains kimi-for-coding
+POST /v1/messages minimal probe = 200
+=> mark Claude Code × kimi-for-coding supported  // false proof
+```
+
+#### Correct
+
+```ts
+const catalog = productEntitlement.models; // refreshed upstream rows
+const rows = compatibleProductModelsForEngineV1(nextEngine, catalog);
+commitTarget(resolveProductManagedExecutionTargetV1({ engines, models: rows }));
+```
+
+```text
+catalog entitlement
+  + protocol endpoint probe
+  + real CLI system/tools/stream payload terminal
+  = compatibility evidence for one engine×model cell
+```

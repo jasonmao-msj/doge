@@ -87,6 +87,10 @@ React Component
 26. Tauri debug resource 若也被 bundle resources copy 消费，staging destination 必须是与 source
     独立的 real tree，禁止 symlink。启动前验证 generated manifest 非空且合法；否则后续 copy
     可能把 source/destination 解析为同一文件并截断 runtime resource。
+27. Model catalog entitlement、protocol endpoint smoke 与真实 CLI compatibility 必须分层取证。
+    `/v1/models` 有 id 或 minimal curl 200 不能证明 Codex/Claude/Kimi 的真实 Agent payload
+    （system/tools/stream/client headers）可完成；engine×model compatibility 只能由 exact Runtime
+    target + typed terminal 证明，失败不得被 UI label、dispatch ACK 或另一 client identity 覆盖。
 
 ## 常见失败模式
 

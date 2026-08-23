@@ -1,0 +1,8 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend focused verification and no dead code"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "IPC registration, lock scope and Rust checks"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 focused verification selection"}
+{"file": "openspec/changes/doge-unified-product-subscription/specs/account-product-subscription-center/spec.md", "reason": "Account detail acceptance contract"}
+{"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "Verify catalog/runtime identity parity"}
+{"file": "openspec/changes/doge-unified-product-subscription/specs/unified-engine-model-selection/spec.md", "reason": "Verify refresh and display/runtime behavior"}

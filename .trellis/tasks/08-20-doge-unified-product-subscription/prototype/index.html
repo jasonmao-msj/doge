@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Doge 统一订阅与模型组合原型</title>
+  <!--
+    Assumptions / reasoning:
+    - 这是 Doge desktop 的单流程高保真原型，不是独立网页。
+    - 用户已经登录；只演示 product entitlement、模拟支付与 engine/model 组合选择。
+    - 套餐价格尚未确定，因此明确使用“待定”占位，不编造商业数据。
+    - engine / model click 立即提交，右侧栏保持打开，便于连续比较与切换。
+    - engine 来自 Doge 内置 registry；model 来自订阅生效后的上游统一 catalog，两者互不筛选或重置。
+    - Kimi CLI、Kimi、GLM、DeepSeek 仅用于 UI 信息架构示意，不代表生产 catalog 已接入。
+    - 右上角原型工具只用于演示，不属于正式产品 UI。
+  -->
+  <style>
+    @font-face {
+      font-family: "Doge Geist";
+      src: url("../../../../dist/assets/Geist-Variable-Bj2R_7yk.woff2") format("woff2");
+      font-weight: 100 900;
+      font-display: swap;
+    }
+
+    :root {
+      color-scheme: dark;
+      --bg: #0d0f13;
+      --sidebar: #0b0d11;
+      --surface: #15171c;
+      --surface-strong: #1c1f25;
+      --surface-hover: #20232a;
+      --surface-selected: #262a32;
+      --border: #2b2f37;
+      --border-soft: #22262d;
+      --text: #f1f2f4;
+      --muted: #9b9fa9;
+      --faint: #686d77;
+      --accent: #2f7df4;
+      --accent-soft: rgba(47, 125, 244, .14);
+      --success: #22b982;
+      --shadow: 0 28px 80px rgba(0, 0, 0, .38), 0 8px 24px rgba(0, 0, 0, .22);
+      --window-shadow: 0 28px 90px rgba(0, 0, 0, .32);
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f7f7f8;
+      --sidebar: #f1f1f3;
+      --surface: #ffffff;
+      --surface-strong: #f5f5f6;
+      --surface-hover: #f0f1f3;
+      --surface-selected: #e9ebef;
+      --border: #dedfe3;
+      --border-soft: #e9e9ec;
+      --text: #17191f;
+      --muted: #696e78;
+      --faint: #9a9ea6;
+      --accent: #176be8;
+      --accent-soft: rgba(23, 107, 232, .10);
+      --success: #0c9d6e;
+      --shadow: 0 28px 72px rgba(39, 43, 51, .16), 0 8px 20px rgba(39, 43, 51, .08);
+      --window-shadow: 0 26px 80px rgba(39, 43, 51, .13);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; }
+    body {
+      overflow: hidden;
+      background: color-mix(in oklch, var(--bg) 92%, #657086 8%);
+      color: var(--text);
+      font-family: "Doge Geist", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font: inherit; }
+    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    img { display: block; }
+
+    .stage {
+      width: 100vw;
+      height: 100vh;
+      padding: clamp(14px, 2.1vw, 28px);
+      display: grid;
+      place-items: center;
+    }
+
+    .window {
+      position: relative;
+      width: min(1500px, calc(100vw - 28px));
+      height: min(930px, calc(100vh - 28px));
+      min-height: 650px;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: 54px minmax(0, 1fr);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: var(--bg);
+      box-shadow: var(--window-shadow);
+    }
+
+    .titlebar {
+      display: grid;
+      grid-template-columns: 140px 1fr 140px;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border-soft);
+      background: color-mix(in oklch, var(--bg) 95%, transparent);
+      user-select: none;
+    }
+    .traffic { display: flex; gap: 9px; align-items: center; }
+    .traffic span { width: 12px; height: 12px; border-radius: 50%; }
+    .traffic span:nth-child(1) { background: #ff5f57; }
+    .traffic span:nth-child(2) { background: #febc2e; }
+    .traffic span:nth-child(3) { background: #28c840; }
+    .titlebar-title { color: var(--muted); text-align: center; font-size: 13px; }
+    .prototype-tools { display: flex; justify-content: flex-end; gap: 6px; }
+    .tool-button {
+      width: 34px; height: 34px; display: grid; place-items: center;
+      border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer;
+    }
+    .tool-button:hover { color: var(--text); background: var(--surface-hover); }
+    .tool-button svg { width: 17px; height: 17px; stroke-width: 1.8; }
+    .window.entitlement-locked .prototype-tools { visibility: hidden; pointer-events: none; }
+
+    .workspace { min-height: 0; display: grid; grid-template-columns: 236px minmax(0, 1fr); }
+    .workspace.locked { grid-template-columns: minmax(0, 1fr); }
+    .workspace.locked .sidebar { display: none; }
+    .sidebar {
+      position: relative;
+      min-height: 0;
+      padding: 20px 14px 14px;
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--border-soft);
+      background: var(--sidebar);
+    }
+    .nav { display: grid; gap: 6px; }
+    .nav-item {
+      height: 42px; padding: 0 12px; display: flex; align-items: center; gap: 11px;
+      width: 100%; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; cursor: pointer;
+    }
+    .nav-item.active { color: var(--text); background: var(--surface-strong); }
+    .nav-item svg { width: 18px; height: 18px; stroke-width: 1.7; }
+    .sidebar-label { margin: 28px 12px 10px; color: var(--faint); font-size: 12px; }
+    .workspace-row {
+      height: 42px; padding: 0 10px; display: flex; align-items: center; gap: 9px;
+      border-radius: 9px; background: var(--surface-strong); color: var(--text);
+    }
+    .workspace-row strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 550; }
+    .workspace-row span { padding: 2px 7px; border: 1px solid color-mix(in oklch, var(--accent) 62%, var(--border)); border-radius: 9px; color: var(--accent); font-size: 11px; }
+    .thread-list { padding: 8px 6px; display: grid; gap: 2px; }
+    .thread { height: 36px; display: flex; align-items: center; gap: 9px; color: var(--muted); }
+    .thread-mark { width: 6px; height: 6px; border-radius: 50%; background: #d5982f; }
+    .thread time { margin-left: auto; color: var(--faint); font-size: 12px; }
+    .sidebar-bottom { margin-top: auto; display: flex; gap: 4px; }
+    .sidebar-bottom .tool-button.active { color: var(--text); background: var(--surface-strong); }
+    .account-popover[hidden] { display: none; }
+    .account-popover {
+      position: absolute; z-index: 45; left: 14px; bottom: 58px; width: 300px; padding: 8px;
+      border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow);
+    }
+    .account-popover-profile {
+      width: 100%; padding: 10px; display: flex; align-items: center; gap: 10px;
+      border: 0; border-radius: 8px; background: transparent; color: var(--text); text-align: left; cursor: pointer;
+    }
+    .account-popover-profile:hover, .account-usage-preview:hover { background: var(--surface-hover); }
+    .account-popover-profile img { width: 34px; height: 34px; border-radius: 9px; object-fit: contain; }
+    .account-popover-profile-copy { min-width: 0; flex: 1; }
+    .account-popover-profile strong, .account-popover-profile span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-popover-profile strong { font-size: 13px; font-weight: 600; }
+    .account-popover-profile span { margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .account-popover-chevron { color: var(--faint); font-size: 18px; }
+    .account-usage-preview {
+      width: 100%; margin-top: 4px; padding: 11px 10px 10px; display: block;
+      border: 0; border-top: 1px solid var(--border-soft); border-radius: 8px; background: transparent; color: var(--text); cursor: pointer;
+    }
+    .account-usage-preview-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+    .account-usage-preview-head strong { font-size: 13px; font-weight: 600; }
+    .account-usage-preview-head span { color: var(--muted); font-size: 11px; }
+    .account-usage-preview-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) 38px; align-items: center; gap: 8px; min-height: 24px; }
+    .account-usage-preview-row > span:first-child { color: var(--muted); font-size: 11px; text-align: left; }
+    .account-usage-preview-row > span:last-child { color: var(--muted); font-size: 10px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .account-usage-preview-track { height: 4px; overflow: hidden; border-radius: 999px; background: var(--surface-strong); }
+    .account-usage-preview-track i { display: block; width: var(--usage); height: 100%; border-radius: inherit; background: var(--accent); }
+
+    .main { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+    .screen { position: absolute; inset: 0; }
+
+    .gate-screen {
+      display: grid; place-items: center; padding: 40px;
+      background: radial-gradient(circle at 50% 38%, color-mix(in oklch, var(--surface) 82%, transparent) 0, transparent 36%);
+    }
+    .gate-card { width: min(410px, 100%); text-align: center; }
+    .gate-account-exit {
+      position: absolute; top: 24px; right: 26px; min-height: 36px; padding: 0 11px;
+      border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px;
+    }
+    .gate-account-exit:hover { color: var(--text); background: var(--surface-hover); }
+    .doge-icon { width: 74px; height: 74px; margin: 0 auto 18px; object-fit: contain; }
+    .gate-card h1 { margin: 0 0 28px; font-size: 30px; line-height: 1.2; letter-spacing: -.03em; font-weight: 650; }
+    .plan {
+      padding: 20px; text-align: left; border: 1px solid var(--border); border-radius: 14px;
+      background: var(--surface); box-shadow: 0 10px 30px rgba(0, 0, 0, .08);
+    }
+    .plan-head { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
+    .plan-head h2 { margin: 0; font-size: 17px; font-weight: 620; }
+    .price { color: var(--text); font-size: 18px; font-weight: 620; }
+    .price small { color: var(--faint); font-size: 12px; font-weight: 450; }
+    .plan-description {
+      margin: 18px 0 22px; padding-top: 18px; border-top: 1px solid var(--border-soft);
+      color: var(--muted); font-size: 14px; line-height: 1.65; text-wrap: pretty;
+    }
+    .primary {
+      width: 100%; min-height: 44px; border: 0; border-radius: 9px;
+      background: var(--text); color: var(--bg); font-weight: 620; cursor: pointer;
+    }
+    .primary:hover { opacity: .9; }
+
+    .payment-backdrop {
+      position: absolute; inset: 0; z-index: 30; display: grid; place-items: center;
+      background: color-mix(in oklch, var(--bg) 72%, transparent); backdrop-filter: blur(10px);
+    }
+    .payment-dialog {
+      width: 360px; padding: 22px; border: 1px solid var(--border); border-radius: 14px;
+      background: var(--surface); box-shadow: var(--shadow); text-align: center;
+    }
+    .payment-dialog h2 { margin: 0; font-size: 18px; }
+    .payment-dialog p { margin: 6px 0 18px; color: var(--muted); }
+    .qr-placeholder {
+      width: 170px; height: 170px; margin: 0 auto 18px; display: grid; place-items: center;
+      border: 1px dashed var(--faint); border-radius: 8px; color: var(--muted); background: var(--surface-strong);
+    }
+    .secondary {
+      min-height: 40px; padding: 0 18px; border: 1px solid var(--border); border-radius: 9px;
+      background: var(--surface-strong); color: var(--text); cursor: pointer;
+    }
+    .secondary:hover { background: var(--surface-hover); }
+
+    .preparing { display: grid; place-items: center; text-align: center; }
+    .spinner { width: 30px; height: 30px; margin: 0 auto 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .75s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .preparing h2 { margin: 0 0 7px; font-size: 18px; }
+    .preparing p { margin: 0; color: var(--muted); }
+
+    .chat-screen { display: flex; min-width: 0; }
+    .chat-content { position: relative; min-width: 0; min-height: 0; flex: 1; display: flex; flex-direction: column; }
+    .chat-header { height: 54px; display: flex; align-items: center; padding: 0 28px; border-bottom: 1px solid var(--border-soft); color: var(--muted); }
+    .chat-header strong { color: var(--text); font-weight: 560; }
+    .chat-body { flex: 1; min-height: 0; display: grid; place-items: center; padding: 32px 40px 170px; }
+    .empty-state { text-align: center; transform: translateY(16px); }
+    .empty-state img { width: 50px; height: 50px; margin: 0 auto 15px; object-fit: contain; }
+    .empty-state h1 { margin: 0; font-size: clamp(30px, 3vw, 44px); letter-spacing: -.04em; font-weight: 610; }
+
+    .composer-wrap { position: absolute; left: 8%; right: 8%; bottom: 34px; z-index: 8; }
+    .composer {
+      min-height: 126px; padding: 17px 18px 12px; border: 1px solid var(--border); border-radius: 16px;
+      background: color-mix(in oklch, var(--surface) 94%, transparent); box-shadow: 0 18px 45px rgba(0,0,0,.11);
+    }
+    .composer-placeholder { height: 57px; color: var(--faint); font-size: 16px; }
+    .composer-footer { display: flex; align-items: center; gap: 12px; }
+    .plus { width: 30px; height: 30px; border: 0; background: transparent; color: var(--text); font-size: 25px; line-height: 1; cursor: pointer; }
+    .target-trigger {
+      min-width: 0; height: 34px; padding: 0 9px; display: inline-flex; align-items: center; gap: 7px;
+      border: 0; border-radius: 8px; background: transparent; color: var(--text); cursor: pointer;
+    }
+    .target-trigger:hover, .target-trigger[aria-expanded="true"] { background: var(--surface-hover); }
+    .engine-icon, .model-icon { width: 18px; height: 18px; object-fit: contain; flex: 0 0 auto; }
+    .model-icon.round { border-radius: 50%; }
+    .target-trigger .engine-icon { width: 16px; height: 16px; opacity: .72; }
+    .target-trigger .model-icon { width: 19px; height: 19px; }
+    .target-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 520; }
+    .chevron { color: var(--faint); font-size: 12px; transform: rotate(0); transition: transform 180ms ease; }
+    .target-trigger[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+    .composer-meta { color: var(--muted); display: flex; gap: 14px; font-size: 13px; }
+    .send { margin-left: auto; width: 34px; height: 34px; border: 0; border-radius: 9px; background: var(--surface-strong); color: var(--muted); cursor: pointer; }
+
+    .picker-dock {
+      width: 0; min-width: 0; height: 100%; flex: 0 0 auto; overflow: hidden;
+      border-left: 1px solid transparent; background: var(--sidebar);
+      transition: width 190ms cubic-bezier(.2,.8,.2,1), border-color 120ms ease;
+    }
+    .chat-screen.picker-open .picker-dock { width: min(390px, 38%); border-left-color: var(--border-soft); }
+    .picker {
+      width: 100%; height: 100%; min-width: 290px;
+      display: flex; flex-direction: column; overflow: hidden;
+      background: var(--sidebar); opacity: 0; transform: translateX(20px);
+      pointer-events: none; transition: opacity 140ms ease, transform 190ms cubic-bezier(.2,.8,.2,1);
+    }
+    .picker.open { opacity: 1; transform: translateX(0); pointer-events: auto; }
+    .picker-head { min-height: 58px; padding: 0 14px 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-soft); }
+    .picker-head h2 { margin: 0; font-size: 15px; font-weight: 610; }
+    .close-picker { width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 20px; }
+    .close-picker:hover { background: var(--surface-hover); color: var(--text); }
+    .section-label { padding: 14px 18px 7px; color: var(--faint); font-size: 11px; font-weight: 560; letter-spacing: .04em; }
+    .engine-options { padding: 0 8px 10px; display: grid; gap: 2px; border-bottom: 1px solid var(--border-soft); }
+    .engine-option {
+      width: 100%; min-height: 42px; padding: 0 10px; display: flex; align-items: center; gap: 10px;
+      border: 0; border-radius: 7px; background: transparent; color: var(--text); cursor: pointer; text-align: left;
+    }
+    .engine-option:hover { background: var(--surface-hover); }
+    .engine-option.selected { background: var(--surface-selected); }
+    .engine-option span { flex: 1; font-weight: 540; }
+    .radio { width: 14px; height: 14px; border: 1.5px solid var(--faint); border-radius: 50%; display: grid; place-items: center; }
+    .selected .radio { border-color: var(--accent); }
+    .selected .radio::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+    .model-section { min-height: 0; flex: 1; display: flex; flex-direction: column; }
+    .model-search-wrap { margin: 0 10px 8px; position: relative; }
+    .model-search-wrap svg { position: absolute; left: 10px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
+    .model-search {
+      width: 100%; height: 34px; padding: 0 10px 0 33px; border: 1px solid var(--border-soft); border-radius: 7px;
+      background: var(--surface); color: var(--text); outline: none;
+    }
+    .model-search::placeholder { color: var(--faint); }
+    .model-search:focus { border-color: color-mix(in oklch, var(--accent) 54%, var(--border)); }
+    .model-list { min-height: 0; padding: 0 8px 12px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+    .model-option {
+      width: 100%; min-height: 56px; padding: 8px 10px; display: flex; align-items: flex-start; gap: 11px;
+      border: 0; border-radius: 7px; background: transparent; color: var(--text); text-align: left; cursor: pointer;
+    }
+    .model-option[hidden] { display: none; }
+    .model-option:hover { background: var(--surface-hover); }
+    .model-option.selected { background: var(--surface-selected); }
+    .model-option .model-icon { width: 21px; height: 21px; margin-top: 2px; }
+    .model-copy { min-width: 0; flex: 1; }
+    .model-copy strong { display: block; margin-bottom: 3px; font-size: 14px; font-weight: 560; }
+    .model-copy span { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; text-wrap: pretty; }
+    .check { width: 18px; color: var(--accent); font-size: 17px; opacity: 0; }
+    .model-option.selected .check { opacity: 1; }
+    .model-empty { display: none; padding: 28px 18px; color: var(--faint); text-align: center; font-size: 12px; }
+    .model-empty.visible { display: block; }
+    .picker-foot { min-height: 46px; padding: 0 18px; display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--border-soft); color: var(--muted); font-size: 12px; }
+    .picker-foot .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+
+    .account-screen { overflow-y: auto; background: var(--bg); }
+    .account-page { position: relative; width: min(860px, calc(100% - 56px)); margin: 0 auto; padding: 42px 0 64px; }
+    .account-page-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
+    .account-identity { min-width: 0; display: flex; align-items: center; gap: 14px; }
+    .account-avatar { width: 48px; height: 48px; border-radius: 13px; object-fit: contain; }
+    .account-identity-copy { min-width: 0; }
+    .account-name-line { display: flex; align-items: center; gap: 5px; }
+    .account-identity h1 { margin: 0; font-size: 22px; font-weight: 630; letter-spacing: -.02em; }
+    .account-identity p { margin: 4px 0 0; display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-signed-in-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--success); }
+    .account-profile-edit, .account-header-action {
+      width: 32px; height: 32px; display: grid; place-items: center; flex: 0 0 auto;
+      border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer;
+    }
+    .account-profile-edit { width: 28px; height: 28px; }
+    .account-profile-edit:hover, .account-header-action:hover { color: var(--text); background: var(--surface-hover); }
+    .account-profile-edit svg, .account-header-action svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .account-profile-form { display: flex; align-items: center; gap: 3px; }
+    .account-profile-form input { width: min(280px, 38vw); height: 34px; padding: 0 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-strong); color: var(--text); font-size: 17px; font-weight: 620; }
+    .account-page-head-actions { display: flex; align-items: center; gap: 3px; }
+    .account-close { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 22px; }
+    .account-close:hover { color: var(--text); background: var(--surface-hover); }
+    .account-tabs { display: flex; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--border-soft); }
+    .account-tab { min-height: 42px; padding: 0 16px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); cursor: pointer; }
+    .account-tab.active { border-bottom-color: var(--text); color: var(--text); }
+    .account-panel[hidden] { display: none; }
+    .subscription-card { padding: 24px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+    .subscription-card-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .subscription-title { min-width: 0; display: flex; align-items: baseline; gap: 12px; }
+    .subscription-card-head h2 { margin: 0; font-size: 19px; font-weight: 620; }
+    .subscription-expiry { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .subscription-status { display: inline-flex; align-items: center; gap: 7px; color: var(--success); font-size: 13px; white-space: nowrap; }
+    .subscription-status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .subscription-models { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-soft); }
+    .subscription-models summary { min-height: 34px; display: flex; align-items: center; justify-content: space-between; color: var(--text); cursor: pointer; list-style: none; }
+    .subscription-models summary::-webkit-details-marker { display: none; }
+    .subscription-models summary strong { margin-left: 7px; color: var(--muted); font-size: 12px; font-weight: 500; }
+    .subscription-models summary::after { content: "展开"; color: var(--muted); font-size: 12px; }
+    .subscription-models[open] summary::after { content: "收起"; }
+    .account-model-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
+    .account-model { min-width: 0; min-height: 42px; padding: 8px 10px; display: flex; align-items: center; gap: 9px; border-radius: 8px; background: var(--surface-strong); }
+    .account-model img { width: 19px; height: 19px; object-fit: contain; flex: 0 0 auto; }
+    .account-model img.round { border-radius: 50%; }
+    .account-model span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .usage-card { padding: 8px 22px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+    .usage-row { display: grid; grid-template-columns: 70px minmax(0, 1fr) 130px; align-items: center; gap: 16px; min-height: 64px; }
+    .usage-row + .usage-row { border-top: 1px solid var(--border-soft); }
+    .usage-label { color: var(--muted); }
+    .usage-track { height: 6px; overflow: hidden; border-radius: 999px; background: var(--surface-strong); }
+    .usage-track i { display: block; width: var(--usage); height: 100%; border-radius: inherit; background: var(--accent); }
+    .usage-value { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+    .account-action-popover {
+      position: absolute; z-index: 55; top: 84px; right: 38px; width: min(330px, calc(100vw - 48px)); padding: 14px;
+      border: 1px solid var(--border); border-radius: 11px; background: var(--surface); box-shadow: var(--shadow);
+    }
+    .account-action-popover-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .account-action-popover-head strong { font-size: 14px; font-weight: 620; }
+    .account-action-popover-head button { width: 28px; height: 28px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; }
+    .account-action-popover-head button:hover { color: var(--text); background: var(--surface-hover); }
+    .account-security-form { display: grid; gap: 11px; }
+    .account-security-form label { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
+    .account-security-form input { height: 36px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-strong); color: var(--text); }
+    .account-form-error { margin: 0; color: #ff6b6b; font-size: 11px; }
+    .account-popover-primary, .account-dialog-primary, .account-dialog-secondary, .account-danger-action {
+      min-height: 38px; padding: 0 12px; border-radius: 8px; cursor: pointer; font-weight: 580;
+    }
+    .account-popover-primary, .account-dialog-primary { border: 0; background: var(--text); color: var(--bg); }
+    .account-security-list { display: grid; gap: 0; margin: 0; }
+    .account-security-list div { min-height: 40px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--border-soft); }
+    .account-security-list dt { color: var(--muted); }
+    .account-security-list dd { margin: 0; color: var(--text); }
+    .account-danger-action { width: 100%; margin-top: 12px; border: 1px solid color-mix(in oklch, #ef4444 55%, var(--border)); background: transparent; color: #ff6b6b; }
+    .account-dialog-backdrop { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; padding: 24px; background: color-mix(in oklch, var(--bg) 72%, transparent); backdrop-filter: blur(8px); }
+    .account-dialog { width: min(360px, 100%); padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+    .account-dialog h3 { margin: 0; font-size: 17px; }
+    .account-dialog p { margin: 8px 0 20px; color: var(--muted); line-height: 1.55; }
+    .account-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .account-dialog-secondary { border: 1px solid var(--border); background: transparent; color: var(--text); }
+    .account-login-form { display: grid; gap: 12px; padding: 20px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); text-align: left; }
+    .account-login-card { width: min(380px, 100%); text-align: center; }
+    .account-login-card h1 { margin: 0 0 22px; font-size: 27px; letter-spacing: -.03em; }
+    .account-login-form label { display: grid; gap: 6px; color: var(--muted); font-size: 12px; }
+    .account-login-form input { height: 40px; padding: 0 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-strong); color: var(--text); }
+    .account-auth-links { display: flex; justify-content: space-between; }
+    .account-auth-links button { padding: 4px 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+
+    .toast {
+      position: absolute; z-index: 50; left: 50%; bottom: 28px; padding: 9px 13px;
+      border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text); box-shadow: var(--shadow);
+      transform: translate(-50%, 20px); opacity: 0; pointer-events: none; transition: 180ms ease;
+    }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+    @media (max-width: 900px) {
+      .workspace { grid-template-columns: 76px minmax(0, 1fr); }
+      .sidebar { padding-inline: 10px; }
+      .nav-item span, .sidebar-label, .workspace-row strong, .workspace-row span, .thread-list { display: none; }
+      .nav-item { justify-content: center; padding: 0; }
+      .workspace-row { justify-content: center; padding: 0; }
+      .composer-wrap { left: 4%; right: 4%; }
+      .chat-screen.picker-open .picker-dock { width: min(350px, 43%); }
+      .account-page { width: min(760px, calc(100% - 36px)); padding-top: 28px; }
+      .account-model-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-height: 720px) {
+      .window { min-height: 590px; }
+      .composer-wrap { bottom: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <section class="window" aria-label="Doge desktop prototype">
+      <header class="titlebar">
+        <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="titlebar-title">Doge · 统一订阅原型</div>
+        <div class="prototype-tools">
+          <button class="tool-button" id="themeButton" title="切换深浅色" aria-label="切换深浅色">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3a6 6 0 1 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </button>
+          <button class="tool-button" id="resetButton" title="重新体验订阅流程" aria-label="重新体验订阅流程">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <aside class="sidebar" aria-label="主导航">
+          <nav class="nav">
+            <button class="nav-item active" id="homeButton" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>首页</span>
+            </button>
+            <div class="nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M17.5 14v7M14 17.5h7"/></svg><span>面板模式</span>
+            </div>
+            <div class="nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/><rect x="8" y="8" width="8" height="8"/></svg><span>拓展</span>
+            </div>
+          </nav>
+          <div class="sidebar-label">工作区</div>
+          <div class="workspace-row"><strong>workspace</strong><span>Default</span></div>
+          <div class="thread-list">
+            <div class="thread"><i class="thread-mark"></i><span>产品订阅设计</span><time>刚刚</time></div>
+            <div class="thread"><i class="thread-mark"></i><span>豆包模型接入</span><time>1 时</time></div>
+            <div class="thread"><i class="thread-mark"></i><span>额度用量</span><time>2 时</time></div>
+          </div>
+          <div class="sidebar-bottom">
+            <button class="tool-button" id="accountButton" aria-label="账号"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button>
+            <button class="tool-button" aria-label="设置"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg></button>
+          </div>
+          <div class="account-popover" id="accountPopover" hidden></div>
+        </aside>
+
+        <main class="main" id="main"></main>
+      </div>
+      <div class="toast" id="toast" role="status"></div>
+    </section>
+  </div>
+
+  <script>
+    const ROOT = "../../../../";
+    const svgData = (source) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`;
+    const ASSETS = {
+      doge: ROOT + "public/app-icon.png",
+      engines: {
+        codex: ROOT + "src/assets/model-icons/openai.svg",
+        claude: ROOT + "src/assets/model-icons/claude.svg",
+        kimi: svgData(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#101115"/><path fill="#4c8dff" d="M21.2 2a1.6 1.6 0 1 1 0 3.2h-1.4a.2.2 0 0 1-.2-.2V3.6A1.6 1.6 0 0 1 21.2 2Z"/><path fill="#fff" d="m10.3 11.3 7.2-7.1c.2-.2.1-.4-.1-.4h-3.8l-7.7 7.7c-.1.1-.3 0-.3-.2V4c0-.1-.1-.2-.2-.2H2.8c-.1 0-.2.1-.2.2v15.8c0 .1.1.2.2.2h2.6c.1 0 .2-.1.2-.2v-3.2c0-.1 0-.1.1-.2L8 14l6.4 4.7a7.5 7.5 0 0 0 3.4 1.3c.1 0 .2-.1.2-.2v-3c0-.1-.1-.2-.2-.2a5 5 0 0 1-2-.8l-5.5-4c-.1-.1-.1-.4 0-.5Z"/></svg>`)
+      },
+      models: {
+        openai: ROOT + "src/assets/model-icons/openai.svg",
+        claude: ROOT + "src/assets/model-icons/claude.svg",
+        doubao: ROOT + "src/assets/model-icons/doubao.png",
+        kimi: svgData(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#101115"/><path fill="#4c8dff" d="M21.2 2a1.6 1.6 0 1 1 0 3.2h-1.4a.2.2 0 0 1-.2-.2V3.6A1.6 1.6 0 0 1 21.2 2Z"/><path fill="#fff" d="m10.3 11.3 7.2-7.1c.2-.2.1-.4-.1-.4h-3.8l-7.7 7.7c-.1.1-.3 0-.3-.2V4c0-.1-.1-.2-.2-.2H2.8c-.1 0-.2.1-.2.2v15.8c0 .1.1.2.2.2h2.6c.1 0 .2-.1.2-.2v-3.2c0-.1 0-.1.1-.2L8 14l6.4 4.7a7.5 7.5 0 0 0 3.4 1.3c.1 0 .2-.1.2-.2v-3c0-.1-.1-.2-.2-.2a5 5 0 0 1-2-.8l-5.5-4c-.1-.1-.1-.4 0-.5Z"/></svg>`),
+        glm: svgData(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><defs><linearGradient id="g" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse"><stop stop-color="#35bdf2"/><stop offset="1" stop-color="#6c5ce7"/></linearGradient></defs><rect width="24" height="24" rx="6" fill="url(#g)"/><path fill="#fff" d="M7.2 7.2h9.9v2.2H9.6v5.2h5.3v-1.3h-2.6v-2.1h4.9v5.6h-10V7.2Z"/></svg>`),
+        deepseek: ROOT + "public/brand-logos/deepseek.svg"
+      }
+    };
+
+    const ENGINES = [
+      { id: "codex", name: "Codex", icon: ASSETS.engines.codex },
+      { id: "claude", name: "Claude", icon: ASSETS.engines.claude },
+      { id: "kimi", name: "Kimi CLI", icon: ASSETS.engines.kimi }
+    ];
+
+    // Local presentation registry: icon assets only; it never grants model access.
+    const MODEL_PRESENTATION = Object.fromEntries(
+      Object.entries(ASSETS.models).map(([key, icon]) => [key, {
+        icon,
+        round: ["doubao", "kimi", "glm"].includes(key)
+      }])
+    );
+
+    // Prototype-only API fixture. Production UI consumes this shape from token2api;
+    // templates below never own commercial plan, entitlement, quota, or model copy.
+    const MOCK_UPSTREAM_PRODUCT_RESPONSE = {
+      profile: {
+        displayName: "Token Service Account",
+        primaryEmailLabel: "account@token-matrix.com"
+      },
+      capabilities: {
+        profileUpdate: true,
+        passwordChange: true,
+        revokeAllSessions: true
+      },
+      security: {
+        totp: "disabled",
+        identityBindings: ["Email"]
+      },
+      plan: {
+        id: 1001,
+        name: "Doge 全功能订阅",
+        description: "一次订阅，持续使用套餐当前提供的全部模型能力。",
+        price: null,
+        originalPrice: null,
+        currency: "CNY",
+        validityDays: 30,
+        validityUnit: "day",
+        features: [],
+        sortOrder: 10
+      },
+      entitlement: {
+        status: "active",
+        subscriptionId: "doge-product-subscription",
+        expiresAt: "2026-09-19T23:59:59Z"
+      },
+      catalog: {
+        fetchedAt: "2026-08-20T12:00:00Z",
+        models: [
+          { id: "gpt-5.6-sol", displayName: "gpt-5.6-sol", description: "复杂编码、研究与真实工作流", iconKey: "openai", sortOrder: 10 },
+          { id: "gpt-5.6-terra", displayName: "gpt-5.6-terra", description: "日常工作的均衡选择", iconKey: "openai", sortOrder: 20 },
+          { id: "gpt-5.6-luna", displayName: "gpt-5.6-luna", description: "快速且经济的任务处理", iconKey: "openai", sortOrder: 30 },
+          { id: "fable-5", displayName: "Fable 5", description: "复杂问题与长任务", iconKey: "claude", sortOrder: 40 },
+          { id: "opus-5", displayName: "Opus 5", description: "高质量分析与工程任务", iconKey: "claude", sortOrder: 50 },
+          { id: "sonnet-5", displayName: "Sonnet 5", description: "速度与质量平衡", iconKey: "claude", sortOrder: 60 },
+          { id: "haiku-4.5", displayName: "Haiku 4.5", description: "快速问答与轻量任务", iconKey: "claude", sortOrder: 70 },
+          { id: "doubao", displayName: "豆包", description: "按效果与速度智能匹配模型组合", iconKey: "doubao", sortOrder: 80 },
+          { id: "kimi", displayName: "Kimi", description: "长上下文理解与复杂任务执行", iconKey: "kimi", sortOrder: 90 },
+          { id: "glm", displayName: "GLM", description: "中文理解、推理与工具调用", iconKey: "glm", sortOrder: 100 },
+          { id: "deepseek", displayName: "DeepSeek", description: "推理与代码任务的高效选择", iconKey: "deepseek", sortOrder: 110 }
+        ]
+      },
+      usage: {
+        currency: "USD",
+        windows: [
+          { id: "daily", label: "今日", used: 2.4, limit: 10 },
+          { id: "weekly", label: "本周", used: 11.2, limit: 50 },
+          { id: "monthly", label: "本月", used: 34.8, limit: 200 }
+        ]
+      }
+    };
+
+    const UPSTREAM_PLAN = MOCK_UPSTREAM_PRODUCT_RESPONSE.plan;
+    const UPSTREAM_MODEL_CATALOG = MOCK_UPSTREAM_PRODUCT_RESPONSE.catalog.models
+      .slice()
+      .sort((left, right) => left.sortOrder - right.sortOrder)
+      .map((model) => ({
+        ...model,
+        name: model.displayName,
+        desc: model.description,
+        icon: (MODEL_PRESENTATION[model.iconKey] || MODEL_PRESENTATION.openai).icon,
+        round: (MODEL_PRESENTATION[model.iconKey] || MODEL_PRESENTATION.openai).round
+      }));
+
+    const previewScreen = new URLSearchParams(window.location.search).get("screen");
+    const state = {
+      authenticated: true,
+      screen: previewScreen === "chat" || previewScreen === "account" ? previewScreen : "gate",
+      paymentOpen: false,
+      pickerOpen: previewScreen === "chat",
+      selected: { engine: ENGINES[0].id, model: UPSTREAM_MODEL_CATALOG[0].id },
+      modelSearch: "",
+      accountTab: "subscription",
+      accountPopoverOpen: false,
+      accountAction: null,
+      profileEditing: false,
+      profileDisplayName: null,
+      theme: localStorage.getItem("doge-prototype-theme") || "dark"
+    };
+
+    const windowShell = document.querySelector(".window");
+    const workspace = document.querySelector(".workspace");
+    const main = document.getElementById("main");
+    const toast = document.getElementById("toast");
+    const homeButton = document.getElementById("homeButton");
+    const accountButton = document.getElementById("accountButton");
+    const accountPopover = document.getElementById("accountPopover");
+
+    function iconTag(src, className, alt = "") {
+      const round = className.includes("round") ? " round" : "";
+      return `<img class="${className}${round}" src="${src}" alt="${alt}">`;
+    }
+
+    function getEngine(id) { return ENGINES.find((engine) => engine.id === id) || ENGINES[0]; }
+    function getModel(id) { return UPSTREAM_MODEL_CATALOG.find((model) => model.id === id) || UPSTREAM_MODEL_CATALOG[0]; }
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (character) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      })[character]);
+    }
+    function currentProfileLabel(profile = MOCK_UPSTREAM_PRODUCT_RESPONSE.profile) {
+      return state.profileDisplayName || profile.displayName;
+    }
+
+    function formatPlanPrice(plan) {
+      if (!Number.isFinite(plan.price)) return "待定";
+      return new Intl.NumberFormat("zh-CN", {
+        style: "currency",
+        currency: plan.currency,
+        maximumFractionDigits: 2
+      }).format(plan.price);
+    }
+
+    function formatPlanValidity(plan) {
+      const unit = plan.validityUnit === "month" ? "月" : plan.validityUnit === "year" ? "年" : "天";
+      return `/ ${plan.validityDays} ${unit}`;
+    }
+
+    function formatAccountDate(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "—";
+      return date.toISOString().slice(0, 10);
+    }
+
+    function formatUsageValue(value, currency) {
+      return new Intl.NumberFormat("zh-CN", {
+        style: "currency",
+        currency,
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+
+    function renderLogin() {
+      main.innerHTML = `
+        <section class="screen gate-screen">
+          <div class="account-login-card">
+            <img class="doge-icon" src="${ASSETS.doge}" alt="Doge">
+            <h1>登录 Doge</h1>
+            <form class="account-login-form" id="loginForm">
+              <label>邮箱<input name="email" type="email" value="${escapeHtml(MOCK_UPSTREAM_PRODUCT_RESPONSE.profile.primaryEmailLabel)}" autocomplete="username" required></label>
+              <label>密码<input name="password" type="password" value="prototype" autocomplete="current-password" required></label>
+              <button class="primary" type="submit">登录</button>
+              <div class="account-auth-links">
+                <button type="button" data-auth-link="register">注册账号</button>
+                <button type="button" data-auth-link="recover">找回密码</button>
+              </div>
+            </form>
+          </div>
+        </section>`;
+      document.getElementById("loginForm").addEventListener("submit", (event) => {
+        event.preventDefault();
+        state.authenticated = true;
+        state.screen = "gate";
+        render();
+        showToast("登录成功");
+      });
+      document.querySelectorAll("[data-auth-link]").forEach((button) => {
+        button.addEventListener("click", () => showToast(button.dataset.authLink === "register" ? "打开注册流程" : "打开找回密码流程"));
+      });
+    }
+
+    function renderGate() {
+      main.innerHTML = `
+        <section class="screen gate-screen">
+          <button class="gate-account-exit" id="gateLogoutButton" type="button">退出登录</button>
+          <div class="gate-card">
+            <img class="doge-icon" src="${ASSETS.doge}" alt="Doge">
+            <h1>开始使用 Doge</h1>
+            <div class="plan" data-authority="token2api.productCatalog.plan">
+              <div class="plan-head"><h2>${UPSTREAM_PLAN.name}</h2><div class="price">${formatPlanPrice(UPSTREAM_PLAN)} <small>${formatPlanValidity(UPSTREAM_PLAN)}</small></div></div>
+              <p class="plan-description">${UPSTREAM_PLAN.description}</p>
+              <button class="primary" id="subscribeButton">立即订阅</button>
+            </div>
+          </div>
+        </section>
+        ${state.paymentOpen ? paymentDialog() : ""}`;
+
+      document.getElementById("subscribeButton").addEventListener("click", () => {
+        state.paymentOpen = true;
+        renderGate();
+      });
+      const paid = document.getElementById("paidButton");
+      if (paid) paid.addEventListener("click", completePayment);
+      const cancel = document.getElementById("cancelPayment");
+      if (cancel) cancel.addEventListener("click", () => { state.paymentOpen = false; renderGate(); });
+      document.getElementById("gateLogoutButton").addEventListener("click", () => {
+        state.authenticated = false;
+        state.paymentOpen = false;
+        render();
+      });
+    }
+
+    function paymentDialog() {
+      return `<div class="payment-backdrop">
+        <div class="payment-dialog" role="dialog" aria-modal="true" aria-labelledby="payTitle">
+          <h2 id="payTitle">${UPSTREAM_PLAN.name}</h2>
+          <p>扫码完成订阅</p>
+          <div class="qr-placeholder">支付二维码</div>
+          <button class="primary" id="paidButton">模拟支付成功</button>
+          <button class="secondary" id="cancelPayment" style="margin-top:8px;width:100%">返回</button>
+        </div>
+      </div>`;
+    }
+
+    function completePayment() {
+      state.paymentOpen = false;
+      state.screen = "preparing";
+      render();
+      window.setTimeout(() => {
+        state.screen = "chat";
+        state.pickerOpen = true;
+        render();
+        showToast("订阅已生效");
+      }, 900);
+    }
+
+    function renderPreparing() {
+      main.innerHTML = `<section class="screen preparing"><div><div class="spinner"></div><h2>正在准备 Doge</h2><p>同步订阅模型与运行环境</p></div></section>`;
+    }
+
+    function renderChat() {
+      const selectedEngine = getEngine(state.selected.engine);
+      const selectedModel = getModel(state.selected.model);
+      main.innerHTML = `
+        <section class="screen chat-screen ${state.pickerOpen ? "picker-open" : ""}">
+          <div class="chat-content">
+            <header class="chat-header"><strong>workspace</strong>&nbsp;&nbsp;›&nbsp;&nbsp;新对话</header>
+            <div class="chat-body">
+              <div class="empty-state"><img src="${ASSETS.doge}" alt=""><h1>创造任何东西</h1></div>
+            </div>
+            <div class="composer-wrap">
+              <div class="composer">
+                <div class="composer-placeholder">输入消息，或 @ 引用、$ 技能、# 智能体</div>
+                <div class="composer-footer">
+                  <button class="plus" aria-label="添加">+</button>
+                  <button class="target-trigger" id="targetTrigger" aria-expanded="${state.pickerOpen}" aria-label="选择引擎和模型">
+                    ${iconTag(selectedEngine.icon, "engine-icon", selectedEngine.name)}
+                    ${iconTag(selectedModel.icon, `model-icon${selectedModel.round ? " round" : ""}`, selectedModel.name)}
+                    <span class="target-name">${selectedModel.name}</span><span class="chevron">⌄</span>
+                  </button>
+                  <div class="composer-meta"><span>全自动</span><span>较少</span></div>
+                  <button class="send" aria-label="发送">↑</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="picker-dock">${pickerMarkup()}</div>
+        </section>`;
+
+      document.getElementById("targetTrigger").addEventListener("click", () => {
+        state.modelSearch = "";
+        state.pickerOpen = !state.pickerOpen;
+        renderChat();
+      });
+      document.getElementById("closePicker").addEventListener("click", closePicker);
+      document.querySelectorAll("[data-engine]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const engine = getEngine(button.dataset.engine);
+          state.selected = { ...state.selected, engine: engine.id };
+          renderChat();
+          showToast(`${engine.name} · ${getModel(state.selected.model).name}`);
+        });
+      });
+      document.querySelectorAll("[data-model]").forEach((button) => {
+        button.addEventListener("click", () => selectModel(button.dataset.model));
+      });
+      bindModelSearch();
+    }
+
+    function accountActionMarkup(capabilities, security) {
+      if (state.accountAction === "password") {
+        return `<aside class="account-action-popover" role="dialog" aria-label="修改密码">
+          <div class="account-action-popover-head"><strong>修改密码</strong><button id="accountActionClose" type="button" aria-label="关闭">×</button></div>
+          <form class="account-security-form" id="passwordForm">
+            <label>当前密码<input name="currentPassword" type="password" autocomplete="current-password" required></label>
+            <label>新密码<input name="newPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+            <label>确认新密码<input name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required></label>
+            <p class="account-form-error" id="passwordError" hidden>两次输入的新密码不一致</p>
+            <button class="account-popover-primary" type="submit">修改密码并重新登录</button>
+          </form>
+        </aside>`;
+      }
+      if (state.accountAction === "security") {
+        return `<aside class="account-action-popover" role="dialog" aria-label="账号安全">
+          <div class="account-action-popover-head"><strong>账号安全</strong><button id="accountActionClose" type="button" aria-label="关闭">×</button></div>
+          <dl class="account-security-list">
+            <div><dt>两步验证</dt><dd>${security.totp === "enabled" ? "已启用" : "未启用"}</dd></div>
+            <div><dt>身份绑定</dt><dd>${security.identityBindings.map(escapeHtml).join("、") || "无"}</dd></div>
+          </dl>
+          ${capabilities.revokeAllSessions ? '<button class="account-danger-action" id="logoutAllButton" type="button">退出所有设备</button>' : ""}
+        </aside>`;
+      }
+      if (state.accountAction === "logoutCurrent" || state.accountAction === "logoutAll") {
+        const allDevices = state.accountAction === "logoutAll";
+        return `<div class="account-dialog-backdrop" role="dialog" aria-modal="true" aria-label="${allDevices ? "退出所有设备" : "退出登录"}">
+          <div class="account-dialog">
+            <h3>${allDevices ? "退出所有设备？" : "退出当前设备？"}</h3>
+            <p>${allDevices ? "所有已登录设备都需要重新验证身份。" : "退出后可以使用其他账号重新登录。"}</p>
+            <div class="account-dialog-actions">
+              <button class="account-dialog-secondary" id="accountDialogCancel" type="button">取消</button>
+              <button class="account-dialog-primary" id="accountDialogConfirm" type="button">确认退出</button>
+            </div>
+          </div>
+        </div>`;
+      }
+      return "";
+    }
+
+    function renderAccountCenter() {
+      const { profile, capabilities, security, plan, entitlement, catalog, usage } = MOCK_UPSTREAM_PRODUCT_RESPONSE;
+      const subscriptionActive = entitlement.status === "active";
+      const profileLabel = currentProfileLabel(profile);
+      main.innerHTML = `
+        <section class="screen account-screen">
+          <div class="account-page">
+            <header class="account-page-head" data-authority="token2api.profile">
+              <div class="account-identity">
+                <img class="account-avatar" src="${ASSETS.doge}" alt="Doge">
+                <div class="account-identity-copy">
+                  <div class="account-name-line">
+                    ${state.profileEditing ? `<form class="account-profile-form" id="profileForm">
+                      <input name="displayName" value="${escapeHtml(profileLabel)}" aria-label="显示名称" maxlength="48" required>
+                      <button class="account-profile-edit" type="submit" aria-label="保存显示名称">✓</button>
+                      <button class="account-profile-edit" id="profileEditCancel" type="button" aria-label="取消编辑">×</button>
+                    </form>` : `<h1>${escapeHtml(profileLabel)}</h1>${capabilities.profileUpdate ? `<button class="account-profile-edit" id="profileEditButton" type="button" aria-label="编辑显示名称" title="编辑显示名称"><svg viewBox="0 0 24 24"><path d="m4 20 4.2-1 10.6-10.6a2.1 2.1 0 0 0-3-3L5.2 16 4 20Z"/><path d="m14.5 6.5 3 3"/></svg></button>` : ""}`}
+                  </div>
+                  <p><span class="account-signed-in-dot"></span><span>已登录 · ${escapeHtml(profile.primaryEmailLabel)}</span></p>
+                </div>
+              </div>
+              <div class="account-page-head-actions">
+                ${capabilities.passwordChange ? `<button class="account-header-action" id="accountPasswordAction" type="button" aria-label="修改密码" title="修改密码"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M15 8l3 3M17 6l2 2"/></svg></button>` : ""}
+                <button class="account-header-action" id="accountSecurityAction" type="button" aria-label="账号安全" title="账号安全"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></svg></button>
+                <button class="account-header-action" id="accountLogoutAction" type="button" aria-label="退出登录" title="退出登录"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5M14 8l4 4-4 4M8 12h10"/></svg></button>
+                <button class="account-close" id="accountClose" type="button" aria-label="返回对话">×</button>
+              </div>
+            </header>
+            <div class="account-tabs" role="tablist" aria-label="账号中心">
+              <button class="account-tab ${state.accountTab === "subscription" ? "active" : ""}" data-account-tab="subscription" role="tab" aria-selected="${state.accountTab === "subscription"}">订阅</button>
+              <button class="account-tab ${state.accountTab === "usage" ? "active" : ""}" data-account-tab="usage" role="tab" aria-selected="${state.accountTab === "usage"}">用量</button>
+            </div>
+            <div class="account-panel" ${state.accountTab === "subscription" ? "" : "hidden"} data-authority="token2api.productEntitlement">
+              <article class="subscription-card">
+                <div class="subscription-card-head">
+                  <div class="subscription-title">
+                    <h2>${plan.name}</h2>
+                    <span class="subscription-expiry">有效期至 ${formatAccountDate(entitlement.expiresAt)}</span>
+                  </div>
+                  <span class="subscription-status">${subscriptionActive ? "已启用" : "不可用"}</span>
+                </div>
+                <details class="subscription-models" data-authority="token2api.productCatalog.models">
+                  <summary><span>可用模型<strong>${catalog.models.length} 个</strong></span></summary>
+                  <div class="account-model-grid">
+                    ${UPSTREAM_MODEL_CATALOG.map((model) => `<div class="account-model">
+                      ${iconTag(model.icon, `model-icon${model.round ? " round" : ""}`, model.name)}<span>${model.name}</span>
+                    </div>`).join("")}
+                  </div>
+                </details>
+              </article>
+            </div>
+            <div class="account-panel" ${state.accountTab === "usage" ? "" : "hidden"} data-authority="token2api.subscriptionUsage">
+              <div class="usage-card">
+                ${usage.windows.map((window) => {
+                  const percentage = Math.min(100, Math.max(0, window.limit > 0 ? window.used / window.limit * 100 : 0));
+                  return `<div class="usage-row">
+                    <span class="usage-label">${window.label}</span>
+                    <span class="usage-track" style="--usage:${percentage}%"><i></i></span>
+                    <strong class="usage-value">${formatUsageValue(window.used, usage.currency)} / ${formatUsageValue(window.limit, usage.currency)}</strong>
+                  </div>`;
+                }).join("")}
+              </div>
+            </div>
+            ${accountActionMarkup(capabilities, security)}
+          </div>
+        </section>`;
+
+      document.getElementById("accountClose").addEventListener("click", openChat);
+      document.querySelectorAll("[data-account-tab]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.accountTab = button.dataset.accountTab;
+          renderAccountCenter();
+        });
+      });
+      const profileEditButton = document.getElementById("profileEditButton");
+      if (profileEditButton) profileEditButton.addEventListener("click", () => { state.profileEditing = true; state.accountAction = null; renderAccountCenter(); });
+      const profileEditCancel = document.getElementById("profileEditCancel");
+      if (profileEditCancel) profileEditCancel.addEventListener("click", () => { state.profileEditing = false; renderAccountCenter(); });
+      const profileForm = document.getElementById("profileForm");
+      if (profileForm) profileForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const nextName = new FormData(profileForm).get("displayName").trim();
+        if (!nextName) return;
+        state.profileDisplayName = nextName;
+        state.profileEditing = false;
+        renderAccountCenter();
+        showToast("显示名称已更新");
+      });
+      const passwordAction = document.getElementById("accountPasswordAction");
+      if (passwordAction) passwordAction.addEventListener("click", () => { state.accountAction = state.accountAction === "password" ? null : "password"; state.profileEditing = false; renderAccountCenter(); });
+      document.getElementById("accountSecurityAction").addEventListener("click", () => { state.accountAction = state.accountAction === "security" ? null : "security"; state.profileEditing = false; renderAccountCenter(); });
+      document.getElementById("accountLogoutAction").addEventListener("click", () => { state.accountAction = "logoutCurrent"; state.profileEditing = false; renderAccountCenter(); });
+      const accountActionClose = document.getElementById("accountActionClose");
+      if (accountActionClose) accountActionClose.addEventListener("click", () => { state.accountAction = null; renderAccountCenter(); });
+      const passwordForm = document.getElementById("passwordForm");
+      if (passwordForm) passwordForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const form = new FormData(passwordForm);
+        const matches = form.get("newPassword") === form.get("confirmPassword");
+        document.getElementById("passwordError").hidden = matches;
+        if (matches) signOut("密码已修改，请重新登录");
+      });
+      const logoutAllButton = document.getElementById("logoutAllButton");
+      if (logoutAllButton) logoutAllButton.addEventListener("click", () => { state.accountAction = "logoutAll"; renderAccountCenter(); });
+      const dialogCancel = document.getElementById("accountDialogCancel");
+      if (dialogCancel) dialogCancel.addEventListener("click", () => { state.accountAction = null; renderAccountCenter(); });
+      const dialogConfirm = document.getElementById("accountDialogConfirm");
+      if (dialogConfirm) dialogConfirm.addEventListener("click", () => signOut(state.accountAction === "logoutAll" ? "所有设备已退出" : "已退出登录"));
+    }
+
+    function pickerMarkup() {
+      return `<aside class="picker ${state.pickerOpen ? "open" : ""}" aria-hidden="${!state.pickerOpen}" aria-label="选择引擎与模型">
+        <div class="picker-head"><h2>引擎与模型</h2><button class="close-picker" id="closePicker" aria-label="关闭">×</button></div>
+        <div class="section-label">引擎</div>
+        <div class="engine-options">
+          ${ENGINES.map((engine) => `<button class="engine-option ${engine.id === state.selected.engine ? "selected" : ""}" data-engine="${engine.id}" aria-pressed="${engine.id === state.selected.engine}">
+            ${iconTag(engine.icon, "engine-icon", engine.name)}<span>${engine.name}</span><i class="radio"></i>
+          </button>`).join("")}
+        </div>
+        <div class="model-section">
+          <div class="section-label">模型</div>
+          <label class="model-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg>
+            <input class="model-search" id="modelSearch" type="search" placeholder="搜索模型" aria-label="搜索模型">
+          </label>
+          <div class="model-list" data-authority="token2api.productCatalog.models">
+            ${UPSTREAM_MODEL_CATALOG.map((model) => {
+              const selected = state.selected.model === model.id;
+              return `<button class="model-option ${selected ? "selected" : ""}" data-model="${model.id}" data-search="${`${model.name} ${model.desc}`.toLocaleLowerCase()}" aria-pressed="${selected}">
+                ${iconTag(model.icon, `model-icon${model.round ? " round" : ""}`, model.name)}
+                <span class="model-copy"><strong>${model.name}</strong><span>${model.desc}</span></span><i class="check">✓</i>
+              </button>`;
+            }).join("")}
+            <div class="model-empty" id="modelEmpty">没有匹配的模型</div>
+          </div>
+        </div>
+        <div class="picker-foot"><span class="dot"></span><span>Doge 订阅已启用</span></div>
+      </aside>`;
+    }
+
+    function selectModel(modelId) {
+      state.selected = { ...state.selected, model: modelId };
+      state.pickerOpen = true;
+      renderChat();
+      const engine = getEngine(state.selected.engine);
+      showToast(`${engine.name} · ${getModel(state.selected.model).name}`);
+    }
+
+    function bindModelSearch() {
+      const input = document.getElementById("modelSearch");
+      if (!input) return;
+      input.value = state.modelSearch;
+      const applyFilter = () => {
+        const query = state.modelSearch.trim().toLocaleLowerCase();
+        let visibleCount = 0;
+        document.querySelectorAll(".model-option").forEach((button) => {
+          const visible = !query || button.dataset.search.includes(query);
+          button.hidden = !visible;
+          if (visible) visibleCount += 1;
+        });
+        document.getElementById("modelEmpty").classList.toggle("visible", visibleCount === 0);
+      };
+      input.addEventListener("input", () => {
+        state.modelSearch = input.value;
+        applyFilter();
+      });
+      applyFilter();
+    }
+
+    function closePicker() { state.pickerOpen = false; renderChat(); }
+
+    function signOut(message) {
+      state.authenticated = false;
+      state.accountAction = null;
+      state.profileEditing = false;
+      state.accountPopoverOpen = false;
+      state.pickerOpen = false;
+      render();
+      showToast(message);
+    }
+
+    function openChat() {
+      state.screen = "chat";
+      state.pickerOpen = false;
+      state.accountPopoverOpen = false;
+      state.accountAction = null;
+      state.profileEditing = false;
+      render();
+    }
+
+    function renderAccountPopover() {
+      accountPopover.hidden = !state.accountPopoverOpen;
+      if (!state.accountPopoverOpen) return;
+      const { profile, usage } = MOCK_UPSTREAM_PRODUCT_RESPONSE;
+      accountPopover.innerHTML = `
+        <button class="account-popover-profile" id="accountProfileEntry" type="button">
+          <img src="${ASSETS.doge}" alt="Doge">
+          <span class="account-popover-profile-copy">
+            <strong>${escapeHtml(currentProfileLabel(profile))}</strong>
+            <span>${escapeHtml(profile.primaryEmailLabel)}</span>
+          </span>
+          <span class="account-popover-chevron">›</span>
+        </button>
+        <button class="account-usage-preview" id="accountUsageEntry" type="button">
+          <span class="account-usage-preview-head"><strong>用量</strong><span>查看详情 ›</span></span>
+          ${usage.windows.map((window) => {
+            const percentage = Math.min(100, Math.max(0, window.limit > 0 ? window.used / window.limit * 100 : 0));
+            return `<span class="account-usage-preview-row">
+              <span>${window.label}</span>
+              <span class="account-usage-preview-track" style="--usage:${percentage}%"><i></i></span>
+              <span>${Math.round(percentage)}%</span>
+            </span>`;
+          }).join("")}
+        </button>`;
+      document.getElementById("accountProfileEntry").addEventListener("click", () => {
+        state.screen = "account";
+        state.accountTab = "subscription";
+        state.accountPopoverOpen = false;
+        render();
+      });
+      document.getElementById("accountUsageEntry").addEventListener("click", () => {
+        state.screen = "account";
+        state.accountTab = "usage";
+        state.accountPopoverOpen = false;
+        render();
+      });
+    }
+
+    let toastTimer = 0;
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toast.classList.remove("show"), 1400);
+    }
+
+    function render() {
+      document.documentElement.dataset.theme = state.theme;
+      const entitlementLocked = !state.authenticated || state.screen === "gate" || state.screen === "preparing";
+      windowShell.classList.toggle("entitlement-locked", entitlementLocked);
+      workspace.classList.toggle("locked", entitlementLocked);
+      homeButton.classList.toggle("active", state.screen === "chat");
+      accountButton.classList.toggle("active", state.screen === "account" || state.accountPopoverOpen);
+      if (!state.authenticated) renderLogin();
+      if (state.authenticated && state.screen === "gate") renderGate();
+      if (state.authenticated && state.screen === "preparing") renderPreparing();
+      if (state.authenticated && state.screen === "chat") renderChat();
+      if (state.authenticated && state.screen === "account") renderAccountCenter();
+      renderAccountPopover();
+    }
+
+    homeButton.addEventListener("click", openChat);
+    accountButton.addEventListener("click", () => {
+      state.accountPopoverOpen = !state.accountPopoverOpen;
+      state.pickerOpen = false;
+      render();
+    });
+    document.addEventListener("click", (event) => {
+      if (!state.accountPopoverOpen || accountPopover.contains(event.target) || accountButton.contains(event.target)) return;
+      state.accountPopoverOpen = false;
+      renderAccountPopover();
+      accountButton.classList.toggle("active", state.screen === "account");
+    });
+
+    document.getElementById("themeButton").addEventListener("click", () => {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      localStorage.setItem("doge-prototype-theme", state.theme);
+      render();
+    });
+    document.getElementById("resetButton").addEventListener("click", () => {
+      state.authenticated = true;
+      state.screen = "gate";
+      state.paymentOpen = false;
+      state.pickerOpen = false;
+      state.modelSearch = "";
+      state.accountTab = "subscription";
+      state.accountPopoverOpen = false;
+      state.accountAction = null;
+      state.profileEditing = false;
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
