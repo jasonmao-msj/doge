@@ -1215,3 +1215,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 36: 校正统一订阅 PR 目标
+
+**Date**: 2026-08-23
+**Task**: 校正统一订阅 PR 目标
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+确认 feature 属于 Doge fork；关闭误投且未合并的 upstream PR #1124，创建正确的 Doge PR #19，并验证当前分支与 origin/main merge-tree 无冲突。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e72ecfaff` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
