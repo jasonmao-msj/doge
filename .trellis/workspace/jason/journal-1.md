@@ -1144,3 +1144,41 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - 用户首次 `npm run tauri:dev:hot:signed:mac` 时在钥匙串弹窗选择「始终允许」，此后重编译不再弹窗
+
+
+## Session 34: 统一订阅、动态模型与账户详情验收
+
+**Date**: 2026-08-23
+**Task**: 统一订阅、动态模型与账户详情验收
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+完成 product-scoped 统一订阅、macOS debug local vault、Kimi 托管链路、三引擎自动 provisioning、动态模型目录与 Composer 组合选择、原型化渐进账户详情；完成 L4 JS/Rust/build/contract 验证并记录 token2api production route 与锁屏目视阻塞。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b639fb8a7` | (see git log) |
+| `4f5c41737` | (see git log) |
+| `92ef3e99d` | (see git log) |
+| `90461be7a` | (see git log) |
+| `fc4d87876` | (see git log) |
+| `7fcbd565c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
