@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 34
+- **Total Sessions**: 35
 - **Last Active**: 2026-08-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1184 | Active |
+| `journal-1.md` | ~1217 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 35 | 2026-08-23 | 统一订阅 PR 交付 | `94ee6d38f` | `codex/fix-managed-provider-session-defaults` |
 | 34 | 2026-08-23 | 统一订阅、动态模型与账户详情验收 | `b639fb8a7`, `4f5c41737`, `92ef3e99d`, `90461be7a`, `fc4d87876`, `7fcbd565c` | `codex/fix-managed-provider-session-defaults` |
 | 33 | 2026-08-20 | 恢复新会话托管渠道默认并建立分层测试 | `3865ba37b`, `2e3bd5db2` | `codex/fix-account-masked-email-bootstrap` |
 | 32 | 2026-08-19 | 收口账号订阅额度与引擎默认流程 | `6e649e5ac` | `codex/fix-account-masked-email-bootstrap` |

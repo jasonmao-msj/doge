@@ -1182,3 +1182,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 35: 统一订阅 PR 交付
+
+**Date**: 2026-08-23
+**Task**: 统一订阅 PR 交付
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+创建未合并 PR #1124 并回写 OpenSpec 交付状态；production 路由和 macOS 锁屏目视验收仍作为显式 blocker，task 保持 active。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `94ee6d38f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
