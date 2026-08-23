@@ -1,7 +1,7 @@
 import type { CommitMessageEngine } from "../../../services/tauri";
 
 const ENGINE_NAME_OVERRIDES: Partial<Record<CommitMessageEngine, string>> = {
-  claude: "Claude",
+  claude: "Claude Code",
   opencode: "OpenCode",
 };
 
