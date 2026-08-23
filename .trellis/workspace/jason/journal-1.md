@@ -1281,3 +1281,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 38: 修复 Tauri 热开发 flavor
+
+**Date**: 2026-08-23
+**Task**: 修复 Tauri 热开发 flavor
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+让 tauri:dev:hot 显式加载 dev config，并将 devUrl 对齐 Vite 1420；增加 branding 与 dev startup contract 回归检查。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0b0733feb` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
