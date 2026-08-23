@@ -16,6 +16,9 @@ pub(crate) const KIMI_LOCAL_PROVIDER_PROFILE_ID: &str = "__local_config_toml__";
 const KIMI_PROVIDER_TOML_PREFIX: &str = "doge:";
 const KIMI_MODEL_TOML_PREFIX: &str = "doge/";
 const DEFAULT_KIMI_PROVIDER_TYPE: &str = "openai";
+/// kimi-code rejects models without a positive `max_context_size` at startup,
+/// so a missing value falls back to this conservative default.
+const DEFAULT_KIMI_MAX_CONTEXT_SIZE: i64 = 128_000;
 
 #[derive(Debug, Clone)]
 pub(crate) struct KimiProviderLaunchProfile {
@@ -189,12 +192,14 @@ pub(crate) fn render_kimi_provider_config(
         toml::Value::String(provider_toml_id.clone()),
     );
     model_table.insert("model".to_string(), toml::Value::String(model.to_string()));
-    if let Some(max_context_size) = provider.max_context_size {
-        model_table.insert(
-            "max_context_size".to_string(),
-            toml::Value::Integer(max_context_size),
-        );
-    }
+    model_table.insert(
+        "max_context_size".to_string(),
+        toml::Value::Integer(
+            provider
+                .max_context_size
+                .unwrap_or(DEFAULT_KIMI_MAX_CONTEXT_SIZE),
+        ),
+    );
     if let Some(display_name) = provider
         .display_name
         .as_deref()
@@ -212,11 +217,20 @@ pub(crate) fn render_kimi_provider_config(
         .as_table_mut()
         .ok_or_else(|| "`providers` in Kimi config.toml is not a table".to_string())?
         .insert(provider_toml_id, toml::Value::Table(provider_table));
-    doc.entry("models")
-        .or_insert_with(|| toml::Value::Table(toml::Table::new()))
-        .as_table_mut()
-        .ok_or_else(|| "`models` in Kimi config.toml is not a table".to_string())?
-        .insert(model_toml_alias.clone(), toml::Value::Table(model_table));
+    {
+        let models = doc
+            .entry("models")
+            .or_insert_with(|| toml::Value::Table(toml::Table::new()))
+            .as_table_mut()
+            .ok_or_else(|| "`models` in Kimi config.toml is not a table".to_string())?;
+        models.insert(
+            model_toml_alias.clone(),
+            toml::Value::Table(model_table.clone()),
+        );
+        // The CLI resolves `--model <id>` against this table, and Doge sends
+        // raw catalog ids, so the bare id must resolve too.
+        models.insert(model.to_string(), toml::Value::Table(model_table));
+    }
     doc.insert(
         "default_model".to_string(),
         toml::Value::String(model_toml_alias),
@@ -427,6 +441,75 @@ mod tests {
                 "{invalid}"
             );
         }
+    }
+
+    #[test]
+    fn rendered_config_resolves_bare_model_ids_and_defaults_context_size() {
+        let mut provider = sample_provider();
+        provider.max_context_size = None;
+        let root = std::env::temp_dir().join(format!("mossx-kimi-alias-{}", Uuid::new_v4()));
+        let path = root.join("config.toml");
+        materialize_kimi_provider_at(&provider, &path, false).expect("materialize");
+        let parsed: toml::Table =
+            toml::from_str(&fs::read_to_string(&path).expect("read")).expect("parse");
+        let models = parsed
+            .get("models")
+            .and_then(toml::Value::as_table)
+            .expect("models table");
+        let bare = models
+            .get("kimi-k2")
+            .and_then(toml::Value::as_table)
+            .expect("bare alias for raw catalog id");
+        assert_eq!(
+            bare.get("max_context_size")
+                .and_then(toml::Value::as_integer),
+            Some(128_000)
+        );
+        assert!(models.contains_key("doge/kimi-k2"), "legacy alias kept");
+        assert_eq!(
+            parsed.get("default_model").and_then(toml::Value::as_str),
+            Some("doge/kimi-k2")
+        );
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn repeated_materialization_adds_the_current_runtime_model_without_losing_prior_aliases() {
+        let root =
+            std::env::temp_dir().join(format!("mossx-kimi-runtime-model-{}", Uuid::new_v4()));
+        let path = root.join("config.toml");
+        let first = sample_provider();
+        materialize_kimi_provider_at(&first, &path, false).expect("materialize default model");
+        let mut selected = first;
+        selected.model = "gpt-5.6-sol".to_string();
+        materialize_kimi_provider_at(&selected, &path, false)
+            .expect("materialize selected runtime model");
+        selected.model = "豆包".to_string();
+        selected.display_name = Some("豆包".to_string());
+        materialize_kimi_provider_at(&selected, &path, false)
+            .expect("materialize unicode public model");
+
+        let parsed: toml::Table =
+            toml::from_str(&fs::read_to_string(&path).expect("read")).expect("parse");
+        let models = parsed
+            .get("models")
+            .and_then(toml::Value::as_table)
+            .expect("models table");
+        for alias in [
+            "kimi-k2",
+            "doge/kimi-k2",
+            "gpt-5.6-sol",
+            "doge/gpt-5.6-sol",
+            "豆包",
+            "doge/豆包",
+        ] {
+            assert!(models.contains_key(alias), "missing runtime alias {alias}");
+        }
+        assert_eq!(
+            parsed.get("default_model").and_then(toml::Value::as_str),
+            Some("doge/豆包")
+        );
+        let _ = fs::remove_dir_all(root);
     }
 
     #[test]

@@ -279,7 +279,7 @@ export type {
   BrowserTextNode,
 } from "../features/browser-agent/types";
 export { previewCodexLaunchProfile, runClaudeDoctor, runCodexDoctor, runGrokDoctor, runKimiDoctor, runOpenCodeDoctor } from "./tauri/doctor";
-export { getCliInstallPlan, getCliVersionStatus, runCliInstaller } from "./tauri/cliInstaller";
+export { getCliInstallPlan, getCliVersionStatus, runCliInstaller } from "./cliInstallerCommands";
 export type {
   ComputerUseActivationFailureKind,
   ComputerUseActivationOutcome,

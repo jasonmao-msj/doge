@@ -6,7 +6,7 @@ import type {
   CliInstallResult,
   CliInstallStrategy,
   CliVersionStatus,
-} from "../../types";
+} from "../types";
 
 export async function getCliInstallPlan(
   engine: CliInstallEngine,

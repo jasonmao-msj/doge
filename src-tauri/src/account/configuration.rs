@@ -6,7 +6,13 @@ use std::path::{Path, PathBuf};
 pub(crate) const ACCOUNT_CODEX_PROVIDER_ID: &str = "doge-token-matrix";
 pub(crate) const ACCOUNT_CLAUDE_PROVIDER_ID: &str =
     crate::engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID;
+pub(crate) const ACCOUNT_KIMI_PROVIDER_ID: &str = "doge-token-matrix";
 pub(crate) const ACCOUNT_RECIPE_ID: &str = "doge.account.codex-token-service";
+/// kimi CLI resolves OpenAI-compatible endpoints relative to the configured
+/// base URL, so the managed entry must carry the `/v1` path segment.
+pub(crate) const ACCOUNT_MANAGED_KIMI_BASE_URL: &str = "https://token-matrix.com/v1";
+pub(crate) const ACCOUNT_MANAGED_KIMI_MODEL: &str = "gpt-5.5";
+const ACCOUNT_MANAGED_KIMI_MAX_CONTEXT_SIZE: i64 = 128_000;
 
 pub(crate) const ACCOUNT_CODEX_CONFIG_TOML: &str = r#"model_provider = "DogeTokenMatrix"
 model = "gpt-5.5"
@@ -147,18 +153,32 @@ pub(crate) fn create_managed_engine_plan(
     if engine_id == "codex" {
         return create_plan(account_epoch, process_generation, now_epoch_seconds);
     }
-    if engine_id != "claude-code" {
-        return Err("managed engine is unsupported".to_string());
-    }
+    let (engine_slug, target_label, recipe_id, file_label, build_config) = match engine_id {
+        "claude-code" => (
+            "claude-code-configuration",
+            "Claude Code",
+            "doge.account.claude-code-token-service",
+            "Doge Claude provider registry",
+            build_doge_config_for_claude as fn(Option<&str>) -> Result<String, String>,
+        ),
+        "kimi" => (
+            "kimi-configuration",
+            "Kimi CLI",
+            "doge.account.kimi-token-service",
+            "Doge Kimi provider registry",
+            build_doge_config_for_kimi as fn(Option<&str>) -> Result<String, String>,
+        ),
+        _ => return Err("managed engine is unsupported".to_string()),
+    };
     let doge_config_path = crate::app_paths::config_file_path()?;
     reject_unsafe_target(&doge_config_path)?;
     let before = read_optional_file(&doge_config_path)?;
-    let after = build_doge_config_for_claude(before.as_deref())?;
+    let after = build_config(before.as_deref())?;
     let expires_at = now_epoch_seconds.saturating_add(300);
     let nonce = uuid::Uuid::new_v4().simple().to_string();
     let handle = bound_handle(
         "config-plan",
-        "claude-code-configuration",
+        engine_slug,
         account_epoch,
         process_generation,
         expires_at,
@@ -166,7 +186,7 @@ pub(crate) fn create_managed_engine_plan(
     );
     let file_handle = bound_handle(
         "config-file",
-        "claude-code-configuration",
+        engine_slug,
         account_epoch,
         process_generation,
         expires_at,
@@ -174,16 +194,16 @@ pub(crate) fn create_managed_engine_plan(
     );
     let files = vec![PlannedFile {
         handle: file_handle,
-        label: "Doge Claude provider registry",
+        label: file_label,
         path: doge_config_path,
         expected_hash: hash_optional(before.as_deref()),
         content: after,
     }];
     let view = json!({
         "plan": handle.clone(),
-        "recipeId": "doge.account.claude-code-token-service",
+        "recipeId": recipe_id,
         "recipeVersion": 1,
-        "targetLabel": "Claude Code",
+        "targetLabel": target_label,
         "expiresAt": crate::account::runtime::rfc3339_from_epoch(expires_at),
         "summary": if hash_optional(before.as_deref()) == hash_optional(Some(&files[0].content)) { "noop" } else { "changesPlanned" },
         "files": [{ "file": files[0].handle, "targetLabel": files[0].label, "outcome": "willChange" }],
@@ -262,6 +282,18 @@ pub(crate) fn verify_managed_engine_configuration(engine_id: &str) -> Result<(),
                     .is_some()
             {
                 return Err("Claude Code managed provider binding is invalid".to_string());
+            }
+        }
+        "kimi" => {
+            let provider = root
+                .pointer("/kimi/providers/doge-token-matrix")
+                .ok_or_else(|| "Kimi managed provider is absent".to_string())?;
+            if root.pointer("/kimi/current").and_then(Value::as_str)
+                != Some(ACCOUNT_KIMI_PROVIDER_ID)
+                || provider.get("source").and_then(Value::as_str) != Some("doge-account")
+                || provider_has_secret_field(provider)
+            {
+                return Err("Kimi managed provider binding is invalid".to_string());
             }
         }
         _ => return Err("managed engine is unsupported".to_string()),
@@ -463,6 +495,12 @@ impl RecoveryJournal {
             .any(|file| file.label == "Doge Claude provider registry")
         {
             "doge.account.claude-code-token-service"
+        } else if plan
+            .files
+            .iter()
+            .any(|file| file.label == "Doge Kimi provider registry")
+        {
+            "doge.account.kimi-token-service"
         } else {
             ACCOUNT_RECIPE_ID
         };
@@ -571,7 +609,7 @@ fn protect_owner_only(path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn verify_applied_plan(plan: &ConfigurationPlanState) -> Result<(), String> {
+pub(super) fn verify_applied_plan(plan: &ConfigurationPlanState) -> Result<(), String> {
     for file in &plan.files {
         let content = read_optional_file(&file.path)?
             .ok_or_else(|| "configuration verification target is absent".to_string())?;
@@ -600,6 +638,22 @@ fn verify_applied_plan(plan: &ConfigurationPlanState) -> Result<(), String> {
             {
                 return Err("configured Claude provider ownership is invalid".to_string());
             }
+        } else if file.label == "Doge Kimi provider registry" {
+            let root: Value = serde_json::from_str(&content)
+                .map_err(|_| "configured Doge provider registry is invalid".to_string())?;
+            let provider = root
+                .pointer("/kimi/providers/doge-token-matrix")
+                .ok_or_else(|| "configured Kimi provider is missing".to_string())?;
+            if root.pointer("/kimi/current").and_then(Value::as_str)
+                != Some(ACCOUNT_KIMI_PROVIDER_ID)
+                || provider.get("source").and_then(Value::as_str) != Some("doge-account")
+                || provider.get("baseUrl").and_then(Value::as_str)
+                    != Some(ACCOUNT_MANAGED_KIMI_BASE_URL)
+                || provider.get("providerType").and_then(Value::as_str) != Some("openai")
+                || provider_has_secret_field(provider)
+            {
+                return Err("configured Kimi provider ownership is invalid".to_string());
+            }
         } else {
             let parsed: toml::Value = toml::from_str(&content)
                 .map_err(|_| "configured Codex settings are invalid".to_string())?;
@@ -610,6 +664,20 @@ fn verify_applied_plan(plan: &ConfigurationPlanState) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+fn provider_has_secret_field(provider: &Value) -> bool {
+    provider.as_object().is_some_and(|object| {
+        object.keys().any(|key| {
+            matches!(
+                key.trim()
+                    .to_ascii_lowercase()
+                    .replace(['_', '-'], "")
+                    .as_str(),
+                "apikey" | "token" | "secret"
+            )
+        })
+    })
 }
 
 pub(crate) fn preflight_plan(
@@ -848,6 +916,41 @@ pub(super) fn build_doge_config_for_claude(before: Option<&str>) -> Result<Strin
     claude.insert(
         "current".to_string(),
         Value::String(ACCOUNT_CLAUDE_PROVIDER_ID.to_string()),
+    );
+    serde_json::to_string_pretty(&root)
+        .map(|content| format!("{content}\n"))
+        .map_err(|_| "failed to serialize Doge configuration".to_string())
+}
+
+/// The managed Kimi provider entry never carries `apiKey`: the secret lives in
+/// the OS vault and is injected into the isolated provider home at launch.
+pub(super) fn build_doge_config_for_kimi(before: Option<&str>) -> Result<String, String> {
+    let mut root = match before.map(str::trim).filter(|value| !value.is_empty()) {
+        Some(content) => serde_json::from_str::<Value>(content)
+            .map_err(|_| "Doge configuration is not valid JSON".to_string())?,
+        None => json!({}),
+    };
+    let root_object = root
+        .as_object_mut()
+        .ok_or_else(|| "Doge configuration root must be an object".to_string())?;
+    let kimi = object_child(root_object, "kimi")?;
+    let providers = object_child(kimi, "providers")?;
+    providers.insert(
+        ACCOUNT_KIMI_PROVIDER_ID.to_string(),
+        json!({
+            "id": ACCOUNT_KIMI_PROVIDER_ID,
+            "name": "Doge Token Matrix",
+            "remark": "Managed by Doge Account",
+            "source": "doge-account",
+            "baseUrl": ACCOUNT_MANAGED_KIMI_BASE_URL,
+            "model": ACCOUNT_MANAGED_KIMI_MODEL,
+            "maxContextSize": ACCOUNT_MANAGED_KIMI_MAX_CONTEXT_SIZE,
+            "providerType": "openai"
+        }),
+    );
+    kimi.insert(
+        "current".to_string(),
+        Value::String(ACCOUNT_KIMI_PROVIDER_ID.to_string()),
     );
     serde_json::to_string_pretty(&root)
         .map(|content| format!("{content}\n"))

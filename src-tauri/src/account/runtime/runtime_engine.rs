@@ -512,7 +512,7 @@ pub(super) fn checkout_identity<'a>(
 }
 
 fn valid_managed_engine(engine_id: &str) -> bool {
-    matches!(engine_id, "codex" | "claude-code")
+    matches!(engine_id, "codex" | "claude-code" | "kimi")
 }
 
 fn configuration_rejection_code(reason: &str) -> &'static str {

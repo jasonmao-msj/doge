@@ -1,6 +1,7 @@
 use reqwest::{Client, Method, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::time::Duration;
 
 pub(crate) use super::authority_contract::{
@@ -136,6 +137,8 @@ pub(crate) struct SubscriptionUsageWindowWire {
     pub(crate) used_usd: f64,
     pub(crate) remaining_usd: f64,
     pub(crate) percentage: f64,
+    #[serde(default)]
+    pub(crate) window_start: String,
     pub(crate) resets_at: String,
 }
 
@@ -225,6 +228,169 @@ pub(crate) struct ApiKeyWire {
     #[serde(alias = "key")]
     pub(crate) secret: String,
     pub(crate) id: i64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductCheckoutInfoWire {
+    #[serde(default)]
+    pub(crate) plans: Vec<ProductSubscriptionPlanWire>,
+    #[serde(default)]
+    pub(crate) methods: HashMap<String, ProductPaymentMethodWire>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub(crate) struct ProductSubscriptionPlanWire {
+    pub(crate) id: i64,
+    #[serde(default)]
+    pub(crate) group_id: i64,
+    #[serde(default)]
+    pub(crate) group_platform: String,
+    #[serde(default)]
+    pub(crate) group_name: String,
+    #[serde(default)]
+    pub(crate) name: String,
+    #[serde(default)]
+    pub(crate) description: String,
+    #[serde(default)]
+    pub(crate) price: f64,
+    #[serde(default)]
+    pub(crate) original_price: Option<f64>,
+    #[serde(default)]
+    pub(crate) validity_days: i64,
+    #[serde(default)]
+    pub(crate) validity_unit: String,
+    #[serde(default)]
+    pub(crate) features: Vec<String>,
+    #[serde(default)]
+    pub(crate) daily_limit_usd: Option<f64>,
+    #[serde(default)]
+    pub(crate) weekly_limit_usd: Option<f64>,
+    #[serde(default)]
+    pub(crate) monthly_limit_usd: Option<f64>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductPaymentMethodWire {
+    #[serde(default)]
+    pub(crate) payment_type: String,
+    #[serde(default)]
+    pub(crate) display_name: String,
+    #[serde(default)]
+    pub(crate) currency: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductOrderCreatedWire {
+    pub(crate) order_id: i64,
+    #[serde(default)]
+    pub(crate) status: String,
+    #[serde(default)]
+    pub(crate) expires_at: String,
+    #[serde(default)]
+    pub(crate) pay_url: Option<String>,
+    #[serde(default)]
+    pub(crate) qr_code: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductOrderWire {
+    pub(crate) id: i64,
+    #[serde(default)]
+    pub(crate) status: String,
+    #[serde(default)]
+    pub(crate) expires_at: String,
+    #[serde(default)]
+    pub(crate) plan_id: Option<i64>,
+    #[serde(default)]
+    pub(crate) amount: f64,
+    #[serde(default)]
+    pub(crate) pay_amount: f64,
+    #[serde(default)]
+    pub(crate) currency: String,
+    #[serde(default)]
+    pub(crate) order_type: String,
+    #[serde(default)]
+    pub(crate) created_at: String,
+    #[serde(default)]
+    pub(crate) paid_at: Option<String>,
+    #[serde(default)]
+    pub(crate) completed_at: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductOrdersWire {
+    #[serde(default)]
+    pub(crate) items: Vec<ProductOrderWire>,
+}
+
+#[derive(Clone, Debug, Default, Deserialize)]
+pub(crate) struct ProductUsageStatsWire {
+    #[serde(default)]
+    pub(crate) total_requests: i64,
+    #[serde(default)]
+    pub(crate) total_input_tokens: i64,
+    #[serde(default)]
+    pub(crate) total_output_tokens: i64,
+    #[serde(default)]
+    pub(crate) total_cache_tokens: i64,
+    #[serde(default)]
+    pub(crate) total_cache_creation_tokens: i64,
+    #[serde(default)]
+    pub(crate) total_cache_read_tokens: i64,
+    #[serde(default)]
+    pub(crate) total_tokens: i64,
+    #[serde(default)]
+    pub(crate) total_cost: f64,
+    #[serde(default)]
+    pub(crate) total_actual_cost: f64,
+    #[serde(default)]
+    pub(crate) average_duration_ms: f64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductApiKeyListWire {
+    #[serde(default)]
+    pub(crate) items: Vec<ProductApiKeyListItemWire>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductApiKeyListItemWire {
+    pub(crate) id: i64,
+    #[serde(default)]
+    pub(crate) name: String,
+    #[serde(default)]
+    pub(crate) group_id: Option<i64>,
+    #[serde(default)]
+    pub(crate) status: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductApiKeyCreatedWire {
+    pub(crate) id: i64,
+    #[serde(default)]
+    pub(crate) group_id: Option<i64>,
+    #[serde(alias = "key", default)]
+    pub(crate) secret: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductModelsWire {
+    #[serde(default)]
+    pub(crate) data: Vec<ProductModelWire>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct ProductModelWire {
+    #[serde(default)]
+    pub(crate) id: String,
+    #[serde(default)]
+    pub(crate) display_name: Option<String>,
+    #[serde(alias = "runtime_model", alias = "call_name", default)]
+    pub(crate) model: Option<String>,
+    #[serde(alias = "engines", default)]
+    pub(crate) compatible_engines: Option<Vec<String>>,
+    #[serde(default)]
+    pub(crate) capabilities: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -785,6 +951,174 @@ impl TokenMatrixAuthority {
             None,
         )
         .await
+    }
+
+    /// Product-scoped (composite) subscription surface. These endpoints are the
+    /// account panel API shared with the web client; plans carry
+    /// `group_platform` and the runtime filters for `"composite"`.
+    pub(crate) async fn product_checkout_info(
+        &self,
+        access_token: &str,
+    ) -> Result<ProductCheckoutInfoWire, AuthorityError> {
+        self.request(
+            Method::GET,
+            "/api/v1/payment/checkout-info",
+            None,
+            Some(access_token),
+            None,
+        )
+        .await
+    }
+
+    pub(crate) async fn create_product_order(
+        &self,
+        access_token: &str,
+        plan_id: i64,
+        price: f64,
+        payment_type: &str,
+        operation_id: &str,
+    ) -> Result<ProductOrderCreatedWire, AuthorityError> {
+        self.request(
+            Method::POST,
+            "/api/v1/payment/orders",
+            Some(json!({
+                "amount": price,
+                "plan_id": plan_id,
+                "payment_type": payment_type,
+                "order_type": "subscription",
+            })),
+            Some(access_token),
+            Some(operation_id),
+        )
+        .await
+    }
+
+    pub(crate) async fn product_order(
+        &self,
+        access_token: &str,
+        order_id: i64,
+    ) -> Result<ProductOrderWire, AuthorityError> {
+        self.request(
+            Method::GET,
+            &format!("/api/v1/payment/orders/{order_id}"),
+            None,
+            Some(access_token),
+            None,
+        )
+        .await
+    }
+
+    pub(crate) async fn product_orders(
+        &self,
+        access_token: &str,
+    ) -> Result<ProductOrdersWire, AuthorityError> {
+        self.request(
+            Method::GET,
+            "/api/v1/payment/orders/my?page=1&page_size=20&order_type=subscription",
+            None,
+            Some(access_token),
+            None,
+        )
+        .await
+    }
+
+    pub(crate) async fn product_usage_stats(
+        &self,
+        access_token: &str,
+        group_id: i64,
+        start_date: &str,
+        end_date: &str,
+    ) -> Result<ProductUsageStatsWire, AuthorityError> {
+        self.request(
+            Method::GET,
+            &format!(
+                "/api/v1/usage/stats?group_id={group_id}&start_date={start_date}&end_date={end_date}"
+            ),
+            None,
+            Some(access_token),
+            None,
+        )
+        .await
+    }
+
+    pub(crate) async fn product_api_keys(
+        &self,
+        access_token: &str,
+        group_id: i64,
+    ) -> Result<ProductApiKeyListWire, AuthorityError> {
+        self.request(
+            Method::GET,
+            &format!("/api/v1/keys?group_id={group_id}&page_size=100"),
+            None,
+            Some(access_token),
+            None,
+        )
+        .await
+    }
+
+    pub(crate) async fn create_product_api_key(
+        &self,
+        access_token: &str,
+        group_id: i64,
+        name: &str,
+        operation_id: &str,
+    ) -> Result<ProductApiKeyCreatedWire, AuthorityError> {
+        self.request(
+            Method::POST,
+            "/api/v1/keys",
+            Some(json!({
+                "name": name,
+                "group_id": group_id,
+            })),
+            Some(access_token),
+            Some(operation_id),
+        )
+        .await
+    }
+
+    /// The gateway `/v1/models` endpoint authenticates with the product API key
+    /// secret and answers with a plain `{object:"list",data:[...]}` body, so it
+    /// bypasses the `{code,data}` envelope helper.
+    pub(crate) async fn product_models(
+        &self,
+        api_key_secret: &str,
+    ) -> Result<ProductModelsWire, AuthorityError> {
+        let mut response = self
+            .client
+            .get(format!("{}/v1/models", self.origin))
+            .bearer_auth(api_key_secret)
+            .send()
+            .await
+            .map_err(|_| authority_error("serviceUnavailable", None))?;
+        let status = response.status();
+        if response
+            .content_length()
+            .is_some_and(|length| length > MAX_AUTHORITY_RESPONSE_BYTES as u64)
+        {
+            return Err(authority_error("protocolMismatch", None));
+        }
+        let mut bytes = Vec::new();
+        while let Some(chunk) = response
+            .chunk()
+            .await
+            .map_err(|_| authority_error("protocolMismatch", None))?
+        {
+            if bytes.len().saturating_add(chunk.len()) > MAX_AUTHORITY_RESPONSE_BYTES {
+                return Err(authority_error("protocolMismatch", None));
+            }
+            bytes.extend_from_slice(&chunk);
+        }
+        if !status.is_success() {
+            return Err(authority_error(
+                if status.is_server_error() {
+                    "serviceUnavailable"
+                } else {
+                    "protocolMismatch"
+                },
+                None,
+            ));
+        }
+        serde_json::from_slice(&bytes).map_err(|_| authority_error("protocolMismatch", None))
     }
 
     pub(crate) async fn logout(&self, refresh_token: &str) -> Result<Value, AuthorityError> {

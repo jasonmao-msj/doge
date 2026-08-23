@@ -77,6 +77,69 @@ fn claude_managed_provider_uses_a_vault_marker_and_never_persists_the_token() {
 }
 
 #[test]
+fn kimi_managed_provider_projects_base_url_and_never_persists_the_key() {
+    let merged = build_doge_config_for_kimi(Some(
+        r#"{"unknown":{"keep":true},"kimi":{"providers":{"doge-token-matrix":{"apiKey":"synthetic-legacy-secret","api_key":"synthetic-legacy-secret","token":"synthetic-legacy-secret","secret":"synthetic-legacy-secret"}}}}"#,
+    ))
+    .expect("merge Kimi provider");
+    let value: Value = serde_json::from_str(&merged).expect("json");
+    assert_eq!(value["unknown"]["keep"], true);
+    assert_eq!(value["kimi"]["current"], ACCOUNT_KIMI_PROVIDER_ID);
+    let provider = &value["kimi"]["providers"][ACCOUNT_KIMI_PROVIDER_ID];
+    assert_eq!(provider["source"], "doge-account");
+    assert_eq!(provider["baseUrl"], ACCOUNT_MANAGED_KIMI_BASE_URL);
+    assert_eq!(provider["model"], ACCOUNT_MANAGED_KIMI_MODEL);
+    assert!(provider.get("apiKey").is_none());
+    assert!(provider.get("api_key").is_none());
+    assert!(provider.get("token").is_none());
+    assert!(provider.get("secret").is_none());
+    assert!(!merged.contains("synthetic-legacy-secret"));
+    assert!(!merged.contains("sk-"));
+}
+
+#[test]
+fn kimi_registry_verification_uses_json_and_rejects_secret_fields() {
+    let root = std::env::temp_dir().join(format!(
+        "doge-account-kimi-verifier-test-{}",
+        uuid::Uuid::new_v4()
+    ));
+    let target = root.join("config.json");
+    fs::create_dir_all(&root).expect("create verifier root");
+    let content = build_doge_config_for_kimi(None).expect("build Kimi registry");
+    fs::write(&target, &content).expect("write Kimi registry");
+    let plan = ConfigurationPlanState {
+        handle: "config-plan_synthetic0001".to_string(),
+        expires_at_epoch_seconds: i64::MAX,
+        files: vec![PlannedFile {
+            handle: "config-file_synthetic0001".to_string(),
+            label: "Doge Kimi provider registry",
+            path: target,
+            expected_hash: String::new(),
+            content,
+        }],
+        view: json!({}),
+    };
+
+    verify_applied_plan(&plan).expect("Kimi JSON registry should verify");
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn kimi_managed_provider_merge_preserves_unrelated_root_data() {
+    let merged = build_doge_config_for_kimi(Some(
+        r#"{"codex":{"current":"doge-token-matrix"},"kimi":{"providers":{"local":{"id":"local"}}}}"#,
+    ))
+    .expect("merge Kimi provider over existing entries");
+    let value: Value = serde_json::from_str(&merged).expect("json");
+    assert_eq!(value["codex"]["current"], "doge-token-matrix");
+    assert!(
+        value["kimi"]["providers"]["local"].is_object(),
+        "existing local providers must survive the managed projection"
+    );
+    assert_eq!(value["kimi"]["current"], ACCOUNT_KIMI_PROVIDER_ID);
+}
+
+#[test]
 fn single_file_claude_recovery_never_touches_the_codex_target() {
     let workspace = std::env::temp_dir().join(format!(
         "doge-account-claude-recovery-test-{}",

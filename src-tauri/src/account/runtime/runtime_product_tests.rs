@@ -1,0 +1,166 @@
+use super::runtime_product::*;
+use super::runtime_product_models::*;
+use crate::account::authority::{
+    ProductModelWire, ProductPaymentMethodWire, ProductSubscriptionPlanWire,
+};
+use serde_json::json;
+
+fn product_plan() -> ProductSubscriptionPlanWire {
+    ProductSubscriptionPlanWire {
+        id: 5,
+        group_id: 11,
+        group_platform: "composite".into(),
+        group_name: "Doge".into(),
+        name: "Doge Pro".into(),
+        description: "All models".into(),
+        price: 12.0,
+        original_price: Some(16.0),
+        validity_days: 30,
+        validity_unit: "day".into(),
+        features: vec!["All models".into()],
+        daily_limit_usd: Some(2.0),
+        weekly_limit_usd: Some(8.0),
+        monthly_limit_usd: Some(20.0),
+    }
+}
+
+fn product_model(id: &str) -> ProductModelWire {
+    ProductModelWire {
+        id: id.into(),
+        display_name: None,
+        model: None,
+        compatible_engines: None,
+        capabilities: None,
+    }
+}
+
+#[test]
+fn order_status_projection_is_closed() {
+    assert_eq!(normalize_order_status("completed"), Some("paid"));
+    assert_eq!(normalize_order_status("cancelled"), Some("cancelled"));
+    assert_eq!(normalize_order_status("unknown"), None);
+}
+
+#[test]
+fn product_models_are_unicode_safe_ordered_and_deduplicated() {
+    let models = safe_product_models(vec![
+        product_model("豆包"),
+        product_model("gpt-5.6-sol"),
+        product_model("豆包"),
+    ])
+    .expect("safe product models");
+    assert_eq!(models.len(), 2);
+    assert!(models.iter().any(|value| value["id"] == "豆包"));
+    assert_eq!(models[0]["id"], "豆包", "upstream order is preserved");
+}
+
+#[test]
+fn product_models_preserve_dynamic_display_runtime_and_engine_metadata() {
+    let models = safe_product_models(vec![
+        ProductModelWire {
+            id: "doubao-entry".into(),
+            display_name: Some("豆包".into()),
+            model: Some("ark-code-latest".into()),
+            compatible_engines: Some(vec!["codex".into(), "claude-code".into()]),
+            capabilities: Some(vec!["chat".into()]),
+        },
+        product_model("claude-opus-4-8"),
+    ])
+    .expect("safe product models");
+
+    assert_eq!(models.len(), 2);
+    assert_eq!(models[0]["id"], "doubao-entry");
+    assert_eq!(models[0]["display_name"], "豆包");
+    assert_eq!(models[0]["model"], "ark-code-latest");
+    assert_eq!(models[0]["compatible_engines"], json!(["codex", "claude"]));
+    assert_eq!(models[1]["compatible_engines"], json!(["claude"]));
+}
+
+#[test]
+fn product_models_follow_new_ids_within_known_engine_families() {
+    let models = safe_product_models(vec![
+        product_model("gpt-5.7-future"),
+        product_model("claude-sonnet-5-1"),
+        product_model("kimi-for-coding-ultra"),
+        product_model("unclassified-future-model"),
+    ])
+    .expect("known dynamic families remain");
+
+    assert_eq!(models.len(), 3);
+    assert_eq!(models[0]["compatible_engines"], json!(["codex"]));
+    assert_eq!(models[1]["compatible_engines"], json!(["claude"]));
+    assert_eq!(models[2]["compatible_engines"], json!(["kimi"]));
+}
+
+#[test]
+fn product_models_exclude_explicit_and_legacy_non_conversation_rows() {
+    let models = safe_product_models(vec![
+        product_model("gpt-image-2"),
+        product_model("gpt-4o-audio-preview"),
+        product_model("gpt-4o-realtime-preview"),
+        ProductModelWire {
+            id: "multimodal-chat".into(),
+            display_name: Some("Multimodal Chat".into()),
+            model: None,
+            compatible_engines: Some(vec!["codex".into(), "claude".into(), "kimi".into()]),
+            capabilities: Some(vec!["chat".into(), "image".into()]),
+        },
+        ProductModelWire {
+            id: "embed-v2".into(),
+            display_name: None,
+            model: None,
+            compatible_engines: None,
+            capabilities: Some(vec!["embeddings".into()]),
+        },
+    ])
+    .expect("conversation row remains");
+
+    assert_eq!(models.len(), 1);
+    assert_eq!(models[0]["id"], "multimodal-chat");
+}
+
+#[test]
+fn payment_navigation_requires_safe_https() {
+    assert!(safe_payment_url("https://pay.example.com/order/1").is_some());
+    assert!(safe_payment_url("http://pay.example.com/order/1").is_none());
+    assert!(safe_payment_url("javascript:alert(1)").is_none());
+}
+
+#[test]
+fn standard_payment_method_may_omit_display_name() {
+    assert!(valid_payment_method(
+        "alipay",
+        &ProductPaymentMethodWire {
+            payment_type: "alipay".into(),
+            display_name: String::new(),
+            currency: "CNY".into(),
+        },
+    ));
+}
+
+#[test]
+fn product_plan_projection_contains_every_renderer_required_field() {
+    let view = product_plan_value(&product_plan());
+    assert_eq!(view["currency"], "USD");
+    assert_eq!(view["validity_unit"], "day");
+    assert_eq!(view["features"], json!(["All models"]));
+    assert_eq!(view["original_price"], 16.0);
+    assert_eq!(view["monthly_limit_usd"], 20.0);
+}
+
+#[test]
+fn paid_checkout_remains_as_a_bounded_fulfillment_checkpoint() {
+    let now = 1_893_456_000;
+    assert_eq!(
+        product_checkout_checkpoint("paid", now + 30, now),
+        Some(("processing", now + PRODUCT_FULFILLMENT_GRACE_SECONDS))
+    );
+    assert_eq!(
+        product_checkout_checkpoint("pending", now + 60, now),
+        Some(("pending", now + 60))
+    );
+    assert_eq!(
+        product_checkout_checkpoint("cancelled", now + 60, now),
+        None
+    );
+}

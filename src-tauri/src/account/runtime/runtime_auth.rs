@@ -841,7 +841,11 @@ impl AccountRuntime {
             .subscription_summary(&access)
             .await
             .map_err(|error| authority_failure(error, "subscription"))?;
-        Ok(subscription_summary_value(&catalog, &summary, &rfc3339_now()))
+        Ok(subscription_summary_value(
+            &catalog,
+            &summary,
+            &rfc3339_now(),
+        ))
     }
 
     pub(super) async fn read_usage_day_models(

@@ -670,9 +670,47 @@ pub(crate) fn is_valid_claude_model_for_passthrough(model: &str) -> bool {
     if trimmed.is_empty() || trimmed.len() > 128 {
         return false;
     }
-    trimmed.chars().all(|ch| {
-        ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | '.' | ':' | '/' | '[' | ']')
-    })
+    trimmed
+        .chars()
+        .all(|ch| ch.is_alphanumeric() || matches!(ch, '-' | '_' | '.' | ':' | '/' | '[' | ']'))
+}
+
+const CLAUDE_PRODUCT_MODEL_MAPPING_ENV_KEYS: &[&str] = &[
+    "ANTHROPIC_DEFAULT_FABLE_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+];
+
+pub(crate) fn project_claude_model_for_managed_product(
+    provider_profile_id: Option<&str>,
+    requested_model: Option<String>,
+    provider_env: &mut std::collections::BTreeMap<String, String>,
+) -> Option<String> {
+    if provider_profile_id
+        != Some(crate::engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID)
+    {
+        return requested_model;
+    }
+    let Some(runtime_model) = requested_model else {
+        return None;
+    };
+    provider_env.remove("ANTHROPIC_MODEL");
+    for key in CLAUDE_PRODUCT_MODEL_MAPPING_ENV_KEYS {
+        provider_env.insert((*key).to_string(), runtime_model.clone());
+    }
+    provider_env.insert(
+        "ANTHROPIC_REASONING_MODEL".to_string(),
+        "sonnet".to_string(),
+    );
+    provider_env.insert(
+        "CLAUDE_CODE_SUBAGENT_MODEL".to_string(),
+        "sonnet".to_string(),
+    );
+    // Claude Code validates raw `--model` / ANTHROPIC_MODEL values before the
+    // managed gateway is called. Its documented family alias is accepted, then
+    // resolved through the turn-scoped ANTHROPIC_DEFAULT_* mapping above.
+    Some("sonnet".to_string())
 }
 
 fn resolve_opencode_bin(config: Option<&EngineConfig>) -> Result<String, String> {
@@ -1751,7 +1789,7 @@ pub async fn engine_send_message(
                     "claude",
                     provider_profile_id.as_deref(),
                 )?;
-            let provider_launch_profile = state
+            let mut provider_launch_profile = state
                 .account_runtime
                 .hydrate_managed_claude_launch_profile(
                     crate::engine::claude::resolve_claude_provider_launch_profile(
@@ -1819,17 +1857,32 @@ pub async fn engine_send_message(
                     model
                 );
             }
+            let requested_runtime_model = sanitized_model;
+            let will_route_via_provider_env = effective_provider_profile_id.as_deref()
+                == Some(crate::engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID)
+                && requested_runtime_model.is_some();
+            let cli_model = if let Some(profile) = provider_launch_profile.as_mut() {
+                project_claude_model_for_managed_product(
+                    effective_provider_profile_id.as_deref(),
+                    requested_runtime_model.clone(),
+                    &mut profile.env,
+                )
+            } else {
+                requested_runtime_model.clone()
+            };
             let dispatch_receipt = build_claude_dispatch_receipt(
                 &workspace_id,
                 effective_provider_profile_id.as_deref(),
-                sanitized_model.as_deref(),
+                requested_runtime_model.as_deref(),
                 effort.as_deref(),
             );
             let model_resolution = json!({
                 "requestedModel": model.as_deref(),
-                "runtimeModel": sanitized_model.as_deref(),
-                "willPassToCli": sanitized_model.is_some(),
-                "fallbackReason": if model.is_some() && sanitized_model.is_none() {
+                "runtimeModel": requested_runtime_model.as_deref(),
+                "cliModelArgument": cli_model.as_deref(),
+                "willPassToCli": cli_model.is_some(),
+                "willRouteViaProviderEnv": will_route_via_provider_env,
+                "fallbackReason": if model.is_some() && requested_runtime_model.is_none() {
                     Some("invalid-shape")
                 } else if model.is_none() {
                     Some("not-requested")
@@ -1859,7 +1912,7 @@ pub async fn engine_send_message(
             let auto_session_for_record = auto_session.clone();
             let params = super::SendMessageParams {
                 text,
-                model: sanitized_model,
+                model: cli_model,
                 effort,
                 disable_thinking: disable_thinking.unwrap_or(false),
                 access_mode,
@@ -2587,19 +2640,39 @@ pub async fn engine_send_message(
                 .as_deref()
                 .or(thread_id.as_deref())
                 .map(str::to_string);
-            let effective_provider_profile_id =
-                crate::session_management::resolve_engine_provider_profile_id(
+            // 与 sync 变体一致：无显式绑定时回落到 vendors.kimi.current，
+            // 让 product prepare 投影的托管默认在新会话直接生效。
+            let effective_provider_profile_id = {
+                let resolved = crate::session_management::resolve_engine_provider_profile_id(
                     state.storage_path.as_path(),
                     &workspace_id,
                     provider_binding_lookup_session_id.as_deref(),
                     "kimi",
                     provider_profile_id.as_deref(),
                 )?;
+                if resolved.is_some() {
+                    resolved
+                } else {
+                    crate::vendors::read_config()
+                        .ok()
+                        .and_then(|config| config.kimi.current)
+                }
+            };
             let provider_launch_profile =
                 crate::engine::kimi_provider_profile::resolve_kimi_provider_launch_profile(
                     &workspace_id,
                     effective_provider_profile_id.as_deref(),
                 )?;
+            if let Some(home_dir) = provider_launch_profile.home_dir.as_deref() {
+                state
+                    .account_runtime
+                    .hydrate_managed_kimi_provider_home(
+                        effective_provider_profile_id.as_deref(),
+                        home_dir,
+                        model.as_deref(),
+                    )
+                    .await?;
+            }
             let session = manager
                 .get_or_create_kimi_session_for_runtime(
                     &workspace_id,
@@ -3496,6 +3569,16 @@ pub async fn engine_send_message_sync(
                     &workspace_id,
                     effective_provider_profile_id.as_deref(),
                 )?;
+            if let Some(home_dir) = provider_launch_profile.home_dir.as_deref() {
+                state
+                    .account_runtime
+                    .hydrate_managed_kimi_provider_home(
+                        effective_provider_profile_id.as_deref(),
+                        home_dir,
+                        model.as_deref(),
+                    )
+                    .await?;
+            }
             let session = manager
                 .get_or_create_kimi_session_for_runtime(
                     &workspace_id,
