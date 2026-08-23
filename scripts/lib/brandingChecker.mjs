@@ -271,6 +271,7 @@ export function verifyCanonicalIdentity(root) {
   expectEqual(tauri.identifier, brand.bundle.productionIdentifier, "Tauri identifier", failures);
   expectEqual(tauriDev.productName, brand.developmentName, "Tauri dev productName", failures);
   expectEqual(tauriDev.identifier, brand.bundle.developmentIdentifier, "Tauri dev identifier", failures);
+  expectEqual(tauriDev.build?.devUrl, tauri.build?.devUrl, "Tauri devUrl override", failures);
   expectEqual(tauri.bundle?.createUpdaterArtifacts, brand.updater.enabled, "Tauri updater artifact state", failures);
   if (brand.updater.enabled === false) {
     expectEqual(tauri.plugins?.updater?.pubkey, "", "Disabled Tauri updater public key", failures);

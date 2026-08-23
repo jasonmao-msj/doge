@@ -47,6 +47,18 @@ test("creates Tauri dev resource placeholders for bundle globs", async () => {
   }
 });
 
+test("hot development applies the dev flavor on the same Vite URL", async () => {
+  const packageJson = JSON.parse(await readFile("package.json", "utf8"));
+  const baseConfig = JSON.parse(await readFile("src-tauri/tauri.conf.json", "utf8"));
+  const devConfig = JSON.parse(await readFile("src-tauri/tauri.dev.conf.json", "utf8"));
+
+  assert.match(
+    packageJson.scripts["tauri:dev:hot"],
+    /tauri dev --config src-tauri\/tauri\.dev\.conf\.json/,
+  );
+  assert.equal(devConfig.build?.devUrl, baseConfig.build?.devUrl);
+});
+
 test("does not overwrite existing frontend build artifacts", async () => {
   const repoRoot = await mkdtemp(path.join(tmpdir(), "ccgui-tauri-dev-"));
   try {

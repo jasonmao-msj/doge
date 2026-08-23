@@ -56,11 +56,13 @@ describe("canonical doge brand manifest", () => {
       productName?: string;
       version?: string;
       identifier?: string;
+      build?: { devUrl?: string };
     };
     const tauriDevConfig = readJson("src-tauri/tauri.dev.conf.json") as {
       productName?: string;
       version?: string;
       identifier?: string;
+      build?: { devUrl?: string };
     };
 
     expect(packageJson.name).toBe(brand.runtime.npmPackage);
@@ -74,6 +76,7 @@ describe("canonical doge brand manifest", () => {
       productName: brand.developmentName,
       identifier: brand.bundle.developmentIdentifier,
     });
+    expect(tauriDevConfig.build?.devUrl).toBe(tauriConfig.build?.devUrl);
   });
 
   it("keeps Cargo package, library, and binaries equal to the manifest", () => {

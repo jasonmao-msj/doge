@@ -3,6 +3,6 @@
   "productName": "doge-dev",
   "identifier": "io.github.jasonmao-msj.doge.dev",
   "build": {
-    "devUrl": "http://localhost:1430"
+    "devUrl": "http://localhost:1420"
   }
 }
