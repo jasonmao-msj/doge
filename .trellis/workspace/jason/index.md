@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 36
+- **Total Sessions**: 37
 - **Last Active**: 2026-08-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1250 | Active |
+| `journal-1.md` | ~1283 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 37 | 2026-08-23 | 上游 Composite 只读审计 | `7765f6833` | `codex/fix-managed-provider-session-defaults` |
 | 36 | 2026-08-23 | 校正统一订阅 PR 目标 | `e72ecfaff` | `codex/fix-managed-provider-session-defaults` |
 | 35 | 2026-08-23 | 统一订阅 PR 交付 | `94ee6d38f` | `codex/fix-managed-provider-session-defaults` |
 | 34 | 2026-08-23 | 统一订阅、动态模型与账户详情验收 | `b639fb8a7`, `4f5c41737`, `92ef3e99d`, `90461be7a`, `fc4d87876`, `7fcbd565c` | `codex/fix-managed-provider-session-defaults` |

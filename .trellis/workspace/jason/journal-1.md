@@ -1248,3 +1248,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 37: 上游 Composite 只读审计
+
+**Date**: 2026-08-23
+**Task**: 上游 Composite 只读审计
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+只读确认 Doge APP 当前无 saved Composite routes，Claude #11 未绑定 Doge APP，Kimi #37 与豆包 OpenAI/Anthropic 已绑定；未修改上游生产配置，并将证据写入 PR #19 verification。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7765f6833` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
