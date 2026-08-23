@@ -86,6 +86,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev:hot": "tauri dev",
+    "tauri:dev:hot:signed:mac": "bash scripts/setup-macos-dev-signing.sh && tauri dev --runner \"$PWD/scripts/macos-dev-signed-cargo.sh\"",
     "tauri:dev:isolated": "npm run doctor:strict && node scripts/tauri-dev-isolated.mjs",
     "tauri:dev": "npm run doctor:strict && tauri dev",
     "tauri:build": "npm run doctor:strict && tauri build",
