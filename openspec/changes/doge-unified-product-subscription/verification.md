@@ -38,8 +38,16 @@
 - `Codex 0.147 × gpt-5.5` 使用 managed `CODEX_HOME` 请求后由 production Composite GPT pool 返回 terminal 503；Doge 未做 silent fallback。
 - `Claude Code 2.1.233 × claude-sonnet-4-8` 使用 Doge private settings / managed token 后返回 `claude-code:unrecognized_model`；Doge 未回退 first-party OAuth。
 
+### token2api production admin read-only audit
+
+- `Doge APP` 当前是 `Composite` subscription group，共 7 个账号，页面显示 5 个可用。
+- Composite 路由弹窗的 authoritative saved state 为“暂无 Composite 路由”。
+- 账号列表可见 `Kimi #37`、`豆包 OpenAI #34`、`豆包 Anthropic #35` 已绑定 `Doge APP`。
+- `Claude #11` 当前只绑定“测试分组”，没有绑定 `Doge APP`。
+- 本轮只读取页面状态，没有点击创建、更新、删除、调度或探测操作。
+
 ## Remaining external/manual blockers
 
-- token2api production `Doge APP` 尚未把 Claude account 与对应 Composite model route 接入；GPT account pool/channel 配置也尚未能承接 Codex Agent payload。管理员 UI 配置完成后需重跑 Codex/Claude exact CLI terminal matrix。
+- token2api production `Doge APP` 尚未把 Claude account 接入，且当前没有任何 saved Composite route；GPT account pool/channel 配置也尚未能承接 Codex Agent payload。管理员 UI 配置完成后需重跑 Codex/Claude exact CLI terminal matrix。
 - 当前 macOS 会话处于锁屏状态，Computer Use 无法完成最终 Account Center dark/light/narrow screenshot 与 picker 点击验收；自动化 visual contracts 和此前 hot-dev smoke 已通过，但该项不冒充人工目视完成。
 - 未覆盖 Windows Credential Manager / installer、Linux Secret Service、macOS Release Keychain 实包、真实第三方支付回调与跨设备并发；这些继续由 Release/平台 smoke 承担。
