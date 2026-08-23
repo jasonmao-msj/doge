@@ -197,6 +197,7 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
       onExecutionTargetChange,
       // Atomic 双栏：shared catalog 或 create-session 投影。
       providerTargetPickerMode = 'create-session',
+      productTargetCatalog,
       providerAvailability,
       providerVersions,
       providerStatusLabels,
@@ -374,9 +375,10 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
       [modelStorageSnapshot],
     );
     const atomicProviderTargetCatalog = useAtomicProviderTargetCatalog({
-      enabled: true,
+      enabled: providerTargetPickerMode !== "product",
       workspaceId,
-      mode: providerTargetPickerMode,
+      mode:
+        providerTargetPickerMode === "shared" ? "shared" : "create-session",
       currentProvider: currentProvider as ProviderId,
       currentProviderProfileId,
       pluginCustomModels: atomicPluginCustomModels,
@@ -386,12 +388,22 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
         defaultValue: '可作为来源；目标续接尚未验证',
       }),
     });
+    const {
+      ensureProfiles: ensureAtomicProfiles,
+      ensureModels: ensureAtomicModels,
+      groups: atomicTargetGroups,
+      reloadConfig: reloadAtomicProviderConfig,
+      profileLoadError: atomicProfileLoadError,
+    } = atomicProviderTargetCatalog;
 
     // Shared/Atomic enrichment：完整 executionTarget 时主动 ensure catalog。
     // 失败不清 target；闭合态标签由 ModelSelect snapshot authority 承担。
     // Claude：打开历史会话 / 切 target 时同步 ANTHROPIC mapping 到当前渠道，
     // 避免 chip 已是「本地配置」而列表标签仍是上一 managed 的 MiniMax/DeepSeek。
     useEffect(() => {
+      if (providerTargetPickerMode === "product") {
+        return;
+      }
       const engine = executionTarget?.engine;
       if (
         !engine ||
@@ -406,8 +418,8 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
       if (!profileId) {
         return;
       }
-      void atomicProviderTargetCatalog.ensureProfiles();
-      void atomicProviderTargetCatalog.ensureModels(
+      void ensureAtomicProfiles();
+      void ensureAtomicModels(
         engine as EngineType,
         profileId,
       );
@@ -421,13 +433,14 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
           });
       }
     }, [
-      atomicProviderTargetCatalog.ensureModels,
-      atomicProviderTargetCatalog.ensureProfiles,
+      ensureAtomicModels,
+      ensureAtomicProfiles,
       executionTarget,
       executionTarget?.engine,
       executionTarget?.modelCatalogEntryId,
       executionTarget?.model,
       executionTarget?.providerProfileId,
+      providerTargetPickerMode,
     ]);
 
     // create-session only：父层 models 未就绪 / 未写入 target 时，用 Atomic catalog
@@ -472,8 +485,8 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
       let cancelled = false;
       void (async () => {
         try {
-          await atomicProviderTargetCatalog.ensureProfiles();
-          const catalogModels = await atomicProviderTargetCatalog.ensureModels(
+          await ensureAtomicProfiles();
+          const catalogModels = await ensureAtomicModels(
             engine,
             profileId,
           );
@@ -496,7 +509,7 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
           if (!runtimeModel) {
             return;
           }
-          const group = atomicProviderTargetCatalog.groups.find(
+          const group = atomicTargetGroups.find(
             (entry) => entry.providerId === engine,
           );
           const profile = group?.profiles.find(
@@ -534,10 +547,12 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
         cancelled = true;
       };
     }, [
-      atomicProviderTargetCatalog.ensureModels,
-      atomicProviderTargetCatalog.ensureProfiles,
-      atomicProviderTargetCatalog.groups,
+      ensureAtomicModels,
+      ensureAtomicProfiles,
+      atomicTargetGroups,
       currentProvider,
+      currentProviderProfileId,
+      executionTarget,
       executionTarget?.engine,
       executionTarget?.model,
       executionTarget?.modelCatalogEntryId,
@@ -1642,16 +1657,17 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
         onJumpToRequest={onJumpToRequest}
         selectedModel={selectedModel}
         models={availableModels}
-        targetGroups={atomicProviderTargetCatalog.groups}
+        targetGroups={atomicTargetGroups}
         preferManagedProviderDefaults={
           providerTargetPickerMode === "create-session"
         }
+        productTargetCatalog={productTargetCatalog}
         executionTarget={executionTarget}
         onExecutionTargetChange={handleProviderTargetSelect}
-        onOpenTargetCatalog={atomicProviderTargetCatalog.ensureProfiles}
-        onOpenProviderProfile={atomicProviderTargetCatalog.ensureModels}
-        onReloadProviderConfig={atomicProviderTargetCatalog.reloadConfig}
-        targetCatalogError={atomicProviderTargetCatalog.profileLoadError}
+        onOpenTargetCatalog={ensureAtomicProfiles}
+        onOpenProviderProfile={ensureAtomicModels}
+        onReloadProviderConfig={reloadAtomicProviderConfig}
+        targetCatalogError={atomicProfileLoadError}
         currentProvider={currentProvider}
         onAddModel={
           onOpenModelSettings ? handleOpenProviderModelSettings : undefined

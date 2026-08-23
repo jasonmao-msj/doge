@@ -6,6 +6,7 @@ import anthropicIcon from "@lobehub/icons-static-svg/icons/anthropic.svg";
 import bailianIcon from "@lobehub/icons-static-svg/icons/bailian-color.svg";
 import claudeIcon from "@lobehub/icons-static-svg/icons/claude-color.svg";
 import deepseekIcon from "@lobehub/icons-static-svg/icons/deepseek-color.svg";
+import doubaoIcon from "@lobehub/icons-static-svg/icons/doubao-color.svg";
 import kimiIcon from "@lobehub/icons-static-svg/icons/kimi-color.svg";
 import longcatIcon from "@lobehub/icons-static-svg/icons/longcat-color.svg";
 import minimaxIcon from "@lobehub/icons-static-svg/icons/minimax-color.svg";
@@ -24,6 +25,7 @@ export type ProviderBrandVendor =
   | "kimi"
   | "moonshot"
   | "deepseek"
+  | "doubao"
   | "minimax"
   | "xiaomi"
   | "bailian"
@@ -38,6 +40,7 @@ export const PROVIDER_BRAND_ICON_SRC: Record<ProviderBrandVendor, string> = {
   kimi: kimiIcon,
   moonshot: moonshotIcon,
   deepseek: deepseekIcon,
+  doubao: doubaoIcon,
   minimax: minimaxIcon,
   xiaomi: xiaomimimoIcon,
   bailian: bailianIcon,
@@ -92,6 +95,7 @@ const MODEL_VENDOR_PATTERNS: ReadonlyArray<
   [/xiaomi|mimo/i, "xiaomi"],
   [/longcat/i, "longcat"],
   [/opencode/i, "opencode"],
+  [/doubao|豆包|ark-code/i, "doubao"],
   [/claude|anthropic/i, "claude"],
   [/gpt[-\s]|^gpt\d|^o[134]\b|openai/i, "openai"],
 ];

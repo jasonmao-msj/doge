@@ -27,6 +27,7 @@ import type {
   PermissionMode,
   ProviderModelCatalogs,
   ProviderTargetPickerMode,
+  ProductTargetCatalogV1,
   ReasoningEffort,
   SelectedAgent,
   StreamActivityPhase,
@@ -471,6 +472,7 @@ export interface ChatInputBoxAdapterProps {
   selectedEngine?: EngineType;
   isSharedSession?: boolean;
   providerTargetPickerMode?: ProviderTargetPickerMode;
+  productTargetCatalog?: ProductTargetCatalogV1;
   /** Shared Thread id（Wave 4 / B.6：send 状态条/状态机的 store key 组成）。 */
   threadId?: string | null;
   engines?: AdapterEngineInfo[];
@@ -1032,6 +1034,7 @@ export const ChatInputBoxAdapter = memo(forwardRef<ChatInputBoxHandle, ChatInput
       selectedEngine,
       isSharedSession = false,
       providerTargetPickerMode,
+      productTargetCatalog,
       engines,
       models,
       providerModelCatalogs,
@@ -2125,6 +2128,7 @@ export const ChatInputBoxAdapter = memo(forwardRef<ChatInputBoxHandle, ChatInput
         executionTarget={executionTarget}
         onExecutionTargetChange={onExecutionTargetChange}
         providerTargetPickerMode={effectiveProviderTargetPickerMode}
+        productTargetCatalog={productTargetCatalog}
         providerAvailability={providerAvailability}
         providerVersions={providerVersions}
         providerStatusLabels={providerStatusLabels}

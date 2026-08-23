@@ -1,5 +1,11 @@
 /** @vitest-environment jsdom */
-import { act, cleanup, fireEvent, render, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  waitFor,
+} from "@testing-library/react";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -35,12 +41,17 @@ import {
   publishManagedEngineEntitlementsV1,
 } from "../../account/runtime/engineEntitlementStore";
 import { subscribeAccountEngineSwitchV1 } from "../../account/runtime/engineSwitchSignal";
+import {
+  clearProductEntitlementV1,
+  publishProductReadyV1,
+} from "../../account/runtime/productEntitlementStore";
 
 afterEach(() => {
   cleanup();
   resetSharedTargetStoreForTests();
   resetSharedSendStateStoreForTests();
   clearManagedEngineEntitlementsV1();
+  clearProductEntitlementV1();
 });
 
 beforeEach(() => {
@@ -65,7 +76,6 @@ vi.mock("../../engine/components/EngineSelector", () => ({
   EngineSelector: () => null,
 }));
 
-
 vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
   ChatInputBoxAdapter: ({
     text,
@@ -75,6 +85,8 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
     selectedEffort,
     onExecutionTargetChange,
     providerTargetPickerMode,
+    productTargetCatalog,
+    sendReadiness,
     onSelectEffort,
   }: {
     text: string;
@@ -83,7 +95,7 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
     providerProfileId?: string | null;
     selectedEffort?: string | null;
     onExecutionTargetChange?: (target: {
-      engine: "claude" | "codex";
+      engine: "claude" | "codex" | "kimi";
       providerProfileId?: string | null;
       modelCatalogEntryId?: string | null;
       model?: string | null;
@@ -91,7 +103,14 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
       providerProfileNameSnapshot?: string | null;
       providerProfileSource?: "disk" | "managed" | null;
     }) => void;
-    providerTargetPickerMode?: "shared" | "create-session";
+    providerTargetPickerMode?: "shared" | "create-session" | "product";
+    productTargetCatalog?: {
+      engines: readonly unknown[];
+      models: readonly unknown[];
+    };
+    sendReadiness?: {
+      target: { engine: string; modelLabel: string };
+    };
     onSelectEffort?: (effort: string | null) => void;
   }) => (
     <>
@@ -99,13 +118,20 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
         data-testid="composer-target-authority"
         data-atomic-target={String(Boolean(onExecutionTargetChange))}
         data-picker-mode={providerTargetPickerMode ?? "create-session"}
+        data-product-engines={productTargetCatalog?.engines.length ?? 0}
+        data-product-models={productTargetCatalog?.models.length ?? 0}
+        data-readiness-engine={sendReadiness?.target.engine ?? "none"}
+        data-readiness-model={sendReadiness?.target.modelLabel ?? "none"}
       />
       <textarea
         value={text}
         data-provider-profile-id={providerProfileId ?? "null"}
         data-effort={selectedEffort ?? "null"}
         onChange={(event) =>
-          onTextChange(event.currentTarget.value, event.currentTarget.value.length)
+          onTextChange(
+            event.currentTarget.value,
+            event.currentTarget.value.length,
+          )
         }
         onKeyDown={(event) => {
           if (event.key === "Enter") {
@@ -206,6 +232,21 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
           })
         }
       />
+      <button
+        type="button"
+        data-testid="select-product-kimi-model"
+        onClick={() =>
+          onExecutionTargetChange?.({
+            engine: "kimi",
+            providerProfileId: "doge-token-matrix",
+            modelCatalogEntryId: "kimi-code/kimi-for-coding",
+            model: "kimi-code/kimi-for-coding",
+            reasoning: null,
+            providerProfileNameSnapshot: null,
+            providerProfileSource: "managed",
+          })
+        }
+      />
     </>
   ),
 }));
@@ -249,7 +290,9 @@ function ComposerHarness({
   selectedModelId?: string | null;
   providerProfileId?: string | null;
 }) {
-  const [selectedCodeAnnotations, setSelectedCodeAnnotations] = useState<CodeAnnotationSelection[]>([]);
+  const [selectedCodeAnnotations, setSelectedCodeAnnotations] = useState<
+    CodeAnnotationSelection[]
+  >([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const handleRemoveCodeAnnotation = useCallback((annotationId: string) => {
     setSelectedCodeAnnotations((current) =>
@@ -268,7 +311,9 @@ function ComposerHarness({
       return;
     }
     setSelectedCodeAnnotations([selection]);
-    onCodeAnnotationConsumed?.(buildCodeAnnotationDedupeKey(pendingCodeAnnotation));
+    onCodeAnnotationConsumed?.(
+      buildCodeAnnotationDedupeKey(pendingCodeAnnotation),
+    );
   }, [onCodeAnnotationConsumed, pendingCodeAnnotation]);
 
   const editorSettings: ComposerEditorSettings = {
@@ -351,8 +396,16 @@ function getTextarea(container: HTMLElement) {
 describe("Composer file reference token", () => {
   it("routes an unsubscribed Home engine target to the account purchase flow", async () => {
     publishManagedEngineEntitlementsV1([
-      { id: "codex", displayName: "Codex", entitlement: { status: "none", expiresAt: null } },
-      { id: "claude-code", displayName: "Claude", entitlement: { status: "active", expiresAt: null } },
+      {
+        id: "codex",
+        displayName: "Codex",
+        entitlement: { status: "none", expiresAt: null },
+      },
+      {
+        id: "claude-code",
+        displayName: "Claude",
+        entitlement: { status: "active", expiresAt: null },
+      },
     ]);
     const switchIntent = vi.fn();
     const unsubscribe = subscribeAccountEngineSwitchV1(switchIntent);
@@ -408,7 +461,8 @@ describe("Composer file reference token", () => {
     // 首页切 CLI 必须同步全局 engine，重启后首页才能回到上次选择
     expect(onSelectEngine).toHaveBeenCalledWith("codex");
     // 等价 engine 不得在每次父树重渲染时重复 publish（#185 防护）
-    const publishCountAfterMount = onCreationTargetEngineChange.mock.calls.length;
+    const publishCountAfterMount =
+      onCreationTargetEngineChange.mock.calls.length;
     await act(async () => {
       view.rerender(
         <ComposerHarness
@@ -421,7 +475,9 @@ describe("Composer file reference token", () => {
       );
       await Promise.resolve();
     });
-    expect(onCreationTargetEngineChange.mock.calls.length).toBe(publishCountAfterMount);
+    expect(onCreationTargetEngineChange.mock.calls.length).toBe(
+      publishCountAfterMount,
+    );
 
     const textarea = getTextarea(view.container);
     await act(async () => {
@@ -448,8 +504,16 @@ describe("Composer file reference token", () => {
 
   it("sends a prepared Codex subscription through the managed provider", async () => {
     publishManagedEngineEntitlementsV1([
-      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
-      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+      {
+        id: "codex",
+        displayName: "Codex",
+        entitlement: { status: "active", expiresAt: null },
+      },
+      {
+        id: "claude-code",
+        displayName: "Claude",
+        entitlement: { status: "none", expiresAt: null },
+      },
     ]);
     markManagedEnginePreparedV1("codex");
     const onSend = vi.fn();
@@ -494,10 +558,101 @@ describe("Composer file reference token", () => {
     );
   });
 
+  it("binds a product-ready Kimi Home send to the managed provider contract", async () => {
+    publishProductReadyV1({
+      entitlement: {
+        status: "active",
+        subscriptionId: 9,
+        groupId: 5,
+        groupName: "Doge",
+        planName: "Doge subscription",
+        expiresAt: "2030-02-01T00:00:00Z",
+        usage: null,
+      },
+      engines: [
+        { id: "codex", displayName: "Codex" },
+        { id: "claude-code", displayName: "Claude" },
+        { id: "kimi", displayName: "Kimi CLI" },
+      ],
+      models: [
+        {
+          id: "gpt-5.5",
+          displayName: "gpt-5.5",
+          model: "gpt-5.5",
+          compatibleEngines: ["codex"],
+          capabilities: ["chat"],
+        },
+        {
+          id: "kimi-for-coding",
+          displayName: "Kimi for Coding",
+          model: "kimi-for-coding",
+          compatibleEngines: ["kimi"],
+          capabilities: ["chat"],
+        },
+      ],
+    });
+    const onSend = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={onSend}
+        createSessionTargetPicker
+        selectedEngine="kimi"
+        activeThreadId={null}
+        selectedModelId="gpt-5.5"
+      />,
+    );
+
+    expect(getTextarea(view.container).dataset.providerProfileId).toBe(
+      "doge-token-matrix",
+    );
+    expect(view.getByTestId("composer-target-authority").dataset).toMatchObject(
+      {
+        pickerMode: "product",
+        productEngines: "3",
+        productModels: "2",
+      },
+    );
+    await act(async () => {
+      fireEvent.click(view.getByTestId("select-product-kimi-model"));
+      await Promise.resolve();
+      expect(
+        view.getByTestId("composer-target-authority").dataset,
+      ).toMatchObject({
+        readinessEngine: "kimi",
+        readinessModel: "Kimi for Coding",
+      });
+      const textarea = getTextarea(view.container);
+      fireEvent.change(textarea, { target: { value: "product Kimi target" } });
+      fireEvent.keyDown(textarea, { key: "Enter" });
+      await Promise.resolve();
+    });
+
+    expect(onSend).toHaveBeenCalledWith(
+      "product Kimi target",
+      expect.objectContaining({
+        createSessionTarget: expect.objectContaining({
+          engine: "kimi",
+          providerProfileId: "doge-token-matrix",
+          providerProfileSource: "managed",
+          modelCatalogEntryId: "kimi-code/kimi-for-coding",
+          model: "kimi-for-coding",
+        }),
+      }),
+    );
+  });
+
   it("automatically prepares an active Home subscription before using a local fallback", () => {
     publishManagedEngineEntitlementsV1([
-      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
-      { id: "claude-code", displayName: "Claude", entitlement: { status: "active", expiresAt: null } },
+      {
+        id: "codex",
+        displayName: "Codex",
+        entitlement: { status: "active", expiresAt: null },
+      },
+      {
+        id: "claude-code",
+        displayName: "Claude",
+        entitlement: { status: "active", expiresAt: null },
+      },
     ]);
     markManagedEnginePreparedV1("claude-code");
     const switchIntent = vi.fn();
@@ -523,8 +678,16 @@ describe("Composer file reference token", () => {
 
   it("blocks a prepared managed default until its scoped catalog resolves", async () => {
     publishManagedEngineEntitlementsV1([
-      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
-      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+      {
+        id: "codex",
+        displayName: "Codex",
+        entitlement: { status: "active", expiresAt: null },
+      },
+      {
+        id: "claude-code",
+        displayName: "Claude",
+        entitlement: { status: "none", expiresAt: null },
+      },
     ]);
     markManagedEnginePreparedV1("codex");
     const onSend = vi.fn();
@@ -549,8 +712,16 @@ describe("Composer file reference token", () => {
 
   it("keeps an explicit local target usable while the managed catalog is pending", async () => {
     publishManagedEngineEntitlementsV1([
-      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
-      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+      {
+        id: "codex",
+        displayName: "Codex",
+        entitlement: { status: "active", expiresAt: null },
+      },
+      {
+        id: "claude-code",
+        displayName: "Claude",
+        entitlement: { status: "none", expiresAt: null },
+      },
     ]);
     markManagedEnginePreparedV1("codex");
     const onSend = vi.fn();
@@ -588,8 +759,16 @@ describe("Composer file reference token", () => {
 
   it("resets an explicit local creation target before the next managed session", async () => {
     publishManagedEngineEntitlementsV1([
-      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
-      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+      {
+        id: "codex",
+        displayName: "Codex",
+        entitlement: { status: "active", expiresAt: null },
+      },
+      {
+        id: "claude-code",
+        displayName: "Claude",
+        entitlement: { status: "none", expiresAt: null },
+      },
     ]);
     markManagedEnginePreparedV1("codex");
     const onSend = vi.fn();
@@ -797,27 +976,128 @@ describe("Composer file reference token", () => {
     fireEvent.click(view.getByTestId("select-shared-target"));
 
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("set_shared_session_selected_engine", {
-        workspaceId: "ws-1",
-        threadId: "thread-1",
-        selectedEngine: "codex",
+      expect(invoke).toHaveBeenCalledWith(
+        "set_shared_session_selected_engine",
+        {
+          workspaceId: "ws-1",
+          threadId: "thread-1",
+          selectedEngine: "codex",
+          providerProfileId: "provider-b",
+          modelCatalogEntryId: "settings-reasoning",
+          model: "deepseek-v4-pro",
+          reasoningEffort: "high",
+          providerProfileNameSnapshot: "Provider B",
+          providerProfileSource: "managed",
+        },
+      );
+    });
+    expect(getSharedTargetState("ws-1", "thread-1").selectedNextTarget).toEqual(
+      {
+        engine: "codex",
         providerProfileId: "provider-b",
         modelCatalogEntryId: "settings-reasoning",
         model: "deepseek-v4-pro",
-        reasoningEffort: "high",
+        reasoning: { effort: "high" },
         providerProfileNameSnapshot: "Provider B",
         providerProfileSource: "managed",
-      });
+      },
+    );
+  });
+
+  it("automatically repairs a product-ready Shared selection to a released managed target", async () => {
+    publishProductReadyV1({
+      entitlement: {
+        status: "active",
+        subscriptionId: 9,
+        groupId: 5,
+        groupName: "Doge",
+        planName: "Doge subscription",
+        expiresAt: "2030-02-01T00:00:00Z",
+        usage: null,
+      },
+      engines: [
+        { id: "codex", displayName: "Codex" },
+        { id: "claude-code", displayName: "Claude" },
+        { id: "kimi", displayName: "Kimi CLI" },
+      ],
+      models: [
+        {
+          id: "gpt-5.6-sol",
+          displayName: "GPT-5.6 Sol",
+          model: "gpt-5.6-sol",
+          compatibleEngines: ["codex"],
+          capabilities: ["chat"],
+        },
+        {
+          id: "kimi-for-coding",
+          displayName: "Kimi for Coding",
+          model: "kimi-for-coding",
+          compatibleEngines: ["kimi"],
+          capabilities: ["chat"],
+        },
+      ],
     });
-    expect(getSharedTargetState("ws-1", "thread-1").selectedNextTarget).toEqual({
+    selectNextTarget("ws-1", "thread-1", {
       engine: "codex",
-      providerProfileId: "provider-b",
-      modelCatalogEntryId: "settings-reasoning",
-      model: "deepseek-v4-pro",
-      reasoning: { effort: "high" },
-      providerProfileNameSnapshot: "Provider B",
-      providerProfileSource: "managed",
+      providerProfileId: null,
+      modelCatalogEntryId: "gpt-5.6-sol",
+      model: "gpt-5.6-sol",
+      reasoning: null,
+      providerProfileNameSnapshot: "本地配置",
+      providerProfileSource: "disk",
     });
+    const persistedTarget = {
+      engine: "codex",
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "gpt-5.6-sol",
+      model: "gpt-5.6-sol",
+      reasoning: null,
+      providerProfileNameSnapshot: "Doge Token Matrix",
+      providerProfileSource: "managed",
+    };
+    vi.mocked(invoke).mockResolvedValueOnce({
+      selectedTarget: persistedTarget,
+    });
+    const view = render(
+      <ComposerHarness
+        onSend={() => {}}
+        sharedTarget={{
+          providerProfileId: "local",
+          model: "gpt-5.6-sol",
+          effort: "low",
+        }}
+      />,
+    );
+
+    expect(view.getByTestId("composer-target-authority").dataset).toMatchObject(
+      {
+        pickerMode: "product",
+        productEngines: "3",
+        productModels: "2",
+      },
+    );
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith(
+        "set_shared_session_selected_engine",
+        {
+          workspaceId: "ws-1",
+          threadId: "thread-1",
+          selectedEngine: "codex",
+          providerProfileId: "doge-token-matrix",
+          modelCatalogEntryId: "gpt-5.6-sol",
+          model: "gpt-5.6-sol",
+          reasoningEffort: null,
+          providerProfileNameSnapshot: "Doge Token Matrix",
+          providerProfileSource: "managed",
+        },
+      );
+    });
+    expect(getSharedTargetState("ws-1", "thread-1").selectedNextTarget).toEqual(
+      {
+        ...persistedTarget,
+        reasoning: { effort: "low" },
+      },
+    );
   });
 
   it("keeps Shared CLI navigation transitional until a complete Model target exists", () => {
@@ -1124,9 +1404,7 @@ describe("Composer file reference token", () => {
     const unsubscribe = subscribeProviderContinuationDialogRequests(listener);
     const view = render(<ComposerHarness onSend={() => {}} />);
 
-    fireEvent.click(
-      view.getByTestId("request-provider-continuation"),
-    );
+    fireEvent.click(view.getByTestId("request-provider-continuation"));
 
     expect(listener).toHaveBeenCalledWith({
       workspaceId: "ws-1",
@@ -1147,15 +1425,24 @@ describe("Composer file reference token", () => {
 
   it("revalidates a same-engine Token Matrix credential before creating a continuation", () => {
     publishManagedEngineEntitlementsV1([
-      { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
-      { id: "claude-code", displayName: "Claude", entitlement: { status: "none", expiresAt: null } },
+      {
+        id: "codex",
+        displayName: "Codex",
+        entitlement: { status: "active", expiresAt: null },
+      },
+      {
+        id: "claude-code",
+        displayName: "Claude",
+        entitlement: { status: "none", expiresAt: null },
+      },
     ]);
     // Renderer readiness can be stale when the OS vault entry disappears.
     markManagedEnginePreparedV1("codex");
     const switchIntent = vi.fn();
     const continuation = vi.fn();
     const unsubscribeSwitch = subscribeAccountEngineSwitchV1(switchIntent);
-    const unsubscribeContinuation = subscribeProviderContinuationDialogRequests(continuation);
+    const unsubscribeContinuation =
+      subscribeProviderContinuationDialogRequests(continuation);
     const view = render(
       <ComposerHarness
         onSend={() => {}}
@@ -1259,12 +1546,13 @@ describe("Composer file reference token", () => {
   });
 
   it("does not hit maximum update depth when file tokens settle under repeated parent rerenders", async () => {
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     const onSend = vi.fn();
     const view = render(<ComposerHarness onSend={onSend} />);
     const textarea = getTextarea(view.container);
-    const value =
-      "请检查 📄 App.tsx `/Users/demo/repo/src/App.tsx`";
+    const value = "请检查 📄 App.tsx `/Users/demo/repo/src/App.tsx`";
 
     await act(async () => {
       fireEvent.change(textarea, {
@@ -1297,7 +1585,9 @@ describe("Composer file reference token", () => {
   it("does not hit maximum update depth when skills/commands identity thrash after token settle", async () => {
     // C-20260804-02：0.7.16 App-DjQ3UnSh 生产栈落在 Composer extract effect。
     // 父树每次渲染换 skills/commands 数组引用时，旧 effect deps 会反复入场。
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     const onSend = vi.fn();
     const onDraftChange = vi.fn();
 
@@ -1307,7 +1597,11 @@ describe("Composer file reference token", () => {
       void tick;
       return (
         <div>
-          <button type="button" data-testid="thrash-skills" onClick={() => setTick((n) => n + 1)}>
+          <button
+            type="button"
+            data-testid="thrash-skills"
+            onClick={() => setTick((n) => n + 1)}
+          >
             thrash
           </button>
           <Composer
@@ -1433,8 +1727,7 @@ describe("Composer file reference token", () => {
     const view = render(<ComposerHarness onSend={onSend} />);
     const textarea = getTextarea(view.container);
 
-    const value =
-      "📁 ai-reach  📁 ai-reach `/Users/demo/repo/ai-reach`  ";
+    const value = "📁 ai-reach  📁 ai-reach `/Users/demo/repo/ai-reach`  ";
 
     await act(async () => {
       fireEvent.change(textarea, {
