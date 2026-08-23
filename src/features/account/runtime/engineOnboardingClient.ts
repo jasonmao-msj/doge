@@ -78,6 +78,7 @@ export type PendingEngineCheckoutViewV1 = {
 
 export type EngineOnboardingFailureV1 = {
   readonly code: string;
+  readonly retryAfterMs?: number;
 };
 
 export type EngineOnboardingResultV1<T> =

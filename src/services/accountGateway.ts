@@ -36,6 +36,11 @@ const READ_OPERATIONS = new Set<GatewayOperationNameV1>(
 export class RealAccountGatewayV1 implements AccountGatewayV1 {
   readonly contract = ACCOUNT_GATEWAY_CONTRACT_V1;
 
+  private bootstrapGeneration = 0;
+  private bootstrapCache: Awaited<ReturnType<AccountGatewayV1["bootstrap"]>> | null = null;
+  private bootstrapInFlight: ReturnType<AccountGatewayV1["bootstrap"]> | null = null;
+  private lastBootstrapInvalidationEventId: string | null = null;
+
   subscribe = (listener: (event: AccountGatewayEventV1) => void) => {
     let disposed = false;
     let unlisten: (() => void) | null = null;
@@ -50,6 +55,9 @@ export class RealAccountGatewayV1 implements AccountGatewayV1 {
         eventSeq: event.eventSeq,
         accountEpoch: event.accountEpoch,
       };
+      if (event.kind === "sessionChanged" || event.kind === "capabilitiesChanged") {
+        this.invalidateBootstrapCacheForEvent(event.eventId);
+      }
       listener(event);
     }).then((handler) => {
       if (disposed) handler();
@@ -62,8 +70,24 @@ export class RealAccountGatewayV1 implements AccountGatewayV1 {
     };
   };
 
-  bootstrap: AccountGatewayV1["bootstrap"] = (context) =>
-    this.read("gateway.bootstrap", null, context);
+  bootstrap: AccountGatewayV1["bootstrap"] = async (context) => {
+    if (context.signal?.aborted) return cancelledResult("gateway.bootstrap");
+    if (this.bootstrapCache) return this.bootstrapCache;
+
+    const generation = this.bootstrapGeneration;
+    const request = this.bootstrapInFlight ?? this.read("gateway.bootstrap", null, {});
+    this.bootstrapInFlight = request;
+    try {
+      const result = await request;
+      if (context.signal?.aborted) return cancelledResult("gateway.bootstrap");
+      if (result.ok && generation === this.bootstrapGeneration) {
+        this.bootstrapCache = result;
+      }
+      return result;
+    } finally {
+      if (this.bootstrapInFlight === request) this.bootstrapInFlight = null;
+    }
+  };
 
   reconcileIntent: AccountGatewayV1["reconcileIntent"] = (input, context) =>
     this.read("gateway.reconcileIntent", input, context);
@@ -218,13 +242,39 @@ export class RealAccountGatewayV1 implements AccountGatewayV1 {
         const operationId = brokerOperationIdV1(await prepareAccountMutationV1(request));
         if (context.signal?.aborted) return cancelledResult(operation);
         const response = await executeAccountRequestV1(request, operationId);
-        return validatedResult(operation, response, nativeContext, requestId, operationId);
+        const result = validatedResult(
+          operation,
+          response,
+          nativeContext,
+          requestId,
+          operationId,
+        );
+        if (result.ok && invalidatesBootstrap(operation)) {
+          this.invalidateBootstrapCache();
+        }
+        return result;
       } catch {
         if (context.signal?.aborted) return cancelledResult(operation);
       }
     }
     return mutationOutcomeUnknown(operation, context.intent);
   }
+
+  private invalidateBootstrapCache() {
+    this.bootstrapGeneration += 1;
+    this.bootstrapCache = null;
+    this.bootstrapInFlight = null;
+  }
+
+  private invalidateBootstrapCacheForEvent(eventId: string) {
+    if (this.lastBootstrapInvalidationEventId === eventId) return;
+    this.lastBootstrapInvalidationEventId = eventId;
+    this.invalidateBootstrapCache();
+  }
+}
+
+function invalidatesBootstrap(operation: GatewayOperationNameV1) {
+  return operation.startsWith("auth.") || operation.startsWith("profile.");
 }
 
 function validatedResult<TOperation extends GatewayOperationNameV1>(
@@ -331,6 +381,9 @@ function stageForOperation(operation: GatewayOperationNameV1) {
   return "login" as const;
 }
 
+let processAccountGatewayV1: AccountGatewayV1 | null = null;
+
 export function createRealAccountGatewayV1(): AccountGatewayV1 {
-  return new RealAccountGatewayV1();
+  processAccountGatewayV1 ??= new RealAccountGatewayV1();
+  return processAccountGatewayV1;
 }

@@ -9,6 +9,10 @@ const configurationCss = readFileSync(
   new URL("./account-configuration-dialog.css", import.meta.url),
   "utf8",
 );
+const gateCss = readFileSync(
+  new URL("./account-app-gate.css", import.meta.url),
+  "utf8",
+);
 const experienceSource = readFileSync(
   new URL("./AccountExperience.tsx", import.meta.url),
   "utf8",
@@ -19,6 +23,10 @@ const centerSource = readFileSync(
 );
 const headerSource = readFileSync(
   new URL("./AccountCenterHeader.tsx", import.meta.url),
+  "utf8",
+);
+const productDetailsSource = readFileSync(
+  new URL("./ProductAccountDetails.tsx", import.meta.url),
   "utf8",
 );
 const subscriptionSource = readFileSync(
@@ -39,6 +47,22 @@ const usageSource = readFileSync(
 );
 const securitySource = readFileSync(
   new URL("./AccountSecurityPanel.tsx", import.meta.url),
+  "utf8",
+);
+const gateViewsSource = readFileSync(
+  new URL("./AccountAppGateViews.tsx", import.meta.url),
+  "utf8",
+);
+const legacyGateSource = readFileSync(
+  new URL("./AccountAppGate.tsx", import.meta.url),
+  "utf8",
+);
+const productGateSource = readFileSync(
+  new URL("./ProductAccountAppGate.tsx", import.meta.url),
+  "utf8",
+);
+const settingsSource = readFileSync(
+  new URL("../../settings/components/SettingsView.tsx", import.meta.url),
   "utf8",
 );
 
@@ -70,10 +94,10 @@ describe("Account visual contract", () => {
     expect(experienceCss).not.toMatch(/\.account-experience-state button\s*\{/);
   });
 
-  it("uses the Codex engine mark and the host theme instead of mixing product identities", () => {
+  it("uses the product avatar only for account identity and keeps usage icons domain-specific", () => {
     expect(subscriptionSource).toContain('subscription.engineId === "claude-code" ? "claude" : "codex"');
-    expect(`${experienceSource}\n${centerSource}\n${subscriptionSource}`).not.toContain("DOGE_PRODUCT_ICON_SRC");
-    expect(`${experienceSource}\n${centerSource}\n${subscriptionSource}`).not.toContain("assets/icon.png");
+    expect(headerSource).toContain("doge-mascot-avatar.png");
+    expect(`${experienceSource}\n${centerSource}\n${subscriptionSource}\n${productDetailsSource}`).not.toContain("assets/icon.png");
     expect(experienceCss).not.toMatch(/--account-accent|#ca5b2e|#b64b22/);
   });
 
@@ -101,7 +125,7 @@ describe("Account visual contract", () => {
     expect(accountCopySource).not.toMatch(/usageLess|usageMore/);
   });
 
-  it("keeps Account Center actions quiet and subscription cards bounded to three columns", () => {
+  it("keeps Account Center actions quiet and renders one progressive product detail page", () => {
     const headerActionRule = experienceCss.match(
       /\.account-header-icon-button\s*\{[^}]*\}/s,
     )?.[0] ?? "";
@@ -115,9 +139,32 @@ describe("Account visual contract", () => {
     expect(headerSource).toContain("MoreHorizontal");
     expect(headerSource).toContain("aria-label={copy.security}");
     expect(headerSource).not.toContain("ShieldCheck");
-    expect(centerSource).toContain('value="subscription"');
-    expect(centerSource).not.toContain('value="security"');
-    expect(centerSource).not.toContain("account-overview-list");
-    expect(experienceCss).toContain(".account-subscription-engine-list");
+    expect(centerSource).toContain("ProductAccountDetails");
+    expect(centerSource).not.toContain("<Tabs");
+    expect(productDetailsSource).toContain("account-usage-stat-grid");
+    expect(productDetailsSource).toContain("account-billing-list");
+    expect(productDetailsSource).toContain("account-subscription-model-groups");
+    expect(productDetailsSource).not.toMatch(/invoice-download|下载账单/);
+    expect(productDetailsSource).toContain("<Tooltip delayDuration={0}>");
+    expect(settingsSource).toContain('activeSection !== "account" ? (');
+    expect(experienceCss).toContain(".account-profile-card");
+    expect(experienceCss).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
+  });
+
+  it("loads gate styles from the shared view owner and bounds the logo before CSS settles", () => {
+    expect(gateViewsSource).toContain('import "./account-app-gate.css"');
+    expect(gateViewsSource).toContain("width={54}");
+    expect(gateViewsSource).toContain("height={54}");
+    expect(legacyGateSource).not.toContain('import "./account-app-gate.css"');
+    expect(productGateSource).not.toContain('import "./account-app-gate.css"');
+  });
+
+  it("keeps the product plan as a structured card with a full-width CTA", () => {
+    expect(productGateSource).toContain("account-product-plan-head");
+    expect(productGateSource).toContain("account-product-plan-lines");
+    expect(productGateSource).toContain("account-product-plan-cta");
+    expect(gateCss).toMatch(/\.account-product-plan\s*\{[^}]*border:[^}]*border-radius:/s);
+    expect(gateCss).toMatch(/\.account-product-plan-line\s*\{[^}]*grid-template-columns:/s);
+    expect(gateCss).toMatch(/\.account-product-plan-cta\s*\{[^}]*width:\s*100%/s);
   });
 });

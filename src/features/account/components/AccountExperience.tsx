@@ -39,7 +39,9 @@ export type AccountExperienceProps = {
 };
 
 export function AccountExperience({ showLegacyConfiguration = false }: AccountExperienceProps) {
-  const controller = useAccountExperienceControllerV1();
+  const controller = useAccountExperienceControllerV1({
+    loadLegacyConfigurationExtras: showLegacyConfiguration,
+  });
   const copy = useAccountExperienceCopyV1();
 
   if (controller.loading) {

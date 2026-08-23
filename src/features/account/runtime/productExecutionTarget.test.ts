@@ -1,0 +1,130 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  isSameProductExecutionTargetV1,
+  resolveProductManagedExecutionTargetV1,
+  resolveProductRuntimeModelIdV1,
+} from "./productExecutionTarget";
+import type { ProductModelViewV1 } from "./productOnboardingClient";
+
+const engines = [
+  { id: "codex" as const, displayName: "Codex" },
+  { id: "claude-code" as const, displayName: "Claude" },
+  { id: "kimi" as const, displayName: "Kimi" },
+];
+const models: ProductModelViewV1[] = [
+  productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["codex", "kimi"]),
+  productModel("claude-sonnet-4-8", "Claude Sonnet 4.8", ["claude"]),
+  productModel("kimi-for-coding", "Kimi for Coding", ["kimi"]),
+  productModel(
+    "doubao-entry",
+    "豆包",
+    ["codex", "claude", "kimi"],
+    "ark-code-latest",
+  ),
+];
+
+describe("resolveProductManagedExecutionTargetV1", () => {
+  it("replaces a persisted local profile and repairs an incompatible model", () => {
+    expect(
+      resolveProductManagedExecutionTargetV1({
+        target: {
+          engine: "claude",
+          providerProfileId: null,
+          modelCatalogEntryId: "gpt-5.6-sol",
+          model: "gpt-5.6-sol",
+          reasoning: null,
+          providerProfileNameSnapshot: "本地配置",
+          providerProfileSource: "disk",
+        },
+        engines,
+        models,
+      }),
+    ).toEqual({
+      engine: "claude",
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "claude-sonnet-4-8",
+      model: "claude-sonnet-4-8",
+      reasoning: null,
+      providerProfileNameSnapshot: "Doge Token Matrix",
+      providerProfileSource: "managed",
+    });
+  });
+
+  it("uses the upstream runtime model while keeping the display identity separate", () => {
+    expect(
+      resolveProductRuntimeModelIdV1({
+        id: "doubao-entry",
+        model: "ark-code-latest",
+      }),
+    ).toBe("ark-code-latest");
+  });
+
+  it("normalizes the Kimi fallback catalog namespace to the product runtime id", () => {
+    expect(
+      resolveProductManagedExecutionTargetV1({
+        target: {
+          engine: "kimi",
+          providerProfileId: "doge-token-matrix",
+          modelCatalogEntryId: "kimi-code/kimi-for-coding",
+          model: "kimi-code/kimi-for-coding",
+          reasoning: null,
+          providerProfileNameSnapshot: null,
+          providerProfileSource: "managed",
+        },
+        engines,
+        models: [
+          productModel("gpt-5.5", "gpt-5.5", ["codex"]),
+          productModel("kimi-for-coding", "Kimi for Coding", ["kimi"]),
+        ],
+      }),
+    ).toMatchObject({
+      engine: "kimi",
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "kimi-code/kimi-for-coding",
+      model: "kimi-for-coding",
+    });
+  });
+
+  it("is stable after the managed target has already been committed", () => {
+    const target = resolveProductManagedExecutionTargetV1({
+      preferredEngine: "kimi",
+      preferredModelId: "kimi-for-coding",
+      preferredEffort: "low",
+      engines,
+      models,
+    });
+    const next = resolveProductManagedExecutionTargetV1({
+      target,
+      engines,
+      models,
+    });
+
+    expect(isSameProductExecutionTargetV1(target, next)).toBe(true);
+  });
+
+  it("fails closed when the selected engine has no compatible model in the catalog", () => {
+    expect(
+      resolveProductManagedExecutionTargetV1({
+        preferredEngine: "claude",
+        engines: engines.filter((engine) => engine.id === "claude-code"),
+        models: [productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["codex"])],
+      }),
+    ).toBeNull();
+  });
+});
+
+function productModel(
+  id: string,
+  displayName: string,
+  compatibleEngines: ProductModelViewV1["compatibleEngines"],
+  runtimeModel = id,
+): ProductModelViewV1 {
+  return {
+    id,
+    displayName,
+    model: runtimeModel,
+    compatibleEngines,
+    capabilities: [],
+  };
+}

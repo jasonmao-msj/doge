@@ -12,6 +12,7 @@ import type {
   SubscriptionPlanViewV1,
 } from "../runtime/engineOnboardingClient";
 import { AccountHelpTooltip } from "./AccountHelpTooltip";
+import "./account-app-gate.css";
 
 export type GateAccountExit = {
   readonly copy: AccountExperienceCopyV1;
@@ -57,11 +58,13 @@ export function GateFrame({
   accountExit,
   onReturnToApp,
   returnBusy = false,
+  brandLabel,
 }: {
   readonly children: ReactNode;
   readonly accountExit?: GateAccountExit;
   readonly onReturnToApp?: () => void;
   readonly returnBusy?: boolean;
+  readonly brandLabel?: string;
 }) {
   return (
     <main className="account-app-gate">
@@ -89,7 +92,17 @@ export function GateFrame({
             {accountExit.copy.logout}
           </button>
         ) : null}
-        <img className="account-gate-logo" src={dogeMascot} alt="Doge" />
+        <div className="account-gate-brand">
+          <img
+            className="account-gate-logo"
+            src={dogeMascot}
+            alt={brandLabel ? "" : "Doge"}
+            aria-hidden={brandLabel ? true : undefined}
+            width={54}
+            height={54}
+          />
+          {brandLabel ? <span>{brandLabel}</span> : null}
+        </div>
         {children}
         {accountExit?.failureCode ? (
           <GateInlineFailure copy={accountExit.copy} code={accountExit.failureCode} />
@@ -139,6 +152,7 @@ export function GateFailure({
   copy,
   code,
   onRetry,
+  retryAfterSeconds,
   accountExit,
   onReturnToApp,
   returnBusy,
@@ -146,33 +160,50 @@ export function GateFailure({
   readonly copy: AccountExperienceCopyV1;
   readonly code: string;
   readonly onRetry: () => void;
+  readonly retryAfterSeconds?: number;
   readonly accountExit?: GateAccountExit;
   readonly onReturnToApp?: () => void;
   readonly returnBusy?: boolean;
 }) {
   return (
     <GateFrame accountExit={accountExit} onReturnToApp={onReturnToApp} returnBusy={returnBusy}>
-      <GateFailureBody copy={copy} code={code} onRetry={onRetry} />
+      <GateFailureBody
+        copy={copy}
+        code={code}
+        onRetry={onRetry}
+        retryAfterSeconds={retryAfterSeconds}
+      />
     </GateFrame>
   );
 }
 
-export function GateFailureBody({ copy, code, onRetry }: {
+export function GateFailureBody({ copy, code, onRetry, retryAfterSeconds = 0 }: {
   readonly copy: AccountExperienceCopyV1;
   readonly code: string;
   readonly onRetry: () => void;
+  readonly retryAfterSeconds?: number;
 }) {
+  const waiting = retryAfterSeconds > 0;
   return (
     <div className="account-gate-centered" role="alert">
       <CircleAlert aria-hidden />
       <h1>{failureMessage(code, copy)}</h1>
-      <button className="account-gate-primary" type="button" onClick={onRetry}>
+      <button
+        className="account-gate-primary"
+        type="button"
+        disabled={waiting}
+        onClick={onRetry}
+      >
         <RefreshCw size={16} aria-hidden />
-        {copy.retry}
+        {waiting
+          ? interpolate(copy.gateRetryAfterSecondsTemplate, "seconds", String(retryAfterSeconds))
+          : copy.retry}
       </button>
     </div>
   );
 }
+
+export { failureMessage as gateFailureMessage };
 
 export function GateInlineFailure({ copy, code }: {
   readonly copy: AccountExperienceCopyV1;
@@ -316,6 +347,9 @@ function failureMessage(code: string, copy: AccountExperienceCopyV1) {
     return copy.gateConfigurationRejected;
   }
   if (code === "engineUnavailable" || code === "engineBundleUnavailable" ||
-    code === "engineBundleVerificationFailed") return copy.gateEngineUnavailable;
+    code === "engineBundleVerificationFailed" || code === "engineInstallerUnavailable" ||
+    code === "engineInstallFailed" || code === "engineInstallVerificationFailed") {
+    return copy.gateEngineUnavailable;
+  }
   return copy.gateServiceUnavailable;
 }

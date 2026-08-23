@@ -60,7 +60,6 @@ import { EngineIcon } from "../../engine/components/EngineIcon";
 import { activateEngineProviderProfileAndNotify } from "../../vendors/activateEngineProviderProfile";
 import { activateAccountManagedEngine } from "../../../services/accountEngineActivation";
 import { openAccountExternalUrl } from "../../../services/accountExternalLinks";
-import "./account-app-gate.css";
 
 type GatePhase =
   | "catalog"

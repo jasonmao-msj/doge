@@ -3,10 +3,11 @@ import { AccountGatewayProvider } from "../gateway/AccountGatewayProvider";
 import { AccountExperience } from "./AccountExperience";
 
 export type AccountSettingsSectionProps = {
-  readonly gateway: AccountGatewayV1;
+  readonly gateway?: AccountGatewayV1;
 };
 
 export function AccountSettingsSection({ gateway }: AccountSettingsSectionProps) {
+  if (!gateway) return <AccountExperience />;
   return (
     <AccountGatewayProvider gateway={gateway}>
       <AccountExperience />

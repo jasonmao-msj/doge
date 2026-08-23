@@ -5,6 +5,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 let windowLabel = "main";
 let startupGateOverlayTestEnabled = false;
+const accountGatewayFactory = vi.hoisted(() => vi.fn(() => ({ contract: {} })));
 
 vi.mock("./features/layout/hooks/useWindowLabel", () => ({
   useWindowLabel: () => windowLabel,
@@ -14,10 +15,14 @@ vi.mock("./app-shell", () => ({
   AppShell: () => <div>main-shell</div>,
 }));
 
-vi.mock("./features/account/components/AccountAppGate", () => ({
-  AccountAppGate: ({ readyContent }: { readyContent: ReactNode }) => (
+vi.mock("./features/account/components/ProductAccountAppGate", () => ({
+  ProductAccountAppGate: ({ readyContent }: { readyContent: ReactNode }) => (
     <div data-testid="account-app-gate-sentinel">{readyContent}</div>
   ),
+}));
+
+vi.mock("./services/accountGateway", () => ({
+  createRealAccountGatewayV1: accountGatewayFactory,
 }));
 
 vi.mock("./features/app/components/StartupGateOverlay", () => ({
@@ -76,6 +81,7 @@ describe("AppRouter", () => {
   beforeEach(() => {
     windowLabel = "main";
     startupGateOverlayTestEnabled = false;
+    accountGatewayFactory.mockClear();
   });
 
   it("renders the main shell for the main window", async () => {
@@ -105,6 +111,7 @@ describe("AppRouter", () => {
     expect(
       screen.queryByTestId("startup-gate-overlay-sentinel"),
     ).toBeNull();
+    expect(accountGatewayFactory).toHaveBeenCalledTimes(1);
   });
 
   it("keeps detached windows behind the account gate without the startup overlay", async () => {
