@@ -1582,3 +1582,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 47: 统一订阅、账户详情与托管会话收口
+
+**Date**: 2026-08-24
+**Task**: 统一订阅、账户详情与托管会话收口
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+完成统一 Product Gate、动态账户用量趋势、Doge 隔离配置强制更新、模型与 provider 选择收口；修复 Codex Sol/Terra 上游定价路由、Home 默认 Codex 首模型、Native Provider Continuation 原子 engine/model 选择，并清退旧按引擎订阅代码。L3 focused frontend 487/487、Rust account 106 passed/1 ignored、typecheck/lint/contracts/OpenSpec individual strict 均通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4fec2776d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
