@@ -91,6 +91,10 @@ React Component
     `/v1/models` 有 id 或 minimal curl 200 不能证明 Codex/Claude/Kimi 的真实 Agent payload
     （system/tools/stream/client headers）可完成；engine×model compatibility 只能由 exact Runtime
     target + typed terminal 证明，失败不得被 UI label、dispatch ACK 或另一 client identity 覆盖。
+28. display/catalog/runtime identity 分域后，必须逐层审计 picker local state、per-thread persistence、
+    AppShell effective-model repair、command payload 与 CLI launch config。UI label/勾选正确不能证明 runtime
+    model 生效；至少用 exact per-thread selection + launch config alias + CLI request log 三点对账，禁止任一
+    local/global catalog fallback 把 callable runtime 静默修回默认 model。
 
 ## 常见失败模式
 

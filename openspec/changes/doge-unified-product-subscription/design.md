@@ -35,7 +35,7 @@ credential business identity 为 `account + device + composite group`。ensure o
 
 模型权限事实来自使用 managed Composite key 调用的 `/v1/models`。Doge 输出稳定字段 `id`、`displayName`、`model`、`compatibleEngines` 与可选 `capabilities`：`displayName` 优先读取上游 `display_name`，`model` 优先读取上游 `model/runtime_model`，缺失时回退公开可调用的 `id`。presentation registry 只补 icon/vendor，不得增加 entitlement。
 
-product catalog identity、用户显示名与 CLI runtime identity 必须分离。若上游返回 `id=ark-code-latest, display_name=豆包`，Doge 显示“豆包”、持久化 catalog id、发送 `ark-code-latest`。当前 token2api production 对账号内部 `豆包 -> ark-code-latest` 的 `model_mapping` 不向 `/v1/models` 暴露，公开 response 为 `id=豆包, display_name=豆包`；此时 Doge 必须发送公开 id `豆包`，由 token2api 自己完成私有 upstream mapping，禁止客户端依赖 admin-only mapping。
+product catalog identity、用户显示名与 CLI runtime identity 必须分离。豆包是显式 Doge-owned Composite alias：即使上游 row 暴露 account 内部 `model=ark-code-latest`，Doge 对 Composite 的 Native per-thread selection、Kimi launch alias 与 `--model` 仍使用公开 callable“豆包”，由 token2api account routing 内部映射；直接发送 `ark-code-latest` 会被 Composite 以 400 拒绝。同时不得被 local Kimi catalog repair 回默认 `gpt-5.5`。
 
 ### 2.4 macOS development vault boundary
 
@@ -75,6 +75,8 @@ Release、非 macOS debug 与所有正式分发继续构造 `OsAccountVault`。d
 - Kimi launch hydration 在每次真实发送前按 selected runtime model 写入 bare + `doge/` alias；Claude managed turn 通过 family alias + turn-scoped env 投影任意安全 Unicode model id；Codex 直接发送 runtime model。三者都不得回退 global/default model。
 
 token2api production configuration 仍是 E2E prerequisite，但 Doge 不读取 admin-only facts。若 `/v1/models` 广告的模型在 Composite route 中不可调用（当前只读 probe 已证明 `豆包` 与 `ark-code-latest` 均返回 `Model is not supported by composite groups`），该差异必须作为 upstream/configuration blocker 暴露，不能在 Doge 静态伪造映射。
+
+token2api channel 对 `Doge APP` 采用 single-owner `Doge 统一定价`。Kimi 官方 4 条 token price 保留；豆包 Coding Plan 通过 OpenAI 平台 `ark-code-latest + 豆包` allowlist 放行，因官方套餐按订阅额度而非独立 token 单价计费，禁止填写伪造 price。GPT/Claude 若要 release-ready，必须继续把已开放 model 的官方 price rules 合并进同一 channel。
 
 右侧面板沿用 Doge 现有 surface、border、spacing、scroll、icon 与 responsive 规则。原型中的页面壳、假 workspace、营销说明和 engine-filter-model 行为不采用。
 

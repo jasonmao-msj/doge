@@ -49,6 +49,8 @@
 - 本机 authenticated hot prepare 实证：`~/.doge/config.json` 的 Codex/Claude/Kimi managed entries 与 Codex provider-home TOML 均已从旧显示名迁移为 `Doge`；只读取 name 字段，未输出 secret。
 - 豆包 asset：`src/assets/model-icons/doubao.png` 与用户提供 PNG 的 SHA-256 相同；`豆包` / `doubao-entry` / `ark-code-latest` 共用该 asset。`ProviderBrandIconImg` 固定 `16×16` intrinsic size 并限制 `max-width/max-height:100%`、`object-fit:contain`，避免 1024px raster 在 stylesheet 未加载时按原尺寸铺满。
 - 二次实机反馈证明 HTML `width/height` attribute 会被现有 `.selector-model-brand-icon img { width:100%; height:100% }` author CSS 覆盖，且 Product trigger 的内层 wrapper 原为 auto-size / overflow-visible。修复后 `<img>` 使用 inline `width:16px;height:16px`，wrapper 同时固定 `16×16 + overflow:hidden`；focused Vitest 3 files / 66 tests、typecheck 与 targeted ESLint 均 PASS。
+- `Kimi + 豆包` 三轮实机证据：① UI 为豆包，但 config 无 alias、Kimi `llm config model=gpt-5.5` 后连续 503；② runtime 贯穿后 config/request=`ark-code-latest`，token2api 返回 400 `Model is not supported by composite groups`；③ 清空 config + Composer state 后自动 prepare，生成 bare + `doge/` 豆包 alias，Kimi `llm config model=豆包` 且连续收到 HTTP 503。由此证明 Doge/Kimi 出站链已正确，当前请求在 token2api Composite 的 account dispatch/usage logging 前被 pricing/channel policy 拒绝；admin usage/inbound surface 无记录不代表未发请求。focused Vitest 4 files / 59 tests、typecheck 与 targeted ESLint PASS。
+- 经用户明确授权，production UI 将原 `Kimi 官方定价` 更新为 `Doge 统一定价`：`Doge APP` 仍为唯一关联 group，Kimi 4 条官方 price 不变，OpenAI 新增单条 model rule，aliases=`ark-code-latest, 豆包`，8 个 token price 字段均为空（Coding Plan subscription，不伪造 per-token price）。保存后列表显示 1 group / 5 prices；关闭重开确认 aliases/空 price 持久化。随后使用同一 managed key 直连 `POST /v1/chat/completions model=豆包` 返回 HTTP 200、model=`豆包`、精确正文 `DOGE_DOUBAO_PRICING_OK`，证明 pricing gate 与 account dispatch 已通过。
 
 ## Isolated baseline governance failures
 
@@ -80,7 +82,7 @@
 
 ## Remaining external/manual blockers
 
-- token2api 需要一个覆盖 OpenAI + Anthropic + Kimi + `ark-code-latest` 的统一 pricing channel，或等价的 multi-channel group 能力；仅保存 Composite routes 无法绕过当前 single-channel pricing restriction。该变更超出用户本轮“只保存路由”的授权，尚未执行。
+- `Doge 统一定价` 当前已覆盖 Kimi + 豆包 Coding Plan；GPT/OpenAI 与 Claude/Anthropic 的其余 release models 仍需把相应官方 price rules 合并进同一 single-owner channel。当前 Kimi×豆包已解除 pricing blocker，不代表三引擎全矩阵完成。
 - `Claude #11` 账号白名单仍是原 6 个；public catalog 已出现 Claude 5 rows，但真实账号 eligibility / pricing 尚未同步收口。
 - 当前 macOS 会话处于锁屏状态，Computer Use 无法完成最终 Account Center dark/light/narrow screenshot 与 picker 点击验收；自动化 visual contracts 和此前 hot-dev smoke 已通过，但该项不冒充人工目视完成。
 - 未覆盖 Windows Credential Manager / installer、Linux Secret Service、macOS Release Keychain 实包、真实第三方支付回调与跨设备并发；这些继续由 Release/平台 smoke 承担。

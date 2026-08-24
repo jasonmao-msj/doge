@@ -118,7 +118,7 @@
 
 ## 16. Dynamic product model catalog and full E2E（2026-08-23）
 
-- [x] 16.1 只读复核 token2api production 与 source：`/v1/models` 动态返回 `id + display_name`，但不暴露账号私有 `model_mapping` 右值；`豆包 -> ark-code-latest` 属于 admin-only routing fact，Doge 不得依赖。
+- [x] 16.1 历史结论：只读复核时 `/v1/models` 不暴露账号私有 `model_mapping` 右值，Doge 当时不依赖 `豆包 -> ark-code-latest`；该豆包 callable identity 后由用户明确决策并在 §16.15 升级为 Doge-owned contract。
 - [x] 16.2 扩展 Native model wire/projection 为 `id + display_name + model/runtime_model + compatible_engines + capabilities`；保留上游顺序、拒绝 malformed/non-conversation rows，并增加只读 `account_product_v1_models` refresh command。
 - [x] 16.3 删除 `config/product-engine-model-compatibility.json` exact-id manifest；Frontend 直接消费动态 compatible rows，显示 `displayName`、发送 `model`、持久化 `id`。
 - [x] 16.4 增加 catalog refresh coordinator：30s freshness、single in-flight、window focus/visibility + 60s fallback、manual refresh、last-known-good 与 stale/error UX。
@@ -132,3 +132,5 @@
 - [x] 16.12 收口四项 hot UI feedback：product model panel 移除 ready footer；普通 Native conversation 复用仅 Codex/Claude/Kimi 的 product panel 并固定 `doge-token-matrix`；账单移除 invoice 提示；Account 模型按 vendor count 渐进展开/收起。
 - [x] 16.13 将 managed provider display name 从 `Doge Token Matrix` 统一迁移为 `Doge`（stable id 不变，authenticated prepare 幂等覆盖旧配置），并让所有豆包 identity 统一使用用户提供的 `src/assets/model-icons/doubao.png`。
 - [x] 16.14 修复豆包 1024px raster 被 `.selector-model-brand-icon img { width:100%; height:100% }` 放大的二次回归：共享 `<img>` 增加 inline `16×16`，Product trigger wrapper 固定 `16×16 + overflow:hidden`，并锁定 exact style contract。
+- [x] 16.15 修复 `Kimi + 豆包` split truth：首次实机证明 UI 为豆包但 Kimi 实际使用 `gpt-5.5`；修复 runtime 持久化后再次实机证明直发 `ark-code-latest` 被 Composite 400 拒绝。最终 canonical 使用公开 alias“豆包”，Native picker 持久化该 callable id，managed Kimi hook 保留 catalog 外 alias。
+- [x] 16.16 经用户授权在 token2api UI 将 `Kimi 官方定价` 收口为 `Doge 统一定价`：保留 4 条 Kimi 官方价格，为 OpenAI 平台新增 `ark-code-latest + 豆包` allowlist，Coding Plan 无独立 token 单价故价格字段留空；关闭/重开复核 5 条定价，managed key 直连 `豆包` Chat Completions 返回 HTTP 200。

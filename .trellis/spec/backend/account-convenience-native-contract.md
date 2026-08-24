@@ -961,6 +961,7 @@ if file.label == "Doge Kimi provider registry" {
 - Product picker mode：`ProviderTargetPickerMode = "product"`；catalog=`ProductTargetCatalogV1 { engines[], models[], modelsStatus, modelsUpdatedAt }`。
 - Product panel：`ProductEngineModelSelect({ catalog, executionTarget, onExecutionTargetChange })`。
 - Managed target：`providerProfileId="doge-token-matrix"`、`providerProfileSource="managed"`、`modelCatalogEntryId` 与 runtime `model` 分域。
+- Doubao runtime：`PRODUCT_DOUBAO_RUNTIME_MODEL = "豆包"`；公开 catalog 的 `id/display_name/model` 任一命中 `豆包 | doubao | ark-code` 时，UI、Native per-thread selection、`ExecutionTarget.model`、Kimi `--model` 与 launch config alias MUST 使用 Composite 公开别名“豆包”。`ark-code-latest` 是 account 内部 upstream model，直接发给 Composite 会返回 400。
 - Managed display：`PRODUCT_MANAGED_PROVIDER_LABEL = "Doge"`；内部 stable id 仍为 `doge-token-matrix`。`account_product_v1_prepare` 每次均以同一 stable id 幂等覆盖 Codex/Claude/Kimi registry 的 `name="Doge"`，因此旧本机显示名在下次 authenticated prepare 时迁移。
 - Claude product projection：`project_claude_model_for_managed_product(provider_profile_id, requested_model, provider_env)`；projection 只作用于 managed product profile 的 child turn。
 - Native model wire：`ProductModelWire { id, display_name?, model?, compatible_engines?, capabilities? }`；renderer view=`{ id, display_name, model, compatible_engines, capabilities }`。
@@ -983,6 +984,7 @@ if file.label == "Doge Kimi provider registry" {
 - Account billing 只显示真实 order facts；既然 upstream 无 invoice capability，UI MUST 完全不提发票或下载能力，而不只是隐藏 action。
 - Account 可用模型 MUST 默认只展示 vendor label + model count；每个 vendor row 通过 button `aria-expanded/aria-controls` 按需 mount/unmount model detail list，再次点击收起。Doubao vendor/model identities（`豆包`、`doubao-*`、`ark-code-*`）MUST 统一解析到 `src/assets/model-icons/doubao.png`。所有 raster brand asset 必须经 `ProviderBrandIconImg` 渲染并提供 attribute + inline `16×16`、`max-width/max-height:100%` 与 `object-fit:contain`；Product trigger wrapper 同样固定 `16×16 + overflow:hidden`，禁止依赖 optional consumer stylesheet 限尺寸。
 - UI selected target、readiness/accessibility projection、persisted `modelCatalogEntryId` 与 dispatched runtime `model` MUST 同源；不得出现 trigger 正确但 readiness/global model 仍旧的 split truth。
+- Native product picker 的 `nativeAtomicSelection` 只负责保留 display/catalog identity；`onSelectModel` MUST 持久化 callable runtime model。managed Kimi active thread MUST 允许 catalog 外 Composite alias（当前“豆包”），禁止 `getEffectiveSelectedModelId` 因 local CLI catalog 未收录而 repair 回 `gpt-5.5`。
 - Runtime/provider failure MUST 保留 exact selection 并 fail closed；禁止 silent engine/model/provider fallback。
 - `/v1/models` 只证明 catalog entitlement；三种 endpoint 的 minimal 200 只证明 protocol adapter basic reachability。只有真实 CLI 发出的 system/tools/stream/client headers payload 完成 terminal response，才可标记对应组合 E2E ready。
 - token2api production `allow_messages_dispatch`、`claude_code_only/fallback`、model routing/account pool 均是 Release prerequisites；Doge 不得通过伪造/隐藏 client identity 绕过 server policy。
@@ -997,6 +999,7 @@ if file.label == "Doge Kimi provider registry" {
 | Account 可用模型 collapsed/expanded | collapsed 只显示 vendor + count；click/keyboard 展开真实 display names，再次操作收起 | 不把所有 model name 拼成截断单行 |
 | billing 无 invoice capability | 只显示 order row，不出现 invoice/download copy | 不用 unsupported 提示暴露未提供功能 |
 | 豆包 display/runtime alias | `豆包`、`doubao-*`、`ark-code-*` 使用同一本地 PNG | 不回退通用 Doubao SVG 或 engine icon |
+| Kimi + 豆包 Native send | UI/per-thread/runtime/config alias/`--model`=`豆包`；token2api account 内部再映射 `ark-code-latest` | UI 显示豆包但请求 `gpt-5.5`，或直发 private model 导致 Composite 400 |
 | upstream 新增 `claude-opus-4-8` | bounded refresh 后进入同一 snapshot | 不修改 Doge exact-id manifest |
 | refresh pending / failure | 保留 rows，显示 refreshing/stale + retry | 不清空 Composer / Account Center |
 | fresh device 缺 Kimi | typed install + post-install version verify | 完成后才继续 provider prepare |
@@ -1010,12 +1013,14 @@ if file.label == "Doge Kimi provider registry" {
 
 - Good：production `/v1/models` 新增一个 valid text row 后，Native 保留 `display_name/model`，刷新 owner 一次发布给 panel、Composer 与 Account Center；选择与发送使用同一 target identity。
 - Good：product-ready Native 会话打开与 Home 相同的 panel；点击 Kimi model 生成 `providerProfileId="doge-token-matrix"` 且由既有 continuation/new-session owner 执行。
+- Good：Kimi Native 会话点选豆包后，Composer 保留 `modelCatalogEntryId="豆包"`，per-thread selection 与 command payload 同样使用公开别名“豆包”，hydrate 生成 bare + `doge/` alias。
 - Base：三个 engine 共享 upstream entitlement catalog 与 helper；上游可用 `compatible_engines` 收窄 subset，不需要客户端列举 id。
 - Base：Account vendor row 默认只显示数量，用户展开后才 mount 该 vendor 的 model list。
 - Bad：因为 `/v1/messages` curl 返回 200，就宣称 Claude Code 支持该 model；真实 client headers 可能走另一 group/fallback policy。
 - Bad：为获得 200 在 Doge 本地伪造非 Claude-Code User-Agent，绕过 token2api `ClaudeCodeOnly` policy。
 - Bad：某组合失败后自动改成 engine 默认 model，让用户看到的 Target 与计费/usage/runtime 不一致。
 - Bad：product-ready Native 会话仍渲染 Grok/OpenCode 或 provider profile picker；这会重新引入用户不需要理解的 local/expert channel。
+- Bad：只改 UI local state，不调用 `onSelectModel("豆包")`；AppShell/Kimi send 会从 local catalog/default 解析成 `gpt-5.5`。另一错误是把 account 内部 `ark-code-latest` 直接发给 Composite，服务会返回 400。
 
 ### 6. Tests Required
 
@@ -1025,6 +1030,7 @@ if file.label == "Doge Kimi provider registry" {
 - Refresh coordinator：same-subscription coalescing、freshness skip、pending保留rows、success原子发布、failure stale、logout/account-switch stale settle不覆盖。
 - Product provisioning：Codex/Claude ready/choiceRequired/bundle failure；Kimi installed/missing plan blocked/install failed/post-verify failed；断言 provider prepare 只在 provisioning success 后调用。
 - Composer regression：Home dynamic product mode；Shared removed-model selection 自动 repair并持久化 managed target；readiness/display/runtime identity 跟随 `selectedAtomicTarget`。
+- Native Kimi regression：product picker 点豆包调用 `onSelectModel("豆包")`；managed Kimi hook 保留 catalog 外 alias；local/unmanaged Kimi 仍遵循 CLI catalog repair。
 - Rust unit：display/runtime/engine metadata、upstream order/dedupe、non-conversation filtering、main-window IPC、managed product Claude Unicode model、Kimi Unicode bare+`doge/` alias。
 - Real E2E：当前 selectable catalog 对三 CLI 的 exact model/terminal evidence；失败不得被 minimal endpoint probe覆盖，并必须记录 upstream/config prerequisite。
 - Required commands（用户本次 L4）：全量 Vitest/Rust tests、full ESLint/typecheck、Rust check/build、runtime/engine contracts、OpenSpec strict、hot-dev visual/E2E。
@@ -1053,6 +1059,9 @@ commitTarget(resolveProductManagedExecutionTargetV1({ engines, models: rows }));
 
 // Product-ready Home / Shared / Native modification share one presentation.
 const usesProductTargetCatalog = productEntitlement.status === "ready";
+
+// Composite public identity remains 豆包; account routing maps it internally.
+onSelectModel(resolveProductRuntimeModelIdV1(doubaoModel)); // 豆包
 ```
 
 ```text
