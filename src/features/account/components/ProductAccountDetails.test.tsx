@@ -27,6 +27,7 @@ describe("ProductAccountDetails", () => {
     expect(screen.getByText(/暂未记录 Doge 的运行引擎/)).toBeTruthy();
     expect(container.querySelector(".account-billing-skeleton")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /下载/ })).toBeNull();
+    expect(screen.queryByText(/发票/)).toBeNull();
 
     fireEvent.click(screen.getByRole("tab", { name: "上期" }));
     expect(selectPeriod).toHaveBeenCalledWith("previous");
@@ -99,6 +100,31 @@ describe("ProductAccountDetails", () => {
         .toContain("刷新账单");
     });
   });
+
+  it("progressively expands and collapses available models by vendor", () => {
+    render(
+      <ProductAccountDetails
+        product={productSnapshot()}
+        details={detailsState()}
+      />,
+    );
+
+    const openaiToggle = screen.getByRole("button", {
+      name: "展开 OpenAI 模型",
+    });
+    expect(openaiToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByText("2 个模型")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "展开 Kimi 模型" })).toBeTruthy();
+    expect(screen.queryByText("GPT-5.5")).toBeNull();
+
+    fireEvent.click(openaiToggle);
+    expect(screen.getByRole("button", { name: "收起 OpenAI 模型" })).toBeTruthy();
+    expect(screen.getByText("GPT-5.5")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "收起 OpenAI 模型" }));
+    expect(screen.queryByText("GPT-5.5")).toBeNull();
+    expect(screen.queryByText(/发票/)).toBeNull();
+  });
 });
 
 function productSnapshot(): ProductEntitlementSnapshotV1 {
@@ -122,13 +148,29 @@ function productSnapshot(): ProductEntitlementSnapshotV1 {
       { id: "claude-code", displayName: "Claude" },
       { id: "kimi", displayName: "Kimi" },
     ],
-    models: [{
-      id: "gpt-5.6-sol",
-      displayName: "gpt-5.6-sol",
-      model: "gpt-5.6-sol",
-      compatibleEngines: ["codex"],
-      capabilities: ["chat"],
-    }],
+    models: [
+      {
+        id: "gpt-5.6-sol",
+        displayName: "GPT-5.6 Sol",
+        model: "gpt-5.6-sol",
+        compatibleEngines: ["codex"],
+        capabilities: ["chat"],
+      },
+      {
+        id: "gpt-5.5",
+        displayName: "GPT-5.5",
+        model: "gpt-5.5",
+        compatibleEngines: ["codex"],
+        capabilities: ["chat"],
+      },
+      {
+        id: "kimi-for-coding",
+        displayName: "Kimi for Coding",
+        model: "kimi-for-coding",
+        compatibleEngines: ["kimi"],
+        capabilities: ["chat"],
+      },
+    ],
     modelsStatus: "ready",
     modelsUpdatedAt: 1_893_456_000_000,
     modelsError: null,

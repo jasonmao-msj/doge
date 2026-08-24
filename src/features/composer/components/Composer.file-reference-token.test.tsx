@@ -227,7 +227,7 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
             modelCatalogEntryId: "matrix-codex",
             model: "gpt-5.5-codex",
             reasoning: { effort: "medium" },
-            providerProfileNameSnapshot: "Doge Token Matrix",
+            providerProfileNameSnapshot: "Doge",
             providerProfileSource: "managed",
           })
         }
@@ -638,6 +638,59 @@ describe("Composer file reference token", () => {
           model: "kimi-for-coding",
         }),
       }),
+    );
+  });
+
+  it("uses the three-engine managed product picker while modifying a native conversation", () => {
+    publishProductReadyV1({
+      entitlement: {
+        status: "active",
+        subscriptionId: 9,
+        groupId: 5,
+        groupName: "Doge",
+        planName: "Doge subscription",
+        expiresAt: "2030-02-01T00:00:00Z",
+        usage: null,
+      },
+      engines: [
+        { id: "codex", displayName: "Codex" },
+        { id: "claude-code", displayName: "Claude" },
+        { id: "kimi", displayName: "Kimi CLI" },
+      ],
+      models: [
+        {
+          id: "gpt-5.5",
+          displayName: "GPT-5.5",
+          model: "gpt-5.5",
+          compatibleEngines: ["codex"],
+          capabilities: ["chat"],
+        },
+        {
+          id: "kimi-for-coding",
+          displayName: "Kimi for Coding",
+          model: "kimi-for-coding",
+          compatibleEngines: ["kimi"],
+          capabilities: ["chat"],
+        },
+      ],
+    });
+
+    const view = render(
+      <ComposerHarness
+        onSend={() => {}}
+        selectedEngine="codex"
+        selectedModelId="gpt-5.5"
+        providerProfileId="doge-token-matrix"
+      />,
+    );
+
+    expect(view.getByTestId("composer-target-authority").dataset).toMatchObject({
+      pickerMode: "product",
+      productEngines: "3",
+      productModels: "2",
+    });
+    expect(getTextarea(view.container).dataset.providerProfileId).toBe(
+      "doge-token-matrix",
     );
   });
 
@@ -1052,7 +1105,7 @@ describe("Composer file reference token", () => {
       modelCatalogEntryId: "gpt-5.6-sol",
       model: "gpt-5.6-sol",
       reasoning: null,
-      providerProfileNameSnapshot: "Doge Token Matrix",
+      providerProfileNameSnapshot: "Doge",
       providerProfileSource: "managed",
     };
     vi.mocked(invoke).mockResolvedValueOnce({
@@ -1087,7 +1140,7 @@ describe("Composer file reference token", () => {
           modelCatalogEntryId: "gpt-5.6-sol",
           model: "gpt-5.6-sol",
           reasoningEffort: null,
-          providerProfileNameSnapshot: "Doge Token Matrix",
+          providerProfileNameSnapshot: "Doge",
           providerProfileSource: "managed",
         },
       );

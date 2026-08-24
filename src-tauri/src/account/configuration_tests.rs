@@ -30,6 +30,8 @@ fn atomic_write_replaces_an_existing_user_profile_target() {
 
 #[test]
 fn provider_recipe_has_fixed_authority_and_no_secret() {
+    assert!(ACCOUNT_CODEX_CONFIG_TOML.contains("name = \"Doge\""));
+    assert!(!ACCOUNT_CODEX_CONFIG_TOML.contains("name = \"Doge Token Matrix\""));
     assert!(ACCOUNT_CODEX_CONFIG_TOML.contains("https://token-matrix.com"));
     assert!(ACCOUNT_CODEX_CONFIG_TOML.contains("wire_api = \"responses\""));
     assert!(ACCOUNT_CODEX_CONFIG_TOML.contains("env_key = \"OPENAI_API_KEY\""));
@@ -47,6 +49,7 @@ fn config_merge_preserves_unrelated_root_data_and_never_writes_auth_json() {
     assert_eq!(value["unknown"]["keep"], true);
     assert_eq!(value["codex"]["current"], ACCOUNT_CODEX_PROVIDER_ID);
     let provider = &value["codex"]["providers"][ACCOUNT_CODEX_PROVIDER_ID];
+    assert_eq!(provider["name"], "Doge");
     assert!(provider.get("authJson").is_none());
     assert_eq!(provider["source"], "doge-account");
 }
@@ -61,6 +64,7 @@ fn claude_managed_provider_uses_a_vault_marker_and_never_persists_the_token() {
     assert_eq!(value["unknown"]["keep"], true);
     assert_eq!(value["claude"]["current"], ACCOUNT_CLAUDE_PROVIDER_ID);
     let provider = &value["claude"]["providers"][ACCOUNT_CLAUDE_PROVIDER_ID];
+    assert_eq!(provider["name"], "Doge");
     assert_eq!(provider["source"], "doge-account");
     assert_eq!(
         provider["settingsConfig"]["env"]["DOGE_MANAGED_ACCOUNT_ENGINE"],
@@ -86,6 +90,7 @@ fn kimi_managed_provider_projects_base_url_and_never_persists_the_key() {
     assert_eq!(value["unknown"]["keep"], true);
     assert_eq!(value["kimi"]["current"], ACCOUNT_KIMI_PROVIDER_ID);
     let provider = &value["kimi"]["providers"][ACCOUNT_KIMI_PROVIDER_ID];
+    assert_eq!(provider["name"], "Doge");
     assert_eq!(provider["source"], "doge-account");
     assert_eq!(provider["baseUrl"], ACCOUNT_MANAGED_KIMI_BASE_URL);
     assert_eq!(provider["model"], ACCOUNT_MANAGED_KIMI_MODEL);

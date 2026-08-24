@@ -758,9 +758,10 @@ function ComposerImpl({
   const productEntitlement = useProductEntitlementSnapshotV1();
   const usesProductManagedCreation =
     createSessionTargetPicker && productEntitlement.status === "ready";
-  const usesProductTargetCatalog =
-    productEntitlement.status === "ready" &&
-    (createSessionTargetPicker || isSharedSessionResolved);
+  // Product-ready users always use the same managed engine/model picker.
+  // Native conversations no longer fall back to the legacy provider/channel
+  // menu; selecting any row still crosses the existing continuation boundary.
+  const usesProductTargetCatalog = productEntitlement.status === "ready";
   const productTargetCatalog = useMemo<ProductTargetCatalogV1 | undefined>(
     () =>
       usesProductTargetCatalog

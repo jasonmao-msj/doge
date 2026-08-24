@@ -1133,10 +1133,6 @@
   color: var(--status-danger, var(--destructive));
 }
 
-.account-billing-note {
-  margin-bottom: 0;
-}
-
 .account-detail-section-refresh {
   width: 30px;
   height: 30px;
@@ -1199,21 +1195,74 @@
 }
 
 .account-subscription-model-group {
-  min-height: 40px;
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
-.account-subscription-model-group > span:last-child {
+.account-subscription-model-group-trigger {
+  width: 100%;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 9px;
+  padding: 0;
+  border: 0;
+  color: var(--text-primary);
+  background: transparent;
+  text-align: left;
+}
+
+.account-subscription-model-group-trigger:hover {
+  background: var(--surface-hover, var(--accent));
+}
+
+.account-subscription-model-group-trigger strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-subscription-model-group-trigger > span:nth-last-child(2) {
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.account-subscription-model-group-trigger > svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary, var(--muted-foreground));
+  transition: transform 140ms ease;
+}
+
+.account-subscription-model-group[data-expanded="true"]
+  .account-subscription-model-group-trigger > svg {
+  transform: rotate(180deg);
+}
+
+.account-subscription-model-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 0 18px;
+  margin: 0;
+  padding: 2px 0 10px 31px;
+  list-style: none;
+}
+
+.account-subscription-model-list li {
+  min-width: 0;
+  padding: 5px 0;
   overflow: hidden;
   color: var(--text-secondary);
   font-size: 11px;
-  line-height: 1.45;
+  line-height: 1.4;
   text-overflow: ellipsis;
   white-space: nowrap;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 26px;
 }
 
 .account-detail-failure {

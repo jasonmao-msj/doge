@@ -22,7 +22,7 @@ network_access = "enabled"
 windows_wsl_setup_acknowledged = true
 
 [model_providers.DogeTokenMatrix]
-name = "Doge Token Matrix"
+name = "Doge"
 base_url = "https://token-matrix.com"
 wire_api = "responses"
 requires_openai_auth = true
@@ -322,13 +322,13 @@ pub(crate) fn read_file_detail(
         .ok_or_else(|| "configuration file handle is not part of this plan".to_string())?;
     let entries = if file.label == "Doge provider registry" {
         vec![
-            safe_change("Provider", "Doge Token Matrix"),
+            safe_change("Provider", "Doge"),
             safe_change("Selection", "Use for new Codex sessions"),
             safe_secret_change("Managed credential"),
         ]
     } else {
         vec![
-            safe_change("Provider", "Doge Token Matrix"),
+            safe_change("Provider", "Doge"),
             safe_change("Endpoint", "Token Matrix"),
             safe_change("Protocol", "Responses API"),
             safe_change("Model", "gpt-5.5"),
@@ -872,7 +872,7 @@ pub(super) fn build_doge_config(before: Option<&str>) -> Result<String, String> 
         ACCOUNT_CODEX_PROVIDER_ID.to_string(),
         json!({
             "id": ACCOUNT_CODEX_PROVIDER_ID,
-            "name": "Doge Token Matrix",
+            "name": "Doge",
             "remark": "Managed by Doge Account",
             "source": "doge-account",
             "configToml": ACCOUNT_CODEX_CONFIG_TOML,
@@ -902,7 +902,7 @@ pub(super) fn build_doge_config_for_claude(before: Option<&str>) -> Result<Strin
         ACCOUNT_CLAUDE_PROVIDER_ID.to_string(),
         json!({
             "id": ACCOUNT_CLAUDE_PROVIDER_ID,
-            "name": "Doge Token Matrix",
+            "name": "Doge",
             "remark": "Managed by Doge Account",
             "source": "doge-account",
             "settingsConfig": {
@@ -939,7 +939,7 @@ pub(super) fn build_doge_config_for_kimi(before: Option<&str>) -> Result<String,
         ACCOUNT_KIMI_PROVIDER_ID.to_string(),
         json!({
             "id": ACCOUNT_KIMI_PROVIDER_ID,
-            "name": "Doge Token Matrix",
+            "name": "Doge",
             "remark": "Managed by Doge Account",
             "source": "doge-account",
             "baseUrl": ACCOUNT_MANAGED_KIMI_BASE_URL,

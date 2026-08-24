@@ -1,10 +1,11 @@
 import BadgeDollarSign from "lucide-react/dist/esm/icons/badge-dollar-sign";
 import Box from "lucide-react/dist/esm/icons/box";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import Clock3 from "lucide-react/dist/esm/icons/clock-3";
 import FileText from "lucide-react/dist/esm/icons/file-text";
 import Globe2 from "lucide-react/dist/esm/icons/globe-2";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
-import type { ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -14,6 +15,8 @@ import { EngineIcon } from "../../engine/components/EngineIcon";
 import {
   groupProductModelsForDisplay,
   productModelVendorBrand,
+  type ProductModelVendorGroup,
+  type ProductModelVendorGroupId,
 } from "../../vendors/productModelGrouping";
 import {
   PROVIDER_BRAND_ICON_SRC,
@@ -341,9 +344,6 @@ function ProductBillingSection({
       {billing.failure && billing.value ? (
         <InlineRefreshFailure message={copy.accountBillingRefreshFailed} />
       ) : null}
-      <p className="account-detail-note account-billing-note">
-        {copy.accountBillingDownloadUnavailable}
-      </p>
     </section>
   );
 }
@@ -400,22 +400,94 @@ function ProductSubscriptionDetails({
       </div>
       {groups.length > 0 ? (
         <div className="account-subscription-model-groups">
-          {groups.map((group) => {
-            const vendor = productModelVendorBrand(group.id);
-            const icon = vendor ? PROVIDER_BRAND_ICON_SRC[vendor] : null;
-            return (
-              <div key={group.id} className="account-subscription-model-group">
-                <BrandIcon src={icon} alt="" />
-                <span>{group.models.map((model) => model.displayName).join(" · ")}</span>
-              </div>
-            );
-          })}
+          {groups.map((group) => (
+            <ProductSubscriptionModelGroup
+              key={group.id}
+              group={group}
+              locale={locale}
+            />
+          ))}
         </div>
       ) : (
         <p className="account-detail-empty">{copy.accountModelsUnavailable}</p>
       )}
     </section>
   );
+}
+
+function ProductSubscriptionModelGroup({
+  group,
+  locale,
+}: {
+  readonly group: ProductModelVendorGroup<
+    ProductEntitlementSnapshotV1["models"][number]
+  >;
+  readonly locale: AccountExperienceLocaleV1;
+}) {
+  const copy = useAccountExperienceCopyV1();
+  const listId = useId();
+  const [expanded, setExpanded] = useState(false);
+  const vendor = productModelVendorBrand(group.id);
+  const icon = vendor ? PROVIDER_BRAND_ICON_SRC[vendor] : null;
+  const vendorLabel = productVendorLabel(group.id, copy);
+  const countLabel = copy.accountModelCountTemplate.replace(
+    "{count}",
+    formatInteger(group.models.length, locale),
+  );
+  const actionLabel = (
+    expanded
+      ? copy.accountModelGroupCollapseTemplate
+      : copy.accountModelGroupExpandTemplate
+  ).replace("{vendor}", vendorLabel);
+
+  return (
+    <div
+      className="account-subscription-model-group"
+      data-expanded={expanded ? "true" : "false"}
+    >
+      <button
+        type="button"
+        className="account-subscription-model-group-trigger"
+        aria-label={actionLabel}
+        aria-expanded={expanded}
+        aria-controls={listId}
+        onClick={() => setExpanded((current) => !current)}
+      >
+        <BrandIcon src={icon} alt="" />
+        <strong>{vendorLabel}</strong>
+        <span>{countLabel}</span>
+        <ChevronDown aria-hidden />
+      </button>
+      {expanded ? (
+        <ul id={listId} className="account-subscription-model-list">
+          {group.models.map((model) => (
+            <li key={model.id}>{model.displayName}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function productVendorLabel(
+  id: ProductModelVendorGroupId,
+  copy: ReturnType<typeof useAccountExperienceCopyV1>,
+): string {
+  return {
+    openai: copy.productVendorOpenAI,
+    anthropic: copy.productVendorAnthropic,
+    doubao: copy.productVendorDoubao,
+    kimi: copy.productVendorKimi,
+    zhipu: copy.productVendorZhipu,
+    deepseek: copy.productVendorDeepSeek,
+    bailian: copy.productVendorBailian,
+    minimax: copy.productVendorMiniMax,
+    xiaomi: copy.productVendorXiaomi,
+    longcat: copy.productVendorLongCat,
+    opencode: copy.productVendorOpenCode,
+    openrouter: copy.productVendorOpenRouter,
+    other: copy.productVendorOther,
+  }[id];
 }
 
 function BrandIcon({ src, alt }: { readonly src: string | null; readonly alt: string }) {

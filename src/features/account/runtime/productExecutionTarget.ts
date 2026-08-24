@@ -13,7 +13,7 @@ import {
   type ProductRuntimeEngineIdV1,
 } from "./productModelCompatibility";
 
-export const PRODUCT_MANAGED_PROVIDER_LABEL = "Doge Token Matrix";
+export const PRODUCT_MANAGED_PROVIDER_LABEL = "Doge";
 
 const PRODUCT_ENGINE_RUNTIME_IDS: Record<
   ProductEngineIdV1,

@@ -50,7 +50,7 @@ const initialTarget: ExecutionTarget = {
   modelCatalogEntryId: "gpt-5.6-sol",
   model: "gpt-5.6-sol",
   reasoning: { effort: "high" },
-  providerProfileNameSnapshot: "Doge Token Matrix",
+  providerProfileNameSnapshot: "Doge",
   providerProfileSource: "managed",
 };
 
@@ -79,6 +79,8 @@ describe("ProductEngineModelSelect", () => {
     expect(screen.getAllByRole("radio")).toHaveLength(5);
     expect(screen.queryByText("切换渠道")).toBeNull();
     expect(screen.queryByText("添加模型")).toBeNull();
+    expect(screen.queryByText(/Doge 订阅已生效/)).toBeNull();
+    expect(screen.getByRole("dialog").querySelector("footer")).toBeNull();
 
     fireEvent.click(screen.getByRole("radio", { name: "Claude" }));
     expect(changes.at(-1)).toMatchObject({
@@ -86,6 +88,7 @@ describe("ProductEngineModelSelect", () => {
       modelCatalogEntryId: "claude-sonnet-4-8",
       model: "claude-sonnet-4-8",
       providerProfileId: "doge-token-matrix",
+      providerProfileNameSnapshot: "Doge",
     });
     expect(screen.getByRole("dialog", { name: "选择引擎与模型" })).toBeTruthy();
 
@@ -96,6 +99,7 @@ describe("ProductEngineModelSelect", () => {
       modelCatalogEntryId: "gpt-5.5",
       model: "gpt-5.5",
       providerProfileId: "doge-token-matrix",
+      providerProfileNameSnapshot: "Doge",
     });
     expect(screen.getByRole("dialog", { name: "选择引擎与模型" })).toBeTruthy();
   });

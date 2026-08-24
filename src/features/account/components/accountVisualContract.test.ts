@@ -162,7 +162,12 @@ describe("Account visual contract", () => {
     expect(productDetailsSource).toContain("account-usage-stat-grid");
     expect(productDetailsSource).toContain("account-billing-list");
     expect(productDetailsSource).toContain("account-subscription-model-groups");
+    expect(productDetailsSource).toContain("account-subscription-model-group-trigger");
+    expect(productDetailsSource).toContain("account-subscription-model-list");
+    expect(productDetailsSource).toContain("aria-expanded={expanded}");
     expect(productDetailsSource).not.toMatch(/invoice-download|下载账单/);
+    expect(productDetailsSource).not.toContain("accountBillingDownloadUnavailable");
+    expect(accountCopySource).not.toMatch(/发票|invoice/i);
     expect(productDetailsSource).toContain("<Tooltip delayDuration={0}>");
     expect(settingsSource).toContain('activeSection !== "account" ? (');
     expect(experienceCss).toContain(".account-profile-card");

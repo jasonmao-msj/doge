@@ -220,6 +220,13 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
                     onChange={(event) => setQuery(event.currentTarget.value)}
                   />
                 </label>
+                {catalog.modelsStatus !== "ready" ? (
+                  <p className="product-model-status" role="status">
+                    {catalog.modelsStatus === "refreshing"
+                      ? copy.productPickerRefreshing
+                      : copy.productPickerRefreshFailed}
+                  </p>
+                ) : null}
                 <div
                   className="product-model-options"
                   role="radiogroup"
@@ -271,21 +278,6 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
                   )}
                 </div>
               </section>
-
-              <footer
-                className="product-engine-model-footer"
-                data-status={catalog.modelsStatus}
-                aria-live="polite"
-              >
-                <span className="product-subscription-dot" aria-hidden />
-                <span>
-                  {catalog.modelsStatus === "refreshing"
-                    ? copy.productPickerRefreshing
-                    : catalog.modelsStatus === "stale"
-                      ? copy.productPickerRefreshFailed
-                      : copy.productPickerSubscriptionActive}
-                </span>
-              </footer>
             </aside>
           </div>,
           document.body,

@@ -90,7 +90,6 @@ export const accountExperienceCopyV1 = {
     accountBillingRefresh: "刷新账单",
     accountBillingRefreshFailed: "账单刷新未完成，当前仍显示上次读取的记录。",
     accountBillingEmpty: "还没有订阅账单",
-    accountBillingDownloadUnavailable: "Token 服务暂未提供可下载的发票文件。",
     accountBillingPaid: "已支付",
     accountBillingPending: "处理中",
     accountBillingRefunded: "已退款",
@@ -98,6 +97,9 @@ export const accountExperienceCopyV1 = {
     accountSubscriptionTitle: "订阅管理",
     accountSubscriptionUnavailable: "订阅信息暂时不可用",
     accountAvailableModels: "可用模型",
+    accountModelCountTemplate: "{count} 个模型",
+    accountModelGroupExpandTemplate: "展开 {vendor} 模型",
+    accountModelGroupCollapseTemplate: "收起 {vendor} 模型",
     accountModelsUnavailable: "模型目录暂时不可用",
     productPickerTitle: "选择引擎与模型",
     productPickerEngine: "引擎",
@@ -109,8 +111,6 @@ export const accountExperienceCopyV1 = {
     productPickerRefresh: "刷新模型目录",
     productPickerRefreshing: "正在刷新模型目录，当前仍显示上次结果",
     productPickerRefreshFailed: "模型目录刷新未完成，当前仍显示上次结果",
-    productPickerSubscriptionActive:
-      "Doge 订阅已生效 · 模型目录来自 Token Matrix",
     productPickerCurrentTarget: "当前组合：{engine} · {model}",
     productVendorOpenAI: "OpenAI",
     productVendorAnthropic: "Anthropic",
@@ -392,8 +392,6 @@ export const accountExperienceCopyV1 = {
     accountBillingRefreshFailed:
       "Billing refresh did not finish. Last-read records remain visible.",
     accountBillingEmpty: "No subscription bills yet",
-    accountBillingDownloadUnavailable:
-      "The Token service does not currently expose downloadable invoice files.",
     accountBillingPaid: "Paid",
     accountBillingPending: "Processing",
     accountBillingRefunded: "Refunded",
@@ -402,6 +400,9 @@ export const accountExperienceCopyV1 = {
     accountSubscriptionUnavailable:
       "Subscription details are temporarily unavailable",
     accountAvailableModels: "Available models",
+    accountModelCountTemplate: "{count} models",
+    accountModelGroupExpandTemplate: "Expand {vendor} models",
+    accountModelGroupCollapseTemplate: "Collapse {vendor} models",
     accountModelsUnavailable: "The model catalog is temporarily unavailable",
     productPickerTitle: "Choose engine and model",
     productPickerEngine: "Engine",
@@ -416,8 +417,6 @@ export const accountExperienceCopyV1 = {
       "Refreshing model catalog. Last-known results remain available",
     productPickerRefreshFailed:
       "Model catalog refresh did not finish. Last-known results remain available",
-    productPickerSubscriptionActive:
-      "Doge subscription active · model catalog from Token Matrix",
     productPickerCurrentTarget: "Current combination: {engine} · {model}",
     productVendorOpenAI: "OpenAI",
     productVendorAnthropic: "Anthropic",

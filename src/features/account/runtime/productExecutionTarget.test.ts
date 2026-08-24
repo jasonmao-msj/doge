@@ -46,7 +46,7 @@ describe("resolveProductManagedExecutionTargetV1", () => {
       modelCatalogEntryId: "claude-sonnet-4-8",
       model: "claude-sonnet-4-8",
       reasoning: null,
-      providerProfileNameSnapshot: "Doge Token Matrix",
+      providerProfileNameSnapshot: "Doge",
       providerProfileSource: "managed",
     });
   });
