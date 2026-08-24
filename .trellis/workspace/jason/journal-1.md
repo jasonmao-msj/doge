@@ -1615,3 +1615,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 48: 修复 PR 订阅恢复与托管隔离
+
+**Date**: 2026-08-24
+**Task**: 修复 PR 订阅恢复与托管隔离
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+修复 product managed key 的 account/device/group 稳定 identity、refund terminal projection 与 checkout bounded retry/expiry；恢复 product-ready Kimi Sidebar 入口并让模型提交后 picker 保持打开；同步 OpenSpec、Trellis executable contract 和 multi-CLI foundation calibration。L3 验证：affected frontend 43 files/672 tests、Rust account 105 passed/2 ignored、typecheck、changed-file ESLint、cargo check/fmt、doctor/runtime/engine/model/docs/branding/OpenSpec/diff check 全部通过；L4 release/platform/payment smoke 留给 CI。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ee54ca918` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
