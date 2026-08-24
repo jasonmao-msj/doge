@@ -127,3 +127,4 @@
 - [ ] 16.7 执行用户要求的 L4：全量 Vitest、全量 Rust tests、lint、typecheck、contracts、build、OpenSpec、界面目视矩阵；修复所有本次相关 failure。
 - [x] 16.8 按 account/runtime、dynamic catalog/picker、docs/tests 分类提交，执行 Trellis session record，push `codex/*` branch 并创建未合并 Doge PR #19。
 - [x] 16.9 修复 `tauri:dev:hot` dev flavor / `devUrl` 漂移：显式加载 `tauri.dev.conf.json`，统一 Vite `1420`，增加 branding 与 dev startup contract，避免 UI 验收误连 stale bundle。
+- [x] 16.10 经用户授权保存并重开复核 7 条 production Composite routes；真实 CLI 证明 Kimi route 成功，Claude/GPT/豆包被 `Doge APP` 单一 Kimi pricing channel 拒绝，未擅自修改 pricing。

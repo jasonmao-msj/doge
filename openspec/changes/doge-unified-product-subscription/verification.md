@@ -40,18 +40,23 @@
 - `Kimi CLI 0.38.0 × kimi-for-coding` 使用 managed `KIMI_CODE_HOME` 返回 typed assistant terminal `DOGE_E2E_OK`。
 - `Codex 0.147 × gpt-5.5` 使用 managed `CODEX_HOME` 请求后由 production Composite GPT pool 返回 terminal 503；Doge 未做 silent fallback。
 - `Claude Code 2.1.233 × claude-sonnet-4-8` 使用 Doge private settings / managed token 后返回 `claude-code:unrecognized_model`；Doge 未回退 first-party OAuth。
+- 保存 endpoint-specific Composite routes 后，`Kimi CLI 0.38.0 × kimi-for-coding` 再次返回精确 terminal `DOGE_KIMI_ROUTE_OK`，证明 Kimi route 未破坏既有链路。
+- `Claude Code × claude-sonnet-4-6` 已从原 `unrecognized_model` 前进到 authoritative terminal 503：`no available accounts supporting model ... (channel pricing restriction)`，证明 Messages route 命中但 pricing channel 拒绝。
+- `Claude Code × 豆包` 同样到达 token2api 并以 `channel pricing restriction` 503 终止；`Codex × 豆包` 和 direct Chat Completions × 豆包均为 503，无 silent fallback。
+- 未先执行 Doge prepare 时，Kimi CLI 对未定义 `豆包` alias 复现 upstream lifecycle crash；该 cell 必须在 App 选择模型、重写 Kimi alias table 后再验，不以 raw CLI 直传冒充完成。
 
-### token2api production admin audit（尚无持久化写入）
+### token2api production admin audit 与已授权路由写入
 
-- `Doge APP` 当前是 `Composite` subscription group，共 7 个账号，页面显示 5 个可用。
-- Composite 路由弹窗的 authoritative saved state 为“暂无 Composite 路由”。
+- `Doge APP` 当前是 `Composite` subscription group，共 7 个账号，Claude 绑定后页面显示 6 个可用。
 - 账号列表可见 `Kimi #37`、`豆包 OpenAI #34`、`豆包 Anthropic #35` 已绑定 `Doge APP`。
-- `Claude #11` 当前只绑定“测试分组”，没有绑定 `Doge APP`。
-- 在 edit dialog 点击“同步上游支持的模型”做只读 capability probe：上游共声明 9 个，临时表单新增 `claude-fable-5`、`claude-opus-5`、`claude-sonnet-5`；未点击“更新”，没有保存 group/model 变更。
-- 未点击创建、更新、删除或调度操作；Composite 路由和账号绑定仍保持原生产状态。
+- 用户已手动将 `Claude #11` 绑定到 `Doge APP`；其账号模型白名单仍是原 6 个，本轮没有擅自保存 capability probe 的 3 个新增模型。
+- 经用户明确授权，已保存并关闭/重开复核 7 条 route：`claude-` prefix / Messages → Anthropic；`gpt-` prefix / Responses → OpenAI；`kimi` 与 `k3` prefix / Chat Completions → Kimi；`豆包` exact 分别按 Messages → Anthropic、Responses / Chat Completions → OpenAI。全部 priority 100、上游模型透传。
+- 配置后 `/v1/models` 已实时返回 Claude 5、GPT、Kimi 与 `豆包` rows；production 仍不提供独立 `model` / `compatible_engines` 字段，Doge 继续使用 fail-closed conversation filter + family fallback。
+- Channel pricing read-only audit 证明 `Doge APP` 唯一属于“Kimi 官方定价”；Claude channel 中 `Doge APP` checkbox 被禁用并显示“已属于『Kimi 官方定价』”。当前 UI 的 single-channel ownership 正是 GPT / Claude / 豆包 503 pricing restriction 根因。
 
 ## Remaining external/manual blockers
 
-- token2api production `Doge APP` 尚未把 Claude account 接入，且当前没有任何 saved Composite route；Claude binding 与 endpoint-specific Composite routes 已到 action-time confirmation 边界，等待用户明确确认后才会保存。配置完成后需重跑 Codex/Claude exact CLI terminal matrix。
+- token2api 需要一个覆盖 OpenAI + Anthropic + Kimi + `ark-code-latest` 的统一 pricing channel，或等价的 multi-channel group 能力；仅保存 Composite routes 无法绕过当前 single-channel pricing restriction。该变更超出用户本轮“只保存路由”的授权，尚未执行。
+- `Claude #11` 账号白名单仍是原 6 个；public catalog 已出现 Claude 5 rows，但真实账号 eligibility / pricing 尚未同步收口。
 - 当前 macOS 会话处于锁屏状态，Computer Use 无法完成最终 Account Center dark/light/narrow screenshot 与 picker 点击验收；自动化 visual contracts 和此前 hot-dev smoke 已通过，但该项不冒充人工目视完成。
 - 未覆盖 Windows Credential Manager / installer、Linux Secret Service、macOS Release Keychain 实包、真实第三方支付回调与跨设备并发；这些继续由 Release/平台 smoke 承担。
