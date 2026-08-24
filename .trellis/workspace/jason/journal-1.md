@@ -1516,3 +1516,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 45: 修复 Codex 503 恢复与单一 doge 开发入口
+
+**Date**: 2026-08-23
+**Task**: 修复 Codex 503 恢复与单一 doge 开发入口
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+为 Doge 统一定价补齐 gpt-5.6-luna 并以 canonical managed key 验证 Responses 200；恢复 Codex failed task_complete 为持久错误消息；删除 doge-dev Tauri flavor，让 hot/isolated/signed 开发命令统一继承 canonical doge identity，保留 macOS debug file vault。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `80cf57fdf` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
