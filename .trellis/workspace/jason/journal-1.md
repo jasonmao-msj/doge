@@ -1482,3 +1482,37 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 44: 贯通豆包运行模型与生产定价
+
+**Date**: 2026-08-23
+**Task**: 贯通豆包运行模型与生产定价
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+修复 Native product picker 仅保存 display/catalog id、managed Kimi 被 local catalog 修回 gpt-5.5 的 split truth；豆包统一使用 Composite 公开 alias。经用户授权把 token2api Kimi channel 更新为 Doge 统一定价，OpenAI allowlist 增加 ark-code-latest + 豆包且不伪造 Coding Plan token 单价；managed key 直连豆包返回 HTTP 200。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bdbe27bc0` | (see git log) |
+| `d7c5cb0fc` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
