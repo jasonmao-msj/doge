@@ -8,7 +8,9 @@ import {
 
 describe("providerBrandIcon", () => {
   it("maps the Chinese Doubao model alias to the Doubao brand", () => {
+    expect(PROVIDER_BRAND_ICON_SRC.doubao).toContain("doubao.png");
     expect(resolveVendorFromModelId("豆包")).toBe("doubao");
+    expect(resolveVendorFromModelId("doubao-entry")).toBe("doubao");
     expect(resolveVendorFromModelId("ark-code-latest")).toBe("doubao");
     expect(resolveProviderBrandIcon({ modelId: "豆包" })).toBe(
       PROVIDER_BRAND_ICON_SRC.doubao,

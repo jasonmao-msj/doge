@@ -8,12 +8,20 @@ import { providerBrandIconNeedsDarkTile } from "../providerBrandIcon";
  * 白色主体几乎看不见，只剩蓝点。这里不依赖 settings 懒加载 CSS，直接用
  * 内联样式铺深色底衬，保证 composer 模型选择器 / 设置页都能正确显示。
  */
+const BASE_ICON_STYLE: CSSProperties = {
+  display: "block",
+  maxWidth: "100%",
+  maxHeight: "100%",
+  objectFit: "contain",
+  flexShrink: 0,
+};
+
 const DARK_TILE_STYLE: CSSProperties = {
+  ...BASE_ICON_STYLE,
   background: "#0d0d0d",
   borderRadius: 3,
   // border-box：padding 吃在固定宽高内，避免 18px 容器被撑破或内容被压扁
   boxSizing: "border-box",
-  objectFit: "contain",
   padding: 2,
 };
 
@@ -36,8 +44,10 @@ export function ProviderBrandIconImg({
     <img
       src={src}
       alt=""
+      width={16}
+      height={16}
       className={classes || undefined}
-      style={needsDarkTile ? DARK_TILE_STYLE : undefined}
+      style={needsDarkTile ? DARK_TILE_STYLE : BASE_ICON_STYLE}
     />
   );
 }

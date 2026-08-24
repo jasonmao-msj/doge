@@ -6,7 +6,6 @@ import anthropicIcon from "@lobehub/icons-static-svg/icons/anthropic.svg";
 import bailianIcon from "@lobehub/icons-static-svg/icons/bailian-color.svg";
 import claudeIcon from "@lobehub/icons-static-svg/icons/claude-color.svg";
 import deepseekIcon from "@lobehub/icons-static-svg/icons/deepseek-color.svg";
-import doubaoIcon from "@lobehub/icons-static-svg/icons/doubao-color.svg";
 import kimiIcon from "@lobehub/icons-static-svg/icons/kimi-color.svg";
 import longcatIcon from "@lobehub/icons-static-svg/icons/longcat-color.svg";
 import minimaxIcon from "@lobehub/icons-static-svg/icons/minimax-color.svg";
@@ -17,6 +16,7 @@ import openrouterIcon from "@lobehub/icons-static-svg/icons/openrouter-color.svg
 import qwenIcon from "@lobehub/icons-static-svg/icons/qwen-color.svg";
 import xiaomimimoIcon from "@lobehub/icons-static-svg/icons/xiaomimimo.svg";
 import zhipuIcon from "@lobehub/icons-static-svg/icons/zhipu-color.svg";
+import doubaoIcon from "../../assets/model-icons/doubao.png";
 
 export type ProviderBrandVendor =
   | "claude"
