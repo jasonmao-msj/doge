@@ -15,7 +15,6 @@ describe("canonical doge brand manifest", () => {
     expect(brand).toMatchObject({
       schemaVersion: 1,
       name: "doge",
-      developmentName: "doge-dev",
       tagline: "把复杂的事，叼回来做好。",
       version: "0.1.0",
       repository: {
@@ -24,7 +23,6 @@ describe("canonical doge brand manifest", () => {
       },
       bundle: {
         productionIdentifier: "io.github.jasonmao-msj.doge",
-        developmentIdentifier: "io.github.jasonmao-msj.doge.dev",
       },
       runtime: {
         appHomeDirectory: ".doge",
@@ -58,13 +56,6 @@ describe("canonical doge brand manifest", () => {
       identifier?: string;
       build?: { devUrl?: string };
     };
-    const tauriDevConfig = readJson("src-tauri/tauri.dev.conf.json") as {
-      productName?: string;
-      version?: string;
-      identifier?: string;
-      build?: { devUrl?: string };
-    };
-
     expect(packageJson.name).toBe(brand.runtime.npmPackage);
     expect(packageJson.version).toBe(brand.version);
     expect(tauriConfig).toMatchObject({
@@ -72,11 +63,7 @@ describe("canonical doge brand manifest", () => {
       version: brand.version,
       identifier: brand.bundle.productionIdentifier,
     });
-    expect(tauriDevConfig).toMatchObject({
-      productName: brand.developmentName,
-      identifier: brand.bundle.developmentIdentifier,
-    });
-    expect(tauriDevConfig.build?.devUrl).toBe(tauriConfig.build?.devUrl);
+    expect(tauriConfig.build?.devUrl).toBe("http://localhost:1420");
   });
 
   it("keeps Cargo package, library, and binaries equal to the manifest", () => {

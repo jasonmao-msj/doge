@@ -29,7 +29,8 @@ test("macOS signed hot development uses a local identity and stable app identifi
   assert.match(cargoWrapper, /exec cargo "\$@"/);
   assert.doesNotMatch(cargoWrapper, /awk[^\n]*exit/);
 
-  assert.match(runner, /io\.github\.jasonmao-msj\.doge\.dev/);
+  assert.match(runner, /io\.github\.jasonmao-msj\.doge/);
+  assert.doesNotMatch(runner, /io\.github\.jasonmao-msj\.doge\.dev/);
   assert.match(runner, /security find-identity -v -p codesigning/);
   assert.match(runner, /codesign[\s\S]*--identifier/);
   assert.match(runner, /codesign --verify --strict/);

@@ -27,7 +27,7 @@ if [[ -n "$(find_identity_hash)" ]]; then
 fi
 
 umask 077
-temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/doge-dev-signing.XXXXXX")"
+temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/doge-local-signing.XXXXXX")"
 cleanup() {
   rm -rf -- "${temporary_directory}"
 }

@@ -1167,6 +1167,83 @@ describe("history loaders", () => {
     );
   });
 
+  it("recovers failed codex task_complete diagnostics into durable history", () => {
+    const items = parseCodexSessionHistory({
+      entries: [
+        {
+          timestamp: "2026-08-23T04:11:19.000Z",
+          type: "event_msg",
+          payload: {
+            type: "user_message",
+            message: "hello",
+          },
+        },
+        {
+          timestamp: "2026-08-23T04:12:21.000Z",
+          type: "event_msg",
+          payload: {
+            type: "task_complete",
+            last_agent_message: null,
+            error:
+              "unexpected status 503 Service Unavailable: Service temporarily unavailable, url: https://token-matrix.com/responses, request id: request-1",
+            codex_error_info: "other",
+          },
+        },
+      ],
+    });
+
+    expect(items).toHaveLength(2);
+    expect(items[1]).toEqual(
+      expect.objectContaining({
+        id: "codex-task-error-2",
+        kind: "message",
+        role: "assistant",
+        text: expect.stringContaining("503 Service Unavailable"),
+        isFinal: true,
+        finalCompletedAt: Date.parse("2026-08-23T04:12:21.000Z"),
+        finalDurationMs: 62_000,
+      }),
+    );
+  });
+
+  it("does not synthesize a codex error for successful task_complete events", () => {
+    const items = parseCodexSessionHistory({
+      entries: [
+        {
+          type: "event_msg",
+          payload: {
+            type: "user_message",
+            message: "hello",
+          },
+        },
+        {
+          type: "event_msg",
+          payload: {
+            type: "agent_message",
+            message: "hello back",
+          },
+        },
+        {
+          type: "event_msg",
+          payload: {
+            type: "task_complete",
+            last_agent_message: "hello back",
+            error: null,
+          },
+        },
+      ],
+    });
+
+    expect(items).toHaveLength(2);
+    expect(items[1]).toEqual(
+      expect.objectContaining({
+        kind: "message",
+        role: "assistant",
+        text: "hello back",
+      }),
+    );
+  });
+
   it("reconstructs codex exec_command heredoc writes as file changes", () => {
     const items = parseCodexSessionHistory({
       entries: [

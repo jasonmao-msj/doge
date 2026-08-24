@@ -259,7 +259,6 @@ export function verifyCanonicalIdentity(root) {
   const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   const packageLock = JSON.parse(readFileSync(join(root, "package-lock.json"), "utf8"));
   const tauri = JSON.parse(readFileSync(join(root, "src-tauri/tauri.conf.json"), "utf8"));
-  const tauriDev = JSON.parse(readFileSync(join(root, "src-tauri/tauri.dev.conf.json"), "utf8"));
   const cargo = readFileSync(join(root, "src-tauri/Cargo.toml"), "utf8");
 
   expectEqual(packageJson.name, brand.runtime.npmPackage, "package.json name", failures);
@@ -269,9 +268,6 @@ export function verifyCanonicalIdentity(root) {
   expectEqual(tauri.productName, brand.name, "Tauri productName", failures);
   expectEqual(tauri.version, brand.version, "Tauri version", failures);
   expectEqual(tauri.identifier, brand.bundle.productionIdentifier, "Tauri identifier", failures);
-  expectEqual(tauriDev.productName, brand.developmentName, "Tauri dev productName", failures);
-  expectEqual(tauriDev.identifier, brand.bundle.developmentIdentifier, "Tauri dev identifier", failures);
-  expectEqual(tauriDev.build?.devUrl, tauri.build?.devUrl, "Tauri devUrl override", failures);
   expectEqual(tauri.bundle?.createUpdaterArtifacts, brand.updater.enabled, "Tauri updater artifact state", failures);
   if (brand.updater.enabled === false) {
     expectEqual(tauri.plugins?.updater?.pubkey, "", "Disabled Tauri updater public key", failures);

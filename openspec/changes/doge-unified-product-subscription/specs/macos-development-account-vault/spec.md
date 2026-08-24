@@ -12,6 +12,7 @@ macOS debug builds MUST persist Account refresh credentials and managed engine k
 - **THEN** Account vault status/read/write/delete SHALL use the debug file vault
 - **AND** startup SHALL NOT request Keychain authorization
 - **AND** an existing valid debug refresh credential SHALL restore the account without human input
+- **AND** the process SHALL use the canonical `doge` product name, bundle identifier and app-data directory rather than a separate `doge-dev` flavor
 
 #### Scenario: The debug vault is initially empty
 

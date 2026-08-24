@@ -47,16 +47,20 @@ test("creates Tauri dev resource placeholders for bundle globs", async () => {
   }
 });
 
-test("hot development applies the dev flavor on the same Vite URL", async () => {
+test("development commands inherit the canonical doge Tauri identity", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8"));
   const baseConfig = JSON.parse(await readFile("src-tauri/tauri.conf.json", "utf8"));
-  const devConfig = JSON.parse(await readFile("src-tauri/tauri.dev.conf.json", "utf8"));
+  const isolatedRunner = await readFile("scripts/tauri-dev-isolated.mjs", "utf8");
 
-  assert.match(
-    packageJson.scripts["tauri:dev:hot"],
-    /tauri dev --config src-tauri\/tauri\.dev\.conf\.json/,
-  );
-  assert.equal(devConfig.build?.devUrl, baseConfig.build?.devUrl);
+  assert.equal(packageJson.scripts["tauri:dev:hot"], "tauri dev");
+  assert.doesNotMatch(packageJson.scripts["tauri:dev:hot:signed:mac"], /tauri\.dev\.conf/);
+  assert.doesNotMatch(isolatedRunner, /tauri\.dev\.conf/);
+  await assert.rejects(readFile("src-tauri/tauri.dev.conf.json", "utf8"), {
+    code: "ENOENT",
+  });
+  assert.equal(baseConfig.productName, "doge");
+  assert.equal(baseConfig.identifier, "io.github.jasonmao-msj.doge");
+  assert.equal(baseConfig.build?.devUrl, "http://localhost:1420");
 });
 
 test("does not overwrite existing frontend build artifacts", async () => {

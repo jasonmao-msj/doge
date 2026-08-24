@@ -3,7 +3,7 @@ set -euo pipefail
 
 identity_name="${DOGE_DEV_CODESIGN_IDENTITY:-Doge Local Development}"
 keychain_path="${DOGE_DEV_KEYCHAIN_PATH:-${HOME}/Library/Keychains/login.keychain-db}"
-bundle_identifier="${DOGE_DEV_BUNDLE_IDENTIFIER:-io.github.jasonmao-msj.doge.dev}"
+bundle_identifier="${DOGE_DEV_BUNDLE_IDENTIFIER:-io.github.jasonmao-msj.doge}"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "The Doge signed development runner is only available on macOS." >&2

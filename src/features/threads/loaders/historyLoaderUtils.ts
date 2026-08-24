@@ -13,6 +13,25 @@ export function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
+export function extractHistoryErrorMessage(value: unknown): string {
+  if (value instanceof Error) {
+    return value.message.trim();
+  }
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  const record = asRecord(value);
+  const directMessage = asString(record.message ?? "").trim();
+  if (directMessage) {
+    return directMessage;
+  }
+  const nestedError = record.error;
+  if (typeof nestedError === "string") {
+    return nestedError.trim();
+  }
+  return asString(asRecord(nestedError).message ?? "").trim();
+}
+
 function asBoolean(value: unknown): boolean {
   if (typeof value === "boolean") {
     return value;

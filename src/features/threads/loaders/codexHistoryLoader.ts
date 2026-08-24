@@ -8,9 +8,12 @@ import {
 import { parseIntentCanvasContextSummaries } from "../../intent-canvas/utils/messageContext";
 import { normalizeHistorySnapshot } from "../contracts/conversationCurtainContracts";
 import { parseCodexSessionHistory } from "./codexSessionHistory";
-import { asRecord } from "./historyLoaderUtils";
-import { extractLatestTurnPlan } from "./historyLoaderUtils";
-import { extractUserInputQueueFromThread } from "./historyLoaderUtils";
+import {
+  asRecord,
+  extractHistoryErrorMessage,
+  extractLatestTurnPlan,
+  extractUserInputQueueFromThread,
+} from "./historyLoaderUtils";
 
 type CodexHistoryLoaderOptions = {
   workspaceId: string;
@@ -22,27 +25,8 @@ type CodexHistoryLoaderOptions = {
   preferLocalHistory?: boolean;
 };
 
-function extractCodexHistoryLoadErrorMessage(value: unknown) {
-  if (value instanceof Error) {
-    return value.message;
-  }
-  if (!value || typeof value !== "object") {
-    return typeof value === "string" ? value : "";
-  }
-  const record = value as Record<string, unknown>;
-  const error = record.error;
-  if (typeof error === "string") {
-    return error;
-  }
-  if (error && typeof error === "object") {
-    const message = (error as Record<string, unknown>).message;
-    return typeof message === "string" ? message : "";
-  }
-  return "";
-}
-
 function isInvalidCodexThreadIdError(value: unknown) {
-  const normalized = extractCodexHistoryLoadErrorMessage(value).trim().toLowerCase();
+  const normalized = extractHistoryErrorMessage(value).toLowerCase();
   return (
     normalized.includes("invalid thread id") ||
     normalized.includes("expected an optional prefix of `urn:uuid:`") ||

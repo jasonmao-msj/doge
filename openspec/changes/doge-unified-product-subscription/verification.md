@@ -51,6 +51,9 @@
 - 二次实机反馈证明 HTML `width/height` attribute 会被现有 `.selector-model-brand-icon img { width:100%; height:100% }` author CSS 覆盖，且 Product trigger 的内层 wrapper 原为 auto-size / overflow-visible。修复后 `<img>` 使用 inline `width:16px;height:16px`，wrapper 同时固定 `16×16 + overflow:hidden`；focused Vitest 3 files / 66 tests、typecheck 与 targeted ESLint 均 PASS。
 - `Kimi + 豆包` 三轮实机证据：① UI 为豆包，但 config 无 alias、Kimi `llm config model=gpt-5.5` 后连续 503；② runtime 贯穿后 config/request=`ark-code-latest`，token2api 返回 400 `Model is not supported by composite groups`；③ 清空 config + Composer state 后自动 prepare，生成 bare + `doge/` 豆包 alias，Kimi `llm config model=豆包` 且连续收到 HTTP 503。由此证明 Doge/Kimi 出站链已正确，当前请求在 token2api Composite 的 account dispatch/usage logging 前被 pricing/channel policy 拒绝；admin usage/inbound surface 无记录不代表未发请求。focused Vitest 4 files / 59 tests、typecheck 与 targeted ESLint PASS。
 - 经用户明确授权，production UI 将原 `Kimi 官方定价` 更新为 `Doge 统一定价`：`Doge APP` 仍为唯一关联 group，Kimi 4 条官方 price 不变，OpenAI 新增单条 model rule，aliases=`ark-code-latest, 豆包`，8 个 token price 字段均为空（Coding Plan subscription，不伪造 per-token price）。保存后列表显示 1 group / 5 prices；关闭重开确认 aliases/空 price 持久化。随后使用同一 managed key 直连 `POST /v1/chat/completions model=豆包` 返回 HTTP 200、model=`豆包`、精确正文 `DOGE_DOUBAO_PRICING_OK`，证明 pricing gate 与 account dispatch 已通过。
+- 用户复现 `Codex + gpt-5.6-luna` 后，rollout 证明 model selection 正确，失败来自 `/responses` terminal 503；当时 `Doge 统一定价` 只有 Kimi/豆包 5 条规则。经授权复制 `OpenAI 官方定价` 的 `gpt-5.6-luna` default `0.2/1.2/0.25/0.02 $/MTok` 与 `(0,272000]`、`(272000,+∞]` 分层价，保存/重开确认列表为 6 条。分别使用旧 dev account 与 canonical doge account 的 managed Codex key 直连 `/responses` 均 HTTP 200，并返回 `DOGE_CODEX_PRICING_OK` / `DOGE_CANONICAL_CODEX_OK`。
+- Codex local history parser 现在将 failed `event_msg.task_complete.error` 恢复为 stable assistant diagnostic，保留 terminal timestamp/duration；成功 `task_complete` 不合成错误。focused Vitest `historyLoaders.test.ts` 51 tests PASS，避免 realtime 503 在 history hydrate 后消失。
+- 单一开发身份验证：Node startup/signing tests 8 PASS；brand/history Vitest 54 PASS；`npm run check:branding`、typecheck、targeted ESLint、runtime contracts、两个 affected OpenSpec strict validate 与 `git diff --check` 均 PASS。canonical debug vault 仍为 file `0600` / directory `0700`，包含 refresh + 三 engine purposes，启动未访问 Keychain。
 
 ## Isolated baseline governance failures
 
@@ -59,8 +62,8 @@
 
 ## Real runtime evidence
 
-- 标准入口 `npm run tauri:dev:hot` 现显式执行 `tauri dev --config src-tauri/tauri.dev.conf.json`；Vite 与 effective `TAURI_CONFIG` 均为 `http://localhost:1420`。
-- 本轮发现此前 `tauri.dev.conf.json` 的 `1430` 覆盖与 bootstrap `1420` 不一致，导致 UI 自动化可能连到旧 bundle / stale `dist`；`0b0733feb` 已修复并由 branding + dev startup contract 锁定。
+- 标准入口 `npm run tauri:dev:hot` 现直接执行 `tauri dev`，只继承 canonical `src-tauri/tauri.conf.json`：`productName=doge`、`identifier=io.github.jasonmao-msj.doge`、Vite `1420`。独立 `tauri.dev.conf.json`、`doge-dev` manifest fields 与 bundle identifier 已删除。
+- 用户截图与进程审计证明旧 `doge-dev` 是独立 app-data/UI state；Computer Use 还会从 `target/debug/bundle/macos/doge-dev.app` 重新唤起陈旧 bundle。该生成物已移动到废纸篓，当前 hot process 仅为 `target/debug/doge`，且 `lsof` 证明读取 canonical `io.github.jasonmao-msj.doge` app-data。
 - macOS debug local vault 未触发 Keychain / SecurityAgent 授权；当前源码 debug `.app` bundle 已完整编译成功。
 - debug vault 目录/文件权限分别为 `0700` / `0600`；`config.json` 不含 managed secret；Codex/Kimi provider TOML 为 owner-only。
 - `Kimi CLI 0.38.0 × kimi-for-coding` 使用 managed `KIMI_CODE_HOME` 返回 typed assistant terminal `DOGE_E2E_OK`。
@@ -82,7 +85,7 @@
 
 ## Remaining external/manual blockers
 
-- `Doge 统一定价` 当前已覆盖 Kimi + 豆包 Coding Plan；GPT/OpenAI 与 Claude/Anthropic 的其余 release models 仍需把相应官方 price rules 合并进同一 single-owner channel。当前 Kimi×豆包已解除 pricing blocker，不代表三引擎全矩阵完成。
+- `Doge 统一定价` 当前已覆盖 Kimi + 豆包 Coding Plan + `gpt-5.6-luna`；其余 GPT/OpenAI 与 Claude/Anthropic release models 仍需把相应官方 price rules 合并进同一 single-owner channel。当前三项解除 pricing blocker，不代表三引擎全矩阵完成。
 - `Claude #11` 账号白名单仍是原 6 个；public catalog 已出现 Claude 5 rows，但真实账号 eligibility / pricing 尚未同步收口。
 - 当前 macOS 会话处于锁屏状态，Computer Use 无法完成最终 Account Center dark/light/narrow screenshot 与 picker 点击验收；自动化 visual contracts 和此前 hot-dev smoke 已通过，但该项不冒充人工目视完成。
 - 未覆盖 Windows Credential Manager / installer、Linux Secret Service、macOS Release Keychain 实包、真实第三方支付回调与跨设备并发；这些继续由 Release/平台 smoke 承担。

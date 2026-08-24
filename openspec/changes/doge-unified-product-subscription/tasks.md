@@ -134,3 +134,6 @@
 - [x] 16.14 修复豆包 1024px raster 被 `.selector-model-brand-icon img { width:100%; height:100% }` 放大的二次回归：共享 `<img>` 增加 inline `16×16`，Product trigger wrapper 固定 `16×16 + overflow:hidden`，并锁定 exact style contract。
 - [x] 16.15 修复 `Kimi + 豆包` split truth：首次实机证明 UI 为豆包但 Kimi 实际使用 `gpt-5.5`；修复 runtime 持久化后再次实机证明直发 `ark-code-latest` 被 Composite 400 拒绝。最终 canonical 使用公开 alias“豆包”，Native picker 持久化该 callable id，managed Kimi hook 保留 catalog 外 alias。
 - [x] 16.16 经用户授权在 token2api UI 将 `Kimi 官方定价` 收口为 `Doge 统一定价`：保留 4 条 Kimi 官方价格，为 OpenAI 平台新增 `ark-code-latest + 豆包` allowlist，Coding Plan 无独立 token 单价故价格字段留空；关闭/重开复核 5 条定价，managed key 直连 `豆包` Chat Completions 返回 HTTP 200。
+- [x] 16.17 经用户授权为 `Doge 统一定价` 增加 `gpt-5.6-luna` 的 OpenAI 官方默认价与长上下文分层价；关闭/重开复核，并使用同一 managed key 直连 Responses 验证 terminal success。
+- [x] 16.18 修复 Codex failed `task_complete` 在 realtime error 后被 history hydrate 覆盖的问题：local rollout parser 必须恢复 terminal error 为可见 assistant diagnostic，并补成功/失败 focused regression。
+- [x] 16.19 移除独立 `doge-dev` Tauri flavor：`tauri:dev:hot` 与 isolated/signed dev variants 均继承 canonical `doge` product/bundle identity，复用同一 app-data/product state；macOS debug vault 仍由 `debug_assertions` 选择，不恢复 Keychain 交互。

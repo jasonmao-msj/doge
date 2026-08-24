@@ -115,3 +115,15 @@ When the Doge product entitlement is ready, provider configuration MUST be an in
 - **WHEN** the user changes either product selection
 - **THEN** the committed target SHALL retain `doge-token-matrix`
 - **AND** neither engine nor model switching SHALL reintroduce local/disk configuration
+
+### Requirement: Terminal Provider Failures SHALL Remain Visible After History Recovery
+
+Doge MUST preserve an authoritative terminal provider failure as readable conversation history. A history hydrate or provider-continuation reconciliation MUST NOT erase the only user-visible failure diagnostic.
+
+#### Scenario: Codex turn fails before producing an assistant message
+
+- **GIVEN** realtime handling has received a terminal Codex failure and displayed its diagnostic
+- **AND** the Codex rollout records a failed `task_complete` with no final assistant message
+- **WHEN** Doge reloads or reconciles the local Codex history
+- **THEN** the recovered conversation SHALL include one readable assistant diagnostic containing the terminal error
+- **AND** a successful `task_complete` SHALL NOT synthesize an error message

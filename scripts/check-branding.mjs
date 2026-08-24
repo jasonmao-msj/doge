@@ -25,7 +25,6 @@ const INCLUDE_PATHS = [
   "src-tauri/Cargo.toml",
   "src-tauri/Cargo.lock",
   "src-tauri/tauri.conf.json",
-  "src-tauri/tauri.dev.conf.json",
   "src-tauri/tauri.windows.conf.json",
 ];
 

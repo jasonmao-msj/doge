@@ -14,8 +14,9 @@ The repository MUST define one non-secret canonical doge brand manifest, and shi
 #### Scenario: Development application starts
 
 - **WHEN** a developer launches the Tauri development application
-- **THEN** the development identity MUST be distinguishable as `doge-dev`
-- **AND** its bundle identifier MUST NOT collide with the production doge application
+- **THEN** the development application MUST present the canonical `doge` identity
+- **AND** it MUST use the canonical `io.github.jasonmao-msj.doge` app-data identity so development and E2E cannot silently diverge into a separate product state
+- **AND** debug credential isolation MUST be enforced by the compile-time vault selector rather than by a second visible app flavor
 
 ### Requirement: Normal user-facing surfaces MUST present doge only
 

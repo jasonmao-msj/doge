@@ -55,9 +55,11 @@ one normal account login; later runs reuse that local session. Release builds
 continue to use Keychain and never read the debug credential file.
 
 The development vault is plaintext with directory mode `0700` and file mode
-`0600`, so use it only on a trusted development Mac. The optional
-`npm run tauri:dev:hot:signed:mac` workflow remains available for explicitly
-testing the Keychain/signing path, but it is not required for daily development.
+`0600`, so use it only on a trusted development Mac. Development and release
+builds share the same visible `doge` application identity; debug credential
+isolation comes from the compile-time vault selector, not a separate app flavor.
+The optional `npm run tauri:dev:hot:signed:mac` workflow remains available for
+explicit local signing checks, but it is not required for daily development.
 
 Run only the web frontend:
 

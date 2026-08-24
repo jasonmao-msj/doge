@@ -3,7 +3,6 @@ import manifest from "../../config/brand.json";
 export type BrandManifest = {
   schemaVersion: number;
   name: string;
-  developmentName: string;
   tagline: string;
   story: string;
   version: string;
@@ -15,7 +14,6 @@ export type BrandManifest = {
   };
   bundle: {
     productionIdentifier: string;
-    developmentIdentifier: string;
   };
   runtime: {
     appHomeDirectory: string;
