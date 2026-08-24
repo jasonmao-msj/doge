@@ -1413,3 +1413,38 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 42: 收口产品交互与豆包图标
+
+**Date**: 2026-08-23
+**Task**: 收口产品交互与豆包图标
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+移除模型侧栏固定 footer；product-ready 普通会话统一使用 Codex/Claude/Kimi managed picker；managed 配置显示名迁移为 Doge；账单移除发票提示；可用模型改为 vendor count 渐进展开；豆包全 identity 使用用户 PNG，并在共享 img owner 增加 intrinsic/container bounds。L3 focused verification 与 spec/ADR 同步完成。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7e1f7957e` | (see git log) |
+| `55228e451` | (see git log) |
+| `d3381401e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

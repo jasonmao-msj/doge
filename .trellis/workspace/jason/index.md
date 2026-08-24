@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 41
+- **Total Sessions**: 42
 - **Last Active**: 2026-08-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1415 | Active |
+| `journal-1.md` | ~1450 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 42 | 2026-08-23 | 收口产品交互与豆包图标 | `7e1f7957e`, `55228e451`, `d3381401e` | `codex/fix-managed-provider-session-defaults` |
 | 41 | 2026-08-23 | 完善账号服务错误详情 | `a4bf34144` | `codex/fix-managed-provider-session-defaults` |
 | 40 | 2026-08-23 | 记录 Composite 路由生产实测 | `32ef2ffe1` | `codex/fix-managed-provider-session-defaults` |
 | 39 | 2026-08-23 | 记录热开发修复与全量复验 | `4c1c0adb8` | `codex/fix-managed-provider-session-defaults` |
