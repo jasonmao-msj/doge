@@ -1069,6 +1069,8 @@ const settings = {
       "manageModels": "मॉडल प्रबंधित करें",
       "localProviderName": "लोकल settings.json उपयोग करें",
       "localProviderDescription": "~/.claude/settings.json पढ़ने के लिए स्पष्ट अनुमति दें",
+      "managedProductLockLabel": "Doge प्रबंधित",
+      "managedProductLockDescription": "Doge सदस्यता सक्रिय होने पर ऐप हमेशा अलग Doge कॉन्फ़िगरेशन का उपयोग करता है। स्थानीय कॉन्फ़िगरेशन केवल टर्मिनल से सीधे CLI चलाने पर उपयोग होता है।",
       "authorizeAndEnable": "अधिकृत करें और सक्षम करें",
       "revokeAuthorization": "प्राधिकरण रद्द करें",
       "whatIsThis": "यह क्या है?",

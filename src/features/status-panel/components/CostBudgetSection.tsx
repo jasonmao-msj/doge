@@ -11,6 +11,7 @@ import {
   useMonthlyBudgetConfig,
 } from "../../context-ledger/cost-budget";
 import type { TokenBreakdownSegment } from "../../context-ledger/cost-budget";
+import { formatTokenCount } from "@/utils/tokenFormat";
 
 const costHistoryStore = createCostHistoryStore();
 
@@ -31,12 +32,6 @@ function formatUsd(value: number | null) {
     return `$${value.toFixed(4)}`;
   }
   return `$${value.toFixed(2)}`;
-}
-
-function formatTokenCount(value: number) {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}m`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k`;
-  return String(value);
 }
 
 function readCostV2Flag() {

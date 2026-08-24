@@ -20,6 +20,14 @@ macOS debug builds MUST persist Account refresh credentials and managed engine k
 - **THEN** the debug build SHALL behave as signed out instead of reading or migrating that Keychain entry
 - **AND** after one successful login all subsequent debug restarts SHALL use the local development vault
 
+#### Scenario: A packaged Doge already owns the canonical single-instance identity
+
+- **WHEN** a developer runs `npm run tauri:dev:hot` while `/Applications`, a mounted DMG, or another `.app` bundle is already running Doge
+- **THEN** the dev command SHALL fail before spawning `tauri dev`
+- **AND** the error SHALL identify the conflicting PID/command and instruct the developer to quit that window
+- **AND** the preflight SHALL NOT automatically terminate the packaged App
+- **AND** a canonical repo `target/debug/doge` process SHALL NOT be classified as a packaged conflict
+
 ### Requirement: Development Credentials SHALL Remain Owner-Only And Repo-External
 
 The debug file vault MUST remain outside the repository and MUST fail closed for unsafe filesystem state.

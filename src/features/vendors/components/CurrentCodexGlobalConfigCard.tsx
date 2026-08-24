@@ -5,7 +5,10 @@ import {
   writeGlobalCodexConfigToml,
 } from "../../../services/tauri";
 import { OfficialConfigEditDialog } from "./OfficialConfigEditDialog";
-import { VendorOfficialConfigCard } from "./VendorOfficialConfigCard";
+import {
+  VendorOfficialConfigCard,
+  type VendorManagedConfigurationLock,
+} from "./VendorOfficialConfigCard";
 
 interface CurrentCodexGlobalConfigCardProps {
   configLoading: boolean;
@@ -27,6 +30,7 @@ interface CurrentCodexGlobalConfigCardProps {
   /** Optional row-title help popover content */
   helpContent?: ReactNode;
   onSaved?: () => void | Promise<void>;
+  managedLock?: VendorManagedConfigurationLock;
 }
 
 function errorMessage(error: unknown): string {
@@ -105,6 +109,7 @@ export function CurrentCodexGlobalConfigCard({
   onCancel,
   helpContent,
   onSaved,
+  managedLock,
 }: CurrentCodexGlobalConfigCardProps) {
   const { t } = useTranslation();
   const [editOpen, setEditOpen] = useState(false);
@@ -262,6 +267,7 @@ export function CurrentCodexGlobalConfigCard({
         onUse={onUse}
         onCancel={onCancel}
         onEdit={() => setEditOpen(true)}
+        managedLock={managedLock}
       />
 
       <OfficialConfigEditDialog

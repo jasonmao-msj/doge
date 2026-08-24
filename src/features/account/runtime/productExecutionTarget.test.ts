@@ -26,6 +26,25 @@ const models: ProductModelViewV1[] = [
 ];
 
 describe("resolveProductManagedExecutionTargetV1", () => {
+  it("defaults Product Home to Codex and its first released model", () => {
+    expect(
+      resolveProductManagedExecutionTargetV1({
+        preferredEngine: "codex",
+        engines: [engines[1], engines[2], engines[0]],
+        models: [
+          productModel("claude-opus-4-8", "Claude Opus 4.8", ["claude"]),
+          productModel("gpt-5.6-luna", "GPT-5.6 Luna", ["codex"]),
+          productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["codex"]),
+        ],
+      }),
+    ).toMatchObject({
+      engine: "codex",
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "gpt-5.6-luna",
+      model: "gpt-5.6-luna",
+    });
+  });
+
   it("replaces a persisted local profile and repairs an incompatible model", () => {
     expect(
       resolveProductManagedExecutionTargetV1({

@@ -12,7 +12,7 @@ Doge 当前按 engine 展示权益、套餐和托管凭据，用户需要先理�
 - 将套餐对应的一个 Composite credential 以 Native / OS vault 作为持久化事实源，并自动投影给 Doge 支持的本地 engine；renderer 不读取或展示 secret。Kimi CLI 若要求文件配置，仅允许 Native 在隔离的 `KIMI_CODE_HOME` 中生成 owner-only runtime config。
 - 将 composer 的 nested engine submenu 改为 Doge 原生右侧 engine + model 组合面板：engine 来自本地 registry，model entitlement、显示名与调用名来自上游统一 catalog；目录在 ready 后持续增量刷新，不再维护具体 model id 白名单。
 - 将账号中心收敛为一张 product subscription 卡与 product/model 用量，同时保留现有显示名称、修改密码、安全状态、身份绑定和退出登录。
-- 将账号中心进一步收敛为原型信息层级的单页账户详情：profile/entitlement 立即渲染，usage 与 billing 独立渐进加载；本期/上期 summary、model TOP 与 subscription orders 只使用 token2api authoritative user routes。
+- 将账号中心进一步收敛为原型信息层级的单页账户详情：profile/entitlement 立即渲染，usage 与 billing 独立渐进加载；可选时间范围的 summary、model usage table 与 subscription orders 只使用 token2api authoritative user routes。
 - 修复验收发现的 product plan wire/parser mismatch 与 Kimi 非默认 runtime model alias 缺口，确保“catalog 可见”与“runtime 可启动”一致。
 - macOS 日常 debug build 使用 repo 外、owner-only 的 local development vault，消除 `npm run tauri:dev:hot` 的 Keychain 交互授权；Release 与其他非目标 build 继续 fail-closed 使用 OS credential vault。
 
@@ -21,7 +21,7 @@ Doge 当前按 engine 展示权益、套餐和托管凭据，用户需要先理�
 - Doge frontend、Native account authority/runtime、managed provider projection、focused tests、OpenSpec/Trellis 文档。
 - 首期支持已内置且可接收 Token Matrix credential 的 Codex、Claude、Kimi；Composite catalog 决定商业 entitlement 上限。上游可选 `compatible_engines/capabilities` 元数据优先决定能力边界，字段缺失时按稳定 family 规则把 GPT/Claude/Kimi 新版本动态投影到对应 engine，豆包使用三种 managed adapter；未知 family 在上游提供 metadata 前 fail closed。
 - 本 change 不修改 token2api 代码、不迁移既有生产订阅、不调整服务端限流阈值。
-- engine-attributed usage 暂不在上游 contract 中，本轮只做 truthful static/unavailable projection，不推断。invoice artifact/download 不在 contract 中，UI 完全不提该能力。
+- engine-attributed usage 暂不在上游 contract 中，本轮不渲染 engine usage block、也不推断。invoice artifact/download 不在 contract 中，UI 完全不提该能力。
 
 ## Source Reconciliation
 

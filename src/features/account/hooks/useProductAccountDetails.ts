@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  createDefaultProductUsageQueryV1,
   createProductAccountDetailsClientV1,
+  productUsageQueryKeyV1,
   type ProductAccountDetailsClientV1,
   type ProductBillingDetailsV1,
   type ProductUsageDetailsV1,
-  type ProductUsagePeriodV1,
+  type ProductUsageQueryV1,
 } from "../runtime/productAccountDetailsClient";
 import { useProductEntitlementSnapshotV1 } from "../runtime/productEntitlementStore";
-import type { EngineOnboardingFailureV1 } from "../runtime/engineOnboardingClient";
+import type { EngineOnboardingFailureV1 } from "../runtime/onboardingTypes";
 
 export type ProductDetailsResourceV1<Value> = {
   readonly value: Value | null;
@@ -16,12 +18,12 @@ export type ProductDetailsResourceV1<Value> = {
 };
 
 export type ProductAccountDetailsStateV1 = {
-  readonly selectedPeriod: ProductUsagePeriodV1;
+  readonly selectedUsageQuery: ProductUsageQueryV1;
   readonly usage: ProductDetailsResourceV1<ProductUsageDetailsV1>;
   readonly billing: ProductDetailsResourceV1<ProductBillingDetailsV1>;
   readonly refreshing: boolean;
   readonly lastUpdatedAt: string | null;
-  readonly selectPeriod: (period: ProductUsagePeriodV1) => void;
+  readonly selectUsageQuery: (query: ProductUsageQueryV1) => void;
   readonly refreshUsage: () => Promise<void>;
   readonly refreshBilling: () => Promise<void>;
   readonly refreshAll: () => Promise<void>;
@@ -33,13 +35,15 @@ const EMPTY_RESOURCE = Object.freeze({
   failure: null,
 });
 
-const INITIAL_USAGE_RESOURCES: Record<
-  ProductUsagePeriodV1,
-  ProductDetailsResourceV1<ProductUsageDetailsV1>
-> = {
-  current: EMPTY_RESOURCE,
-  previous: EMPTY_RESOURCE,
+type OwnedUsageResourceV1 = {
+  readonly key: string | null;
+  readonly resource: ProductDetailsResourceV1<ProductUsageDetailsV1>;
 };
+
+const EMPTY_OWNED_USAGE: OwnedUsageResourceV1 = Object.freeze({
+  key: null,
+  resource: EMPTY_RESOURCE,
+});
 
 export function useProductAccountDetailsV1(
   injectedClient?: ProductAccountDetailsClientV1,
@@ -52,48 +56,59 @@ export function useProductAccountDetailsV1(
   const productIdentity = product.status === "ready"
     ? `${product.entitlement?.subscriptionId ?? "none"}:${product.entitlement?.groupId ?? "none"}`
     : null;
-  const [selectedPeriod, setSelectedPeriod] = useState<ProductUsagePeriodV1>("current");
-  const [usageResources, setUsageResources] = useState(INITIAL_USAGE_RESOURCES);
+  const [selectedUsageQuery, setSelectedUsageQuery] =
+    useState<ProductUsageQueryV1>(createDefaultProductUsageQueryV1);
+  const selectedUsageKey = productUsageQueryKeyV1(selectedUsageQuery);
+  const selectedUsageKeyRef = useRef(selectedUsageKey);
+  selectedUsageKeyRef.current = selectedUsageKey;
+  const [ownedUsage, setOwnedUsage] = useState(EMPTY_OWNED_USAGE);
   const [billing, setBilling] = useState<
     ProductDetailsResourceV1<ProductBillingDetailsV1>
   >(EMPTY_RESOURCE);
-  const usageGenerations = useRef<Record<ProductUsagePeriodV1, number>>({
-    current: 0,
-    previous: 0,
-  });
+  const usageGeneration = useRef(0);
   const billingGeneration = useRef(0);
-  const usageInFlight = useRef<Partial<Record<ProductUsagePeriodV1, Promise<void>>>>({});
+  const usageInFlight = useRef<{
+    readonly key: string;
+    readonly request: Promise<void>;
+  } | null>(null);
   const billingInFlight = useRef<Promise<void> | null>(null);
 
-  const loadUsage = useCallback((period: ProductUsagePeriodV1): Promise<void> => {
-    const existing = usageInFlight.current[period];
-    if (existing) return existing;
-    const generation = usageGenerations.current[period] + 1;
-    usageGenerations.current[period] = generation;
-    setUsageResources((current) => ({
-      ...current,
-      [period]: { ...current[period], loading: true, failure: null },
+  const loadUsage = useCallback((query: ProductUsageQueryV1): Promise<void> => {
+    const key = productUsageQueryKeyV1(query);
+    if (usageInFlight.current?.key === key) return usageInFlight.current.request;
+    const generation = usageGeneration.current + 1;
+    usageGeneration.current = generation;
+    setOwnedUsage((current) => ({
+      key,
+      resource: current.key === key
+        ? { ...current.resource, loading: true, failure: null }
+        : { value: null, loading: true, failure: null },
     }));
-    const request = client.usage(period)
+    const request = client.usage(query)
       .catch(() => ({
         ok: false as const,
         error: { code: "serviceUnavailable" },
       }))
       .then((result) => {
-        if (usageGenerations.current[period] !== generation) return;
-        setUsageResources((current) => ({
-          ...current,
-          [period]: result.ok
+        if (
+          usageGeneration.current !== generation ||
+          selectedUsageKeyRef.current !== key
+        ) return;
+        setOwnedUsage((current) => ({
+          key,
+          resource: result.ok
             ? { value: result.value, loading: false, failure: null }
-            : { ...current[period], loading: false, failure: result.error },
+            : {
+              ...(current.key === key ? current.resource : EMPTY_RESOURCE),
+              loading: false,
+              failure: result.error,
+            },
         }));
       })
       .finally(() => {
-        if (usageInFlight.current[period] === request) {
-          delete usageInFlight.current[period];
-        }
+        if (usageInFlight.current?.request === request) usageInFlight.current = null;
       });
-    usageInFlight.current[period] = request;
+    usageInFlight.current = { key, request };
     return request;
   }, [client]);
 
@@ -121,34 +136,29 @@ export function useProductAccountDetailsV1(
   }, [client]);
 
   useEffect(() => {
-    usageGenerations.current.current += 1;
-    usageGenerations.current.previous += 1;
+    usageGeneration.current += 1;
     billingGeneration.current += 1;
-    usageInFlight.current = {};
+    usageInFlight.current = null;
     billingInFlight.current = null;
-    setSelectedPeriod("current");
-    setUsageResources(INITIAL_USAGE_RESOURCES);
+    setOwnedUsage(EMPTY_OWNED_USAGE);
     setBilling(EMPTY_RESOURCE);
-    if (productIdentity) {
-      void loadUsage("current");
-      void loadBilling();
-    }
+    if (productIdentity) void loadBilling();
   }, [loadBilling, loadUsage, productIdentity]);
 
   useEffect(() => {
-    const selected = usageResources[selectedPeriod];
-    if (productIdentity && !selected.value && !selected.loading && !selected.failure) {
-      void loadUsage(selectedPeriod);
+    if (productIdentity && ownedUsage.key !== selectedUsageKey) {
+      void loadUsage(selectedUsageQuery);
     }
-  }, [loadUsage, productIdentity, selectedPeriod, usageResources]);
+  }, [loadUsage, ownedUsage.key, productIdentity, selectedUsageKey, selectedUsageQuery]);
 
   useEffect(() => () => {
-    usageGenerations.current.current += 1;
-    usageGenerations.current.previous += 1;
+    usageGeneration.current += 1;
     billingGeneration.current += 1;
   }, []);
 
-  const selectedUsage = usageResources[selectedPeriod];
+  const selectedUsage = ownedUsage.key === selectedUsageKey
+    ? ownedUsage.resource
+    : EMPTY_RESOURCE;
   const usage = productIdentity && !selectedUsage.value && !selectedUsage.failure
     ? { ...selectedUsage, loading: true }
     : selectedUsage;
@@ -161,16 +171,16 @@ export function useProductAccountDetailsV1(
     .at(-1) ?? null;
 
   return {
-    selectedPeriod,
+    selectedUsageQuery,
     usage,
     billing: visibleBilling,
     refreshing: usage.loading || visibleBilling.loading,
     lastUpdatedAt,
-    selectPeriod: setSelectedPeriod,
-    refreshUsage: () => loadUsage(selectedPeriod),
+    selectUsageQuery: setSelectedUsageQuery,
+    refreshUsage: () => loadUsage(selectedUsageQuery),
     refreshBilling: loadBilling,
     refreshAll: async () => {
-      await Promise.all([loadUsage(selectedPeriod), loadBilling()]);
+      await Promise.all([loadUsage(selectedUsageQuery), loadBilling()]);
     },
   };
 }

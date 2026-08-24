@@ -848,21 +848,20 @@ function ComposerImpl({
     () =>
       usesProductManagedCreation
         ? resolveProductManagedExecutionTargetV1({
-            target: preferredCreationTarget,
-            preferredEngine: selectedEngine,
-            preferredModelId: selectedModelId,
-            preferredEffort: selectedEffort,
+            // Product Home has one deterministic starting point on every app
+            // open. Persisted global/local engine defaults are not product
+            // authority; explicit picker interaction is kept in this local
+            // target until the new session is created.
+            target: selectedCreationTarget,
+            preferredEngine: "codex",
             engines: productEntitlement.engines,
             models: productEntitlement.models,
           })
         : null,
     [
-      preferredCreationTarget,
       productEntitlement.engines,
       productEntitlement.models,
-      selectedEffort,
-      selectedEngine,
-      selectedModelId,
+      selectedCreationTarget,
       usesProductManagedCreation,
     ],
   );

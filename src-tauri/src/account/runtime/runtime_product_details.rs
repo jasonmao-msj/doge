@@ -9,42 +9,48 @@ use crate::account::authority::{
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum ProductUsagePeriod {
-    Current,
-    Previous,
+enum ProductUsageGranularity {
+    Day,
+    Hour,
 }
 
-impl ProductUsagePeriod {
+impl ProductUsageGranularity {
     fn parse(value: &str) -> Option<Self> {
         match value {
-            "current" => Some(Self::Current),
-            "previous" => Some(Self::Previous),
+            "day" => Some(Self::Day),
+            "hour" => Some(Self::Hour),
             _ => None,
         }
     }
 
     fn as_str(self) -> &'static str {
         match self {
-            Self::Current => "current",
-            Self::Previous => "previous",
+            Self::Day => "day",
+            Self::Hour => "hour",
         }
     }
 }
 
 #[derive(Clone, Debug)]
-struct ProductUsageRange {
-    query_start_date: String,
-    query_end_date: String,
-    period_start_date: String,
-    period_end_date: String,
-    resets_at: Option<String>,
-    source: &'static str,
-    quota: Option<Value>,
+struct ProductUsageQuery {
+    start_date: String,
+    end_date: String,
+    granularity: ProductUsageGranularity,
 }
 
 impl AccountRuntime {
-    pub(crate) async fn product_usage_snapshot(&self, period: &str) -> Value {
-        let Some(period) = ProductUsagePeriod::parse(period) else {
+    pub(crate) async fn product_usage_snapshot(
+        &self,
+        start_date: &str,
+        end_date: &str,
+        granularity: &str,
+    ) -> Value {
+        let Some(query) = product_usage_query(
+            start_date,
+            end_date,
+            granularity,
+            chrono::Local::now().date_naive(),
+        ) else {
             return product_failure(code_failure("validationRejected", "productUsage", "retry"));
         };
         let access = {
@@ -59,15 +65,12 @@ impl AccountRuntime {
             Ok(authority) => authority,
             Err(error) => return product_failure(error),
         };
-        let (checkout, subscriptions, progress_entries) = match tokio::join!(
+        let (checkout, subscriptions) = match tokio::join!(
             authority.product_checkout_info(&access),
             authority.subscription_summary(&access),
-            authority.subscription_progress(&access),
         ) {
-            (Ok(checkout), Ok(subscriptions), Ok(progress_entries)) => {
-                (checkout, subscriptions, progress_entries)
-            }
-            (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => {
+            (Ok(checkout), Ok(subscriptions)) => (checkout, subscriptions),
+            (Err(error), _) | (_, Err(error)) => {
                 return product_failure(authority_failure(error, "productUsage"));
             }
         };
@@ -79,32 +82,28 @@ impl AccountRuntime {
                     && valid_product_plan(plan)
             })
             .collect::<Vec<_>>();
-        let Some((subscription, plan)) = active_product_subscription(&subscriptions, &plans) else {
+        let Some((_subscription, plan)) = active_product_subscription(&subscriptions, &plans)
+        else {
             return product_failure(code_failure(
                 "subscriptionRequired",
                 "productUsage",
                 "subscribe",
             ));
         };
-        let matching_progress = progress_entries.iter().find(|entry| {
-            entry.subscription.id == subscription.id
-                && entry.subscription.group_id == subscription.group_id
-                && entry.progress.id == subscription.id
-        });
-        let range = product_usage_range(period, matching_progress, Utc::now().date_naive());
         let (stats, model_snapshot) = tokio::join!(
             authority.product_usage_stats(
                 &access,
                 plan.group_id,
-                &range.query_start_date,
-                &range.query_end_date,
+                &query.start_date,
+                &query.end_date,
             ),
             authority.usage_dashboard_snapshot(
                 &access,
                 plan.group_id,
-                &range.query_start_date,
-                &range.query_end_date,
-                false,
+                &query.start_date,
+                &query.end_date,
+                query.granularity.as_str(),
+                true,
                 true,
             ),
         );
@@ -114,17 +113,22 @@ impl AccountRuntime {
                 return product_failure(authority_failure(error, "productUsage"));
             }
         };
-        let (models_status, models) = match model_snapshot {
-            Ok(snapshot) => ("available", safe_product_usage_models(snapshot.models)),
+        let (trend_status, trend, models_status, models) = match model_snapshot {
+            Ok(snapshot) => (
+                "available",
+                safe_product_usage_trend(snapshot.trend),
+                "available",
+                safe_product_usage_models(snapshot.models),
+            ),
             Err(error) => {
                 log::warn!(
-                    "[account] product usage model breakdown unavailable: code={}",
+                    "[account] product usage analytics unavailable: code={}",
                     error.safe.code
                 );
-                ("unavailable", Vec::new())
+                ("unavailable", Vec::new(), "unavailable", Vec::new())
             }
         };
-        match product_usage_value(period, &range, &stats, models_status, models) {
+        match product_usage_value(&query, &stats, trend_status, trend, models_status, models) {
             Ok(value) => product_success(value),
             Err(()) => product_failure(protocol_failure("productUsage")),
         }
@@ -159,96 +163,41 @@ impl AccountRuntime {
     }
 }
 
-fn product_usage_range(
-    period: ProductUsagePeriod,
-    progress: Option<&SubscriptionProgressEntryWire>,
+fn product_usage_query(
+    start_date: &str,
+    end_date: &str,
+    granularity: &str,
     today: chrono::NaiveDate,
-) -> ProductUsageRange {
-    let monthly = progress.and_then(|entry| entry.progress.monthly.as_ref());
-    if let Some(window) = monthly {
-        let parsed_start = chrono::DateTime::parse_from_rfc3339(&window.window_start).ok();
-        let parsed_reset = chrono::DateTime::parse_from_rfc3339(&window.resets_at).ok();
-        if let (Some(start), Some(reset)) = (parsed_start, parsed_reset) {
-            let start_date = start.date_naive();
-            let reset_date = reset.date_naive();
-            let cycle_days = reset_date.signed_duration_since(start_date).num_days();
-            if (29..=31).contains(&cycle_days) && today >= start_date && today < reset_date {
-                let current_end = reset_date - chrono::Duration::days(1);
-                let (period_start, period_end, query_end, quota, resets_at) = match period {
-                    ProductUsagePeriod::Current => {
-                        let normalized_reset = reset
-                            .with_timezone(&Utc)
-                            .to_rfc3339_opts(SecondsFormat::Secs, true);
-                        (
-                            start_date,
-                            current_end,
-                            today.min(current_end),
-                            product_usage_quota(window),
-                            Some(normalized_reset),
-                        )
-                    }
-                    ProductUsagePeriod::Previous => {
-                        let previous_start = start_date - chrono::Duration::days(30);
-                        let previous_end = start_date - chrono::Duration::days(1);
-                        (previous_start, previous_end, previous_end, None, None)
-                    }
-                };
-                return ProductUsageRange {
-                    query_start_date: period_start.format("%Y-%m-%d").to_string(),
-                    query_end_date: query_end.format("%Y-%m-%d").to_string(),
-                    period_start_date: period_start.format("%Y-%m-%d").to_string(),
-                    period_end_date: period_end.format("%Y-%m-%d").to_string(),
-                    resets_at,
-                    source: "subscriptionMonthly",
-                    quota,
-                };
-            }
-        }
-    }
-
-    let (start, end) = match period {
-        ProductUsagePeriod::Current => (today - chrono::Duration::days(29), today),
-        ProductUsagePeriod::Previous => (
-            today - chrono::Duration::days(59),
-            today - chrono::Duration::days(30),
-        ),
-    };
-    ProductUsageRange {
-        query_start_date: start.format("%Y-%m-%d").to_string(),
-        query_end_date: end.format("%Y-%m-%d").to_string(),
-        period_start_date: start.format("%Y-%m-%d").to_string(),
-        period_end_date: end.format("%Y-%m-%d").to_string(),
-        resets_at: None,
-        source: "rolling30Days",
-        quota: None,
-    }
-}
-
-fn product_usage_quota(window: &SubscriptionUsageWindowWire) -> Option<Value> {
-    if !window.limit_usd.is_finite()
-        || window.limit_usd <= 0.0
-        || !window.used_usd.is_finite()
-        || window.used_usd < 0.0
-        || !window.percentage.is_finite()
+) -> Option<ProductUsageQuery> {
+    let granularity = ProductUsageGranularity::parse(granularity)?;
+    let start = chrono::NaiveDate::parse_from_str(start_date, "%Y-%m-%d").ok()?;
+    let end = chrono::NaiveDate::parse_from_str(end_date, "%Y-%m-%d").ok()?;
+    let range_days = end.signed_duration_since(start).num_days();
+    if !(0..=365).contains(&range_days)
+        || end > today
+        || (granularity == ProductUsageGranularity::Hour && range_days > 31)
     {
         return None;
     }
-    Some(json!({
-        "used_usd": window.used_usd,
-        "limit_usd": window.limit_usd,
-        "percentage": window.percentage.clamp(0.0, 100.0),
-        "resets_at": window.resets_at,
-    }))
+    Some(ProductUsageQuery {
+        start_date: start.format("%Y-%m-%d").to_string(),
+        end_date: end.format("%Y-%m-%d").to_string(),
+        granularity,
+    })
 }
 
 fn product_usage_value(
-    period: ProductUsagePeriod,
-    range: &ProductUsageRange,
+    query: &ProductUsageQuery,
     stats: &ProductUsageStatsWire,
+    trend_status: &str,
+    trend: Vec<Value>,
     models_status: &str,
     models: Vec<Value>,
 ) -> Result<Value, ()> {
-    if !product_usage_stats_valid(stats) || !matches!(models_status, "available" | "unavailable") {
+    if !product_usage_stats_valid(stats)
+        || !matches!(trend_status, "available" | "unavailable")
+        || !matches!(models_status, "available" | "unavailable")
+    {
         return Err(());
     }
     let cache_tokens = if stats.total_cache_tokens > 0 {
@@ -259,15 +208,15 @@ fn product_usage_value(
             .saturating_add(stats.total_cache_read_tokens)
     };
     Ok(json!({
-        "period": period.as_str(),
+        "query": {
+            "start_date": query.start_date,
+            "end_date": query.end_date,
+            "granularity": query.granularity.as_str(),
+        },
         "fetched_at": rfc3339_now(),
         "range": {
-            "query_start_date": range.query_start_date,
-            "query_end_date": range.query_end_date,
-            "period_start_date": range.period_start_date,
-            "period_end_date": range.period_end_date,
-            "resets_at": range.resets_at,
-            "source": range.source,
+            "query_start_date": query.start_date,
+            "query_end_date": query.end_date,
         },
         "totals": {
             "requests": stats.total_requests,
@@ -279,11 +228,46 @@ fn product_usage_value(
             "actual_cost_usd": stats.total_actual_cost,
             "average_duration_ms": stats.average_duration_ms,
         },
-        "quota": range.quota,
-        "engine_breakdown_status": "unsupported",
+        "trend_status": trend_status,
+        "trend": trend,
         "models_status": models_status,
         "models": models,
     }))
+}
+
+fn safe_product_usage_trend(values: Vec<UsageTrendWire>) -> Vec<Value> {
+    values
+        .into_iter()
+        .filter_map(|point| {
+            let bucket = point.date.trim();
+            if bucket.is_empty()
+                || bucket.len() > 32
+                || bucket.chars().any(|character| character.is_control())
+                || point.input_tokens < 0
+                || point.output_tokens < 0
+                || point.cache_creation_tokens < 0
+                || point.cache_read_tokens < 0
+                || point.total_tokens < 0
+                || !point.cost.is_finite()
+                || point.cost < 0.0
+                || !point.actual_cost.is_finite()
+                || point.actual_cost < 0.0
+            {
+                return None;
+            }
+            Some(json!({
+                "bucket": bucket,
+                "input_tokens": point.input_tokens,
+                "output_tokens": point.output_tokens,
+                "cache_creation_tokens": point.cache_creation_tokens,
+                "cache_read_tokens": point.cache_read_tokens,
+                "total_tokens": point.total_tokens,
+                "standard_cost_usd": point.cost,
+                "actual_cost_usd": point.actual_cost,
+            }))
+        })
+        .take(800)
+        .collect()
 }
 
 fn product_usage_stats_valid(stats: &ProductUsageStatsWire) -> bool {
@@ -367,7 +351,6 @@ fn product_billing_value(
     rows.truncate(12);
     Ok(json!({
         "fetched_at": rfc3339_now(),
-        "invoice_download_status": "unsupported",
         "orders": rows,
     }))
 }
@@ -411,7 +394,6 @@ fn product_billing_row(
         "amount": amount,
         "currency": order.currency,
         "status": status,
-        "invoice_available": false,
     }))
 }
 
@@ -459,58 +441,27 @@ mod tests {
     }
 
     #[test]
-    fn product_usage_range_uses_current_and_previous_subscription_windows() {
-        let progress = SubscriptionProgressEntryWire {
-            subscription: crate::account::authority::SubscriptionIdentityWire {
-                id: 7,
-                group_id: 11,
-            },
-            progress: crate::account::authority::SubscriptionProgressWire {
-                id: 7,
-                group_name: "Doge".into(),
-                expires_at: "2030-03-01T00:00:00Z".into(),
-                daily: None,
-                weekly: None,
-                monthly: Some(SubscriptionUsageWindowWire {
-                    limit_usd: 20.0,
-                    used_usd: 3.0,
-                    remaining_usd: 17.0,
-                    percentage: 15.0,
-                    window_start: "2030-01-02T00:00:00Z".into(),
-                    resets_at: "2030-02-01T00:00:00Z".into(),
-                }),
-            },
-        };
+    fn product_usage_query_accepts_safe_ranges_and_rejects_unbounded_hourly_reads() {
         let today = chrono::NaiveDate::from_ymd_opt(2030, 1, 10).expect("date");
 
-        let current = product_usage_range(ProductUsagePeriod::Current, Some(&progress), today);
-        assert_eq!(current.query_start_date, "2030-01-02");
-        assert_eq!(current.query_end_date, "2030-01-10");
-        assert_eq!(current.period_end_date, "2030-01-31");
-        assert_eq!(current.source, "subscriptionMonthly");
-        assert!(current.quota.is_some());
+        let query =
+            product_usage_query("2030-01-02", "2030-01-10", "hour", today).expect("safe query");
+        assert_eq!(query.start_date, "2030-01-02");
+        assert_eq!(query.end_date, "2030-01-10");
+        assert_eq!(query.granularity, ProductUsageGranularity::Hour);
 
-        let previous = product_usage_range(ProductUsagePeriod::Previous, Some(&progress), today);
-        assert_eq!(previous.query_start_date, "2029-12-03");
-        assert_eq!(previous.query_end_date, "2030-01-01");
-        assert!(previous.quota.is_none());
+        assert!(product_usage_query("2030-01-10", "2030-01-02", "day", today).is_none());
+        assert!(product_usage_query("2029-12-01", "2030-01-10", "hour", today).is_none());
+        assert!(product_usage_query("2030-01-01", "2030-01-12", "day", today).is_none());
+        assert!(product_usage_query("2030-01-01", "2030-01-10", "week", today).is_none());
     }
 
     #[test]
     fn product_usage_projection_keeps_summary_when_models_are_unavailable() {
-        let range = ProductUsageRange {
-            query_start_date: "2030-01-02".into(),
-            query_end_date: "2030-01-10".into(),
-            period_start_date: "2030-01-02".into(),
-            period_end_date: "2030-01-31".into(),
-            resets_at: Some("2030-02-01T00:00:00Z".into()),
-            source: "subscriptionMonthly",
-            quota: Some(json!({
-                "used_usd": 1.0,
-                "limit_usd": 10.0,
-                "percentage": 10.0,
-                "resets_at": "2030-02-01T00:00:00Z",
-            })),
+        let query = ProductUsageQuery {
+            start_date: "2030-01-02".into(),
+            end_date: "2030-01-10".into(),
+            granularity: ProductUsageGranularity::Day,
         };
         let stats = ProductUsageStatsWire {
             total_requests: 7,
@@ -525,16 +476,42 @@ mod tests {
             average_duration_ms: 7200.0,
         };
         let value = product_usage_value(
-            ProductUsagePeriod::Current,
-            &range,
+            &query,
             &stats,
+            "unavailable",
+            Vec::new(),
             "unavailable",
             Vec::new(),
         )
         .expect("usage projection");
         assert_eq!(value["totals"]["requests"], 7);
+        assert_eq!(value["query"]["granularity"], "day");
         assert_eq!(value["models_status"], "unavailable");
         assert_eq!(value["models"], json!([]));
+    }
+
+    #[test]
+    fn product_usage_trend_projects_only_safe_token_buckets() {
+        let projected = safe_product_usage_trend(vec![
+            UsageTrendWire {
+                date: "2030-01-10 12:00".into(),
+                input_tokens: 100,
+                output_tokens: 20,
+                cache_creation_tokens: 4,
+                cache_read_tokens: 6,
+                total_tokens: 130,
+                ..UsageTrendWire::default()
+            },
+            UsageTrendWire {
+                date: "bad\nbucket".into(),
+                input_tokens: 1,
+                ..UsageTrendWire::default()
+            },
+        ]);
+
+        assert_eq!(projected.len(), 1);
+        assert_eq!(projected[0]["bucket"], "2030-01-10 12:00");
+        assert_eq!(projected[0]["cache_read_tokens"], 6);
     }
 
     #[test]
@@ -561,6 +538,6 @@ mod tests {
         assert_eq!(value["orders"][0]["plan_name"], "Doge Pro");
         assert_eq!(value["orders"][0]["amount"], 86.4);
         assert_eq!(value["orders"][0]["status"], "paid");
-        assert_eq!(value["orders"][0]["invoice_available"], false);
+        assert!(value["orders"][0].get("invoice_available").is_none());
     }
 }

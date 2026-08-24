@@ -278,10 +278,6 @@ export function useAppShellKanbanComposerSection(
           return;
         }
 
-        const {
-          createSessionTarget: _consumedCreateSessionTarget,
-          ...turnOptions
-        } = options ?? {};
         const providerProfile = createSessionTarget.providerProfileId
           ? {
               id: createSessionTarget.providerProfileId,
@@ -327,7 +323,7 @@ export function useAppShellKanbanComposerSection(
             fallbackText,
             images,
             mergeSelectedAgentOption({
-              ...turnOptions,
+              ...(options ?? {}),
               model: createSessionTarget.model,
               effort: createSessionTarget.effort,
             }),

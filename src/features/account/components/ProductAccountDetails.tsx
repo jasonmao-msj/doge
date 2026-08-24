@@ -6,12 +6,12 @@ import FileText from "lucide-react/dist/esm/icons/file-text";
 import Globe2 from "lucide-react/dist/esm/icons/globe-2";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import { useId, useState, type ReactNode } from "react";
+import { formatTokenCount } from "../../../utils/tokenFormat";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "../../../components/ui/tooltip";
-import { EngineIcon } from "../../engine/components/EngineIcon";
 import {
   groupProductModelsForDisplay,
   productModelVendorBrand,
@@ -20,9 +20,9 @@ import {
 } from "../../vendors/productModelGrouping";
 import {
   PROVIDER_BRAND_ICON_SRC,
-  providerBrandIconNeedsDarkTile,
   resolveProviderBrandIcon,
 } from "../../vendors/providerBrandIcon";
+import { ProviderBrandIconImg } from "../../vendors/components/ProviderBrandIconImg";
 import type { ProductAccountDetailsStateV1 } from "../hooks/useProductAccountDetails";
 import {
   useAccountExperienceCopyV1,
@@ -35,6 +35,8 @@ import type {
   ProductUsageDetailsV1,
   ProductUsageModelV1,
 } from "../runtime/productAccountDetailsClient";
+import { ProductUsageQueryControls } from "./ProductUsageQueryControls";
+import { ProductUsageTrendChart } from "./ProductUsageTrendChart";
 
 export type ProductAccountDetailsProps = {
   readonly details: ProductAccountDetailsStateV1;
@@ -47,7 +49,7 @@ export function ProductAccountDetails({
 }: ProductAccountDetailsProps) {
   return (
     <div className="account-product-details">
-      <ProductUsageSection details={details} product={product} />
+      <ProductUsageSection details={details} />
       <ProductBillingSection details={details} />
       <ProductSubscriptionDetails product={product} />
     </div>
@@ -56,8 +58,7 @@ export function ProductAccountDetails({
 
 function ProductUsageSection({
   details,
-  product,
-}: ProductAccountDetailsProps) {
+}: Pick<ProductAccountDetailsProps, "details">) {
   const copy = useAccountExperienceCopyV1();
   const locale = useAccountExperienceLocaleV1();
   const usage = details.usage;
@@ -65,31 +66,14 @@ function ProductUsageSection({
     <section className="account-detail-card account-detail-usage" aria-labelledby="account-usage-title">
       <div className="account-detail-card-head">
         <h2 id="account-usage-title">{copy.accountUsageTitle}</h2>
-        <div className="account-period-tabs" role="tablist" aria-label={copy.accountUsagePeriod}>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={details.selectedPeriod === "current"}
-            data-active={details.selectedPeriod === "current" ? "true" : "false"}
-            onClick={() => details.selectPeriod("current")}
-          >
-            {copy.accountUsageCurrent}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={details.selectedPeriod === "previous"}
-            data-active={details.selectedPeriod === "previous" ? "true" : "false"}
-            onClick={() => details.selectPeriod("previous")}
-          >
-            {copy.accountUsagePrevious}
-          </button>
-        </div>
+        <ProductUsageQueryControls
+          query={details.selectedUsageQuery}
+          onChange={details.selectUsageQuery}
+        />
       </div>
       {usage.value ? (
         <UsageContent
           usage={usage.value}
-          engines={product.engines}
           locale={locale}
           refreshing={usage.loading}
         />
@@ -111,22 +95,19 @@ function ProductUsageSection({
 
 function UsageContent({
   usage,
-  engines,
   locale,
   refreshing,
 }: {
   readonly usage: ProductUsageDetailsV1;
-  readonly engines: ProductEntitlementSnapshotV1["engines"];
   readonly locale: AccountExperienceLocaleV1;
   readonly refreshing: boolean;
 }) {
   const copy = useAccountExperienceCopyV1();
   const rangeLabel = formatDateRange(
-    usage.range.periodStartDate,
-    usage.range.periodEndDate,
+    usage.range.queryStartDate,
+    usage.range.queryEndDate,
     locale,
   );
-  const maxModelRequests = Math.max(0, ...usage.models.map((model) => model.requests));
   return (
     <div className="account-usage-content" data-refreshing={refreshing ? "true" : "false"}>
       <div className="account-usage-stat-grid">
@@ -141,8 +122,8 @@ function UsageContent({
           tone="orange"
           icon={<Box aria-hidden />}
           label={copy.accountUsageTotalTokens}
-          value={formatCompact(usage.totals.totalTokens, locale)}
-          detail={`${copy.usageInputTokens} ${formatCompact(usage.totals.inputTokens, locale)} · ${copy.usageOutputTokens} ${formatCompact(usage.totals.outputTokens, locale)} · ${copy.usageCacheTokens} ${formatCompact(usage.totals.cacheTokens, locale)}`}
+          value={formatTokenCount(usage.totals.totalTokens)}
+          detail={`${copy.usageInputTokens} ${formatTokenCount(usage.totals.inputTokens)} · ${copy.usageOutputTokens} ${formatTokenCount(usage.totals.outputTokens)} · ${copy.usageCacheTokens} ${formatTokenCount(usage.totals.cacheTokens)}`}
         />
         <UsageStat
           tone="green"
@@ -157,78 +138,44 @@ function UsageContent({
           icon={<Clock3 aria-hidden />}
           label={copy.accountUsageAverageDuration}
           value={formatDuration(usage.totals.averageDurationMs, locale)}
-          detail={usage.range.source === "rolling30Days" ? copy.accountUsageRollingRange : null}
+          detail={rangeLabel}
         />
       </div>
 
-      {usage.quota ? (
-        <div className="account-quota-block">
-          <span
-            className="account-quota-meter"
-            role="progressbar"
-            aria-label={`${copy.accountUsageQuota} ${Math.round(usage.quota.percentage)}%`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(usage.quota.percentage)}
-          >
-            <i style={{ width: `${usage.quota.percentage}%` }} />
-          </span>
-          <div className="account-quota-meta">
-            <span>
-              {copy.accountUsageQuota} {formatUsd(usage.quota.usedUsd, locale)} / {formatUsd(usage.quota.limitUsd, locale)} · {rangeLabel}
-            </span>
-            <time dateTime={usage.quota.resetsAt}>
-              {copy.resetsAt} {formatDateTime(usage.quota.resetsAt, locale)}
-            </time>
-          </div>
-        </div>
-      ) : (
-        <p className="account-detail-note">
-          {usage.period === "previous"
-            ? copy.accountUsageHistoricalQuotaUnavailable
-            : copy.accountUsageQuotaUnavailable}
-        </p>
-      )}
-
-      <div className="account-usage-group-label">{copy.accountUsageByEngine}</div>
-      <div className="account-usage-breakdown" data-kind="engine">
-        {engines.map((engine) => (
-          <div className="account-usage-breakdown-row" key={engine.id}>
-            <span className="account-usage-breakdown-name">
-              <EngineIcon
-                engine={engine.id === "claude-code" ? "claude" : engine.id}
-                size={17}
-              />
-              <span>{engine.displayName}</span>
-            </span>
-            <span className="account-usage-breakdown-track" aria-hidden />
-            <span className="account-usage-breakdown-value">—</span>
-          </div>
-        ))}
-        <p className="account-usage-breakdown-explanation">
-          {copy.accountUsageEngineUnavailable}
-        </p>
+      <div className="account-usage-analytics-grid">
+        <section className="account-usage-model-panel" aria-labelledby="account-usage-model-title">
+          <h3 id="account-usage-model-title" className="account-usage-group-label">
+            {copy.usageModels}
+          </h3>
+          {usage.modelsStatus === "available" && usage.models.length > 0 ? (
+            <div className="account-usage-model-table-scroll">
+              <table className="account-usage-model-table" aria-label={copy.usageModels}>
+                <thead>
+                  <tr>
+                    <th scope="col">{copy.productPickerModel}</th>
+                    <th scope="col">{copy.usageRequests}</th>
+                    <th scope="col">{copy.usageTokens}</th>
+                    <th scope="col">{copy.usageActualCost}</th>
+                    <th scope="col">{copy.usageStandardCost}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usage.models.map((model) => (
+                    <ModelUsageRow key={model.id} model={model} locale={locale} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="account-detail-note">
+              {usage.modelsStatus === "unavailable"
+                ? copy.accountUsageModelsUnavailable
+                : copy.accountUsageNoActivity}
+            </p>
+          )}
+        </section>
+        <ProductUsageTrendChart usage={usage} />
       </div>
-
-      <div className="account-usage-group-label">{copy.accountUsageModelTop}</div>
-      {usage.modelsStatus === "available" && usage.models.length > 0 ? (
-        <div className="account-usage-breakdown" data-kind="model">
-          {usage.models.map((model) => (
-            <ModelUsageRow
-              key={model.id}
-              model={model}
-              maxRequests={maxModelRequests}
-              locale={locale}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="account-detail-note">
-          {usage.modelsStatus === "unavailable"
-            ? copy.accountUsageModelsUnavailable
-            : copy.accountUsageNoActivity}
-        </p>
-      )}
     </div>
   );
 }
@@ -262,31 +209,27 @@ function UsageStat({
 
 function ModelUsageRow({
   model,
-  maxRequests,
   locale,
 }: {
   readonly model: ProductUsageModelV1;
-  readonly maxRequests: number;
   readonly locale: AccountExperienceLocaleV1;
 }) {
-  const copy = useAccountExperienceCopyV1();
   const icon = [model.id, model.displayName]
     .map((identity) => resolveProviderBrandIcon({ modelId: identity }))
     .find((candidate) => candidate !== null) ?? null;
-  const width = maxRequests > 0 ? Math.max(2, (model.requests / maxRequests) * 100) : 0;
   return (
-    <div className="account-usage-breakdown-row">
-      <span className="account-usage-breakdown-name">
-        <BrandIcon src={icon} alt="" />
-        <span title={model.displayName}>{model.displayName}</span>
-      </span>
-      <span className="account-usage-breakdown-track" aria-hidden>
-        <i style={{ width: `${width}%` }} />
-      </span>
-      <span className="account-usage-breakdown-value">
-        {formatInteger(model.requests, locale)} {copy.usageRequests}
-      </span>
-    </div>
+    <tr>
+      <th scope="row">
+        <span className="account-usage-model-name">
+          <BrandIcon src={icon} alt="" />
+          <span title={model.displayName}>{model.displayName}</span>
+        </span>
+      </th>
+      <td>{formatInteger(model.requests, locale)}</td>
+      <td>{formatTokenCount(model.totalTokens)}</td>
+      <td data-kind="actual">{formatUsd(model.actualCostUsd, locale, 4)}</td>
+      <td>{formatUsd(model.standardCostUsd, locale, 4)}</td>
+    </tr>
   );
 }
 
@@ -493,11 +436,8 @@ function productVendorLabel(
 function BrandIcon({ src, alt }: { readonly src: string | null; readonly alt: string }) {
   if (!src) return <Globe2 className="account-brand-icon-fallback" aria-hidden />;
   return (
-    <span
-      className="account-brand-icon"
-      data-dark-tile={providerBrandIconNeedsDarkTile(src) ? "true" : "false"}
-    >
-      <img src={src} alt={alt} aria-hidden={alt === ""} />
+    <span className="account-brand-icon" aria-label={alt || undefined}>
+      <ProviderBrandIconImg src={src} />
     </span>
   );
 }
@@ -547,13 +487,6 @@ function InlineRefreshFailure({ message }: { readonly message: string }) {
 
 function formatInteger(value: number, locale: AccountExperienceLocaleV1): string {
   return new Intl.NumberFormat(locale).format(value);
-}
-
-function formatCompact(value: number, locale: AccountExperienceLocaleV1): string {
-  return new Intl.NumberFormat(locale, {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
 }
 
 function formatUsd(
@@ -609,13 +542,4 @@ function formatDate(value: string, locale: AccountExperienceLocaleV1): string {
     day: "2-digit",
     timeZone: "UTC",
   }).format(new Date(value.length === 10 ? `${value}T00:00:00Z` : value));
-}
-
-function formatDateTime(value: string, locale: AccountExperienceLocaleV1): string {
-  return new Intl.DateTimeFormat(locale, {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }

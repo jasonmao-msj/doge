@@ -1,6 +1,7 @@
 # Account Convenience Native Contract
 
 > **Current product calibration (2026-08-23):** OpenSpec `require-account-engine-subscription-onboarding` 已把 Account 从 Local Mode 之上的可选增值层改为 main-window mandatory gate。下文既有 broker/vault/secret-isolation contracts 继续有效；“Account failure 不 gate Local Mode”“用户选择 existing API Key”“展示配置 diff/bubble”只作为旧 change 的历史行为，不得用于当前产品主链。`doge-unified-product-subscription` 另为 macOS debug 增加 compile-time local development vault exception；Release 仍只使用 OS credential vault。
+> **Unified product cleanup (2026-08-24):** shipping renderer 已删除 legacy `AccountAppGate`、engine-scoped subscription/usage panels、engine checkout client/preferences/activation wrapper；`router.tsx` 只能渲染 `ProductAccountAppGate`。下文 `Mandatory engine subscription onboarding`、`In-App second managed engine acquisition` 等章节仅保留历史设计证据，不得恢复对应 UI/IPC consumer。当前产品只保留 `account_engine_v1_toolchain` 作为 Product Gate 的 Codex/Claude bundled/external provisioning owner。
 
 ## Scenario: Local Mode 之上的 token2api Account 增值层
 
@@ -887,6 +888,7 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 - Kimi managed merge MUST replace entire `doge-token-matrix` provider entry，并移除大小写/分隔符归一化后等价于 `apiKey`、`token`、`secret` 的 legacy secret fields。`config.json` 不得持久化 secret；launch-only owner `KIMI_CODE_HOME/config.toml` 可由 Native 从 vault 生成 owner-only `api_key`。
 - Kimi verification MUST 校验 current/source/base URL/provider type、content fingerprint 与 secret absence。任一不符必须 rollback/fail closed；禁止因为 JSON target 不可被 TOML parse 而把正确配置永久回滚。
 - Product-ready Home target MUST 先由 `resolveProductManagedExecutionTargetV1` 归一，再执行 `isResolvedExecutionTarget` guard。Kimi display catalog id `kimi-code/<model>` 可保留为 `modelCatalogEntryId`，但 runtime `model` MUST 去除该 namespace；实际 send 禁止回退全局 `selectedModelId`。
+- Product-ready Home 无显式 current creation target 时 MUST 固定选择 Codex，并取 current upstream order 中第一条 Codex-compatible row。global/local `selectedEngine/selectedModelId` 不得参与初始 product target；当前 Home 的明确 picker selection 继续保留到 Session create。
 
 ### 4. Validation & Error Matrix
 
@@ -899,6 +901,7 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 | Kimi registry 含 legacy `api_key` | managed merge 删除 secret field | JSON verifier通过；secret只在 vault/runtime home |
 | Kimi current/baseUrl/providerType 漂移 | verifier reject + transaction rollback | `productPrepare` typed retry failure |
 | Kimi JSON 被 Codex TOML verifier处理 | 禁止；regression test必须失败定位 | 不得把正确 JSON 回滚 |
+| Product Home 初次进入，global 上次为 Kimi/Claude | Codex + 第一条 compatible upstream row | 不继承 global/local default |
 
 ### 5. Good / Base / Bad Cases
 
@@ -963,12 +966,15 @@ if file.label == "Doge Kimi provider registry" {
 - Managed target：`providerProfileId="doge-token-matrix"`、`providerProfileSource="managed"`、`modelCatalogEntryId` 与 runtime `model` 分域。
 - Doubao runtime：`PRODUCT_DOUBAO_RUNTIME_MODEL = "豆包"`；公开 catalog 的 `id/display_name/model` 任一命中 `豆包 | doubao | ark-code` 时，UI、Native per-thread selection、`ExecutionTarget.model`、Kimi `--model` 与 launch config alias MUST 使用 Composite 公开别名“豆包”。`ark-code-latest` 是 account 内部 upstream model，直接发给 Composite 会返回 400。
 - Managed display：`PRODUCT_MANAGED_PROVIDER_LABEL = "Doge"`；内部 stable id 仍为 `doge-token-matrix`。`account_product_v1_prepare` 每次均以同一 stable id 幂等覆盖 Codex/Claude/Kimi registry 的 `name="Doge"`，因此旧本机显示名在下次 authenticated prepare 时迁移。
+- Managed configuration revision：`ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64` 写入三个 same-id provider entry 的 `managedRevision`。readiness/plan verify 必须要求 exact current revision；缺失或较旧 revision 不得进入 ready，authenticated prepare 以 deterministic builder 覆盖旧 Doge entry，但保留其他 local/custom provider rows。
+- Child isolation：Doge-launched Codex 设置 isolated `CODEX_HOME`，Kimi 设置 isolated `KIMI_CODE_HOME`，Claude 使用 per-turn owner-only private `--settings`；这些 adapter 不得改写用户 global CLI home。terminal direct launch 因没有 Doge child env/args，继续使用用户本地配置。
 - Claude product projection：`project_claude_model_for_managed_product(provider_profile_id, requested_model, provider_env)`；projection 只作用于 managed product profile 的 child turn。
 - Native model wire：`ProductModelWire { id, display_name?, model?, compatible_engines?, capabilities? }`；renderer view=`{ id, display_name, model, compatible_engines, capabilities }`。
 - Read-only refresh command：`account_product_v1_models() -> { ok, value: { models[], fetched_at } }`；必须限制 main window、读取当前 account scope 的 managed key、网络请求前释放 account state lock。
 - Frontend refresh owner：`refreshProductModelsV1({ force? })`；30s freshness、same-subscription single in-flight、last-known-good、focus/visibility + 60s visible fallback。
 - Product toolchain owner：`prepareProductEngineProvisioningV1({ onEngine? })`；Codex/Claude Code 复用 `account_engine_v1_toolchain`，Kimi 复用 `cli_version_status / cli_install_plan / cli_install_run`。
 - Compatibility evidence：`engine × product model × real CLI payload`，至少覆盖 Codex Responses Agent payload、Claude Code Messages payload、Kimi stream-json Chat payload。
+- Current OpenAI price allowlist：`gpt-5.6-luna + gpt-5.6-sol + gpt-5.6-terra` 共享 `Doge 统一定价` GPT rule；三者保留 exact requested model identity。
 
 ### 3. Contracts
 
@@ -986,6 +992,7 @@ if file.label == "Doge Kimi provider registry" {
 - UI selected target、readiness/accessibility projection、persisted `modelCatalogEntryId` 与 dispatched runtime `model` MUST 同源；不得出现 trigger 正确但 readiness/global model 仍旧的 split truth。
 - Native product picker 的 `nativeAtomicSelection` 只负责保留 display/catalog identity；`onSelectModel` MUST 持久化 callable runtime model。managed Kimi active thread MUST 允许 catalog 外 Composite alias（当前“豆包”），禁止 `getEffectiveSelectedModelId` 因 local CLI catalog 未收录而 repair 回 `gpt-5.5`。
 - Runtime/provider failure MUST 保留 exact selection 并 fail closed；禁止 silent engine/model/provider fallback。
+- product-ready Engine Management 的 Codex/Claude/Kimi local/official activation MUST locked/disabled，不得产生 switch callback；允许保留 raw global file edit，仅用于 terminal direct launch，不能改变 product target。
 - `/v1/models` 只证明 catalog entitlement；三种 endpoint 的 minimal 200 只证明 protocol adapter basic reachability。只有真实 CLI 发出的 system/tools/stream/client headers payload 完成 terminal response，才可标记对应组合 E2E ready。
 - token2api production `allow_messages_dispatch`、`claude_code_only/fallback`、model routing/account pool 均是 Release prerequisites；Doge 不得通过伪造/隐藏 client identity 绕过 server policy。
 
@@ -995,6 +1002,9 @@ if file.label == "Doge Kimi provider registry" {
 |---|---|---|
 | product Home 打开 picker | 右侧 panel；3 engines 显示当前 compatible rows | UI + catalog contract |
 | product-ready Native conversation 打开 picker | 与 Home 相同的右侧 panel，只显示 Codex/Claude/Kimi；选择固定 managed target | existing binding 仍走 continuation/new session |
+| 旧 Doge same-id entry 无 `managedRevision`/revision 过期 | readiness fail closed；authenticated prepare 完整替换 managed entry | local/custom sibling providers 保留，legacy secret 被清理 |
+| 用户在 terminal 直接运行 Codex/Claude/Kimi | 读取用户 global CLI config | Doge isolated home/private settings 不写入 global home |
+| product-ready Settings local row | 置灰锁定，无 use/cancel；edit 可保留 | edit 仅影响 terminal-owned file，不改变 product target |
 | product model catalog ready | 不渲染固定 footer，模型列表占满剩余高度 | refreshing/stale 才显示 transient status |
 | Account 可用模型 collapsed/expanded | collapsed 只显示 vendor + count；click/keyboard 展开真实 display names，再次操作收起 | 不把所有 model name 拼成截断单行 |
 | billing 无 invoice capability | 只显示 order row，不出现 invoice/download copy | 不用 unsupported 提示暴露未提供功能 |
@@ -1032,6 +1042,8 @@ if file.label == "Doge Kimi provider registry" {
 - Composer regression：Home dynamic product mode；Shared removed-model selection 自动 repair并持久化 managed target；readiness/display/runtime identity 跟随 `selectedAtomicTarget`。
 - Native Kimi regression：product picker 点豆包调用 `onSelectModel("豆包")`；managed Kimi hook 保留 catalog 外 alias；local/unmanaged Kimi 仍遵循 CLI catalog repair。
 - Rust unit：display/runtime/engine metadata、upstream order/dedupe、non-conversation filtering、main-window IPC、managed product Claude Unicode model、Kimi Unicode bare+`doge/` alias。
+- Managed config regression：legacy same-id Codex/Claude/Kimi entry（stale revision、旧 endpoint、legacy secret）经三次 builder 后全部升级到 current revision；unrelated/local provider rows 保留；Claude/Kimi registry 不含 secret；Codex isolated TOML 必须 exact match current recipe。
+- Settings regression：product snapshot `ready` 时三种 local card 收到 managed lock；use/cancel 不渲染且 switch callback 不触发，edit 仍可用。product snapshot 非 ready 时保留 legacy Local Mode 行为。
 - Real E2E：当前 selectable catalog 对三 CLI 的 exact model/terminal evidence；失败不得被 minimal endpoint probe覆盖，并必须记录 upstream/config prerequisite。
 - Required commands（用户本次 L4）：全量 Vitest/Rust tests、full ESLint/typecheck、Rust check/build、runtime/engine contracts、OpenSpec strict、hot-dev visual/E2E。
 
@@ -1069,4 +1081,83 @@ catalog entitlement
   + protocol endpoint probe
   + real CLI system/tools/stream payload terminal
   = compatibility evidence for one engine×model cell
+```
+
+## Scenario: Product usage selected-range query and model facts table
+
+### 1. Scope / Trigger
+
+- Trigger：修改 Account Center usage filter、`readAccountProductUsageV1`、`account_product_v1_usage`、product usage authority range 或 model stats projection。
+- 目标：时间筛选必须真实约束 token2api query；model requests/tokens/cost 直接复用 authority facts；慢旧请求不得覆盖新 range。
+
+### 2. Signatures
+
+- Frontend/service query：`AccountProductUsageQueryV1 { startDate: string; endDate: string; granularity: "day" | "hour" }`。
+- Tauri invoke：`invoke("account_product_v1_usage", { startDate, endDate, granularity })`。
+- Native command：`account_product_v1_usage(start_date: String, end_date: String, granularity: String, ...) -> Result<Value, String>`。
+- Runtime：`product_usage_snapshot(&self, start_date: &str, end_date: &str, granularity: &str) -> Value`。
+- Authority：`/api/v1/usage/stats?group_id=&start_date=&end_date=` 与 `/api/v1/usage/dashboard/snapshot-v2?...&granularity=day|hour&include_model_stats=true`。
+- Model row：`{ id, display_name, requests, total_tokens, standard_cost_usd, actual_cost_usd }`。
+- Trend row：`{ bucket, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, total_tokens }`；最多 800 个 safe buckets。
+
+### 3. Contracts
+
+- Native MUST 在任何 network read 前严格解析 `YYYY-MM-DD`、`day|hour`，拒绝倒序、future、超过 366 天以及超过 32 天的 hourly range。
+- Runtime MUST 重新验证 active Composite subscription/group，再以同一 exact inclusive range 并行读取 stats 与 model snapshot；不得接受 renderer 传入 group id。
+- Account Center MUST 使用 preset/custom date range，默认近 7 天；单日/相邻日 range MAY 自动建议 hourly，超过 hourly bound MUST 回到 day。
+- Query change MUST 以 normalized query key 建立 generation fence。旧 range 的 late response MUST NOT 覆盖当前 query；同 query refresh 保留 last-known-good。
+- UI MUST 用一个 semantic table 展示 model、requests、total tokens、actual cost、standard cost；不得再渲染无 authority 的 engine usage roster 或 request-only duplicate ranking。
+- Snapshot MUST 以 `include_trend=true` 返回与 query granularity 对齐的 buckets。UI 展示四条 Token series，并仅按 authority counters 派生 `cacheHitRate = cacheRead / (input + cacheRead + cacheCreation) * 100`；legend toggle 只改变本地可见性，不触发 refetch。
+- Trend projection MUST 同时保留 bucket `standard_cost_usd/actual_cost_usd`；hover hit area 覆盖整个 bucket column，tooltip 展示四类 Token 与 Actual/Standard，不要求用户精准命中小圆点。
+- 所有 core Token count display MUST 复用 `src/utils/tokenFormat.ts::formatTokenCount`，只输出 uppercase `K/M/B`；禁止 locale compact notation 与 feature-local lowercase `k/m` formatter。
+- Model table MUST 使用 bounded scroll + sticky header；Trend 与 Model 两个 panel 在宽屏并列、窄屏单列。
+- 自定义 range 与套餐 monthly quota 不是同一 scope；Account Center MUST NOT 把 subscription window quota meter 拼到任意 custom range totals 上。
+
+### 4. Validation & Error Matrix
+
+| 输入/状态 | 必须行为 | 禁止行为 |
+|---|---|---|
+| `start > end` / malformed date / future | `validationRejected`，零 authority read | 让上游兜底或修正 |
+| day range ≤ 366 天 | exact stats + snapshot query | 回退固定本期/上期 |
+| hour range ≤ 32 天 | snapshot 带 `granularity=hour` | 客户端伪造小时聚合 |
+| hour range > 32 天 | reject 或 UI 自动切 day | 无界小时 buckets |
+| model snapshot failure、stats success | 保留 summary，model table 显示 section-local unavailable | 清空整个 Account page |
+| range A pending 后切 range B | 只允许 B response settle current owner | A late response 覆盖 B |
+| legend toggle | 隐藏/恢复 exact series，保留 range/query | 重发 network request |
+| `700_000` Token | `700K` | `70K`、`70万`、`700k` |
+
+### 5. Good / Base / Bad Cases
+
+- Good：用户选近 14 天，service 发送 exact dates，Native 验 subscription 后并行读取两条上游 route，table 同行显示请求、Token 与成本。
+- Base：用户选择今天，granularity 自动为 hour；model totals 不做客户端二次计算。
+- Bad：UI 只有“近 7 天”文字变化，IPC 仍发送 `period="current"`。
+- Bad：把 model id 当 engine 推断并恢复无数据的“按引擎”条形图。
+
+### 6. Tests Required
+
+- Service test MUST 断言 exact camelCase invoke payload；frontend parser MUST 拒绝 malformed date/granularity 与 query/range mismatch。
+- Hook test MUST 用 deferred requests 证明 stale range response 不覆盖新 query，并覆盖 product/account generation change。
+- Component test MUST 覆盖 preset apply、day/hour selector、semantic table columns 与 engine/quota filler absence。
+- Trend component MUST 覆盖 Cache Hit Rate denominator、右轴 series 与 legend hide/restore；Token formatter MUST 覆盖整数尾零（`700K`）、K/M/B boundary。
+- Rust focused tests MUST 覆盖 valid day/hour、reversed/future/unbounded rejection、model unavailable summary projection；authority test MUST 断言 `group_id + granularity` query。
+- Required commands：focused Vitest、target ESLint、`npm run typecheck`、Rust focused tests、`cargo check --lib`、runtime contracts、OpenSpec strict validation。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+invoke("account_product_v1_usage", { period: "current" });
+setUsage(result); // stale request can overwrite a newer filter
+```
+
+#### Correct
+
+```ts
+const query = { startDate, endDate, granularity } as const;
+invoke("account_product_v1_usage", query);
+
+if (generation === currentGeneration && queryKey === selectedQueryKey) {
+  setUsage(result);
+}
 ```

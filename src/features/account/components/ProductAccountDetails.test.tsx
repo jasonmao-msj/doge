@@ -1,5 +1,12 @@
 // @vitest-environment jsdom
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ProductAccountDetailsStateV1 } from "../hooks/useProductAccountDetails";
 import type { ProductEntitlementSnapshotV1 } from "../runtime/productEntitlementStore";
@@ -11,26 +18,29 @@ vi.mock("react-i18next", () => ({
 
 describe("ProductAccountDetails", () => {
   it("keeps real usage visible while billing has its own loading skeleton", () => {
-    const selectPeriod = vi.fn();
     const { container } = render(
       <ProductAccountDetails
         product={productSnapshot()}
         details={detailsState({
-          selectPeriod,
           billing: { value: null, loading: true, failure: null },
         })}
       />,
     );
 
     expect(screen.getByText("7")).toBeTruthy();
-    expect(screen.getByText("模型 TOP")).toBeTruthy();
-    expect(screen.getByText(/暂未记录 Doge 的运行引擎/)).toBeTruthy();
+    const modelTable = screen.getByRole("table", { name: "模型用量" });
+    expect(within(modelTable).getByRole("columnheader", { name: "请求" })).toBeTruthy();
+    expect(within(modelTable).getByRole("columnheader", { name: "Token" })).toBeTruthy();
+    expect(within(modelTable).getByRole("columnheader", { name: "实际用量" })).toBeTruthy();
+    expect(within(modelTable).getByRole("columnheader", { name: "标准用量" })).toBeTruthy();
+    expect(within(modelTable).getByText("gpt-5.6-sol")).toBeTruthy();
+    expect(within(modelTable).getByText("US$0.80")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Token 使用趋势" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Cache Hit Rate" })).toBeTruthy();
+    expect(screen.queryByText("按引擎")).toBeNull();
     expect(container.querySelector(".account-billing-skeleton")).toBeTruthy();
     expect(screen.queryByRole("button", { name: /下载/ })).toBeNull();
     expect(screen.queryByText(/发票/)).toBeNull();
-
-    fireEvent.click(screen.getByRole("tab", { name: "上期" }));
-    expect(selectPeriod).toHaveBeenCalledWith("previous");
   });
 
   it("renders a section-local retry without clearing subscription details", () => {
@@ -54,25 +64,21 @@ describe("ProductAccountDetails", () => {
     expect(refreshUsage).toHaveBeenCalledTimes(1);
   });
 
-  it("distinguishes a missing current quota window from an unavailable historical limit", () => {
+  it("does not render quota or engine-unavailable filler copy", () => {
     const current = detailsState();
     render(
       <ProductAccountDetails
         product={productSnapshot()}
         details={{
           ...current,
-          usage: {
-            ...current.usage,
-            value: current.usage.value
-              ? { ...current.usage.value, quota: null }
-              : null,
-          },
+          usage: current.usage,
         }}
       />,
     );
 
-    expect(screen.getByText(/暂未返回本期套餐额度窗口/)).toBeTruthy();
+    expect(screen.queryByText(/暂未返回本期套餐额度窗口/)).toBeNull();
     expect(screen.queryByText(/上期额度上限未由服务保留/)).toBeNull();
+    expect(screen.queryByText(/暂未记录 Doge 的运行引擎/)).toBeNull();
   });
 
   it("explains the icon-only billing refresh on pointer and keyboard access", async () => {
@@ -181,18 +187,22 @@ function detailsState(
   overrides: Partial<ProductAccountDetailsStateV1> = {},
 ): ProductAccountDetailsStateV1 {
   return {
-    selectedPeriod: "current",
+    selectedUsageQuery: {
+      startDate: "2030-01-02",
+      endDate: "2030-01-10",
+      granularity: "day",
+    },
     usage: {
       value: {
-        period: "current",
+        query: {
+          startDate: "2030-01-02",
+          endDate: "2030-01-10",
+          granularity: "day",
+        },
         fetchedAt: "2030-01-10T12:00:00Z",
         range: {
           queryStartDate: "2030-01-02",
           queryEndDate: "2030-01-10",
-          periodStartDate: "2030-01-02",
-          periodEndDate: "2030-01-31",
-          resetsAt: "2030-02-01T00:00:00Z",
-          source: "subscriptionMonthly",
         },
         totals: {
           requests: 7,
@@ -204,13 +214,26 @@ function detailsState(
           actualCostUsd: 1,
           averageDurationMs: 7200,
         },
-        quota: {
-          usedUsd: 1,
-          limitUsd: 10,
-          percentage: 10,
-          resetsAt: "2030-02-01T00:00:00Z",
-        },
-        engineBreakdownStatus: "unsupported",
+        trendStatus: "available",
+        trend: [{
+          bucket: "2030-01-02",
+          inputTokens: 100,
+          outputTokens: 20,
+          cacheCreationTokens: 4,
+          cacheReadTokens: 6,
+          totalTokens: 130,
+          standardCostUsd: 0.1,
+          actualCostUsd: 0.08,
+        }, {
+          bucket: "2030-01-10",
+          inputTokens: 180,
+          outputTokens: 30,
+          cacheCreationTokens: 8,
+          cacheReadTokens: 12,
+          totalTokens: 230,
+          standardCostUsd: 0.2,
+          actualCostUsd: 0.16,
+        }],
         modelsStatus: "available",
         models: [{
           id: "gpt-5.6-sol",
@@ -227,7 +250,6 @@ function detailsState(
     billing: {
       value: {
         fetchedAt: "2030-01-10T12:00:00Z",
-        invoiceDownloadStatus: "unsupported",
         orders: [],
       },
       loading: false,
@@ -235,7 +257,7 @@ function detailsState(
     },
     refreshing: false,
     lastUpdatedAt: "2030-01-10T12:00:00Z",
-    selectPeriod: () => undefined,
+    selectUsageQuery: () => undefined,
     refreshUsage: async () => undefined,
     refreshBilling: async () => undefined,
     refreshAll: async () => undefined,

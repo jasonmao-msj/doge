@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import UserRound from "lucide-react/dist/esm/icons/user-round";
 import {
   Popover,
@@ -11,8 +11,7 @@ import {
   TooltipTrigger,
 } from "../../../components/ui/tooltip";
 import { useAccountExperienceCopyV1 } from "../hooks/useAccountExperienceCopy";
-import { useAccountSubscriptionSummaryV1 } from "../hooks/useAccountSubscriptionSummaryV1";
-import { AccountSubscriptionSummarySurface } from "./AccountSubscriptionPanel";
+import { useProductEntitlementSnapshotV1 } from "../runtime/productEntitlementStore";
 
 export type AccountSidebarShortcutProps = {
   /** Open Settings > account in the host Sidebar integration. */
@@ -21,10 +20,7 @@ export type AccountSidebarShortcutProps = {
   readonly enabled?: boolean;
 };
 
-/**
- * Compact account entry point. The summary read is deliberately deferred
- * until the user opens the popover.
- */
+/** Compact account entry point backed by the already-ready product snapshot. */
 export function AccountSidebarShortcut({
   onOpenAccount,
   accountLabel,
@@ -32,22 +28,10 @@ export function AccountSidebarShortcut({
 }: AccountSidebarShortcutProps) {
   const copy = useAccountExperienceCopyV1();
   const [open, setOpen] = useState(false);
-  const summaryState = useAccountSubscriptionSummaryV1({
-    autoLoad: false,
-    enabled,
-  });
-  const {
-    failure,
-    hasLoaded,
-    load,
-    loading,
-    summary,
-  } = summaryState;
-
-  useEffect(() => {
-    if (!open || !enabled || hasLoaded || loading) return;
-    void load();
-  }, [enabled, hasLoaded, load, loading, open]);
+  const product = useProductEntitlementSnapshotV1();
+  const dailyPercentage = Math.round(
+    product.entitlement?.usage?.daily.percentage ?? 0,
+  );
 
   const triggerLabel = accountLabel
     ? `${copy.accountCenter}: ${accountLabel}`
@@ -78,18 +62,37 @@ export function AccountSidebarShortcut({
         align="end"
         sideOffset={10}
       >
-        <AccountSubscriptionSummarySurface
-          summary={summary}
-          loading={loading}
-          failure={failure}
-          compact
-          accountLabel={accountLabel}
-          onRetry={enabled ? load : undefined}
-          onOpenAccount={() => {
-            setOpen(false);
-            onOpenAccount();
-          }}
-        />
+        <div
+          className="account-subscription-panel account-subscription-panel--compact"
+          data-summary-status={product.status}
+        >
+          {accountLabel ? (
+            <div className="account-summary-identity">
+              <strong>{accountLabel}</strong>
+            </div>
+          ) : null}
+          {product.status === "ready" ? (
+            <div className="account-product-shortcut-summary">
+              <strong>{product.entitlement?.planName ?? "Doge"}</strong>
+              <span>{dailyPercentage}%</span>
+            </div>
+          ) : (
+            <div className="account-summary-state" role="status">
+              <span>{copy.loading}</span>
+            </div>
+          )}
+          <button
+            type="button"
+            className="account-summary-open-account"
+            disabled={!enabled}
+            onClick={() => {
+              setOpen(false);
+              onOpenAccount();
+            }}
+          >
+            {copy.accountCenter}
+          </button>
+        </div>
       </PopoverContent>
     </Popover>
   );

@@ -12,7 +12,7 @@ test("macOS signed hot development uses a local identity and stable app identifi
 
   assert.match(
     packageJson.scripts["tauri:dev:hot:signed:mac"],
-    /setup-macos-dev-signing\.sh.*tauri dev --runner.*macos-dev-signed-cargo\.sh/,
+    /setup-macos-dev-signing\.sh.*tauri-dev-hot\.mjs --runner.*macos-dev-signed-cargo\.sh/,
   );
   assert.match(setup, /extendedKeyUsage=codeSigning/);
   assert.match(setup, /security import/);

@@ -24,7 +24,7 @@ import type {
   PaymentMethodViewV1,
   SubscriptionPlanViewV1,
   EngineOnboardingFailureV1,
-} from "../runtime/engineOnboardingClient";
+} from "../runtime/onboardingTypes";
 import { openAccountExternalUrl } from "../../../services/accountExternalLinks";
 import { AccountAuthPanel } from "./AccountExperience";
 import {
@@ -37,7 +37,7 @@ import {
   gateFailureMessage,
   interpolate,
   type GateAccountExit,
-} from "./AccountAppGateViews";
+} from "./ProductAccountAppGateViews";
 
 type ProductGatePhase =
   | "catalog"

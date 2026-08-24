@@ -1,21 +1,18 @@
 import {
   readAccountProductBillingV1,
   readAccountProductUsageV1,
+  type AccountProductUsageQueryV1,
 } from "../../../services/accountProductCommands";
 import type {
   EngineOnboardingFailureV1,
   EngineOnboardingResultV1,
-} from "./engineOnboardingClient";
+} from "./onboardingTypes";
 
-export const PRODUCT_USAGE_PERIODS_V1 = ["current", "previous"] as const;
-export type ProductUsagePeriodV1 = (typeof PRODUCT_USAGE_PERIODS_V1)[number];
+export const PRODUCT_USAGE_GRANULARITIES_V1 = ["day", "hour"] as const;
+export type ProductUsageGranularityV1 =
+  (typeof PRODUCT_USAGE_GRANULARITIES_V1)[number];
 
-export type ProductUsageQuotaV1 = {
-  readonly usedUsd: number;
-  readonly limitUsd: number;
-  readonly percentage: number;
-  readonly resetsAt: string;
-};
+export type ProductUsageQueryV1 = AccountProductUsageQueryV1;
 
 export type ProductUsageModelV1 = {
   readonly id: string;
@@ -26,16 +23,23 @@ export type ProductUsageModelV1 = {
   readonly actualCostUsd: number;
 };
 
+export type ProductUsageTrendPointV1 = {
+  readonly bucket: string;
+  readonly inputTokens: number;
+  readonly outputTokens: number;
+  readonly cacheCreationTokens: number;
+  readonly cacheReadTokens: number;
+  readonly totalTokens: number;
+  readonly standardCostUsd: number;
+  readonly actualCostUsd: number;
+};
+
 export type ProductUsageDetailsV1 = {
-  readonly period: ProductUsagePeriodV1;
+  readonly query: ProductUsageQueryV1;
   readonly fetchedAt: string;
   readonly range: {
     readonly queryStartDate: string;
     readonly queryEndDate: string;
-    readonly periodStartDate: string;
-    readonly periodEndDate: string;
-    readonly resetsAt: string | null;
-    readonly source: "subscriptionMonthly" | "rolling30Days";
   };
   readonly totals: {
     readonly requests: number;
@@ -47,8 +51,8 @@ export type ProductUsageDetailsV1 = {
     readonly actualCostUsd: number;
     readonly averageDurationMs: number;
   };
-  readonly quota: ProductUsageQuotaV1 | null;
-  readonly engineBreakdownStatus: "unsupported";
+  readonly trendStatus: "available" | "unavailable";
+  readonly trend: readonly ProductUsageTrendPointV1[];
   readonly modelsStatus: "available" | "unavailable";
   readonly models: readonly ProductUsageModelV1[];
 };
@@ -60,26 +64,41 @@ export type ProductBillingOrderV1 = {
   readonly amount: number;
   readonly currency: string;
   readonly status: "paid" | "pending" | "refunded" | "failed";
-  readonly invoiceAvailable: false;
 };
 
 export type ProductBillingDetailsV1 = {
   readonly fetchedAt: string;
-  readonly invoiceDownloadStatus: "unsupported";
   readonly orders: readonly ProductBillingOrderV1[];
 };
 
 export type ProductAccountDetailsClientV1 = {
   readonly usage: (
-    period: ProductUsagePeriodV1,
+    query: ProductUsageQueryV1,
   ) => Promise<EngineOnboardingResultV1<ProductUsageDetailsV1>>;
   readonly billing: () => Promise<EngineOnboardingResultV1<ProductBillingDetailsV1>>;
 };
 
+export function createDefaultProductUsageQueryV1(
+  now = new Date(),
+): ProductUsageQueryV1 {
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const start = new Date(end);
+  start.setDate(start.getDate() - 6);
+  return {
+    startDate: formatLocalDate(start),
+    endDate: formatLocalDate(end),
+    granularity: "day",
+  };
+}
+
+export function productUsageQueryKeyV1(query: ProductUsageQueryV1): string {
+  return `${query.startDate}:${query.endDate}:${query.granularity}`;
+}
+
 export function createProductAccountDetailsClientV1(): ProductAccountDetailsClientV1 {
   return {
-    usage: async (period) => parseProductUsageDetails(
-      await readAccountProductUsageV1(period),
+    usage: async (query) => parseProductUsageDetails(
+      await readAccountProductUsageV1(query),
     ),
     billing: async () => parseProductBillingDetails(
       await readAccountProductBillingV1(),
@@ -93,20 +112,24 @@ export function parseProductUsageDetails(
   const envelope = readEnvelope(value);
   if (!envelope.ok) return envelope;
   const root = asObject(envelope.value);
+  const query = asObject(root?.query);
   const range = asObject(root?.range);
   const totals = asObject(root?.totals);
+  const trend = Array.isArray(root?.trend) ? root.trend.map(parseUsageTrendPoint) : null;
   const models = Array.isArray(root?.models) ? root.models.map(parseUsageModel) : null;
   if (
     !root ||
-    !isUsagePeriod(root.period) ||
+    !query ||
+    !validDate(query.start_date) ||
+    !validDate(query.end_date) ||
+    !isUsageGranularity(query.granularity) ||
     !validTimestamp(root.fetched_at) ||
     !range ||
     !validDate(range.query_start_date) ||
     !validDate(range.query_end_date) ||
-    !validDate(range.period_start_date) ||
-    !validDate(range.period_end_date) ||
-    (range.resets_at !== null && !validTimestamp(range.resets_at)) ||
-    (range.source !== "subscriptionMonthly" && range.source !== "rolling30Days") ||
+    range.query_start_date !== query.start_date ||
+    range.query_end_date !== query.end_date ||
+    query.start_date > query.end_date ||
     !totals ||
     !nonNegativeInteger(totals.requests) ||
     !nonNegativeInteger(totals.input_tokens) ||
@@ -116,7 +139,10 @@ export function parseProductUsageDetails(
     !finiteNonNegative(totals.standard_cost_usd) ||
     !finiteNonNegative(totals.actual_cost_usd) ||
     !finiteNonNegative(totals.average_duration_ms) ||
-    root.engine_breakdown_status !== "unsupported" ||
+    (root.trend_status !== "available" && root.trend_status !== "unavailable") ||
+    trend === null ||
+    trend.length > 800 ||
+    trend.some((point) => point === null) ||
     (root.models_status !== "available" && root.models_status !== "unavailable") ||
     models === null ||
     models.length > 12 ||
@@ -124,20 +150,18 @@ export function parseProductUsageDetails(
   ) {
     return protocolFailure();
   }
-  const quota = root.quota === null ? null : parseQuota(root.quota);
-  if (root.quota !== null && quota === null) return protocolFailure();
   return {
     ok: true,
     value: {
-      period: root.period,
+      query: {
+        startDate: query.start_date,
+        endDate: query.end_date,
+        granularity: query.granularity,
+      },
       fetchedAt: root.fetched_at,
       range: {
         queryStartDate: range.query_start_date,
         queryEndDate: range.query_end_date,
-        periodStartDate: range.period_start_date,
-        periodEndDate: range.period_end_date,
-        resetsAt: range.resets_at,
-        source: range.source,
       },
       totals: {
         requests: totals.requests,
@@ -149,8 +173,8 @@ export function parseProductUsageDetails(
         actualCostUsd: totals.actual_cost_usd,
         averageDurationMs: totals.average_duration_ms,
       },
-      quota,
-      engineBreakdownStatus: "unsupported",
+      trendStatus: root.trend_status,
+      trend: trend as ProductUsageTrendPointV1[],
       modelsStatus: root.models_status,
       models: models as ProductUsageModelV1[],
     },
@@ -167,7 +191,6 @@ export function parseProductBillingDetails(
   if (
     !root ||
     !validTimestamp(root.fetched_at) ||
-    root.invoice_download_status !== "unsupported" ||
     orders === null ||
     orders.length > 12 ||
     orders.some((order) => order === null)
@@ -178,28 +201,35 @@ export function parseProductBillingDetails(
     ok: true,
     value: {
       fetchedAt: root.fetched_at,
-      invoiceDownloadStatus: "unsupported",
       orders: orders as ProductBillingOrderV1[],
     },
   };
 }
 
-function parseQuota(value: unknown): ProductUsageQuotaV1 | null {
-  const quota = asObject(value);
+function parseUsageTrendPoint(value: unknown): ProductUsageTrendPointV1 | null {
+  const point = asObject(value);
   if (
-    !quota ||
-    !finiteNonNegative(quota.used_usd) ||
-    !finitePositive(quota.limit_usd) ||
-    !finitePercentage(quota.percentage) ||
-    !validTimestamp(quota.resets_at)
+    !point ||
+    !safeText(point.bucket, 32) ||
+    !nonNegativeInteger(point.input_tokens) ||
+    !nonNegativeInteger(point.output_tokens) ||
+    !nonNegativeInteger(point.cache_creation_tokens) ||
+    !nonNegativeInteger(point.cache_read_tokens) ||
+    !nonNegativeInteger(point.total_tokens) ||
+    !finiteNonNegative(point.standard_cost_usd) ||
+    !finiteNonNegative(point.actual_cost_usd)
   ) {
     return null;
   }
   return {
-    usedUsd: quota.used_usd,
-    limitUsd: quota.limit_usd,
-    percentage: quota.percentage,
-    resetsAt: quota.resets_at,
+    bucket: point.bucket,
+    inputTokens: point.input_tokens,
+    outputTokens: point.output_tokens,
+    cacheCreationTokens: point.cache_creation_tokens,
+    cacheReadTokens: point.cache_read_tokens,
+    totalTokens: point.total_tokens,
+    standardCostUsd: point.standard_cost_usd,
+    actualCostUsd: point.actual_cost_usd,
   };
 }
 
@@ -236,8 +266,7 @@ function parseBillingOrder(value: unknown): ProductBillingOrderV1 | null {
     !validTimestamp(order.occurred_at) ||
     !finiteNonNegative(order.amount) ||
     !safeCurrency(order.currency) ||
-    !statuses.includes(order.status as (typeof statuses)[number]) ||
-    order.invoice_available !== false
+    !statuses.includes(order.status as (typeof statuses)[number])
   ) {
     return null;
   }
@@ -248,7 +277,6 @@ function parseBillingOrder(value: unknown): ProductBillingOrderV1 | null {
     amount: order.amount,
     currency: order.currency,
     status: order.status as ProductBillingOrderV1["status"],
-    invoiceAvailable: false,
   };
 }
 
@@ -273,8 +301,10 @@ function asObject(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function isUsagePeriod(value: unknown): value is ProductUsagePeriodV1 {
-  return PRODUCT_USAGE_PERIODS_V1.includes(value as ProductUsagePeriodV1);
+function isUsageGranularity(value: unknown): value is ProductUsageGranularityV1 {
+  return PRODUCT_USAGE_GRANULARITIES_V1.includes(
+    value as ProductUsageGranularityV1,
+  );
 }
 
 function safeText(value: unknown, maxLength: number): value is string {
@@ -291,7 +321,15 @@ function safeCurrency(value: unknown): value is string {
 
 function validDate(value: unknown): value is string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/u.test(value)) return false;
-  return !Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
+function formatLocalDate(value: Date): string {
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function validTimestamp(value: unknown): value is string {
@@ -308,14 +346,6 @@ function nonNegativeInteger(value: unknown): value is number {
 
 function finiteNonNegative(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0;
-}
-
-function finitePositive(value: unknown): value is number {
-  return finiteNonNegative(value) && value > 0;
-}
-
-function finitePercentage(value: unknown): value is number {
-  return finiteNonNegative(value) && value <= 100;
 }
 
 function protocolFailure(): EngineOnboardingResultV1<never> {

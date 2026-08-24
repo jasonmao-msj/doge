@@ -31,6 +31,10 @@ renderer 不基于套餐名猜测权限，也不硬编码售价、有效期、�
 
 credential business identity 为 `account + device + composite group`。ensure operation 必须幂等；重复启动只能复用或安全 refresh，不得创建 key storm。secret 不进入 IPC diagnostics、React state、日志或用户可见配置 diff；Kimi 的 owner-only runtime config 属于 Native launch adapter，不能成为业务状态或跨账号复用。
 
+managed provider projection 采用 stable id `doge-token-matrix` + integer `managedRevision`。每次 authenticated product startup 都必须执行 idempotent `prepare`；同 id 的旧 Doge entry 缺失/低于 current revision 时 fail closed，并由 builder 完整替换为当前 Codex/Claude/Kimi managed entry，同时保留其他 local/custom provider rows。Codex 只向 Doge-spawned child 注入隔离 `CODEX_HOME`，Kimi 只向 child 注入隔离 `KIMI_CODE_HOME`，Claude 每 turn 使用 owner-only private `--settings`；不得改写用户的 `~/.codex`、`~/.claude/settings.json` 或 `~/.kimi-code`，因此用户在 terminal 直接运行 CLI 仍使用自己的本地配置。
+
+product entitlement ready 时，Settings 的 Codex/Claude/Kimi local/official activation control 必须以 locked/disabled 状态展示并解释 Doge managed authority，不允许切回 local；raw local config 的 edit 入口可以保留，因为它只服务 terminal direct usage，不能改变任何 product execution target。
+
 ### 2.3 Model catalog
 
 模型权限事实来自使用 managed Composite key 调用的 `/v1/models`。Doge 输出稳定字段 `id`、`displayName`、`model`、`compatibleEngines` 与可选 `capabilities`：`displayName` 优先读取上游 `display_name`，`model` 优先读取上游 `model/runtime_model`，缺失时回退公开可调用的 `id`。presentation registry 只补 icon/vendor，不得增加 entitlement。
@@ -44,6 +48,8 @@ product catalog identity、用户显示名与 CLI runtime identity 必须分离�
 开发 vault 仍复用同一 purpose allowlist。directory MUST 为 `0700`，credential file MUST 为 regular file 且为 `0600`；读写拒绝 symlink，使用 lock + same-directory create-new temp + fsync + atomic rename。错误只返回稳定 safe message，不能输出 path、purpose 对应 secret 或 serialized payload。
 
 Release、非 macOS debug 与所有正式分发继续构造 `OsAccountVault`。debug file 不参与 release migration，不由 renderer 选择，也没有 runtime flag；从 Keychain 切到 debug file 后若尚无本地 session，开发者只需登录一次，后续启动复用 local refresh credential。
+
+canonical dev/release 共用 bundle identifier 也意味着 macOS single-instance owner 必须可辨认。`tauri:dev:hot`、isolated 与 signed dev 在执行 `tauri dev` 前检查 `.app/Contents/MacOS/doge` packaged process；存在时 fail closed 并要求先退出旧窗口，禁止让旧内置 `tauri://localhost` bundle 抢占本应连接 Vite `:1420` 的验收窗口。preflight 不自动 kill，以免丢失旧 App 中未保存的用户工作；repo raw `target/debug/doge` 不视为 packaged conflict。
 
 ## 3. Gate State Machine
 
@@ -60,6 +66,7 @@ Release、非 macOS debug 与所有正式分发继续构造 `OsAccountVault`。d
 ## 4. Engine and Model Selection
 
 - engine list 只来自 Doge local engine registry，首期产品面展示 Codex、Claude、Kimi。
+- Product Home 每次进入新会话态都以 `Codex + 当前上游目录中 Codex 的第一条 compatible model` 作为确定性初始 Target；不得继承 global/local 上次 engine 或 model。用户在当前 Home 明确点选后，local creation target 保留到该 Session 创建完成。
 - product catalog 继续是商业 entitlement 的上限；Doge 不再维护具体 model id allowlist。Native 安全投影保留上游顺序与 display/runtime identity，并拒绝 malformed、重复、超量以及明确的 image/audio/realtime/embedding-only rows。
 - 上游 `compatible_engines` 存在时是 engine subset authority；缺失时按稳定 family fallback 投影：GPT/OpenAI→Codex、Claude/Anthropic→Claude Code、Kimi/Moonshot/K3→Kimi CLI、豆包/Ark Coding→三种 managed adapter，未知 family fail closed。由此同 family 新 model id 不需要 Doge 发版即可进入目录；上游新增兼容元数据后可直接扩展新 family。
 - model list 按当前 engine 的动态 `compatibleEngines` 过滤后，再按 presentation vendor 分组并支持搜索；组内保持上游 catalog 顺序。`/v1/models` 是 entitlement/catalog evidence，exact CLI Agent payload typed terminal 是发布 E2E evidence；两者不能互相替代。
@@ -68,15 +75,16 @@ Release、非 macOS debug 与所有正式分发继续构造 `OsAccountVault`。d
 - 选择立即写入当前/new-session target，面板保持打开；关闭后 composer 展示 engine icon + model brand icon + display name。
 - product ready 后，`engine + model + managed provider profile` 共同组成唯一合法的 ExecutionTarget；新会话初始化、Shared target repair、engine/model 切换与发送边界都必须显式绑定 `doge-token-matrix`，不得继承旧 local/disk profile。
 - product flow 不展示 provider/configuration selector。用户只选择 engine 与该 engine 已验收的 model；Doge 注入的 managed provider configuration 是产品级 runtime contract，不是第三个用户选项。
+- Sidebar 新建菜单遵守同一产品 contract：product ready 时 Claude/Codex/Kimi 都是直接创建动作，固定 `doge-token-matrix`；只有非产品/Local Mode 保留 legacy Provider submenu。模型发布集合由 token2api `Doge APP` 分组的自定义 `/v1/models` 展示列表维护，Doge 不增加第二份 model-id allowlist。
 - product-ready Home、Shared 与普通 Native conversation 修改入口使用同一个可刷新的 product snapshot，再通过同一个 compatibility helper 得到 engine-specific rows；不得从 provider-scoped/local fallback catalog 补模型，也不得按入口维护多套目录。Native binding 仍 immutable，跨 engine/provider 继续走 managed prepare + new-session/Continuation。
-- Product picker 使用右侧 panel，engine/model 分栏独立选择；provider/channel/configuration controls 在该 surface 不可达。Existing Native Session 仍遵守 immutable engine/provider binding，跨 engine 走 new-session/Continuation；Shared 只改变 Next Turn target。
+- Product picker 使用右侧 panel，engine/model 分栏独立选择；provider/channel/configuration controls 在该 surface 不可达。Existing Native Session 中切换 engine 时只更新 panel 内 draft engine，必须等用户点击目标 model 后才原子提交完整 `engine + model + managed provider` Target 并启动 Continuation；禁止 engine click 先用来源 model 创建 target，再让后续 model click 只改 UI。Existing Native Session 仍遵守 immutable engine/provider binding，跨 engine 走 new-session/Continuation；Shared 只改变 Next Turn target。
 - Release readiness 不能只以 `/v1/models` 为证据；必须维护 `Responses + Messages + Chat Completions` 的 current product model probe matrix。临时 route/account unavailable 只形成原 target 的 typed failure，禁止 silent fallback。
 - 组合 ExecutionTarget 时保留上游 `modelCatalogEntryId`，并只把上游公开 `model/runtime_model/id` 解析为 runtime model；禁止从 display name 猜测调用名。
 - Kimi launch hydration 在每次真实发送前按 selected runtime model 写入 bare + `doge/` alias；Claude managed turn 通过 family alias + turn-scoped env 投影任意安全 Unicode model id；Codex 直接发送 runtime model。三者都不得回退 global/default model。
 
 token2api production configuration 仍是 E2E prerequisite，但 Doge 不读取 admin-only facts。若 `/v1/models` 广告的模型在 Composite route 中不可调用（当前只读 probe 已证明 `豆包` 与 `ark-code-latest` 均返回 `Model is not supported by composite groups`），该差异必须作为 upstream/configuration blocker 暴露，不能在 Doge 静态伪造映射。
 
-token2api channel 对 `Doge APP` 采用 single-owner `Doge 统一定价`。Kimi 官方 4 条 token price 保留；豆包 Coding Plan 通过 OpenAI 平台 `ark-code-latest + 豆包` allowlist 放行，因官方套餐按订阅额度而非独立 token 单价计费，禁止填写伪造 price；`gpt-5.6-luna` 复用 OpenAI 官方 default 与长上下文分层价。其余 GPT/Claude model 若要 release-ready，必须继续把对应官方 price rules 合并进同一 channel。
+token2api channel 对 `Doge APP` 采用 single-owner `Doge 统一定价`。Kimi 官方 4 条 token price 保留；豆包 Coding Plan 通过 OpenAI 平台 `ark-code-latest + 豆包` allowlist 放行，因官方套餐按订阅额度而非独立 token 单价计费，禁止填写伪造 price；`gpt-5.6-luna + gpt-5.6-sol + gpt-5.6-terra` 共享当前 OpenAI default 与长上下文分层价。其余 GPT/Claude model 若要 release-ready，必须继续把对应 official/current product price rules 合并进同一 channel。
 
 Claude Messages 也受同一 channel 的 platform-specific pricing gate。初版在 Anthropic platform 增加 `claude-sonnet-4-6` 官方价与 `ark-code-latest + 豆包` 空价格 allowlist；这是 endpoint eligibility，不改变 private account mapping。Claude CLI 的 structured `assistant` API error 属于 authoritative terminal rejection，即使 process/stdout 未退出也必须立即 settle；等待 EOF 只属于 cleanup，不能让 Continuation Dialog 永久停在 delivery。
 
@@ -85,21 +93,23 @@ Claude Messages 也受同一 channel 的 platform-specific pricing gate。初版
 ## 5. Account Center
 
 - 保留 AccountCenterHeader 的 display name、password、TOTP、identity binding、this/all device logout。
-- Account Center 使用单页 scroll surface：页面标题/说明、profile + product status、usage details、billing records、subscription details 依次排列，不再要求用户通过 Subscription/Usage Tab 找信息。
+- Account Center 使用单页 scroll surface：页面标题、profile + product status、usage details、billing records、subscription details 依次排列，不再要求用户通过 Subscription/Usage Tab 找信息；标题下不重复解释页面能力。
 - profile 与 product entitlement 来自已就绪的 account controller/product store，首屏同步渲染；usage 与 billing 是两个独立 async owner，分别提供 skeleton、last-known-good、error 与 retry。
-- usage period closed enum 为 `current | previous`。Native 重新验证 active Composite subscription，优先用 subscription progress 的 monthly `window_start/resets_at` 计算 exact range；缺失时使用明确标注的 rolling-30-day fallback。
-- summary 由 `/usage/stats` 提供 requests、token breakdown、standard/actual cost、average duration；model TOP 由同 group/date range 的 `/usage/dashboard/snapshot-v2` 提供。两者在 period range 已确定后并行请求。
+- usage query 使用 validated `startDate + endDate + day|hour` contract。Frontend 提供与 token2api 一致的常用范围、自定义日期与粒度选择；Native 限制 future、倒序、超过 366 天以及超过 32 天的 hourly query，并在重新验证 active Composite subscription 后把 exact range 传给 authority。
+- summary 由 `/usage/stats` 提供 requests、token breakdown、standard/actual cost、average duration；model usage table 与 Token trend 由同 group/date range 的 `/usage/dashboard/snapshot-v2` 提供。两者在 range 已验证后并行请求；granularity 原样传给 snapshot，不在 Doge 伪造 buckets。Trend 展示 Input/Output/Cache Creation/Cache Read，并按上游公式 `cacheRead / (input + cacheRead + cacheCreation)` 派生 Cache Hit Rate 右轴；legend 可逐 series toggle。
+- 所有 Doge core Token count display 统一调用 `src/utils/tokenFormat.ts::formatTokenCount`，固定使用 uppercase `K/M/B`，禁止依赖 locale compact notation 产生“万/亿”或各 surface 自建 lowercase `k/m` formatter。
+- token2api 未返回 runtime-engine aggregation 时，Account Center 不渲染无数据的 engine roster 或解释性 filler；model table 是唯一 usage drill-down。
 - engine roster 来自 Doge built-in registry；token2api 当前不持有 Doge runtime engine dimension，因此不得展示推测 count。未来上游新增 authoritative dimension 后可在同一 slot 渐进启用。
 - billing 独立并行读取 `/payment/orders/my?order_type=subscription` 与 checkout plan catalog，用 plan id 映射显示名；只展示 safe order facts。上游无 invoice artifact/download endpoint，故 UI 不渲染 action，也不展示 unsupported/invoice 提示。
-- Subscription details 只显示一个 product：plan name、active state、`YYYY-MM-DD` expiry 与可用模型数量。模型按 presentation vendor grouping 默认显示 vendor + count，点击渐进展开 model display-name list，再次点击收起。豆包 identity 统一使用 product-owned PNG，不能另建第二套 vendor/icon 规则。
+- Subscription details 只显示一个 product：plan name、active state、`YYYY-MM-DD` expiry 与可用模型数量。模型按 presentation vendor grouping 默认显示 vendor + count，点击渐进展开 model display-name list，再次点击收起。豆包 identity 统一使用 product-owned PNG，不能另建第二套 vendor/icon 规则。所有 provider/LLM icon 必须经过 `ProviderBrandIconImg` theme strategy；彩色资产保持原色，`currentColor` mono SVG 在 dark/dim/system-dark 自动反白，白字品牌继续使用 dark tile。
 - product ready 时完全移除旧 engine-scoped subscription/usage fallback，避免混入历史或无关套餐。
 - sidebar shortcut 继续 lazy load，第一层只展示账号身份与整数 percentage；身份区进入账户详情顶部，usage 区进入/聚焦同页 usage section。
 
 ## 6. Compatibility and Rollout
 
-- 旧 engine-scoped subscription 仍可出现在 Native authority 数据中，但不解锁新 product Gate；只匹配当前上架 Composite product groups。
+- renderer 已删除旧 `AccountAppGate`、engine-scoped subscription/usage cards、engine checkout client 与 associated copy；shipping route 只能构造 `ProductAccountAppGate`。Native authority 中的兼容数据不得恢复旧 UI。
 - 旧 local provider/config 代码与 Local Mode 数据不删除，但 product-ready flow 不暴露 local channel，也不得从历史 selection、global active profile 或 disk config 继承它。只有退出 product flow 的独立 Local Mode 才可继续使用旧 local/expert channel。
-- token2api 无发布变更；Doge rollback 可恢复旧 AccountAppGate/client，而不影响上游订阅和 key。
+- rollback 只允许回退 Product Gate 实现；不得恢复按引擎订阅选择或旧 engine checkout client。
 
 ## 7. Request-Storm Safety
 
@@ -110,6 +120,7 @@ Claude Messages 也受同一 channel 的 platform-specific pricing gate。初版
 - Account detail usage 与 billing 分别 in-flight dedupe；period generation 只允许当前 selection 写回。刷新保留 last-known-good，不回到整页 blank。
 - Native 在取得/刷新 access token 后释放 account state mutex，再执行 usage/order network reads；禁止长请求持锁阻塞 logout/profile/security。
 - Product plan card 使用固定 information hierarchy 而非整卡文字按钮：brand → plan name/price/validity → engine row → upstream feature/model row → full-width CTA。商业 name/price/currency/validity/description/features 继续来自 token2api；engine row 来自 Doge registry。
+- Account usage range Popover 必须使用 opaque `surface-popover`，不得让下层 stat cards/table header 穿透影响日期与 preset 可读性。
 
 ## 8. Verification Matrix
 

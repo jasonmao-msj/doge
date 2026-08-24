@@ -369,6 +369,7 @@ async fn subscription_usage_authority_wire_uses_progress_and_group_scoped_dashbo
             11,
             "2029-01-02",
             "2030-01-01",
+            "day",
             true,
             true,
         )
@@ -378,6 +379,7 @@ async fn subscription_usage_authority_wire_uses_progress_and_group_scoped_dashbo
     assert_eq!(snapshot.models[0].model, "gpt-5");
     let query = captured_query.lock().expect("usage query");
     assert_eq!(query.get("group_id").map(String::as_str), Some("11"));
+    assert_eq!(query.get("granularity").map(String::as_str), Some("day"));
     assert_eq!(
         query.get("start_date").map(String::as_str),
         Some("2029-01-02")

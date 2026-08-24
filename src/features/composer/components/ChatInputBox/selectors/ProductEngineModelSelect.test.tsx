@@ -55,7 +55,7 @@ const initialTarget: ExecutionTarget = {
 };
 
 describe("ProductEngineModelSelect", () => {
-  it("atomically falls back to the next engine's compatible model", () => {
+  it("commits an engine and model atomically after the model is selected", () => {
     const changes: ExecutionTarget[] = [];
 
     function Harness() {
@@ -83,6 +83,9 @@ describe("ProductEngineModelSelect", () => {
     expect(screen.getByRole("dialog").querySelector("footer")).toBeNull();
 
     fireEvent.click(screen.getByRole("radio", { name: "Claude" }));
+    expect(changes).toHaveLength(0);
+    expect(screen.getByRole("radio", { name: /Claude Sonnet 4.8/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: /Claude Sonnet 4.8/ }));
     expect(changes.at(-1)).toMatchObject({
       engine: "claude",
       modelCatalogEntryId: "claude-sonnet-4-8",
@@ -90,9 +93,11 @@ describe("ProductEngineModelSelect", () => {
       providerProfileId: "doge-token-matrix",
       providerProfileNameSnapshot: "Doge",
     });
-    expect(screen.getByRole("dialog", { name: "选择引擎与模型" })).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: "选择引擎与模型" })).toBeNull();
 
+    fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
     fireEvent.click(screen.getByRole("radio", { name: "Codex" }));
+    expect(changes).toHaveLength(1);
     fireEvent.click(screen.getByRole("radio", { name: /GPT-5.5/ }));
     expect(changes.at(-1)).toMatchObject({
       engine: "codex",
@@ -101,7 +106,42 @@ describe("ProductEngineModelSelect", () => {
       providerProfileId: "doge-token-matrix",
       providerProfileNameSnapshot: "Doge",
     });
-    expect(screen.getByRole("dialog", { name: "选择引擎与模型" })).toBeTruthy();
+    expect(screen.queryByRole("dialog", { name: "选择引擎与模型" })).toBeNull();
+  });
+
+  it("does not bridge a Kimi source model while choosing Codex Sol", () => {
+    const onExecutionTargetChange = vi.fn();
+    const doubao = productModel("豆包", "豆包", ["codex", "kimi"]);
+    render(
+      <ProductEngineModelSelect
+        catalog={{ ...catalog, models: [doubao, ...catalog.models] }}
+        executionTarget={{
+          ...initialTarget,
+          engine: "kimi",
+          modelCatalogEntryId: "豆包",
+          model: "豆包",
+          reasoning: null,
+        }}
+        onExecutionTargetChange={onExecutionTargetChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
+    fireEvent.click(screen.getByRole("radio", { name: "Codex" }));
+
+    expect(onExecutionTargetChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("radio", { name: /GPT-5.6 Sol/ })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("radio", { name: /GPT-5.6 Sol/ }));
+    expect(onExecutionTargetChange).toHaveBeenCalledOnce();
+    expect(onExecutionTargetChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        engine: "codex",
+        modelCatalogEntryId: "gpt-5.6-sol",
+        model: "gpt-5.6-sol",
+        providerProfileId: "doge-token-matrix",
+      }),
+    );
   });
 
   it("searches only the selected engine's compatible dynamic models and closes with Escape", () => {

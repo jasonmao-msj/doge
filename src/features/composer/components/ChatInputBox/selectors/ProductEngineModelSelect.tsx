@@ -41,13 +41,20 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
   const copy = useAccountExperienceCopyV1();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [draftEngineId, setDraftEngineId] = useState<
+    ProductTargetCatalogV1["engines"][number]["id"] | null
+  >(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const selectedEngine =
+  const committedEngine =
     catalog.engines.find((engine) => engine.id === executionTarget?.engine) ??
     catalog.engines[0] ??
     null;
+  const selectedEngine =
+    (open
+      ? catalog.engines.find((engine) => engine.id === draftEngineId)
+      : null) ?? committedEngine;
   const compatibleModels = useMemo(
     () =>
       selectedEngine
@@ -73,8 +80,18 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
   const close = useCallback(() => {
     setOpen(false);
     setQuery("");
+    setDraftEngineId(null);
     window.requestAnimationFrame(() => triggerRef.current?.focus());
   }, []);
+
+  const toggle = useCallback(() => {
+    if (open) {
+      close();
+      return;
+    }
+    setDraftEngineId(committedEngine?.id ?? null);
+    setOpen(true);
+  }, [close, committedEngine?.id, open]);
 
   useEffect(() => {
     if (!open) return;
@@ -195,7 +212,9 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
                         data-selected={selected ? "true" : "false"}
                         disabled={nextModel === null}
                         onClick={() => {
-                          if (nextModel) publishTarget(engine, nextModel);
+                          if (!nextModel) return;
+                          setDraftEngineId(engine.id);
+                          setQuery("");
                         }}
                       >
                         <EngineIcon engine={engine.id} size={19} />
@@ -249,8 +268,10 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
                               aria-checked={selected}
                               data-selected={selected ? "true" : "false"}
                               onClick={() => {
-                                if (selectedEngine)
+                                if (selectedEngine) {
                                   publishTarget(selectedEngine, model);
+                                  close();
+                                }
                               }}
                             >
                               <ProductModelIcon
@@ -295,7 +316,7 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
         aria-label={copy.productPickerCurrentTarget
           .replace("{engine}", selectedEngine?.displayName ?? "—")
           .replace("{model}", selectedModel?.displayName ?? "—")}
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggle}
       >
         <span className="product-picker-engine-icon" aria-hidden>
           {selectedEngine ? (

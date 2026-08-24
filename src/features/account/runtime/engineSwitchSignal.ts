@@ -1,4 +1,4 @@
-import type { ManagedEngineIdV1 } from "./engineOnboardingClient";
+import type { ManagedEngineIdV1 } from "./onboardingTypes";
 
 const ACCOUNT_ENGINE_SWITCH_EVENT = "doge:account-engine-switch";
 const ACCOUNT_ENGINE_READY_EVENT = "doge:account-engine-ready";

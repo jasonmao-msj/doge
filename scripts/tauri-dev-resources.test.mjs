@@ -52,9 +52,17 @@ test("development commands inherit the canonical doge Tauri identity", async () 
   const baseConfig = JSON.parse(await readFile("src-tauri/tauri.conf.json", "utf8"));
   const isolatedRunner = await readFile("scripts/tauri-dev-isolated.mjs", "utf8");
 
-  assert.equal(packageJson.scripts["tauri:dev:hot"], "tauri dev");
+  assert.equal(
+    packageJson.scripts["tauri:dev:hot"],
+    "node scripts/tauri-dev-hot.mjs",
+  );
+  assert.match(
+    packageJson.scripts["tauri:dev"],
+    /doctor:strict.*tauri:dev:hot/,
+  );
   assert.doesNotMatch(packageJson.scripts["tauri:dev:hot:signed:mac"], /tauri\.dev\.conf/);
   assert.doesNotMatch(isolatedRunner, /tauri\.dev\.conf/);
+  assert.match(isolatedRunner, /assertNoConflictingPackagedDogeApp/);
   await assert.rejects(readFile("src-tauri/tauri.dev.conf.json", "utf8"), {
     code: "ENOENT",
   });

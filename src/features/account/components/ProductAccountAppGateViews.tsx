@@ -1,5 +1,4 @@
 import { useEffect, useState, type ReactNode } from "react";
-import ArrowLeft from "lucide-react/dist/esm/icons/arrow-left";
 import CircleAlert from "lucide-react/dist/esm/icons/circle-alert";
 import LoaderCircle from "lucide-react/dist/esm/icons/loader-circle";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
@@ -7,12 +6,8 @@ import X from "lucide-react/dist/esm/icons/x";
 import QRCode from "qrcode";
 import dogeMascot from "../../../assets/brand/doge-mascot-avatar.png";
 import type { AccountExperienceCopyV1 } from "../locale/accountExperienceCopy";
-import type {
-  PaymentMethodViewV1,
-  SubscriptionPlanViewV1,
-} from "../runtime/engineOnboardingClient";
-import { AccountHelpTooltip } from "./AccountHelpTooltip";
-import "./account-app-gate.css";
+import type { PaymentMethodViewV1 } from "../runtime/onboardingTypes";
+import "./product-account-app-gate.css";
 
 export type GateAccountExit = {
   readonly copy: AccountExperienceCopyV1;
@@ -112,21 +107,6 @@ export function GateFrame({
   );
 }
 
-export function GateHeading({ copy, title, help }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly title: string;
-  readonly help: string;
-}) {
-  return (
-    <header className="account-gate-heading">
-      <h1>{title}</h1>
-      <AccountHelpTooltip label={`${title}${copy.gateHelpSuffix}`} side="bottom">
-        {help}
-      </AccountHelpTooltip>
-    </header>
-  );
-}
-
 export function GateLoading({
   label,
   accountExit,
@@ -177,7 +157,12 @@ export function GateFailure({
   );
 }
 
-export function GateFailureBody({ copy, code, onRetry, retryAfterSeconds = 0 }: {
+function GateFailureBody({
+  copy,
+  code,
+  onRetry,
+  retryAfterSeconds = 0,
+}: {
   readonly copy: AccountExperienceCopyV1;
   readonly code: string;
   readonly onRetry: () => void;
@@ -217,84 +202,11 @@ export function GateInlineFailure({ copy, code }: {
   );
 }
 
-export function GateStepBack({ copy, onClick }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly onClick: () => void;
-}) {
-  return (
-    <button type="button" className="account-gate-back" onClick={onClick} aria-label={copy.gateBack}>
-      <ArrowLeft aria-hidden />
-    </button>
-  );
-}
-
-export function GateEmptyPlans({ copy, onRetry }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly onRetry: () => void;
-}) {
-  return (
-    <div className="account-gate-centered">
-      <CircleAlert aria-hidden />
-      <h2>{copy.gateNoPlans}</h2>
-      <button type="button" className="account-gate-secondary" onClick={onRetry}>
-        {copy.gateRefresh}
-      </button>
-    </div>
-  );
-}
-
-export function GateToolchainChoice({
+export function PaymentMethodList({
   copy,
-  engineName,
-  bundledVersion,
-  externalVersion,
-  onUseBundled,
-  onKeepExternal,
+  methods,
+  onSelect,
 }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly engineName: string;
-  readonly bundledVersion: string;
-  readonly externalVersion: string;
-  readonly onUseBundled: () => void;
-  readonly onKeepExternal: () => void;
-}) {
-  return (
-    <div className="account-gate-centered account-gate-version-choice">
-      <h1>{interpolate(copy.gateEngineUpdateTitle, "engine", engineName)}</h1>
-      <div className="account-gate-version-actions">
-        <button className="account-gate-primary" type="button" onClick={onUseBundled}>
-          {interpolate(copy.gateUseBundledVersion, "version", bundledVersion)}
-        </button>
-        <button className="account-gate-secondary" type="button" onClick={onKeepExternal}>
-          {interpolate(copy.gateKeepExternalVersion, "version", externalVersion)}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export function PlanButton({ copy, plan, onClick }: {
-  readonly copy: AccountExperienceCopyV1;
-  readonly plan: SubscriptionPlanViewV1;
-  readonly onClick: () => void;
-}) {
-  const limit = plan.monthlyLimitUsd ?? plan.weeklyLimitUsd ?? plan.dailyLimitUsd;
-  return (
-    <button type="button" className="account-gate-plan" onClick={onClick}>
-      <span className="account-gate-plan-main">
-        <strong>{plan.name}</strong>
-        <small>{plan.features.slice(0, 2).join(" · ")}</small>
-      </span>
-      <span className="account-gate-plan-price">
-        <strong>{formatMoney(plan.price, plan.currency)}</strong>
-        <small>{validityLabel(plan, copy)}</small>
-      </span>
-      {limit !== null ? <span className="account-gate-plan-limit">${limit}</span> : null}
-    </button>
-  );
-}
-
-export function PaymentMethodList({ copy, methods, onSelect }: {
   readonly copy: AccountExperienceCopyV1;
   readonly methods: readonly PaymentMethodViewV1[];
   readonly onSelect: (method: PaymentMethodViewV1) => void;
@@ -315,23 +227,6 @@ export function PaymentMethodList({ copy, methods, onSelect }: {
 
 export function interpolate(template: string, key: string, value: string): string {
   return template.replace(`{${key}}`, value);
-}
-
-function formatMoney(value: number, currency: string) {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currency || "USD",
-      maximumFractionDigits: 2,
-    }).format(value);
-  } catch {
-    return `${currency} ${value.toFixed(2)}`.trim();
-  }
-}
-
-function validityLabel(plan: SubscriptionPlanViewV1, copy: AccountExperienceCopyV1) {
-  if (plan.validityDays === 30) return copy.gateMonth;
-  return interpolate(copy.gateDaysTemplate, "days", String(plan.validityDays));
 }
 
 function failureMessage(code: string, copy: AccountExperienceCopyV1) {

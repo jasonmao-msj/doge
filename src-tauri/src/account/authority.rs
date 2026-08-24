@@ -790,11 +790,12 @@ impl TokenMatrixAuthority {
         group_id: i64,
         start_date: &str,
         end_date: &str,
+        granularity: &str,
         include_trend: bool,
         include_models: bool,
     ) -> Result<UsageDashboardSnapshotWire, AuthorityError> {
         let path = format!(
-            "/api/v1/usage/dashboard/snapshot-v2?group_id={group_id}&start_date={start_date}&end_date={end_date}&granularity=day&include_trend={include_trend}&include_model_stats={include_models}&include_group_stats=false"
+            "/api/v1/usage/dashboard/snapshot-v2?group_id={group_id}&start_date={start_date}&end_date={end_date}&granularity={granularity}&include_trend={include_trend}&include_model_stats={include_models}&include_group_stats=false"
         );
         self.request(Method::GET, &path, None, Some(access_token), None)
             .await

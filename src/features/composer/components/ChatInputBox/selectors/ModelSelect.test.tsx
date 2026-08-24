@@ -38,7 +38,7 @@ vi.mock("../../../../engine/components/EngineIcon", () => ({
 }));
 
 vi.mock("../../../../vendors/providerBrandIcon", () => ({
-  providerBrandIconNeedsDarkTile: () => false,
+  providerBrandIconThemeStrategy: () => "original",
   PROVIDER_BRAND_ICON_SRC: {
     claude: "/icons/claude.svg",
     openai: "/icons/openai.svg",

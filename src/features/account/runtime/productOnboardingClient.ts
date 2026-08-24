@@ -13,7 +13,7 @@ import type {
   EngineOnboardingResultV1,
   PaymentMethodViewV1,
   SubscriptionPlanViewV1,
-} from "./engineOnboardingClient";
+} from "./onboardingTypes";
 
 export const PRODUCT_ENGINE_IDS_V1 = ["codex", "claude-code", "kimi"] as const;
 export type ProductEngineIdV1 = (typeof PRODUCT_ENGINE_IDS_V1)[number];

@@ -12,6 +12,7 @@ Account Center MUST present the active Doge subscription as one product card rat
 - **THEN** the card SHALL show the upstream plan name, active state, `YYYY-MM-DD` expiry and available model count
 - **AND** model details SHALL remain visible without a collapse control
 - **AND** model details SHALL group the upstream catalog by presentation vendor and show the corresponding model brand icon
+- **AND** monochrome provider/model icons SHALL remain legible across light, dark, dim and system themes through one shared icon theme strategy
 - **AND** vendor grouping SHALL retain upstream order within each vendor without changing entitlement
 - **AND** engine, API key, credential and catalog refresh timestamp SHALL NOT appear as commercial facts
 
@@ -32,23 +33,40 @@ Account Center MUST render profile, subscription, usage and billing in one scrol
 - **THEN** Doge SHALL retain the existing rows with a refreshing affordance
 - **AND** a stale response from an older period/generation SHALL NOT overwrite the current selection
 
-### Requirement: Product Usage SHALL Use Exact Authority Ranges
+### Requirement: Product Usage SHALL Use Selected Authority Ranges
 
-Product usage MUST be scoped to the active Composite subscription/group and a closed `current | previous` period selected by the user.
+Product usage MUST be scoped to the active Composite subscription/group and a validated date range selected by the user.
 
-#### Scenario: Monthly subscription progress provides a window
+#### Scenario: User selects a preset or custom range
 
-- **WHEN** token2api returns monthly `window_start` and `resets_at`
-- **THEN** current usage SHALL query that exact inclusive date range through `/usage/stats` and `/usage/dashboard/snapshot-v2`
-- **AND** previous usage SHALL query the immediately preceding 30-day range
+- **WHEN** the user selects a preset or valid custom start/end date and `day | hour` granularity
+- **THEN** Doge SHALL query that exact inclusive date range through `/usage/stats` and `/usage/dashboard/snapshot-v2`
+- **AND** granularity SHALL be passed to the snapshot authority without client-side invention
 - **AND** total requests, token breakdown, standard/actual cost, average duration and model rows SHALL come only from those responses
+- **AND** malformed, future, reversed or unbounded ranges SHALL fail closed before network reads
+- **AND** the date-range overlay SHALL be opaque and keep presets, date fields and apply action visually distinct from usage rows beneath it
 
 #### Scenario: Engine attribution is not authoritative
 
 - **WHEN** token2api does not return a Doge runtime-engine aggregation dimension
-- **THEN** Doge MAY show the built-in engine roster as static product capability
-- **AND** it SHALL mark engine usage values unavailable
+- **THEN** Doge SHALL NOT render an engine usage block or placeholder counts
 - **AND** it SHALL NOT infer engine counts from model ids, model families or User-Agent strings
+
+#### Scenario: Model usage facts are available
+
+- **WHEN** token2api returns per-model usage for the selected range
+- **THEN** Doge SHALL render one semantic table containing model, request count, total tokens, actual cost and standard cost
+- **AND** it SHALL NOT duplicate the same models as a request-only ranking chart
+
+#### Scenario: Token trend facts are available
+
+- **WHEN** the selected-range snapshot returns trend buckets
+- **THEN** Doge SHALL show Input, Output, Cache Creation, Cache Read and derived Cache Hit Rate series
+- **AND** Cache Hit Rate SHALL use `cacheRead / (input + cacheRead + cacheCreation) * 100` on a right-side 0–100% axis
+- **AND** each legend item SHALL toggle its series without changing the selected range or refetching authority data
+- **AND** hovering a date bucket SHALL show Input, Output, Cache Creation, Cache Read, Actual and Standard facts for that bucket
+- **AND** model rows SHALL use a bounded scroll region with a sticky header so model and trend panels remain visually balanced
+- **AND** every Token count SHALL use locale-independent uppercase `K/M/B` units
 
 ### Requirement: Billing Rows SHALL Remain Truthful To Upstream Capability
 

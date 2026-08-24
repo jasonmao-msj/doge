@@ -1,63 +1,86 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AccountGatewayProvider } from "../gateway/AccountGatewayProvider";
-import { createMockAccountGatewayV1 } from "../mock/MockAccountGatewayV1";
-import { createScenarioRuntimeV1 } from "../mock/ScenarioRuntimeV1";
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  clearProductEntitlementV1,
+  publishProductReadyV1,
+} from "../runtime/productEntitlementStore";
 import { AccountSidebarShortcut } from "./AccountSidebarShortcut";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ i18n: { resolvedLanguage: "zh-CN" } }),
 }));
 
-function renderShortcut(scenarioId = "subscription.summary") {
-  const runtime = createScenarioRuntimeV1(scenarioId);
-  if (!runtime.ok) throw new Error(`missing scenario ${scenarioId}`);
-  const gateway = createMockAccountGatewayV1(runtime.value);
+function renderShortcut() {
   const onOpenAccount = vi.fn();
   render(
-    <AccountGatewayProvider gateway={gateway}>
-      <AccountSidebarShortcut
-        accountLabel="Synthetic doge account"
-        onOpenAccount={onOpenAccount}
-      />
-    </AccountGatewayProvider>,
+    <AccountSidebarShortcut
+      accountLabel="Synthetic doge account"
+      onOpenAccount={onOpenAccount}
+    />,
   );
-  return { gateway, onOpenAccount };
+  return { onOpenAccount };
 }
 
-beforeEach(() => {
-  vi.spyOn(Date, "now").mockReturnValue(1_893_456_000_000);
-});
-
 afterEach(() => {
+  act(() => clearProductEntitlementV1());
   vi.restoreAllMocks();
 });
 
 describe("AccountSidebarShortcut", () => {
-  it("does not prefetch and reads only after the popover opens", async () => {
-    const { gateway } = renderShortcut();
-    const read = vi.spyOn(gateway.subscription, "read");
-    expect(read).not.toHaveBeenCalled();
+  it("renders the unified product snapshot without an engine-scoped read", () => {
+    act(() =>
+      publishProductReadyV1({
+        entitlement: {
+          status: "active",
+          subscriptionId: 9,
+          groupId: 5,
+          groupName: "Doge APP",
+          planName: "Doge APP",
+          expiresAt: "2030-02-01T00:00:00Z",
+          usage: {
+            daily: { usedUsd: 0.23, limitUsd: 1, percentage: 23.4 },
+            weekly: { usedUsd: 0.23, limitUsd: 7, percentage: 3.3 },
+            monthly: { usedUsd: 0.23, limitUsd: 30, percentage: 0.8 },
+          },
+        },
+        engines: [
+          { id: "codex", displayName: "Codex" },
+          { id: "claude-code", displayName: "Claude" },
+          { id: "kimi", displayName: "Kimi CLI" },
+        ],
+        models: [
+          {
+            id: "gpt-5.6-luna",
+            displayName: "gpt-5.6-luna",
+            model: "gpt-5.6-luna",
+            compatibleEngines: ["codex"],
+            capabilities: ["chat"],
+          },
+        ],
+      }),
+    );
+    renderShortcut();
 
     fireEvent.click(screen.getByRole("button", { name: /账号中心/ }));
-    await waitFor(() => expect(read).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText("Synthetic Codex plan")).toBeTruthy();
+    expect(screen.getByText("Doge APP")).toBeTruthy();
+    expect(screen.getByText("23%")).toBeTruthy();
   });
 
-  it("hands off to Settings account from the compact surface", async () => {
+  it("hands off to Settings account from the compact surface", () => {
     const { onOpenAccount } = renderShortcut();
     fireEvent.click(screen.getByRole("button", { name: /账号中心/ }));
-    expect(await screen.findByText("Synthetic Claude plan")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "账号中心" }));
     expect(onOpenAccount).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps an unavailable read safe and retryable", async () => {
-    const { gateway } = renderShortcut("subscription.summary-unavailable");
+  it("keeps the unknown snapshot safe without reviving engine subscriptions", () => {
+    renderShortcut();
     fireEvent.click(screen.getByRole("button", { name: /账号中心/ }));
-    expect(await screen.findByText("暂时无法读取额度，本地功能不受影响。")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "重试" })).toBeTruthy();
-    expect(gateway.subscription.read).toBeDefined();
+    expect(screen.getByRole("status")).toBeTruthy();
+    expect(
+      document.querySelector('[data-summary-status="unknown"]'),
+    ).toBeTruthy();
+    expect(screen.queryByText(/Codex plan|Claude plan/)).toBeNull();
   });
 });

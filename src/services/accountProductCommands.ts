@@ -1,5 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 
+export type AccountProductUsageQueryV1 = {
+  readonly startDate: string;
+  readonly endDate: string;
+  readonly granularity: "day" | "hour";
+};
+
 export function readAccountProductCatalogV1(): Promise<unknown> {
   return invoke("account_product_v1_catalog");
 }
@@ -9,9 +15,9 @@ export function readAccountProductModelsV1(): Promise<unknown> {
 }
 
 export function readAccountProductUsageV1(
-  period: "current" | "previous",
+  input: AccountProductUsageQueryV1,
 ): Promise<unknown> {
-  return invoke("account_product_v1_usage", { period });
+  return invoke("account_product_v1_usage", input);
 }
 
 export function readAccountProductBillingV1(): Promise<unknown> {

@@ -20,6 +20,7 @@ import {
   writeLocalBooleanFlag,
 } from '../../../../live-canvas/liveCanvasControls';
 import { CODEX_AUTO_COMPACTION_THRESHOLD_OPTIONS } from '../../../codex/constants/codexAutoCompactionThreshold';
+import { formatTokenCount } from '@/utils/tokenFormat';
 
 type CodexAutoCompactionSettingsPatch = {
   enabled?: boolean;
@@ -143,20 +144,7 @@ export const ContextBar: React.FC<ContextBarProps> = memo(({
     selectedLines ? `${activeFile}#${selectedLines}` : activeFile
   ) : '';
 
-  const formatCompactTokens = useCallback((value: number) => {
-    if (!Number.isFinite(value) || value <= 0) {
-      return '0';
-    }
-    if (value >= 1_000_000) {
-      const mValue = value / 1_000_000;
-      return Number.isInteger(mValue) ? `${mValue}m` : `${mValue.toFixed(1)}m`;
-    }
-    if (value >= 1_000) {
-      const kValue = value / 1_000;
-      return Number.isInteger(kValue) ? `${kValue}k` : `${kValue.toFixed(1)}k`;
-    }
-    return `${Math.round(value)}`;
-  }, []);
+  const formatCompactTokens = useCallback(formatTokenCount, []);
 
   const dualUsageSummary = useMemo(() => {
     const isCodexProvider = currentProvider === 'codex';

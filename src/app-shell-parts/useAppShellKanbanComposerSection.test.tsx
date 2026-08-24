@@ -117,6 +117,8 @@ describe("useAppShellKanbanComposerSection Home target creation", () => {
     );
     const forwardedOptions = vi.mocked(context.sendUserMessageToThread).mock
       .calls[0]?.[4] as MessageSendOptions;
-    expect(forwardedOptions.createSessionTarget).toBeUndefined();
+    expect(forwardedOptions.createSessionTarget).toEqual(
+      options.createSessionTarget,
+    );
   });
 });

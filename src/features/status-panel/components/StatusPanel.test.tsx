@@ -1939,7 +1939,7 @@ describe("StatusPanel", () => {
     fireEvent.click(screen.getByText("Overview"));
 
     expect(screen.getByText("statusPanel.cost.session: —")).toBeTruthy();
-    expect(screen.getByText("statusPanel.cost.tokens: 2.0k")).toBeTruthy();
+    expect(screen.getByText("statusPanel.cost.tokens: 2K")).toBeTruthy();
     expect(
       screen.getByLabelText("statusPanel.cost.tokenBreakdownLabel"),
     ).toBeTruthy();

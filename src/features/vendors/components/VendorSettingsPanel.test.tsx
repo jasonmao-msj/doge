@@ -109,6 +109,19 @@ const mockState = vi.hoisted(() => ({
   },
   claudeModels: { models: [], updateModels: vi.fn() },
   codexModels: { models: [], updateModels: vi.fn() },
+  productStatus: "unknown" as "unknown" | "ready",
+}));
+
+vi.mock("../../account/runtime/productEntitlementStore", () => ({
+  useProductEntitlementSnapshotV1: () => ({
+    status: mockState.productStatus,
+    entitlement: null,
+    engines: [],
+    models: [],
+    modelsStatus: "idle",
+    modelsUpdatedAt: null,
+    modelsError: null,
+  }),
 }));
 
 vi.mock("../hooks/useProviderManagement", () => ({
@@ -150,8 +163,11 @@ vi.mock("./ProviderList", () => ({
 }));
 
 vi.mock("./ClaudeLocalSettingsCard", () => ({
-  ClaudeLocalSettingsCard: () => (
-    <div data-testid="claude-local-settings-stub" />
+  ClaudeLocalSettingsCard: (props: { managedLock?: unknown }) => (
+    <div
+      data-testid="claude-local-settings-stub"
+      data-managed-locked={Boolean(props.managedLock)}
+    />
   ),
 }));
 
@@ -200,8 +216,11 @@ vi.mock("./CustomModelDialog", () => ({
 }));
 
 vi.mock("./CurrentCodexGlobalConfigCard", () => ({
-  CurrentCodexGlobalConfigCard: () => (
-    <div data-testid="current-codex-config-stub" />
+  CurrentCodexGlobalConfigCard: (props: { managedLock?: unknown }) => (
+    <div
+      data-testid="current-codex-config-stub"
+      data-managed-locked={Boolean(props.managedLock)}
+    />
   ),
 }));
 
@@ -331,9 +350,37 @@ afterEach(() => {
   mockState.grokManagement.grokProviders = [];
   mockState.openCodeManagement.openCodeProviders = [];
   mockState.kimiManagement.kimiProviders = [];
+  mockState.productStatus = "unknown";
 });
 
 describe("VendorSettingsPanel", () => {
+  it("locks local activation for all product-managed engines", async () => {
+    const user = userEvent.setup();
+    mockState.productStatus = "ready";
+    renderPanel();
+
+    expect(
+      screen.getByTestId("claude-local-settings-stub").dataset.managedLocked,
+    ).toBe("true");
+
+    await user.click(screen.getByRole("button", { name: "Codex CLI" }));
+    await waitFor(() => {
+      expect(getCodexUnifiedExecExternalStatusMock).toHaveBeenCalled();
+    });
+    expect(
+      screen.getByTestId("current-codex-config-stub").dataset.managedLocked,
+    ).toBe("true");
+
+    await user.click(screen.getByRole("button", { name: "Kimi CLI" }));
+    const lockedKimiRow = document.querySelector(
+      '.vendor-official-config[data-managed-locked="true"]',
+    ) as HTMLElement | null;
+    expect(lockedKimiRow).toBeTruthy();
+    expect(
+      lockedKimiRow?.querySelector(".vendor-official-use-btn"),
+    ).toBeNull();
+  });
+
   it("leaves the section heading to SettingsView titlebar", async () => {
     renderPanel();
 

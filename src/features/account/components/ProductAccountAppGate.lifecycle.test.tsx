@@ -105,6 +105,7 @@ describe("ProductAccountAppGate lifecycle", () => {
     renderGate(client);
 
     expect(await screen.findByText("主应用已挂载")).toBeTruthy();
+    expect(client.prepare).toHaveBeenCalledTimes(1);
     await act(async () => {
       window.dispatchEvent(new Event("focus"));
       await flushMicrotasks();

@@ -1,5 +1,5 @@
 import { resolveAccountEngineToolchainV1 } from "../../../services/accountEngineCommands";
-import type { ManagedEngineIdV1 } from "./engineOnboardingClient";
+import type { ManagedEngineIdV1 } from "./onboardingTypes";
 
 export type ManagedEngineToolchainChoiceV1 = "bundled" | "external";
 

@@ -627,6 +627,8 @@ describe("Composer file reference token", () => {
         pickerMode: "product",
         productEngines: "3",
         productModels: "2",
+        readinessEngine: "codex",
+        readinessModel: "gpt-5.5",
       },
     );
     await act(async () => {

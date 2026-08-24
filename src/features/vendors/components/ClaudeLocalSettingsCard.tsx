@@ -6,7 +6,10 @@
 import { useTranslation } from "react-i18next";
 import type { ProviderConfig } from "../types";
 import { LOCAL_SETTINGS_PROVIDER_ID } from "../types";
-import { VendorOfficialConfigCard } from "./VendorOfficialConfigCard";
+import {
+  VendorOfficialConfigCard,
+  type VendorManagedConfigurationLock,
+} from "./VendorOfficialConfigCard";
 
 interface ClaudeLocalSettingsCardProps {
   localProvider: ProviderConfig | null;
@@ -17,6 +20,7 @@ interface ClaudeLocalSettingsCardProps {
   inUse: boolean;
   onSwitch: (id: string) => void;
   onEdit: () => void;
+  managedLock?: VendorManagedConfigurationLock;
 }
 
 export function ClaudeLocalSettingsCard({
@@ -24,6 +28,7 @@ export function ClaudeLocalSettingsCard({
   inUse,
   onSwitch,
   onEdit,
+  managedLock,
 }: ClaudeLocalSettingsCardProps) {
   const { t } = useTranslation();
 
@@ -46,6 +51,7 @@ export function ClaudeLocalSettingsCard({
       mode="local"
       onUse={() => onSwitch(LOCAL_SETTINGS_PROVIDER_ID)}
       onEdit={onEdit}
+      managedLock={managedLock}
     />
   );
 }

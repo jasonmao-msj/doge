@@ -8,6 +8,11 @@ pub(crate) const ACCOUNT_CLAUDE_PROVIDER_ID: &str =
     crate::engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID;
 pub(crate) const ACCOUNT_KIMI_PROVIDER_ID: &str = "doge-token-matrix";
 pub(crate) const ACCOUNT_RECIPE_ID: &str = "doge.account.codex-token-service";
+/// Bump this value whenever the shape or routing contract of the managed
+/// provider projection changes. A missing or stale revision is fail-closed so
+/// account preparation deterministically replaces legacy Doge entries while
+/// preserving unrelated user-managed providers.
+pub(crate) const ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64 = 1;
 /// kimi CLI resolves OpenAI-compatible endpoints relative to the configured
 /// base URL, so the managed entry must carry the `/v1` path segment.
 pub(crate) const ACCOUNT_MANAGED_KIMI_BASE_URL: &str = "https://token-matrix.com/v1";
@@ -249,10 +254,15 @@ pub(crate) fn verify_managed_engine_configuration(engine_id: &str) -> Result<(),
         .map_err(|_| "Doge managed provider registry is invalid".to_string())?;
     match engine_id {
         "codex" => {
+            let provider = root
+                .pointer("/codex/providers/doge-token-matrix")
+                .ok_or_else(|| "Codex managed provider is absent".to_string())?;
             if root.pointer("/codex/current").and_then(Value::as_str)
                 != Some(ACCOUNT_CODEX_PROVIDER_ID)
+                || provider.get("source").and_then(Value::as_str) != Some("doge-account")
+                || !managed_provider_revision_is_current(provider)
             {
-                return Err("Codex managed provider is not active".to_string());
+                return Err("Codex managed provider binding is invalid".to_string());
             }
             let provider_config = crate::app_paths::codex_provider_homes_dir()?
                 .join(ACCOUNT_CODEX_PROVIDER_ID)
@@ -262,6 +272,7 @@ pub(crate) fn verify_managed_engine_configuration(engine_id: &str) -> Result<(),
             let parsed: toml::Value = toml::from_str(&provider_content)
                 .map_err(|_| "Codex managed settings are invalid".to_string())?;
             if parsed.get("model_provider").and_then(toml::Value::as_str) != Some("DogeTokenMatrix")
+                || provider_content != ACCOUNT_CODEX_CONFIG_TOML
             {
                 return Err("Codex managed provider binding is invalid".to_string());
             }
@@ -273,6 +284,7 @@ pub(crate) fn verify_managed_engine_configuration(engine_id: &str) -> Result<(),
             if root.pointer("/claude/current").and_then(Value::as_str)
                 != Some(ACCOUNT_CLAUDE_PROVIDER_ID)
                 || provider.get("source").and_then(Value::as_str) != Some("doge-account")
+                || !managed_provider_revision_is_current(provider)
                 || provider
                     .pointer("/settingsConfig/env/DOGE_MANAGED_ACCOUNT_ENGINE")
                     .and_then(Value::as_str)
@@ -291,6 +303,7 @@ pub(crate) fn verify_managed_engine_configuration(engine_id: &str) -> Result<(),
             if root.pointer("/kimi/current").and_then(Value::as_str)
                 != Some(ACCOUNT_KIMI_PROVIDER_ID)
                 || provider.get("source").and_then(Value::as_str) != Some("doge-account")
+                || !managed_provider_revision_is_current(provider)
                 || provider_has_secret_field(provider)
             {
                 return Err("Kimi managed provider binding is invalid".to_string());
@@ -622,7 +635,11 @@ pub(super) fn verify_applied_plan(plan: &ConfigurationPlanState) -> Result<(), S
             let provider = root
                 .pointer("/codex/providers/doge-token-matrix")
                 .ok_or_else(|| "configured Doge provider is missing".to_string())?;
-            if provider.get("source").and_then(Value::as_str) != Some("doge-account") {
+            if root.pointer("/codex/current").and_then(Value::as_str)
+                != Some(ACCOUNT_CODEX_PROVIDER_ID)
+                || provider.get("source").and_then(Value::as_str) != Some("doge-account")
+                || !managed_provider_revision_is_current(provider)
+            {
                 return Err("configured Doge provider ownership is invalid".to_string());
             }
         } else if file.label == "Doge Claude provider registry" {
@@ -632,6 +649,9 @@ pub(super) fn verify_applied_plan(plan: &ConfigurationPlanState) -> Result<(), S
                 .pointer("/claude/providers/doge-token-matrix")
                 .ok_or_else(|| "configured Claude provider is missing".to_string())?;
             if provider.get("source").and_then(Value::as_str) != Some("doge-account")
+                || root.pointer("/claude/current").and_then(Value::as_str)
+                    != Some(ACCOUNT_CLAUDE_PROVIDER_ID)
+                || !managed_provider_revision_is_current(provider)
                 || provider
                     .pointer("/settingsConfig/env/ANTHROPIC_AUTH_TOKEN")
                     .is_some()
@@ -647,6 +667,7 @@ pub(super) fn verify_applied_plan(plan: &ConfigurationPlanState) -> Result<(), S
             if root.pointer("/kimi/current").and_then(Value::as_str)
                 != Some(ACCOUNT_KIMI_PROVIDER_ID)
                 || provider.get("source").and_then(Value::as_str) != Some("doge-account")
+                || !managed_provider_revision_is_current(provider)
                 || provider.get("baseUrl").and_then(Value::as_str)
                     != Some(ACCOUNT_MANAGED_KIMI_BASE_URL)
                 || provider.get("providerType").and_then(Value::as_str) != Some("openai")
@@ -678,6 +699,11 @@ fn provider_has_secret_field(provider: &Value) -> bool {
             )
         })
     })
+}
+
+fn managed_provider_revision_is_current(provider: &Value) -> bool {
+    provider.get("managedRevision").and_then(Value::as_i64)
+        == Some(ACCOUNT_MANAGED_CONFIGURATION_REVISION)
 }
 
 pub(crate) fn preflight_plan(
@@ -875,6 +901,7 @@ pub(super) fn build_doge_config(before: Option<&str>) -> Result<String, String> 
             "name": "Doge",
             "remark": "Managed by Doge Account",
             "source": "doge-account",
+            "managedRevision": ACCOUNT_MANAGED_CONFIGURATION_REVISION,
             "configToml": ACCOUNT_CODEX_CONFIG_TOML,
         }),
     );
@@ -905,6 +932,7 @@ pub(super) fn build_doge_config_for_claude(before: Option<&str>) -> Result<Strin
             "name": "Doge",
             "remark": "Managed by Doge Account",
             "source": "doge-account",
+            "managedRevision": ACCOUNT_MANAGED_CONFIGURATION_REVISION,
             "settingsConfig": {
                 "env": {
                     "ANTHROPIC_BASE_URL": "https://token-matrix.com",
@@ -942,6 +970,7 @@ pub(super) fn build_doge_config_for_kimi(before: Option<&str>) -> Result<String,
             "name": "Doge",
             "remark": "Managed by Doge Account",
             "source": "doge-account",
+            "managedRevision": ACCOUNT_MANAGED_CONFIGURATION_REVISION,
             "baseUrl": ACCOUNT_MANAGED_KIMI_BASE_URL,
             "model": ACCOUNT_MANAGED_KIMI_MODEL,
             "maxContextSize": ACCOUNT_MANAGED_KIMI_MAX_CONTEXT_SIZE,

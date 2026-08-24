@@ -3,6 +3,7 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { ProviderBrandIconImg } from "./ProviderBrandIconImg";
+import { PROVIDER_BRAND_ICON_SRC } from "../providerBrandIcon";
 
 describe("ProviderBrandIconImg", () => {
   it("bounds raster assets before consumer styles load", () => {
@@ -20,5 +21,16 @@ describe("ProviderBrandIconImg", () => {
     expect(image?.style.maxWidth).toBe("100%");
     expect(image?.style.maxHeight).toBe("100%");
     expect(image?.style.objectFit).toBe("contain");
+  });
+
+  it("marks monochrome provider icons for global theme adaptation", () => {
+    const { container } = render(
+      <ProviderBrandIconImg src={PROVIDER_BRAND_ICON_SRC.openai} />,
+    );
+    const image = container.querySelector("img");
+
+    expect(image?.classList.contains("vendor-brand-icon-img")).toBe(true);
+    expect(image?.classList.contains("vendor-brand-icon-img--mono-adaptive")).toBe(true);
+    expect(image?.classList.contains("vendor-brand-icon-tile")).toBe(false);
   });
 });

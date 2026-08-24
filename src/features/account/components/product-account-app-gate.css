@@ -49,15 +49,6 @@
   filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--gate-accent) 20%, transparent));
 }
 
-.account-gate-heading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-bottom: 30px;
-}
-
-.account-gate-heading h1,
 .account-gate-centered h1,
 .account-gate-centered h2 {
   margin: 0;
@@ -88,89 +79,15 @@
 .account-gate-spin { animation: account-gate-spin .9s linear infinite; }
 @keyframes account-gate-spin { to { transform: rotate(360deg); } }
 
-.account-gate-engine-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.account-gate-engine,
-.account-gate-plan,
-.account-gate-methods button {
-  appearance: none;
-  border: 1px solid var(--border-subtle, var(--border));
-  color: inherit;
-  background: color-mix(in srgb, var(--surface-raised, var(--card)) 90%, transparent);
-  box-shadow: 0 14px 40px color-mix(in srgb, #000 7%, transparent);
-  transition: border-color .16s ease, background-color .16s ease, transform .16s ease;
-}
-
-.account-gate-engine:hover,
-.account-gate-plan:hover,
-.account-gate-methods button:hover {
-  border-color: color-mix(in srgb, var(--gate-accent) 48%, var(--border));
-  background: color-mix(in srgb, var(--gate-accent) 7%, var(--surface-raised, var(--card)));
-  transform: translateY(-1px);
-}
-
-.account-gate-engine:focus-visible,
-.account-gate-plan:focus-visible,
 .account-gate-methods button:focus-visible,
 .account-gate-primary:focus-visible,
 .account-gate-secondary:focus-visible,
 .account-gate-text-button:focus-visible,
 .account-gate-logout:focus-visible,
-.account-gate-dismiss:focus-visible,
-.account-gate-back:focus-visible {
+.account-gate-dismiss:focus-visible {
   outline: 2px solid var(--ring, var(--gate-accent));
   outline-offset: 3px;
 }
-
-.account-gate-engine {
-  min-height: 150px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 14px;
-  border-radius: 18px;
-  cursor: pointer;
-}
-
-.account-gate-engine strong { font-size: 18px; }
-.account-gate-engine span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--success, #27ae80);
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.account-gate-engine .account-gate-engine-subscribe {
-  color: var(--text-secondary);
-}
-
-.account-gate-plan-list { display: grid; gap: 10px; }
-.account-gate-plan {
-  min-height: 82px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px 22px;
-  padding: 16px 18px;
-  border-radius: 14px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.account-gate-plan-main,
-.account-gate-plan-price { display: grid; gap: 5px; }
-.account-gate-plan-price { justify-items: end; }
-.account-gate-plan-main strong { font-size: 15px; }
-.account-gate-plan-price strong { font-size: 18px; }
-.account-gate-plan small,
-.account-gate-plan-limit { color: var(--text-secondary); font-size: 12px; }
-.account-gate-plan-limit { display: none; }
 
 .account-product-plan-list {
   width: 100%;
@@ -285,12 +202,24 @@
   opacity: .55;
 }
 
-.account-gate-methods { display: grid; gap: 10px; }
+.account-gate-methods {
+  display: grid;
+  gap: 10px;
+}
+
 .account-gate-methods button {
   min-height: 54px;
+  border: 1px solid var(--border-subtle, var(--border));
   border-radius: 12px;
+  color: inherit;
+  background: var(--surface-raised, var(--card));
   font: inherit;
   cursor: pointer;
+}
+
+.account-gate-methods button:hover {
+  border-color: color-mix(in srgb, var(--gate-accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--gate-accent) 7%, var(--surface-raised, var(--card)));
 }
 
 .account-gate-primary,
@@ -309,27 +238,6 @@
 }
 .account-gate-primary { color: white; background: var(--gate-accent); }
 .account-gate-secondary { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
-
-.account-gate-version-choice { min-height: 320px; }
-.account-gate-version-actions {
-  width: min(100%, 420px);
-  display: grid;
-  gap: 10px;
-}
-.account-gate-version-actions > button { width: 100%; }
-
-.account-gate-checkout-actions {
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-}
-
-.account-gate-checkout-exits {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
 
 .account-gate-text-button {
   min-height: 36px;
@@ -374,7 +282,6 @@
   opacity: .55;
 }
 
-.account-gate-back,
 .account-gate-dismiss {
   position: absolute;
   top: 48px;
@@ -390,9 +297,7 @@
   background: transparent;
   cursor: pointer;
 }
-.account-gate-back:hover,
 .account-gate-dismiss:hover { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
-.account-gate-back svg,
 .account-gate-dismiss svg { width: 18px; height: 18px; }
 
 .account-gate-dismiss:disabled {
@@ -432,9 +337,6 @@
 @media (max-width: 680px) {
   .account-app-gate { padding-inline: 16px; }
   .account-gate-card { min-height: 440px; padding: 42px 12px 30px; }
-  .account-gate-engine-grid { grid-template-columns: 1fr; }
-  .account-gate-engine { min-height: 112px; }
-  .account-gate-back,
   .account-gate-dismiss { top: 34px; left: 0; }
   .account-gate-logout { top: 34px; right: 0; }
 
@@ -456,7 +358,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .account-gate-spin { animation-duration: 1.8s; }
-  .account-gate-engine,
-  .account-gate-plan,
-  .account-gate-methods button { transition: none; }
 }

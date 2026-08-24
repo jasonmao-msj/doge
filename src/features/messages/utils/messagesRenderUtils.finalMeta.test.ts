@@ -25,7 +25,7 @@ const t = (key: string, params?: Record<string, unknown>) => {
 describe("formatTokenCount", () => {
   it("formats compact token counts", () => {
     expect(formatTokenCount(149)).toBe("149");
-    expect(formatTokenCount(43_000)).toBe("43.0K");
+    expect(formatTokenCount(43_000)).toBe("43K");
     expect(formatTokenCount(1_200_000)).toBe("1.2M");
   });
 });

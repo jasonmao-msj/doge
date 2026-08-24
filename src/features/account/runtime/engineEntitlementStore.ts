@@ -1,7 +1,7 @@
 import type {
   ManagedEngineIdV1,
   ManagedEngineViewV1,
-} from "./engineOnboardingClient";
+} from "./onboardingTypes";
 
 export type ManagedEngineEntitlementStatusV1 = "active" | "none" | "unknown";
 export type ManagedEngineEntitlementSnapshotV1 = Readonly<

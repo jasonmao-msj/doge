@@ -81,7 +81,6 @@ export function AccountCenterHeader({
       <header className="account-center-header">
         <div>
           <h1 id="account-center-title">{copy.accountDetailsTitle}</h1>
-          <p>{copy.accountDetailsDescription}</p>
         </div>
       <div className="account-center-header-actions">
         {lastUpdatedAt ? (

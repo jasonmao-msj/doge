@@ -367,33 +367,28 @@ describe("AccountExperience", () => {
 
   it("loads product usage and billing without calling the legacy engine-scoped usage gateway", async () => {
     const currentUsage = deferredValue<ReturnType<typeof productUsageEnvelope>>();
-    const previousUsage = deferredValue<ReturnType<typeof productUsageEnvelope>>();
     const billing = deferredValue<ReturnType<typeof productBillingEnvelope>>();
-    productDetailMocks.readUsage.mockImplementation((period: "current" | "previous") =>
-      period === "current" ? currentUsage.promise : previousUsage.promise);
+    productDetailMocks.readUsage.mockReturnValue(currentUsage.promise);
     productDetailMocks.readBilling.mockReturnValue(billing.promise);
     const { gateway, container } = renderScenarioV1("usage.fresh-normal");
     const legacyUsageRead = vi.spyOn(gateway.usage, "read");
 
     expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "账号与订阅" })).toBeTruthy();
-    await waitFor(() => expect(productDetailMocks.readUsage).toHaveBeenCalledWith("current"));
+    expect(screen.queryByText("管理订阅状态、查看额度消耗与账单")).toBeNull();
+    await waitFor(() => expect(productDetailMocks.readUsage).toHaveBeenCalledWith(
+      expect.objectContaining({ granularity: "day" }),
+    ));
     await waitFor(() => expect(productDetailMocks.readBilling).toHaveBeenCalledTimes(1));
     await act(async () => {
-      currentUsage.resolve(productUsageEnvelope("current"));
+      currentUsage.resolve(productUsageEnvelope());
       billing.resolve(productBillingEnvelope());
       await Promise.all([currentUsage.promise, billing.promise]);
     });
     expect(legacyUsageRead).not.toHaveBeenCalled();
     expect(container.querySelector(".account-usage-stat-grid")).toBeTruthy();
-    expect(screen.getByText(/暂未记录 Doge 的运行引擎/)).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("tab", { name: "上期" }));
-    await waitFor(() => expect(productDetailMocks.readUsage).toHaveBeenCalledWith("previous"));
-    await act(async () => {
-      previousUsage.resolve(productUsageEnvelope("previous"));
-      await previousUsage.promise;
-    });
+    expect(screen.getByRole("table", { name: "模型用量" })).toBeTruthy();
+    expect(screen.queryByText(/暂未记录 Doge 的运行引擎/)).toBeNull();
     expect(screen.queryByRole("tab", { name: "订阅" })).toBeNull();
     expect(screen.queryByRole("tab", { name: "额度" })).toBeNull();
   });
@@ -634,19 +629,19 @@ function publishTestProductReady(): void {
   });
 }
 
-function productUsageEnvelope(period: "current" | "previous") {
+function productUsageEnvelope() {
   return {
     ok: true,
     value: {
-      period,
+      query: {
+        start_date: "2030-01-02",
+        end_date: "2030-01-10",
+        granularity: "day",
+      },
       fetched_at: "2030-01-10T12:00:00Z",
       range: {
-        query_start_date: period === "current" ? "2030-01-02" : "2029-12-03",
-        query_end_date: period === "current" ? "2030-01-10" : "2030-01-01",
-        period_start_date: period === "current" ? "2030-01-02" : "2029-12-03",
-        period_end_date: period === "current" ? "2030-01-31" : "2030-01-01",
-        resets_at: period === "current" ? "2030-02-01T00:00:00Z" : null,
-        source: "subscriptionMonthly",
+        query_start_date: "2030-01-02",
+        query_end_date: "2030-01-10",
       },
       totals: {
         requests: 7,
@@ -658,13 +653,17 @@ function productUsageEnvelope(period: "current" | "previous") {
         actual_cost_usd: 1,
         average_duration_ms: 7200,
       },
-      quota: period === "current" ? {
-        used_usd: 1,
-        limit_usd: 10,
-        percentage: 10,
-        resets_at: "2030-02-01T00:00:00Z",
-      } : null,
-      engine_breakdown_status: "unsupported",
+      trend_status: "available",
+      trend: [{
+        bucket: "2030-01-02",
+        input_tokens: 100,
+        output_tokens: 20,
+        cache_creation_tokens: 4,
+        cache_read_tokens: 6,
+        total_tokens: 130,
+        standard_cost_usd: 0.1,
+        actual_cost_usd: 0.08,
+      }],
       models_status: "available",
       models: [{
         id: "gpt-5.6-sol",
@@ -683,7 +682,6 @@ function productBillingEnvelope() {
     ok: true,
     value: {
       fetched_at: "2030-01-10T12:00:00Z",
-      invoice_download_status: "unsupported",
       orders: [{
         id: 91,
         plan_name: "Doge Pro",
@@ -691,7 +689,6 @@ function productBillingEnvelope() {
         amount: 86.4,
         currency: "CNY",
         status: "paid",
-        invoice_available: false,
       }],
     },
   };

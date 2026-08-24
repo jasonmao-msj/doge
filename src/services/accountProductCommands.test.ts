@@ -26,7 +26,11 @@ describe("account product Tauri commands", () => {
     });
     await readAccountProductCheckoutV1(9);
     await prepareAccountProductV1("operation_prepare_0001");
-    await readAccountProductUsageV1("previous");
+    await readAccountProductUsageV1({
+      startDate: "2030-01-01",
+      endDate: "2030-01-31",
+      granularity: "day",
+    });
     await readAccountProductBillingV1();
     await readAccountProductModelsV1();
 
@@ -52,7 +56,11 @@ describe("account product Tauri commands", () => {
     expect(tauri.invoke).toHaveBeenNthCalledWith(
       4,
       "account_product_v1_usage",
-      { period: "previous" },
+      {
+        startDate: "2030-01-01",
+        endDate: "2030-01-31",
+        granularity: "day",
+      },
     );
     expect(tauri.invoke).toHaveBeenNthCalledWith(5, "account_product_v1_billing");
     expect(tauri.invoke).toHaveBeenNthCalledWith(6, "account_product_v1_models");

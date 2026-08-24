@@ -555,7 +555,6 @@ export const MessageRow = memo(function MessageRow({
           title={turnBadge.unavailable ? t("sidebar.unavailableTag") : undefined}
         >
           <span>{turnBadge.engineLabel}</span>
-          <span>{turnBadge.providerLabel}</span>
           {turnBadge.modelLabel ? <span>{turnBadge.modelLabel}</span> : null}
           {turnBadge.reasoningLabel ? <span>{turnBadge.reasoningLabel}</span> : null}
           {turnBadge.unavailable ? <span>{t("sidebar.unavailableTag")}</span> : null}

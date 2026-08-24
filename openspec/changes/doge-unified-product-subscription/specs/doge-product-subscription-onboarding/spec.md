@@ -18,6 +18,13 @@ Doge MUST treat an active subscription bound to a server-advertised Composite Do
 - **THEN** Doge SHALL prepare one managed Composite credential and model catalog before mounting AppShell
 - **AND** it MUST NOT require the user to select an engine or API key
 
+#### Scenario: Shipping source renders the mandatory account gate
+
+- **WHEN** the main router constructs the authenticated access gate
+- **THEN** it SHALL render only `ProductAccountAppGate`
+- **AND** legacy `AccountAppGate`, engine subscription cards and engine checkout clients SHALL NOT exist in the shipping renderer source
+- **AND** stale installed bundles SHALL NOT be accepted as current hot-dev evidence
+
 ### Requirement: Product Checkout SHALL Use Upstream-Owned Catalog Fields
 
 The Gate MUST render plan and checkout facts from token2api and MUST NOT hardcode price, validity, description, payment method, or product model names.
@@ -77,6 +84,13 @@ Doge MUST scope managed product access to account, device and Composite group, a
 ### Requirement: Product-Ready Home Sends SHALL Use The Managed Product Target
 
 When product entitlement and preparation are ready, Home/new-session sends MUST bind the selected engine and model to `doge-token-matrix`; display catalog identity MUST NOT replace the CLI runtime model.
+
+#### Scenario: User opens Product Home without an explicit current selection
+
+- **WHEN** Product Home initializes a new-session target
+- **THEN** it SHALL select Codex
+- **AND** it SHALL select the first Codex-compatible row in current upstream catalog order
+- **AND** persisted global/local engine or model preferences SHALL NOT override that initial product target
 
 #### Scenario: User selects a Kimi fallback catalog model
 

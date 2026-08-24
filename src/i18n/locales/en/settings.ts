@@ -1330,6 +1330,8 @@ const settings = {
       openCliDocs: "Official docs",
       localProviderName: "Authorized local settings.json",
       localProviderDescription: "Explicitly authorize reading ~/.claude/settings.json",
+      managedProductLockLabel: "Doge managed",
+      managedProductLockDescription: "While a Doge subscription is active, the app always uses the isolated Doge configuration. Local configuration remains available only to CLI commands you run directly in your terminal.",
       allProviders: "All Providers",
       authorizeAndEnable: "Authorize and Enable",
       revokeAuthorization: "Revoke Authorization",

@@ -23,6 +23,7 @@ import {
 } from "../components/toolBlocks/toolConstants";
 import { buildConversationItem } from "../../../utils/threadItems";
 import { inferMutatingFileChangesFromCommand } from "../../../utils/threadItemsFileChanges";
+import { formatTokenCount as formatGlobalTokenCount } from "../../../utils/tokenFormat";
 
 export const SCROLL_THRESHOLD_PX = 120;
 export const OPENCODE_NON_STREAMING_HINT_DELAY_MS = 12_000;
@@ -229,16 +230,7 @@ export function formatDurationCompact(durationMs: number) {
 
 /** Compact token count for message footers (1234 → "1.2K"), matching jetbrains MessageItem. */
 export function formatTokenCount(count: number) {
-  if (!Number.isFinite(count) || count < 0) {
-    return "0";
-  }
-  if (count >= 1_000_000) {
-    return `${(count / 1_000_000).toFixed(1)}M`;
-  }
-  if (count >= 1_000) {
-    return `${(count / 1_000).toFixed(1)}K`;
-  }
-  return String(Math.floor(count));
+  return formatGlobalTokenCount(count);
 }
 
 export function formatCompletedTimeMs(timestampMs: number) {

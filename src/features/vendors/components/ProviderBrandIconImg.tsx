@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { providerBrandIconNeedsDarkTile } from "../providerBrandIcon";
+import { providerBrandIconThemeStrategy } from "../providerBrandIcon";
 
 /**
  * 供应商品牌图标 <img> 统一渲染出口。
@@ -34,8 +34,11 @@ export function ProviderBrandIconImg({
   src: string;
   className?: string;
 }) {
-  const needsDarkTile = providerBrandIconNeedsDarkTile(src);
+  const themeStrategy = providerBrandIconThemeStrategy(src);
+  const needsDarkTile = themeStrategy === "dark-tile";
   const classes = [
+    "vendor-brand-icon-img",
+    themeStrategy === "mono-adaptive" ? "vendor-brand-icon-img--mono-adaptive" : null,
     needsDarkTile ? "vendor-brand-icon-tile" : null,
     className?.trim() || null,
   ]
@@ -48,7 +51,7 @@ export function ProviderBrandIconImg({
       alt=""
       width={16}
       height={16}
-      className={classes || undefined}
+      className={classes}
       style={needsDarkTile ? DARK_TILE_STYLE : BASE_ICON_STYLE}
     />
   );

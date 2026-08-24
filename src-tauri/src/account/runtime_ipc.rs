@@ -309,12 +309,17 @@ pub(crate) async fn account_product_v1_models(
 
 #[tauri::command]
 pub(crate) async fn account_product_v1_usage(
-    period: String,
+    start_date: String,
+    end_date: String,
+    granularity: String,
     state: State<'_, crate::state::AppState>,
     window: tauri::Window,
 ) -> Result<Value, String> {
     require_main_account_window(&window)?;
-    Ok(state.account_runtime.product_usage_snapshot(&period).await)
+    Ok(state
+        .account_runtime
+        .product_usage_snapshot(&start_date, &end_date, &granularity)
+        .await)
 }
 
 #[tauri::command]

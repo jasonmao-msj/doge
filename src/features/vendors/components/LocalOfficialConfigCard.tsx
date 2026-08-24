@@ -6,7 +6,10 @@
  * There is no "cancel official" — leave official by enabling a third-party row.
  */
 import { useTranslation } from "react-i18next";
-import { VendorOfficialConfigCard } from "./VendorOfficialConfigCard";
+import {
+  VendorOfficialConfigCard,
+  type VendorManagedConfigurationLock,
+} from "./VendorOfficialConfigCard";
 
 export type LocalOfficialConfigCardProps = {
   /** Whether the local/official provider is currently active (incl. default fallback) */
@@ -18,6 +21,7 @@ export type LocalOfficialConfigCardProps = {
   onSwitch: (id: string) => void;
   /** Optional: open raw config editor if available */
   onEdit?: () => void;
+  managedLock?: VendorManagedConfigurationLock;
 };
 
 export function LocalOfficialConfigCard({
@@ -26,6 +30,7 @@ export function LocalOfficialConfigCard({
   description,
   onSwitch,
   onEdit,
+  managedLock,
 }: LocalOfficialConfigCardProps) {
   const { t } = useTranslation();
 
@@ -41,6 +46,7 @@ export function LocalOfficialConfigCard({
       mode="local"
       onUse={() => onSwitch(localProviderId)}
       onEdit={onEdit}
+      managedLock={managedLock}
     />
   );
 }

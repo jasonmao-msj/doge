@@ -7,7 +7,7 @@ import {
   createManagedEngineToolchainClientV1,
   type ManagedEngineToolchainResultV1,
 } from "./managedEngineToolchain";
-import type { ManagedEngineIdV1 } from "./engineOnboardingClient";
+import type { ManagedEngineIdV1 } from "./onboardingTypes";
 import type {
   CliInstallPlan,
   CliInstallResult,

@@ -65,6 +65,9 @@ import {
   activateEngineProviderProfileAndNotify,
   isActivatableProviderEngine,
 } from "../../vendors/activateEngineProviderProfile";
+import { MANAGED_PROVIDER_PROFILE_ID_V1 } from "../../account/runtime/engineEntitlementStore";
+import { PRODUCT_MANAGED_PROVIDER_LABEL } from "../../account/runtime/productExecutionTarget";
+import { readProductEntitlementSnapshotV1 } from "../../account/runtime/productEntitlementStore";
 
 /** 新建会话菜单项 id → 对应 CLI engine；用于 CLI 配置管理启停过滤。 */
 const NEW_SESSION_ENGINE_ACTION_IDS: Readonly<Record<string, EngineType>> = {
@@ -1506,6 +1509,22 @@ export function useSidebarMenus({
       const opencodeSelectedProfile =
         opencodeProfiles.find((profile) => profile.id === opencodeSelectedProfileId) ??
         opencodeProfiles[0];
+      const productManagedSessionCreation =
+        readProductEntitlementSnapshotV1().status === "ready";
+      const productManagedProfile: EngineProviderProfileOption = {
+        id: MANAGED_PROVIDER_PROFILE_ID_V1,
+        name: PRODUCT_MANAGED_PROVIDER_LABEL,
+        source: "managed",
+      };
+      const claudeCreationProfile = productManagedSessionCreation
+        ? productManagedProfile
+        : claudeSelectedProfile;
+      const codexCreationProfile = productManagedSessionCreation
+        ? productManagedProfile
+        : codexSelectedProfile;
+      const kimiCreationProfile = productManagedSessionCreation
+        ? productManagedProfile
+        : kimiSelectedProfile;
       const sharedEngineLabels: Record<SharedSessionSupportedEngine, string> = {
         claude: t("workspace.engineClaudeCode"),
         codex: t("workspace.engineCodex"),
@@ -1556,20 +1575,26 @@ export function useSidebarMenus({
           id: "new-session-claude",
           label: t("workspace.engineClaudeCode"),
           iconKind: "engine-claude",
-          submenuTitle: t("sidebar.claudeProviderChoiceTitle"),
-          selectionHint: t("sidebar.claudeProviderSelectedTip"),
-          ...withProviderAvailability(
-            resolveEngineActionMeta(workspace, "claude"),
-            claudeSelectedProfile,
-          ),
+          submenuTitle: productManagedSessionCreation
+            ? undefined
+            : t("sidebar.claudeProviderChoiceTitle"),
+          selectionHint: productManagedSessionCreation
+            ? undefined
+            : t("sidebar.claudeProviderSelectedTip"),
+          ...(productManagedSessionCreation
+            ? resolveEngineActionMeta(workspace, "claude")
+            : withProviderAvailability(
+                resolveEngineActionMeta(workspace, "claude"),
+                claudeSelectedProfile,
+              )),
           onSelect: async () => {
             const threadId = await runAddAgent(
               "claude",
-              creationProviderSelection(claudeSelectedProfile),
+              creationProviderSelection(claudeCreationProfile),
             );
             await handleCreatedSession(threadId);
           },
-          children: claudeProfiles.map((profile) => ({
+          children: productManagedSessionCreation ? undefined : claudeProfiles.map((profile) => ({
             id: `new-session-claude-provider-${profile.id}`,
             label: profile.name,
             badgeLabel:
@@ -1599,20 +1624,26 @@ export function useSidebarMenus({
           id: "new-session-codex",
           label: t("workspace.engineCodex"),
           iconKind: "engine-codex",
-          submenuTitle: t("sidebar.codexProviderChoiceTitle"),
-          selectionHint: t("sidebar.codexProviderSelectedTip"),
-          ...withProviderAvailability(
-            resolveEngineActionMeta(workspace, "codex"),
-            codexSelectedProfile,
-          ),
+          submenuTitle: productManagedSessionCreation
+            ? undefined
+            : t("sidebar.codexProviderChoiceTitle"),
+          selectionHint: productManagedSessionCreation
+            ? undefined
+            : t("sidebar.codexProviderSelectedTip"),
+          ...(productManagedSessionCreation
+            ? resolveEngineActionMeta(workspace, "codex")
+            : withProviderAvailability(
+                resolveEngineActionMeta(workspace, "codex"),
+                codexSelectedProfile,
+              )),
           onSelect: async () => {
             const threadId = await runAddAgent(
               "codex",
-              creationProviderSelection(codexSelectedProfile),
+              creationProviderSelection(codexCreationProfile),
             );
             await handleCreatedSession(threadId);
           },
-          children: codexProfiles.map((profile) => ({
+          children: productManagedSessionCreation ? undefined : codexProfiles.map((profile) => ({
             id: `new-session-codex-provider-${profile.id}`,
             label: profile.name,
             badgeLabel:
@@ -1696,20 +1727,26 @@ export function useSidebarMenus({
           id: "new-session-kimi",
           label: t("workspace.engineKimi"),
           iconKind: "engine-kimi",
-          submenuTitle: t("sidebar.kimiProviderChoiceTitle"),
-          selectionHint: t("sidebar.kimiProviderSelectedTip"),
-          ...withProviderAvailability(
-            resolveEngineActionMeta(workspace, "kimi"),
-            kimiSelectedProfile,
-          ),
+          submenuTitle: productManagedSessionCreation
+            ? undefined
+            : t("sidebar.kimiProviderChoiceTitle"),
+          selectionHint: productManagedSessionCreation
+            ? undefined
+            : t("sidebar.kimiProviderSelectedTip"),
+          ...(productManagedSessionCreation
+            ? resolveEngineActionMeta(workspace, "kimi")
+            : withProviderAvailability(
+                resolveEngineActionMeta(workspace, "kimi"),
+                kimiSelectedProfile,
+              )),
           onSelect: async () => {
             const threadId = await runAddAgent(
               "kimi",
-              creationProviderSelection(kimiSelectedProfile),
+              creationProviderSelection(kimiCreationProfile),
             );
             await handleCreatedSession(threadId);
           },
-          children: kimiProfiles.map((profile) => ({
+          children: productManagedSessionCreation ? undefined : kimiProfiles.map((profile) => ({
             id: `new-session-kimi-provider-${profile.id}`,
             label: profile.name,
             badgeLabel:

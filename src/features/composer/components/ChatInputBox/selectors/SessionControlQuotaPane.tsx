@@ -4,6 +4,7 @@ import type {
   SessionOverviewUsageSummaryView,
 } from "../../../../status-panel/utils/sessionOverviewViewModel";
 import { formatRelativeTime } from "../../../../../utils/time";
+import { formatTokenCount } from "../../../../../utils/tokenFormat";
 
 export type SessionControlQuotaPaneProps = {
   /** 已由 buildSessionOverviewQuota 合并的额度视图（官方 rate limit + coding plan） */
@@ -26,25 +27,7 @@ function formatQuotaReset(
 
 /** 紧凑 Token：6608 → 6.6K，19675 → 19.7K，2.4e9 → 2.4B */
 export function formatCompactTokenCount(value: number): string {
-  if (!Number.isFinite(value) || value < 0) {
-    return "0";
-  }
-  if (value < 1000) {
-    return String(Math.round(value));
-  }
-  if (value < 1_000_000) {
-    const k = value / 1000;
-    const text = k >= 100 ? k.toFixed(0) : k.toFixed(1);
-    return `${text.replace(/\.0$/, "")}K`;
-  }
-  if (value < 1_000_000_000) {
-    const m = value / 1_000_000;
-    const text = m >= 100 ? m.toFixed(0) : m.toFixed(1);
-    return `${text.replace(/\.0$/, "")}M`;
-  }
-  const b = value / 1_000_000_000;
-  const text = b >= 100 ? b.toFixed(0) : b.toFixed(2);
-  return `${text.replace(/\.?0+$/, "")}B`;
+  return formatTokenCount(value);
 }
 
 /** 毫秒 → 秒展示：3885 → 3.89s（统一 2 位小数） */

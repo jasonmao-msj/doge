@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import process from "node:process";
+import { assertNoConflictingPackagedDogeApp } from "./tauri-dev-hot.mjs";
 
 function resolveIsolatedPort() {
   const rawPort = process.env.MOSS_DEV_PORT ?? "";
@@ -12,6 +13,7 @@ function resolveIsolatedPort() {
 }
 
 const isolatedPort = resolveIsolatedPort();
+assertNoConflictingPackagedDogeApp();
 const tauriBin = process.platform === "win32" ? "tauri.cmd" : "tauri";
 const isolatedConfig = JSON.stringify({
   build: {
