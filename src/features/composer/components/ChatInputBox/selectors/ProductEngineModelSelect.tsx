@@ -270,7 +270,6 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
                               onClick={() => {
                                 if (selectedEngine) {
                                   publishTarget(selectedEngine, model);
-                                  close();
                                 }
                               }}
                             >

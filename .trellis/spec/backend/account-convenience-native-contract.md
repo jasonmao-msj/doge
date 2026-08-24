@@ -876,13 +876,18 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 - Frontend state machine：`auth -> catalog -> subscription | checkout -> fulfilling -> prepare -> ready`。
 - Catalog read：`AccountProductOnboardingClientV1.catalog({ forceRefresh?: boolean })`；`forceRefresh=true` MUST bypass process cache。
 - Native checkpoint：`product_checkout_checkpoint(status, expires_at, updated_at) -> Option<(status, expires_at)>`；`paid` 投影为 credential-free `processing` checkpoint，expiry 至少为 `updated_at + PRODUCT_FULFILLMENT_GRACE_SECONDS`。
+- Remote credential identity：`managed_product_key_name(group_id, device_id) -> "Doge Managed <group_id> <sha256-prefix>"`；Authority list 已按 authenticated account scope，name 只能使用 stable `group_id + hashed device_id`，不得包含 raw device id 或 mutable plan copy。
+- Checkout polling：`productCheckoutPollDelayMs(attempt) -> 2s..15s`；同一 `checkoutId + pending|processing + expiresAt` 由一个 effect 持有 attempt，`retryAfterMs` 可延长但不得缩短 delay。
 - Kimi registry target：`~/.doge/config.json#/kimi/providers/doge-token-matrix`，owner fields 为 `source="doge-account"`、`baseUrl="https://token-matrix.com/v1"`、`providerType="openai"`，且 `/kimi/current="doge-token-matrix"`。
 - Kimi verifier：`verify_applied_plan(plan)` 的 `file.label == "Doge Kimi provider registry"` 分支 MUST 使用 `serde_json::from_str`；只有其他 Codex TOML target 才使用 `toml::from_str`。
 
 ### 3. Contracts
 
 - checkout snapshot 为 `paid` 时，Gate MUST 进入 visible `fulfilling`，以 bounded backoff 反复调用 `catalog({ forceRefresh:true })`；entitlement 未 active 不得退回订阅页、创建第二笔订单或使用旧 cache。
+- checkout `refunded | partially_refunded` MUST 投影为 terminal `failed`，不得进入 `paid/fulfilling` 或延长 paid checkpoint。pending polling MUST 以 authoritative `expiresAt` 为 absolute deadline；同 status snapshot 更新不得重建 polling owner、重置 attempt 或恢复 2s cadence。
+- recoverable `readCheckout` failure MUST 保留 checkout surface，按 `max(backoff, retryAfterMs)` 继续 authoritative read；成功后清 scoped retry feedback。禁止一次 network failure 永久停止 reconciliation。
 - same-session paid 与 restart 恢复的 paid checkout MUST 共用同一 fulfillment path。Native checkpoint 只能保存 checkout id/status/expiry/isolation tuple；不得保存 plan 文案、payment action、secret 或 entitlement truth。
+- product managed key MUST 在 authenticated account scope 内按 `Composite group + device fingerprint` 复用。plan name/description/price/validity 变化不得改变 credential identity；另一 device 必须得到不同 canonical key name，避免 raw credential、rotation 或 revoke 跨设备耦合。
 - fulfillment 达到 bounded deadline、catalog fail 或 prepare fail 时，Gate MUST 保留 fulfillment recovery surface 与明确 retry；retry 继续权威 reconciliation，不得隐式重新 checkout。
 - entitlement active 后 `product_prepare` MUST 对 Codex、Claude、Kimi 逐引擎写入同一个 account/device scoped secret owner，再应用各自 provider config；全部配置、model catalog 与 ready projection成功后才清 product checkpoint。
 - Kimi managed merge MUST replace entire `doge-token-matrix` provider entry，并移除大小写/分隔符归一化后等价于 `apiKey`、`token`、`secret` 的 legacy secret fields。`config.json` 不得持久化 secret；launch-only owner `KIMI_CODE_HOME/config.toml` 可由 Native 从 vault 生成 owner-only `api_key`。
@@ -895,6 +900,10 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 | 场景 | Native / Gateway | Gate / Runtime |
 |---|---|---|
 | order `paid`，subscription 尚未 active | 保存 grace checkpoint；forced catalog 返回 inactive | 保持 `fulfilling`，bounded backoff |
+| order `refunded/partially_refunded` | closed projection=`failed`；不保存 paid checkpoint | terminal payment failure；不进入 fulfillment |
+| pending snapshot 内容更新但 status/id/expiry 不变 | 保留同一 polling owner 与 attempt | backoff 继续增长，不回到 2s |
+| checkout read 暂时失败/429 | safe typed error + optional `retryAfterMs` | 保留 checkout，cooldown 后自动继续 poll |
+| `expiresAt <= now` | 不再调用 Authority read；local projection=`expired` | terminal payment failure，可返回套餐页 |
 | entitlement 在 backoff 内 active | prepare 三引擎；成功后清 checkpoint | 自动进入 AppShell |
 | restart 时 paid checkpoint 存在 | authoritative order read；恢复 paid truth | 直接进入 `fulfilling`，不回套餐 |
 | fulfillment deadline 到达 | checkpoint 保留到 server grace expiry | 显示 delayed + retry，不重复购买 |
@@ -906,16 +915,21 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 ### 5. Good / Base / Bad Cases
 
 - Good：payment poll 先读到 `paid`，两次 forced catalog 后 subscription active，三引擎 prepare 完成并自动进入 AppShell；checkpoint 随成功清除。
+- Good：same account/device/group 重复 prepare 复用同一 hashed-device key name；同 group 的第二 device 使用不同 name；plan copy 变化不创建新 identity。
 - Base：首次 catalog 已有 active entitlement，跳过 checkout/fulfillment 并直接 prepare。
+- Base：poll 第一次返回 pending、第二次 network failure、第三次 paid；attempt 依次使用 2s/3s/4s cadence 且不离开 checkout surface。
 - Bad：`paid -> loadCatalog()` 命中 30 秒 cache，看到 inactive 后 `setPhase("subscription")`，让用户以为需要再次购买。
+- Bad：把 `refunded` 映射为 `paid`，或让 `setCheckout({...snapshot})` 触发 effect cleanup 后把 attempt 重置为零。
+- Bad：以 plan display name 查找 remote key，导致 plan rename 创建新 key，或不同 device handoff 同一个 canonical product key。
 - Bad：paid checkpoint 立即清除，App restart 丢失“已经付款、等待履约”的真实状态。
 - Bad：Kimi JSON registry 落到 default TOML branch，或 merge 只覆盖非 secret 字段而保留旧 `apiKey`。
 
 ### 6. Tests Required
 
 - React lifecycle MUST 使用 deferred catalog 证明：paid 后进入 `fulfilling`、每次 read 都带 `forceRefresh:true`、inactive 不出现订阅 CTA、active 后只 prepare 一次并 ready、stale generation 不推进。
+- React checkout lifecycle MUST 使用 fake timers 证明：pending snapshot 不重置 attempt、transient failure 后按下一档 delay 自动重试、paid 进入 fulfillment、absolute expiry 后零 additional Authority reads。
 - React visual contract MUST 锁定 product stylesheet owner、structured plan card（plan/price/validity/engine/feature/CTA）与 bounded logo；narrow CSS breakpoint 不得把字段拼成一行。
-- Rust checkout tests MUST 锁定 `paid -> processing` grace checkpoint、restart read 与 prepare success cleanup；secret scan断言 checkpoint无 payment/plan/credential字段。
+- Rust checkout tests MUST 锁定 `paid -> processing` grace checkpoint、`refunded/partially_refunded -> failed`、restart read 与 prepare success cleanup；managed key name 对 same device stable、cross-device/group distinct 且不含 raw device/plan copy；secret scan断言 checkpoint无 payment/plan/credential字段。
 - Rust configuration tests MUST 构造 legacy Kimi secret aliases，断言 merge 后 serialized JSON 不含 secret，并直接调用 `verify_applied_plan` 证明 Kimi-specific JSON branch成功；current/base URL/provider type 漂移分别 fail closed。
 - Required commands：focused Vitest、`cargo test --manifest-path src-tauri/Cargo.toml --lib account::`、`cargo check --manifest-path src-tauri/Cargo.toml --lib`、`npm run typecheck`、target ESLint、`npm run check:runtime-contracts`、OpenSpec strict validation。
 

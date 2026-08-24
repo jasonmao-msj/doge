@@ -113,7 +113,17 @@
 - 真实失败 request `b10634ac-9994-450d-93d4-1789dba9e975` 的 Codex rollout 显示 UI 最终为 `gpt-5.6-sol`，但 durable continuation materialization 实际冻结 `destination={engine:codex, model:豆包}`，新 thread 的 `thread_settings_applied/turn_context` 随后回落 `gpt-5.5` 并在 `/responses` 返回 503。
 - 同分钟独立新建 `Codex + gpt-5.6-sol` rollout 的 `turn_context.model=gpt-5.6-sol`，7s terminal success，排除 managed credential 与 Sol pricing route。
 - 根因是 `ProductEngineModelSelect` 在 engine radio click 时立即发布完整 Target，跨 engine 且来源 model 仍 compatible 时会在用户点击目标 model 前启动 Provider Continuation。
-- 修复后 engine click 只更新 panel-local draft；model click 才一次发布 `engine + modelCatalogEntryId + runtime model + doge-token-matrix` 并关闭 panel。
+- 修复后 engine click 只更新 panel-local draft；model click 才一次发布 `engine + modelCatalogEntryId + runtime model + doge-token-matrix`，panel 保持打开，只有 Escape/scrim/显式 close 关闭。
 - Focused regression：`ProductEngineModelSelect.test.tsx`、`Composer.file-reference-token.test.tsx`、`useSidebarMenus.test.tsx` 共 89/89 通过；`npm run typecheck -- --pretty false` 与 targeted ESLint 通过。
 - Commit 前最终 L3：affected frontend 27 files / 487 tests 全绿；changed-file ESLint 与 TypeScript typecheck 全绿；Rust `account::` 107 tests（106 passed / 1 live-authority ignored）与 `cargo check --lib` 通过；dev scripts 10/10、runtime contracts、engine capability/adapter/model catalog、docs、branding、large-file report 与本 change OpenSpec strict 全绿。
 - `openspec validate --all --strict` 仍有 4 个 repository baseline active change failure（含 `fix-ui-scale-native-zoom-freeze-all-platforms`、`fix-windows-cold-start-freeze-residual`、`retire-canvas-subagent-squad-grid`），均不在本次 diff；`doge-unified-product-subscription` individual strict validation 通过。
+
+## 2026-08-24 PR review remediation
+
+- Verification level：`L3 Cross-layer / High-risk`。最高触发项为 payment checkout recovery、account/device scoped managed credential identity、product-ready session routing 与 React polling owner；影响 Native Authority/Runtime、renderer Gate/Sidebar/Composer、OpenSpec/Trellis executable contract 与 multi-CLI foundation calibration。
+- Backend：product remote key canonical name 改为 authenticated account scope 下的 `group_id + sha256(device_id)` prefix，same group/device stable、cross-device/group distinct且不暴露 raw device/plan copy；`refunded/partially_refunded` closed projection 为 terminal `failed`。
+- Frontend：checkout poll 由 stable `checkoutId/status/expiresAt` effect 持有 attempt，transient failure 按 `max(backoff,retryAfterMs)` 自动续读，expiry 后零 additional read；product-ready Sidebar 三 engine direct action 绕过 Local Mode blacklist；model commit 后 picker 保持打开。
+- Affected frontend：43 files / 672 tests PASS；其中新增 regression 覆盖 poll snapshot 不重置、cooldown retry、absolute expiry、disabled product Kimi 与 panel stays-open。
+- Rust：`cargo test --manifest-path src-tauri/Cargo.toml 'account::' --lib` PASS（105 passed / 2 ignored）；`cargo check --lib` 与 `cargo fmt --all -- --check` PASS，只保留 repository baseline warnings。
+- Static/contracts：changed-file ESLint、`npm run typecheck`、`npm run doctor:strict`、engine capability/adapter/model catalog、docs governance、branding、large-file report、current OpenSpec strict validation 与 `git diff --check` PASS。
+- 未运行 L4：全量 `npm run test` / Rust workspace tests、Release build、Windows/Linux/macOS installer smoke 与真实 payment callback；由 Release/CI 承担。

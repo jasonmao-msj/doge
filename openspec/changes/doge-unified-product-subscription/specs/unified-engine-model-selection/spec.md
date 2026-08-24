@@ -178,6 +178,13 @@ When the Doge product entitlement is ready, provider configuration MUST be an in
 - **AND** each action SHALL create the session with `providerProfileId=doge-token-matrix` and managed Provider metadata
 - **AND** remembered local/custom Provider preferences SHALL NOT affect that product session
 
+#### Scenario: A product engine was disabled in Local Mode
+
+- **GIVEN** local CLI visibility settings disabled Claude, Codex or Kimi before product preparation
+- **WHEN** the product entitlement becomes ready and the Sidebar new-session menu opens
+- **THEN** all three product engines SHALL remain visible as direct managed actions
+- **AND** the Local Mode blacklist SHALL continue to apply when the product entitlement is not ready
+
 #### Scenario: Shared conversation renders a turn target label
 
 - **WHEN** Shared renders an assistant turn with an immutable execution target snapshot

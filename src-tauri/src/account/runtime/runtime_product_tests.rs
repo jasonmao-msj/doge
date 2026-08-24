@@ -38,7 +38,24 @@ fn product_model(id: &str) -> ProductModelWire {
 fn order_status_projection_is_closed() {
     assert_eq!(normalize_order_status("completed"), Some("paid"));
     assert_eq!(normalize_order_status("cancelled"), Some("cancelled"));
+    assert_eq!(normalize_order_status("refunded"), Some("failed"));
+    assert_eq!(normalize_order_status("partially_refunded"), Some("failed"));
     assert_eq!(normalize_order_status("unknown"), None);
+}
+
+#[test]
+fn managed_product_key_identity_is_stable_per_group_and_device() {
+    let first = managed_product_key_name(11, "device-primary-12345678");
+    let repeated = managed_product_key_name(11, "device-primary-12345678");
+    let other_device = managed_product_key_name(11, "device-secondary-87654321");
+    let other_group = managed_product_key_name(12, "device-primary-12345678");
+
+    assert_eq!(first, repeated);
+    assert_ne!(first, other_device);
+    assert_ne!(first, other_group);
+    assert!(first.starts_with("Doge Managed 11 "));
+    assert!(!first.contains("device-primary"));
+    assert!(!first.contains(&product_plan().name));
 }
 
 #[test]

@@ -302,7 +302,7 @@ impl AccountRuntime {
                 "subscribe",
             ));
         };
-        let key_name = managed_product_key_name(plan);
+        let key_name = managed_product_key_name(plan.group_id, device_id);
         let listed = match authority.product_api_keys(&access, plan.group_id).await {
             Ok(value) => value,
             Err(error) => {
@@ -648,10 +648,10 @@ pub(super) fn normalize_order_status(status: &str) -> Option<&'static str> {
     match status.trim().to_ascii_lowercase().as_str() {
         "pending" | "created" => Some("pending"),
         "processing" => Some("processing"),
-        "paid" | "completed" | "refunded" | "partially_refunded" => Some("paid"),
+        "paid" | "completed" => Some("paid"),
         "cancelled" | "canceled" => Some("cancelled"),
         "expired" => Some("expired"),
-        "failed" => Some("failed"),
+        "failed" | "refunded" | "partially_refunded" => Some("failed"),
         _ => None,
     }
 }
@@ -719,18 +719,13 @@ fn valid_qr_payload(value: &str) -> bool {
     !value.trim().is_empty() && value.len() <= 4_096 && !value.chars().any(char::is_control)
 }
 
-fn managed_product_key_name(plan: &ProductSubscriptionPlanWire) -> String {
-    let source = if plan.name.trim().is_empty() {
-        plan.group_name.trim()
-    } else {
-        plan.name.trim()
-    };
-    let filtered = source
-        .chars()
-        .filter(|ch| !ch.is_control())
-        .take(70)
-        .collect::<String>();
-    format!("Doge {filtered}")
+pub(super) fn managed_product_key_name(group_id: i64, device_id: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(b"doge-product-managed-key-v1\0");
+    hasher.update(group_id.to_be_bytes());
+    hasher.update(device_id.as_bytes());
+    let fingerprint = format!("{:x}", hasher.finalize());
+    format!("Doge Managed {group_id} {}", &fingerprint[..24])
 }
 
 fn valid_created_product_key(value: &ProductApiKeyCreatedWire, group_id: i64) -> bool {

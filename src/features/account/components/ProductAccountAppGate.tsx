@@ -250,20 +250,65 @@ export function ProductAccountAppGate({
     setBusy(false);
   }, [busy, checkout, client, recordFailure]);
 
+  const checkoutId = checkout?.checkoutId ?? null;
+  const checkoutStatus = checkout?.status ?? null;
+  const checkoutExpiresAt = checkout?.expiresAt ?? null;
+
   useEffect(() => {
-    if (phase !== "checkout" || !checkout ||
-      !["pending", "processing"].includes(checkout.status)) return;
+    if (
+      phase !== "checkout" ||
+      checkoutId === null ||
+      checkoutExpiresAt === null ||
+      !["pending", "processing"].includes(checkoutStatus ?? "")
+    ) return;
     const requestGeneration = generation.current;
+    const activeCheckoutId = checkoutId;
+    const expiresAtMs = Date.parse(checkoutExpiresAt);
     let disposed = false;
     let attempt = 0;
     let timer: ReturnType<typeof setTimeout> | null = null;
-    const poll = async () => {
-      const result = await client.readCheckout(checkout.checkoutId).catch(() => null);
+
+    function markExpired() {
+      setCheckout((current) =>
+        current?.checkoutId === activeCheckoutId &&
+        ["pending", "processing"].includes(current.status)
+          ? { ...current, status: "expired" }
+          : current,
+      );
+    }
+
+    function schedule(delayMs: number) {
+      if (disposed) return;
+      const remainingMs = expiresAtMs - Date.now();
+      if (!Number.isFinite(remainingMs) || remainingMs <= 0) {
+        markExpired();
+        return;
+      }
+      timer = setTimeout(
+        () => void poll(),
+        Math.max(0, Math.min(delayMs, remainingMs)),
+      );
+    }
+
+    async function poll() {
+      if (Date.now() >= expiresAtMs) {
+        markExpired();
+        return;
+      }
+      const result = await client.readCheckout(activeCheckoutId).catch(() => null);
       if (disposed || requestGeneration !== generation.current) return;
       if (!result?.ok) {
         recordFailure(result?.error);
+        attempt += 1;
+        schedule(Math.max(
+          productCheckoutPollDelayMs(attempt),
+          retryUntilRef.current - Date.now(),
+        ));
         return;
       }
+      retryUntilRef.current = 0;
+      setRetryUntil(0);
+      setFailure(null);
       setCheckout((current) => mergeProductCheckoutRefreshV1(current, result.value));
       if (result.value.status === "paid") {
         setPhase("fulfilling");
@@ -271,14 +316,14 @@ export function ProductAccountAppGate({
       }
       if (["cancelled", "expired", "failed"].includes(result.value.status)) return;
       attempt += 1;
-      timer = setTimeout(() => void poll(), Math.min(15_000, 2_000 + attempt * 1_000));
-    };
-    timer = setTimeout(() => void poll(), 2_000);
+      schedule(productCheckoutPollDelayMs(attempt));
+    }
+    schedule(productCheckoutPollDelayMs(0));
     return () => {
       disposed = true;
       if (timer) clearTimeout(timer);
     };
-  }, [checkout, client, loadCatalog, phase, recordFailure]);
+  }, [checkoutExpiresAt, checkoutId, checkoutStatus, client, phase, recordFailure]);
 
   useEffect(() => {
     if (phase !== "fulfilling") return;
@@ -549,6 +594,10 @@ function formatMoney(value: number, currency: string): string {
 
 export function productFulfillmentPollDelayMs(attempt: number): number {
   return Math.min(5_000, 1_000 + Math.max(0, attempt - 1) * 500);
+}
+
+export function productCheckoutPollDelayMs(attempt: number): number {
+  return Math.min(15_000, 2_000 + Math.max(0, attempt) * 1_000);
 }
 
 function formatProductPlanValidity(

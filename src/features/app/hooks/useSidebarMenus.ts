@@ -1357,9 +1357,13 @@ export function useSidebarMenus({
   );
 
   const isEngineSessionEntryVisible = useCallback(
-    (engineType: EngineType) =>
-      isEngineExecutionEnabled(engineType) &&
-      !disabledCliEngineIds.has(engineType),
+    (engineType: EngineType) => {
+      const productManagedEngine =
+        readProductEntitlementSnapshotV1().status === "ready" &&
+        (engineType === "claude" || engineType === "codex" || engineType === "kimi");
+      return isEngineExecutionEnabled(engineType) &&
+        (productManagedEngine || !disabledCliEngineIds.has(engineType));
+    },
     [disabledCliEngineIds],
   );
 

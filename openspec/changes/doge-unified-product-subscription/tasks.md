@@ -154,3 +154,8 @@
 - [x] 16.34 固化 Product Home 初始 Target 为 Codex + 第一条 compatible upstream model；保留当前 Home 的显式用户选择，不读取 global/local 默认。
 - [x] 16.35 证明 Codex Sol/Terra failure 非客户端配置：rollout 分别冻结 exact model，same managed key 对 Luna=200、Sol/Terra=503；经授权在 production `Doge 统一定价` 将 Sol/Terra 加入现有 Luna GPT price rule，随后重新做 Responses + exact CLI probe。
 - [x] 16.36 修复 Native Provider Continuation 的 engine/model 非原子选择：engine click 只切换 picker draft，model click 才提交完整 target；用 Kimi+豆包 → Codex+Sol focused regression 锁定完整 destination target，不再先冻结来源 model 或回落 `gpt-5.5`。
+- [x] 16.37 将 product remote key identity 收敛为 authenticated account scope 下的 `Composite group + hashed device`，移除 mutable plan name 依赖并补 same-device/cross-device regression。
+- [x] 16.38 修复 checkout `refunded/partially_refunded` 误投影为 paid；refund 现在 terminal fail closed，不再进入 fulfillment 或延长 checkpoint。
+- [x] 16.39 重构 Product Gate checkout polling owner：same-status snapshot 不重置 attempt，transient failure 按 bounded backoff/retryAfter 自动续读，authoritative expiry 后停止 network read。
+- [x] 16.40 product-ready Sidebar 的 Claude/Codex/Kimi direct actions 忽略 Local Mode visibility blacklist；非产品状态继续遵守原设置。
+- [x] 16.41 Product picker model commit 保持 panel 打开，仅 Escape/scrim/显式 close 退出；同步 OpenSpec、Trellis executable contract 与 focused tests。

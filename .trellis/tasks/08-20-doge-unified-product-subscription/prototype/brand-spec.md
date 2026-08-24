@@ -1,7 +1,9 @@
 # Doge unified subscription prototype · Brand Spec
 
-> 采集日期：2026-08-20  
-> 资产来源：Doge 当前仓库与用户提供的现有 UI 截图  
+> 采集日期：2026-08-20
+>
+> 资产来源：Doge 当前仓库与用户提供的现有 UI 截图
+>
 > 资产完整度：完整（本原型范围）
 
 ## 核心资产

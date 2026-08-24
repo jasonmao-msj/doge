@@ -55,7 +55,7 @@ const initialTarget: ExecutionTarget = {
 };
 
 describe("ProductEngineModelSelect", () => {
-  it("commits an engine and model atomically after the model is selected", () => {
+  it("commits an engine and model atomically while keeping the panel open", () => {
     const changes: ExecutionTarget[] = [];
 
     function Harness() {
@@ -93,9 +93,8 @@ describe("ProductEngineModelSelect", () => {
       providerProfileId: "doge-token-matrix",
       providerProfileNameSnapshot: "Doge",
     });
-    expect(screen.queryByRole("dialog", { name: "选择引擎与模型" })).toBeNull();
+    expect(screen.getByRole("dialog", { name: "选择引擎与模型" })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
     fireEvent.click(screen.getByRole("radio", { name: "Codex" }));
     expect(changes).toHaveLength(1);
     fireEvent.click(screen.getByRole("radio", { name: /GPT-5.5/ }));
@@ -106,7 +105,7 @@ describe("ProductEngineModelSelect", () => {
       providerProfileId: "doge-token-matrix",
       providerProfileNameSnapshot: "Doge",
     });
-    expect(screen.queryByRole("dialog", { name: "选择引擎与模型" })).toBeNull();
+    expect(screen.getByRole("dialog", { name: "选择引擎与模型" })).toBeTruthy();
   });
 
   it("does not bridge a Kimi source model while choosing Codex Sol", () => {

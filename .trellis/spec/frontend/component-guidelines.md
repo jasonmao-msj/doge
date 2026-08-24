@@ -580,7 +580,7 @@ return {
 - Toolbar icons MUST inherit `currentColor` or theme tokens. Do not use fixed-color SVG assets such as `stroke="black"` for toolbar icons.
 - Composer geometry is a visual contract: normal composer radius around `14px`, home desktop radius around `16px`, home narrow radius around `14px`; readiness mode chip should be small rounded rectangle, not `999px` pill.
 - Default composer body height SHOULD stay compact; home default wrapper height should remain about two rows shorter than the old `138px` treatment unless a new explicit design updates the contract.
-- `ProductEngineModelSelect` used by an existing Native Session MUST treat engine selection as panel-local draft state. Engine click MUST NOT publish `onExecutionTargetChange`; only an explicit compatible model click MAY publish one complete `engine + modelCatalogEntryId + runtime model + managed provider` target and close the panel. This prevents Provider Continuation from freezing the source engine's still-compatible model before the user chooses the destination model.
+- `ProductEngineModelSelect` used by an existing Native Session MUST treat engine selection as panel-local draft state. Engine click MUST NOT publish `onExecutionTargetChange`; only an explicit compatible model click MAY publish one complete `engine + modelCatalogEntryId + runtime model + managed provider` target. A successful model commit MUST keep the panel open so the user can continue comparing targets; only Escape、scrim 或显式 close action 关闭 panel. This prevents Provider Continuation from freezing the source engine's still-compatible model before the user chooses the destination model while preserving the product picker interaction contract.
 
 ### 4. Validation & Error Matrix
 

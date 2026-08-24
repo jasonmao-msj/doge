@@ -52,6 +52,20 @@ The Gate MUST render plan and checkout facts from token2api and MUST NOT hardcod
 - **AND** it SHALL NOT return to the plan purchase surface or create another order
 - **AND** the checkpoint SHALL clear only after active entitlement is observed and managed preparation succeeds
 
+#### Scenario: Checkout polling encounters a transient failure
+
+- **GIVEN** a pending or processing checkout has not reached its authoritative expiry
+- **WHEN** one status read fails or is rate-limited
+- **THEN** Doge SHALL retain the checkout surface and continue polling after the larger of bounded backoff and `retryAfterMs`
+- **AND** successful snapshots SHALL NOT reset the attempt owner merely because safe checkout fields were refreshed
+- **AND** no further status read SHALL start after `expiresAt`
+
+#### Scenario: A checkout is refunded
+
+- **WHEN** checkout authority reports `refunded` or `partially_refunded`
+- **THEN** Doge SHALL project a terminal failed/refunded payment outcome
+- **AND** it SHALL NOT persist a paid fulfillment checkpoint or wait for a new entitlement
+
 ### Requirement: Managed Product Access SHALL Be Secret-Safe And Idempotent
 
 Doge MUST scope managed product access to account, device and Composite group, and all retries MUST converge on one usable credential without exposing its secret to renderer or logs.
@@ -61,6 +75,14 @@ Doge MUST scope managed product access to account, device and Composite group, a
 - **WHEN** startup, payment reconciliation, retry, or account refresh invokes preparation more than once
 - **THEN** Native SHALL reuse or safely refresh the same managed binding
 - **AND** repeated calls MUST NOT create an unbounded number of API keys or remote requests
+
+#### Scenario: Product credential identity survives plan copy changes and device fan-out
+
+- **WHEN** the same account/device/Composite group prepares after plan name, description or price changes
+- **THEN** Native SHALL resolve the same canonical remote key identity without using mutable plan copy
+- **WHEN** the same account prepares that group on another device
+- **THEN** the canonical key identity SHALL use a different hashed device component
+- **AND** raw device ids SHALL NOT appear in the key display name, renderer, logs or diagnostics
 
 #### Scenario: Authority rate-limits preparation
 

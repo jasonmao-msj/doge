@@ -998,6 +998,7 @@ describe("useSidebarMenus", () => {
   );
 
   it("hides product provider submenus and creates Claude/Codex/Kimi with Doge", async () => {
+    seedCliEngineVisibility(["claude", "codex", "kimi"]);
     publishProductReadyV1({
       entitlement: {
         status: "active",

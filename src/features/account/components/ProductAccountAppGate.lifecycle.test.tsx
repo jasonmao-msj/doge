@@ -15,6 +15,7 @@ import type {
 } from "../runtime/productOnboardingClient";
 import {
   ProductAccountAppGate,
+  productCheckoutPollDelayMs,
   productFulfillmentPollDelayMs,
 } from "./ProductAccountAppGate";
 
@@ -94,6 +95,72 @@ describe("ProductAccountAppGate lifecycle", () => {
   it("bounds fulfillment polling delay", () => {
     expect(productFulfillmentPollDelayMs(1)).toBe(1_000);
     expect(productFulfillmentPollDelayMs(99)).toBe(5_000);
+  });
+
+  it("retains checkout backoff across snapshots and retries transient failures", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2029-12-31T00:00:00Z"));
+    const client = productClient();
+    vi.mocked(client.resumeCheckout).mockResolvedValueOnce({
+      ok: true,
+      value: pendingCheckout(),
+    });
+    vi.mocked(client.readCheckout)
+      .mockResolvedValueOnce({ ok: true, value: pendingCheckout() })
+      .mockResolvedValueOnce({
+        ok: false,
+        error: { code: "serviceUnavailable", retryAfterMs: 6_000 },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: { ...pendingCheckout(), status: "paid" },
+      });
+
+    renderGate(client);
+    await act(async () => flushMicrotasks());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(productCheckoutPollDelayMs(0));
+      await flushMicrotasks();
+    });
+    expect(client.readCheckout).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(productCheckoutPollDelayMs(1) - 1);
+    });
+    expect(client.readCheckout).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+      await flushMicrotasks();
+    });
+    expect(client.readCheckout).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(productCheckoutPollDelayMs(2));
+    });
+    expect(client.readCheckout).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(6_000 - productCheckoutPollDelayMs(2));
+      await flushMicrotasks();
+    });
+    expect(client.readCheckout).toHaveBeenCalledTimes(3);
+    expect(screen.getByRole("heading", { name: "支付已完成，正在开通订阅" })).toBeTruthy();
+  });
+
+  it("stops checkout polling at the authoritative expiry", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2030-01-01T00:31:00Z"));
+    const client = productClient();
+    vi.mocked(client.resumeCheckout).mockResolvedValueOnce({
+      ok: true,
+      value: pendingCheckout(),
+    });
+
+    renderGate(client);
+    await act(async () => flushMicrotasks());
+
+    expect(screen.getByRole("heading", { name: "支付没有完成" })).toBeTruthy();
+    expect(client.readCheckout).not.toHaveBeenCalled();
   });
 
   it("refreshes the dynamic model catalog when a ready app regains focus", async () => {
@@ -226,6 +293,16 @@ function readyView(): ProductReadyViewV1 {
       capabilities: ["chat"],
     }],
     engines: productEngines(),
+  };
+}
+
+function pendingCheckout() {
+  return {
+    checkoutId: 77,
+    status: "pending" as const,
+    expiresAt: "2030-01-01T00:30:00Z",
+    planName: "Doge 全功能订阅",
+    action: null,
   };
 }
 
