@@ -207,7 +207,7 @@ status: active
 
 - [ ] **Input ACK**：投递后有 request-response 确认吗？有 echo 吗（如 Claude `--replay-user-messages`）？还是只能等第一个合法 event（弱 ACK）？
 - [ ] **Run Started**：有显式 started 事件，还是只能从第一个 assistant/tool event 推断？
-- [ ] **Terminal**：有显式 completed/result 事件吗？Process Exit 与 Terminal 冲突时哪个为准？
+- [ ] **Terminal**：有显式 completed/result 事件吗？Provider rejection 是否可能伪装成 synthetic assistant（camel/snake error flags）或 `result.is_error`？Process Exit 与 Terminal 冲突时哪个为准？
 - [ ] **Cleanup**：typed final 后还有哪些 process/stdio/hook/MCP child/usage 清理事件？它们会延迟多久，是否可能不退出？
 - [ ] **Duplicate Final**：typed final、cumulative full snapshot、process-exit fallback 是否可能重复表达同一结果？
 - [ ] **Pending Probe**：投递后 ACK 丢失时，能按 client-supplied id 或 native history 查询"刚才的输入到底进没进去"吗？
@@ -282,6 +282,9 @@ status: active
 
 - RealtimeAdapter 把 native event 归一到 `run:start / turn:start / message:delta / tool:start|update|end / turn:end / run:settled` 最小事件面；**不改** `MossxAgentEvent` 既有 event meaning（红线 32），新事件类型用 additive envelope 扩展，并在 `NORMALIZED_EVENT_DICTIONARY`（D3）登记私有事件名。
 - Terminal 边界可判定：Provider typed final/result 归一为 Attempt-owned `run.settled`；Shared logical settlement 与 runtime cleanup 分域。
+- 对 synthetic assistant API error（含 camelCase/snake_case 字段）与 error result 单独做
+  Spike；若为 authoritative rejection，Adapter MUST 立即 settle 并结束 exact process owner，
+  不得继续等待 stdout/EOF。
 - 同一 `attemptId + runtimeTurnId` 的 duplicate final / cumulative full observation / 迟到 `TurnCompleted` 必须幂等吸收。
 - Runtime send 返回 exact identity 前到达的事件进入 bounded hold/replay barrier；绑定 exact Shared owner 后按原顺序释放。
 - streaming delta 走既有 `liveAssistantTextChannel` 外部化通道（红线 35），不开第二条 delta 路径。

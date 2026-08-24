@@ -151,6 +151,57 @@ fn session_creation() {
 }
 
 #[test]
+fn assistant_api_error_is_terminal_turn_error() {
+    let session = ClaudeSession::new("test-workspace".to_string(), test_workspace_path(), None);
+    let event = json!({
+        "type": "assistant",
+        "is_api_error_message": true,
+        "error": "server_error",
+        "message": {
+            "role": "assistant",
+            "model": "<synthetic>",
+            "content": [{
+                "type": "text",
+                "text": "API Error: 503 channel pricing restriction"
+            }]
+        }
+    });
+
+    let converted = session
+        .convert_event("turn-api-error", &event)
+        .expect("structured API error event");
+    match converted {
+        EngineEvent::TurnError { error, code, .. } => {
+            assert_eq!(error, "API Error: 503 channel pricing restriction");
+            assert_eq!(code.as_deref(), Some("claude_api_error_503"));
+        }
+        other => panic!("expected terminal API error, got {other:?}"),
+    }
+}
+
+#[test]
+fn error_result_is_terminal_turn_error() {
+    let session = ClaudeSession::new("test-workspace".to_string(), test_workspace_path(), None);
+    let event = json!({
+        "type": "result",
+        "subtype": "success",
+        "is_error": true,
+        "result": "API Error: 503 channel pricing restriction"
+    });
+
+    let converted = session
+        .convert_event("turn-result-error", &event)
+        .expect("error result event");
+    match converted {
+        EngineEvent::TurnError { error, code, .. } => {
+            assert_eq!(error, "API Error: 503 channel pricing restriction");
+            assert_eq!(code.as_deref(), Some("claude_result_error"));
+        }
+        other => panic!("expected terminal result error, got {other:?}"),
+    }
+}
+
+#[test]
 fn format_synthetic_approval_completion_text_aggregates_multiple_entries() {
     let text = format_synthetic_approval_completion_text(&[
         SyntheticApprovalSummaryEntry {
@@ -1176,6 +1227,52 @@ async fn send_message_settles_turn_when_child_holds_stdout_open_after_result() {
         1,
         "exactly one TurnCompleted must be emitted once the grace settles the turn",
     );
+}
+
+/// A structured Provider/API rejection is already the logical terminal. Claude
+/// may keep stdout open without emitting a later `result`; waiting for EOF in
+/// that state wedges ordinary sends and Native Provider Continuation alike.
+#[cfg(unix)]
+#[tokio::test]
+async fn send_message_settles_when_api_error_keeps_stdout_open() {
+    let script_body = concat!(
+        "#!/bin/sh\n",
+        "echo '{\"type\":\"assistant\",\"is_api_error_message\":true,\"error\":\"server_error\",\"message\":{\"role\":\"assistant\",\"model\":\"<synthetic>\",\"content\":[{\"type\":\"text\",\"text\":\"API Error: 503 channel pricing restriction\"}]}}'\n",
+        "sleep 30\n",
+    );
+    let (root, workspace_path, script_path) = create_fake_claude_script(script_body);
+    let session = test_session_with_bin(workspace_path, script_path);
+    let mut receiver = session.subscribe();
+    let mut params = SendMessageParams::default();
+    params.text = "hello".to_string();
+
+    let error = tokio::time::timeout(
+        std::time::Duration::from_secs(8),
+        session.send_message(params, "turn-api-error-open-stdout"),
+    )
+    .await
+    .expect("structured API error must settle without waiting for EOF")
+    .expect_err("structured API error must fail the turn");
+    let events = drain_turn_events(&mut receiver);
+    let active_process_ids = session.active_process_ids().await;
+    let _ = std::fs::remove_dir_all(&root);
+
+    assert!(error.contains("API Error: 503 channel pricing restriction"));
+    assert!(active_process_ids.is_empty());
+    let (turn_error, code) = turn_error_event(&events).expect("turn error event");
+    assert!(turn_error.contains("API Error: 503 channel pricing restriction"));
+    assert_eq!(code.as_deref(), Some("claude_api_error_503"));
+    assert_eq!(
+        events
+            .iter()
+            .filter(|event| matches!(event.event, EngineEvent::TurnError { .. }))
+            .count(),
+        1,
+        "structured API rejection must emit one terminal error",
+    );
+    assert!(!events
+        .iter()
+        .any(|event| matches!(event.event, EngineEvent::TurnCompleted { .. })));
 }
 
 /// Companion to the stdout case above, for the *stderr* drain — the second,

@@ -137,3 +137,6 @@
 - [x] 16.17 经用户授权为 `Doge 统一定价` 增加 `gpt-5.6-luna` 的 OpenAI 官方默认价与长上下文分层价；关闭/重开复核，并使用同一 managed key 直连 Responses 验证 terminal success。
 - [x] 16.18 修复 Codex failed `task_complete` 在 realtime error 后被 history hydrate 覆盖的问题：local rollout parser 必须恢复 terminal error 为可见 assistant diagnostic，并补成功/失败 focused regression。
 - [x] 16.19 移除独立 `doge-dev` Tauri flavor：`tauri:dev:hot` 与 isolated/signed dev variants 均继承 canonical `doge` product/bundle identity，复用同一 app-data/product state；macOS debug vault 仍由 `debug_assertions` 选择，不恢复 Keychain 交互。
+- [x] 16.20 修复 Claude stream 中 camel/snake API-error assistant 与 `result.is_error` 未归一为 terminal `TurnError` 的缺口；结构化 Provider rejection 到达后立即结束 stdout wait、终止 exact process group，并让 Native Provider Continuation Dialog 离开 `running`。
+- [x] 16.21 经用户授权在 production `Doge 统一定价` 的 Anthropic platform 增加 `claude-sonnet-4-6` 官方价与 `ark-code-latest + 豆包` Coding Plan allowlist；关闭/重开复核，并用 canonical managed key 直连 Messages 验证两种 model HTTP 200。
+- [x] 16.22 使用 exact managed Claude CLI payload 验证 `Claude + claude-sonnet-4-6`、`Claude + 豆包` typed terminal success；再把截图 operation 冻结的 Codex Context Package 原样导入新的 Claude+豆包 native session，并在同一 session resume 后验证来源语义仍可读取。

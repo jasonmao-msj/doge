@@ -78,6 +78,8 @@ token2api production configuration 仍是 E2E prerequisite，但 Doge 不读取 
 
 token2api channel 对 `Doge APP` 采用 single-owner `Doge 统一定价`。Kimi 官方 4 条 token price 保留；豆包 Coding Plan 通过 OpenAI 平台 `ark-code-latest + 豆包` allowlist 放行，因官方套餐按订阅额度而非独立 token 单价计费，禁止填写伪造 price；`gpt-5.6-luna` 复用 OpenAI 官方 default 与长上下文分层价。其余 GPT/Claude model 若要 release-ready，必须继续把对应官方 price rules 合并进同一 channel。
 
+Claude Messages 也受同一 channel 的 platform-specific pricing gate。初版在 Anthropic platform 增加 `claude-sonnet-4-6` 官方价与 `ark-code-latest + 豆包` 空价格 allowlist；这是 endpoint eligibility，不改变 private account mapping。Claude CLI 的 structured `assistant` API error 属于 authoritative terminal rejection，即使 process/stdout 未退出也必须立即 settle；等待 EOF 只属于 cleanup，不能让 Continuation Dialog 永久停在 delivery。
+
 右侧面板沿用 Doge 现有 surface、border、spacing、scroll、icon 与 responsive 规则。原型中的页面壳、假 workspace、营销说明和 engine-filter-model 行为不采用。
 
 ## 5. Account Center

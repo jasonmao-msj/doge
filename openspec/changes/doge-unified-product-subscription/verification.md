@@ -54,6 +54,11 @@
 - 用户复现 `Codex + gpt-5.6-luna` 后，rollout 证明 model selection 正确，失败来自 `/responses` terminal 503；当时 `Doge 统一定价` 只有 Kimi/豆包 5 条规则。经授权复制 `OpenAI 官方定价` 的 `gpt-5.6-luna` default `0.2/1.2/0.25/0.02 $/MTok` 与 `(0,272000]`、`(272000,+∞]` 分层价，保存/重开确认列表为 6 条。分别使用旧 dev account 与 canonical doge account 的 managed Codex key 直连 `/responses` 均 HTTP 200，并返回 `DOGE_CODEX_PRICING_OK` / `DOGE_CANONICAL_CODEX_OK`。
 - Codex local history parser 现在将 failed `event_msg.task_complete.error` 恢复为 stable assistant diagnostic，保留 terminal timestamp/duration；成功 `task_complete` 不合成错误。focused Vitest `historyLoaders.test.ts` 51 tests PASS，避免 realtime 503 在 history hydrate 后消失。
 - 单一开发身份验证：Node startup/signing tests 8 PASS；brand/history Vitest 54 PASS；`npm run check:branding`、typecheck、targeted ESLint、runtime contracts、两个 affected OpenSpec strict validate 与 `git diff --check` 均 PASS。canonical debug vault 仍为 file `0600` / directory `0700`，包含 refresh + 三 engine purposes，启动未访问 Keychain。
+- Claude continuation hang 根因：operation `838f942f-cf79-4eee-b6e7-14723b0bc638` 已 durable 记录 `recovery-required / target-provider-rejected`，target transcript 为 `API Error 503 ... 豆包 (channel pricing restriction)`；但 Claude live stdout 使用 `is_api_error_message`，旧 adapter 把 synthetic assistant 当正文并等待 EOF，导致 Dialog 长停 `delivering-context`。修复后 camel/snake API-error assistant 与 `result.is_error` 都归一为 terminal `TurnError`，立即 cleanup exact process group。
+- Claude focused Rust：`api_error` filter 4 PASS；`engine::claude::tests_stream` 42 PASS；`native_continuation::commands::tests` 11 PASS。覆盖 snake live shape、camel compatibility、error result、stdout 持有 30s 仍 bounded settlement、一个 error/零 completed、recovery rejection precedence。
+- 经用户授权，production `Doge 统一定价` Anthropic platform 增加 `claude-sonnet-4-6` 官方 `3/15/3.75/0.3 $/MTok` 与 `ark-code-latest + 豆包` 空价格 Coding Plan allowlist；保存/关闭/重开后 channel 为 1 group / 8 prices。canonical managed key 直连 `/v1/messages` 对 Sonnet/豆包均 HTTP 200。
+- 真实 Claude Code `2.1.233` managed private settings：`claude-sonnet-4-6` 返回 `DOGE_CLAUDE_SONNET_OK`，`豆包` 返回 `DOGE_CLAUDE_DOUBAO_OK`，均 `result.success / is_error=false`。随后将截图 operation 的 frozen Codex Context Package 原样以 stream-json 注入 `Claude + 豆包` session `54bc97c0-1620-4401-bf87-3ab1fb54a7e3`，bootstrap 返回 `DOGE_PRODUCT_CONTINUATION_CONTEXT_OK`；同一 session `--resume` 正确读取来源短语并返回 `DOGE_PRODUCT_CONTINUATION_RESUME_OK`，证明 Context delivery 与 native continuation 语义有效。
+- L3 gates：`cargo fmt --all -- --check`、`cargo check --lib`、`npm run typecheck`、`npm run doctor:strict`、runtime contracts、engine capability/adapter/model-catalog gates、current OpenSpec strict validation 与 `git diff --check` PASS；仅保留仓库既有 Rust warnings。
 
 ## Isolated baseline governance failures
 
@@ -70,8 +75,7 @@
 - `Codex 0.147 × gpt-5.5` 使用 managed `CODEX_HOME` 请求后由 production Composite GPT pool 返回 terminal 503；Doge 未做 silent fallback。
 - `Claude Code 2.1.233 × claude-sonnet-4-8` 使用 Doge private settings / managed token 后返回 `claude-code:unrecognized_model`；Doge 未回退 first-party OAuth。
 - 保存 endpoint-specific Composite routes 后，`Kimi CLI 0.38.0 × kimi-for-coding` 再次返回精确 terminal `DOGE_KIMI_ROUTE_OK`，证明 Kimi route 未破坏既有链路。
-- `Claude Code × claude-sonnet-4-6` 已从原 `unrecognized_model` 前进到 authoritative terminal 503：`no available accounts supporting model ... (channel pricing restriction)`，证明 Messages route 命中但 pricing channel 拒绝。
-- `Claude Code × 豆包` 同样到达 token2api 并以 `channel pricing restriction` 503 终止；`Codex × 豆包` 和 direct Chat Completions × 豆包均为 503，无 silent fallback。
+- 历史阶段中 `Claude Code × claude-sonnet-4-6` 与 `Claude Code × 豆包` 曾以 `channel pricing restriction` 503 终止；§16.21 合并 Anthropic pricing 后，两者已由 exact CLI typed success 取代该 blocker。
 - 未先执行 Doge prepare 时，Kimi CLI 对未定义 `豆包` alias 复现 upstream lifecycle crash；该 cell 必须在 App 选择模型、重写 Kimi alias table 后再验，不以 raw CLI 直传冒充完成。
 
 ### token2api production admin audit 与已授权路由写入
@@ -81,11 +85,11 @@
 - 用户已手动将 `Claude #11` 绑定到 `Doge APP`；其账号模型白名单仍是原 6 个，本轮没有擅自保存 capability probe 的 3 个新增模型。
 - 经用户明确授权，已保存并关闭/重开复核 7 条 route：`claude-` prefix / Messages → Anthropic；`gpt-` prefix / Responses → OpenAI；`kimi` 与 `k3` prefix / Chat Completions → Kimi；`豆包` exact 分别按 Messages → Anthropic、Responses / Chat Completions → OpenAI。全部 priority 100、上游模型透传。
 - 配置后 `/v1/models` 已实时返回 Claude 5、GPT、Kimi 与 `豆包` rows；production 仍不提供独立 `model` / `compatible_engines` 字段，Doge 继续使用 fail-closed conversation filter + family fallback。
-- Channel pricing read-only audit 证明 `Doge APP` 唯一属于“Kimi 官方定价”；Claude channel 中 `Doge APP` checkbox 被禁用并显示“已属于『Kimi 官方定价』”。当前 UI 的 single-channel ownership 正是 GPT / Claude / 豆包 503 pricing restriction 根因。
+- Channel pricing 已收口为 single-owner `Doge 统一定价`：Kimi 4 条、OpenAI 豆包、`gpt-5.6-luna`、Anthropic `claude-sonnet-4-6`、Anthropic 豆包共 8 条；`Doge APP` 仍为唯一关联 group。
 
 ## Remaining external/manual blockers
 
-- `Doge 统一定价` 当前已覆盖 Kimi + 豆包 Coding Plan + `gpt-5.6-luna`；其余 GPT/OpenAI 与 Claude/Anthropic release models 仍需把相应官方 price rules 合并进同一 single-owner channel。当前三项解除 pricing blocker，不代表三引擎全矩阵完成。
-- `Claude #11` 账号白名单仍是原 6 个；public catalog 已出现 Claude 5 rows，但真实账号 eligibility / pricing 尚未同步收口。
-- 当前 macOS 会话处于锁屏状态，Computer Use 无法完成最终 Account Center dark/light/narrow screenshot 与 picker 点击验收；自动化 visual contracts 和此前 hot-dev smoke 已通过，但该项不冒充人工目视完成。
+- `Doge 统一定价` 当前已覆盖 Kimi + 豆包 Coding Plan + `gpt-5.6-luna` + `claude-sonnet-4-6`；其余 GPT/OpenAI 与 Claude/Anthropic release models 仍需把相应官方 price rules 合并进同一 single-owner channel，不代表全部动态 catalog rows 都已通过 exact CLI 验收。
+- `Claude #11` 账号白名单仍是原 6 个；本轮只把已验证的 `claude-sonnet-4-6` 作为初版 Claude model，不宣称全部 Claude 5 rows 可用。
+- Computer Use 无法附着 raw `tauri dev` process（LaunchServices 将其报告为 not running）；为避免再次启动 stale packaged App，本轮没有用 bundle-id automation 冒充 product UI 点击验收。用户已对上一轮 canonical doge UI 验收；本轮保留 exact runtime/package/resume evidence，并由用户在当前 hot App 做最终点击 smoke。
 - 未覆盖 Windows Credential Manager / installer、Linux Secret Service、macOS Release Keychain 实包、真实第三方支付回调与跨设备并发；这些继续由 Release/平台 smoke 承担。

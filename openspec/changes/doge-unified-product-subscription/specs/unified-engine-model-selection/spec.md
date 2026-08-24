@@ -127,3 +127,27 @@ Doge MUST preserve an authoritative terminal provider failure as readable conver
 - **WHEN** Doge reloads or reconciles the local Codex history
 - **THEN** the recovered conversation SHALL include one readable assistant diagnostic containing the terminal error
 - **AND** a successful `task_complete` SHALL NOT synthesize an error message
+
+#### Scenario: Claude emits a structured API rejection without process exit
+
+- **GIVEN** a managed Claude turn or Provider Continuation receives an `assistant` stream event with camelCase/snake_case API-error evidence, or a `result` event with `is_error=true`
+- **WHEN** the Claude process keeps stdout open and does not emit a later `result`
+- **THEN** Doge SHALL normalize the structured rejection to one terminal `TurnError`
+- **AND** SHALL stop waiting for EOF, terminate the exact process group, and settle the caller with the Provider error
+- **AND** a Provider Continuation Dialog SHALL leave its `running` state instead of remaining on context delivery indefinitely
+
+### Requirement: Doge Anthropic Pricing SHALL Cover The Initial Claude Matrix
+
+The single-owner `Doge 统一定价` channel MUST allow the initial verified Claude model and the public Doubao alias on the Anthropic Messages path. Pricing configuration MUST reuse official Claude rates and MUST NOT invent per-token rates for the Doubao Coding Plan.
+
+#### Scenario: Claude engine uses a verified Claude model
+
+- **WHEN** the managed Claude engine sends `claude-sonnet-4-6` through Messages
+- **THEN** channel pricing SHALL use the official `3/15/3.75/0.3 $/MTok` input/output/cache-write/cache-read values
+- **AND** the request SHALL be eligible for the bound Claude account pool
+
+#### Scenario: Claude engine uses Doubao
+
+- **WHEN** the managed Claude engine sends the public model id `豆包` through Messages
+- **THEN** the Anthropic channel allowlist SHALL match `ark-code-latest + 豆包`
+- **AND** token prices SHALL remain unset because the upstream Coding Plan is subscription/quota based

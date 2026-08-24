@@ -13,6 +13,7 @@ status: implemented
 > 生命周期：accepted / implemented in slices；原始 A–D 路线已归档，后续修复与收口 change 独立演进
 > 初始日期：2026-07-27
 > 最近校准：2026-08-23 · `doge-unified-product-subscription`：product-ready Home、Shared Next Turn 与 Existing Native modification UI 使用同一动态 product entitlement catalog；上游 `compatible_engines` 存在时直接收窄，缺失时只对已知 GPT/Claude/Kimi/豆包 family 使用 adapter fallback，unknown family fail closed。incompatible engine switch 原子 fallback，空交集 fail closed，provider stable id 固定 `doge-token-matrix`、display name 为 `Doge`。Product picker 仅展示 Codex/Claude/Kimi 并隐藏 provider/configuration；Native Session 继续保持 immutable engine/provider binding，选择变化仍走 managed prepare + new-session/Continuation。Model entitlement、minimal endpoint probe 与真实 CLI Agent payload compatibility 分层取证；typed terminal 作为真实 E2E 证据，server policy/capacity failure 禁止 silent fallback 或伪造 client identity 绕过。
+> 终态补充校准：2026-08-23 · `doge-unified-product-subscription`：Claude CLI `assistant` API error 的 live shape 可能使用 `is_api_error_message`（落盘 history 使用 camelCase），且 error `result` 可能以 `is_error=true` 表达。两者均为 authoritative logical terminal；Doge 必须立即归一 `TurnError` 并终止 exact process group，stdout/EOF/process exit 只作 cleanup，不得拖住 Native Provider Continuation Dialog。事实源：`src-tauri/src/engine/claude/{event_conversion.rs,tests_stream.rs}`。
 > 适用范围：Native Session、Shared Session、Provider Runtime、Session Catalog、Sidebar Projection、未来 Plugin / Orchestration
 > 核心决策：Native Session 保持原生身份；Shared Session 承担跨 CLI、跨 Provider 的逐 Turn 切换
 
@@ -26,6 +27,7 @@ status: implemented
 |--------|--------------|--------|
 | Built-in engines | 6：Claude/Codex/Gemini/Grok/Kimi/OpenCode | `engineIds.json`、`EngineType` |
 | Native rendering projection | 六引擎各有 realtime adapter + history loader | `src/features/threads/{adapters,loaders}/` |
+| Claude logical error settlement | live camel/snake API-error assistant 与 `result.is_error` 统一为 Attempt-owned `TurnError`；收到后立即结束 read loop 并 cleanup exact process group，禁止等待 EOF 卡住 Continuation | `src-tauri/src/engine/claude/{event_conversion.rs,tests_stream.rs}`、OpenSpec `doge-unified-product-subscription` |
 | Shared target boundary | Claude/Codex/Kimi/Grok/OpenCode；Gemini 排除 | `sharedSessionEngines.ts`、`src-tauri/src/shared_sessions.rs` |
 | Gemini runtime | registry 中存在，但 runtime policy 默认 disabled | `src-tauri/src/engine_policy.rs` |
 | Provider selection | Native 原子选择；Shared 逐 Turn target | `close-native-session-provider-create-binding` 与 Shared target contracts |
@@ -2167,7 +2169,7 @@ prepared
 | Runtime Adapter | History Import | Context/Input ACK | Run Started | Terminal | Ambiguous ACK Probe | mossx 当前缺口 |
 |---|---|---|---|---|---|---|
 | Codex App Server `0.144.6` | `thread/inject_items`；Responses API Items 持久化到 Thread | `thread/inject_items` 成功 response；`turn/start` 成功 response 返回 Turn | `turn/started` | `turn/completed`，状态含 completed/interrupted/failed | `clientUserMessageId` 可关联 User Item；History Import 的稳定 item-id/read-back 需要 Spike 验证 | 未调用 `thread/inject_items`；未系统使用 `clientUserMessageId`；未把 Provider Target 写入 envelope |
-| Claude Code `2.1.218` stream-json | 当前 CLI Surface 无 arbitrary history import；支持 resume/fork | 推荐启用 `--replay-user-messages`，以回显 user message/hash 作为 ACK | 第一个有效 assistant/tool event；System Init 只表示 Runtime ready | `result` event；Process Exit 只作缺失 Result 的错误兜底 | 当前 CLI 无稳定 request-id history query；Agent SDK 新版 `get_session_messages` 可作为未来 Adapter 能力 | 当前已使用 input/output stream-json + verbose，但未启用 replay flag；需要为输入生成 `clientTurnId`/checksum 并关联 echo |
+| Claude Code `2.1.233` stream-json | 当前 CLI Surface 无 arbitrary history import；支持 resume/fork | `--replay-user-messages` user echo；Context bootstrap 以 frozen package + stable target identity 验证 | 第一个有效 assistant/tool event；System Init 只表示 Runtime ready | success `result`；camel/snake API-error assistant 与 `result.is_error` 为 error terminal；Process Exit/EOF 只作 cleanup | 当前 CLI 无稳定 request-id history query；durable transcript 可验证 bootstrap/rejection | Provider/API rejection 到达后立即 settle + exact process-group cleanup；不得等 stdout EOF |
 | Kimi Code `0.27.0` prompt stream-json | 无 | 当前无显式 ACK；`session.resume_hint` 或第一个合法 NDJSON event 只能作为弱 ACK | 第一个 assistant/tool event | Process Exit + 有效 output/tool activity | 无 | ACK 语义最弱；不适合作为首个 Shared V2 完整实现目标 |
 | Kimi Code ACP `0.23` | `session/load` 可恢复并 replay 自身 History；不等于 arbitrary import | `session/prompt` 是 JSON-RPC request，但当前稳定协议仍是长 Turn request；ACP v2 RFD 才计划把 Prompt Accepted 与 Completion 解耦 | `session/update` | Prompt response / stop reason | request id + `session/load`；是否已吸收 Prompt 仍需 Spike | 已有 initialize capability matrix、image、MCP、model/thinking/mode config；Provider Management 尚不在稳定实现内，仍由 mossx Runtime Binding 隔离 |
 
