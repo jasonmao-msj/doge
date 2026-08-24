@@ -126,3 +126,4 @@
 - [ ] 16.6 使用 exact `npm run tauri:dev:hot` 完成登录/订阅恢复、三引擎自动安装/配置、动态模型刷新、display/runtime identity、每个当前可选组合的真实发送 terminal E2E；记录 upstream/config blockers。
 - [ ] 16.7 执行用户要求的 L4：全量 Vitest、全量 Rust tests、lint、typecheck、contracts、build、OpenSpec、界面目视矩阵；修复所有本次相关 failure。
 - [x] 16.8 按 account/runtime、dynamic catalog/picker、docs/tests 分类提交，执行 Trellis session record，push `codex/*` branch 并创建未合并 Doge PR #19。
+- [x] 16.9 修复 `tauri:dev:hot` dev flavor / `devUrl` 漂移：显式加载 `tauri.dev.conf.json`，统一 Vite `1420`，增加 branding 与 dev startup contract，避免 UI 验收误连 stale bundle。
