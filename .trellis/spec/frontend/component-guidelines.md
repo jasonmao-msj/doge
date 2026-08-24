@@ -81,6 +81,7 @@ const sidebarNodeWithTopbar = isValidElement(props.children)
 - 定义并渲染 feature-scoped visual classes 的最低 shared module MUST 导入对应 stylesheet；禁止把 import 留在任一 optional/legacy consumer。
 - sibling consumers MUST NOT 各自复制 stylesheet import；bundler dedupe 不能替代明确 ownership。
 - startup/gate/logo/avatar 等首屏关键图片 MUST 提供 intrinsic `width/height`，避免 CSS chunk 尚未 settle 时按原始 raster 尺寸产生 full-window flash。
+- 将 SVG/data URL 替换为 PNG/JPEG/WebP 等 raster asset 时，最低 shared `<img>` owner MUST 自带 intrinsic `width/height`、`max-width/max-height: 100%` 与 `object-fit: contain`；禁止只在某个 consumer stylesheet 限尺寸。品牌图标等多入口 primitive MUST 在 shared component 层完成该约束。
 - consumer replacement review MUST 搜索 `import "*.css"` propagation；JSX/type import 可达不代表 CSS side effect 可达。
 - jsdom unit tests 不能作为 layout evidence；可见 startup shell 还 MUST 做 exact current flavor 的 Tauri visual smoke。
 
@@ -103,6 +104,7 @@ const sidebarNodeWithTopbar = isValidElement(props.children)
 
 - Static visual contract MUST assert shared owner contains exact stylesheet import，所有 sibling consumers 不再承担该 import。
 - Static/component contract MUST assert critical raster image 包含 bounded intrinsic dimensions。
+- Shared raster primitive component test MUST assert intrinsic attributes 与 container bounds；至少使用一个大尺寸 fixture，避免 natural size 被 jsdom 结构测试遗漏。
 - Manual smoke MUST 使用当前 source 编译出的 exact app flavor；旧 `.app` / 自动启动的同名 bundle 不能作为 evidence。
 
 ### 7. Wrong vs Correct

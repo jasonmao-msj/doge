@@ -68,7 +68,7 @@ Release、非 macOS debug 与所有正式分发继续构造 `OsAccountVault`。d
 - 选择立即写入当前/new-session target，面板保持打开；关闭后 composer 展示 engine icon + model brand icon + display name。
 - product ready 后，`engine + model + managed provider profile` 共同组成唯一合法的 ExecutionTarget；新会话初始化、Shared target repair、engine/model 切换与发送边界都必须显式绑定 `doge-token-matrix`，不得继承旧 local/disk profile。
 - product flow 不展示 provider/configuration selector。用户只选择 engine 与该 engine 已验收的 model；Doge 注入的 managed provider configuration 是产品级 runtime contract，不是第三个用户选项。
-- product-ready Home 与 Shared 使用同一个可刷新的 product snapshot，再通过同一个 compatibility helper 得到 engine-specific rows；不得从 provider-scoped/local fallback catalog 补模型，也不得在 Home/Shared 各维护一套目录。
+- product-ready Home、Shared 与普通 Native conversation 修改入口使用同一个可刷新的 product snapshot，再通过同一个 compatibility helper 得到 engine-specific rows；不得从 provider-scoped/local fallback catalog 补模型，也不得按入口维护多套目录。Native binding 仍 immutable，跨 engine/provider 继续走 managed prepare + new-session/Continuation。
 - Product picker 使用右侧 panel，engine/model 分栏独立选择；provider/channel/configuration controls 在该 surface 不可达。Existing Native Session 仍遵守 immutable engine/provider binding，跨 engine 走 new-session/Continuation；Shared 只改变 Next Turn target。
 - Release readiness 不能只以 `/v1/models` 为证据；必须维护 `Responses + Messages + Chat Completions` 的 current product model probe matrix。临时 route/account unavailable 只形成原 target 的 typed failure，禁止 silent fallback。
 - 组合 ExecutionTarget 时保留上游 `modelCatalogEntryId`，并只把上游公开 `model/runtime_model/id` 解析为 runtime model；禁止从 display name 猜测调用名。
@@ -86,8 +86,8 @@ token2api production configuration 仍是 E2E prerequisite，但 Doge 不读取 
 - usage period closed enum 为 `current | previous`。Native 重新验证 active Composite subscription，优先用 subscription progress 的 monthly `window_start/resets_at` 计算 exact range；缺失时使用明确标注的 rolling-30-day fallback。
 - summary 由 `/usage/stats` 提供 requests、token breakdown、standard/actual cost、average duration；model TOP 由同 group/date range 的 `/usage/dashboard/snapshot-v2` 提供。两者在 period range 已确定后并行请求。
 - engine roster 来自 Doge built-in registry；token2api 当前不持有 Doge runtime engine dimension，因此不得展示推测 count。未来上游新增 authoritative dimension 后可在同一 slot 渐进启用。
-- billing 独立并行读取 `/payment/orders/my?order_type=subscription` 与 checkout plan catalog，用 plan id 映射显示名；只展示 safe order facts。上游无 invoice artifact/download endpoint，故不渲染伪下载 action。
-- Subscription details 只显示一个 product：plan name、active state、`YYYY-MM-DD` expiry、可用模型数量及永久可见列表；列表复用 Composer 的 presentation vendor grouping，并为每个模型展示对应 brand icon，不能另建第二套 vendor 规则。
+- billing 独立并行读取 `/payment/orders/my?order_type=subscription` 与 checkout plan catalog，用 plan id 映射显示名；只展示 safe order facts。上游无 invoice artifact/download endpoint，故 UI 不渲染 action，也不展示 unsupported/invoice 提示。
+- Subscription details 只显示一个 product：plan name、active state、`YYYY-MM-DD` expiry 与可用模型数量。模型按 presentation vendor grouping 默认显示 vendor + count，点击渐进展开 model display-name list，再次点击收起。豆包 identity 统一使用 product-owned PNG，不能另建第二套 vendor/icon 规则。
 - product ready 时完全移除旧 engine-scoped subscription/usage fallback，避免混入历史或无关套餐。
 - sidebar shortcut 继续 lazy load，第一层只展示账号身份与整数 percentage；身份区进入账户详情顶部，usage 区进入/聚焦同页 usage section。
 

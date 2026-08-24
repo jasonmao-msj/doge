@@ -21,7 +21,7 @@ Doge 当前按 engine 展示权益、套餐和托管凭据，用户需要先理�
 - Doge frontend、Native account authority/runtime、managed provider projection、focused tests、OpenSpec/Trellis 文档。
 - 首期支持已内置且可接收 Token Matrix credential 的 Codex、Claude、Kimi；Composite catalog 决定商业 entitlement 上限。上游可选 `compatible_engines/capabilities` 元数据优先决定能力边界，字段缺失时按稳定 family 规则把 GPT/Claude/Kimi 新版本动态投影到对应 engine，豆包使用三种 managed adapter；未知 family 在上游提供 metadata 前 fail closed。
 - 本 change 不修改 token2api 代码、不迁移既有生产订阅、不调整服务端限流阈值。
-- engine-attributed usage 与 invoice artifact/download 暂不在上游 contract 中，本轮只做 truthful static/unavailable projection，不推断、不伪造。
+- engine-attributed usage 暂不在上游 contract 中，本轮只做 truthful static/unavailable projection，不推断。invoice artifact/download 不在 contract 中，UI 完全不提该能力。
 
 ## Source Reconciliation
 

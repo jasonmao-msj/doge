@@ -27,7 +27,7 @@
 
 ## 5. Account center
 
-- [x] 5.1 Subscription surface 改为单 product card、到期日、model count 与永久可见模型列表。
+- [x] 5.1 Subscription surface 初版改为单 product card、到期日、model count 与永久可见模型列表；模型列表交互后由 §16.12 收口为 vendor count 渐进展开。
 - [x] 5.2 Usage surface 改为 product/model projection，移除 legacy engine-scoped fallback。
 - [ ] 5.3 Account shortcut 改为整数 percentage preview→detail 动线；保留显示名、密码、安全、身份绑定和退出登录。（待按 product store 实码验收）
 
@@ -44,7 +44,7 @@
 - [x] 7.3 增加 Kimi configuration verification regression test，并执行 L2 focused verification。
 - [x] 7.4 将 engine selector 收敛为完整名称的紧凑行，并把 product model catalog 改为 presentation vendor grouping。
 - [x] 7.5 让 Account Center 的 product model details 复用同一 vendor grouping，并展示 model brand icon。
-- [x] 7.6 将 product model details 改为永久展开，并在 product-ready Usage tab 移除旧 engine-scoped subscription/analytics 分支。
+- [x] 7.6 历史步骤：曾将 product model details 改为永久展开，并在 product-ready Usage tab 移除旧 engine-scoped subscription/analytics 分支；永久展开已由 §16.12 supersede。
 - [x] 7.7 **Corrected by §16.1**：曾将 `豆包` display alias 静态改写为 `ark-code-latest`；只读 production/source 审计证明该右值是 admin-only account mapping，动态实现必须撤销该猜测并只消费公开 catalog call identity。
 - [x] 7.8 将 product-ready provider 从 UI 默认值提升为 Composer/发送 contract：初始化、Shared repair 与 engine/model 切换统一绑定 `doge-token-matrix`，并移除 product flow 的 configuration 选择语义。
 - [x] 7.9 将 Codex `turn/completed` 中的 failed terminal status 投影为 `turn/error` 语义，避免 upstream 5xx 被误结算成无响应，并补 focused regression。
@@ -129,3 +129,5 @@
 - [x] 16.9 修复 `tauri:dev:hot` dev flavor / `devUrl` 漂移：显式加载 `tauri.dev.conf.json`，统一 Vite `1420`，增加 branding 与 dev startup contract，避免 UI 验收误连 stale bundle。
 - [x] 16.10 经用户授权保存并重开复核 7 条 production Composite routes；真实 CLI 证明 Kimi route 成功，Claude/GPT/豆包被 `Doge APP` 单一 Kimi pricing channel 拒绝，未擅自修改 pricing。
 - [x] 16.11 改进 Account bootstrap 错误态：修复全屏 Gate 遮挡 Tooltip 的 stacking contract；问号支持 hover/focus 说明与 click/keyboard 展开，详情只展示 validated closed failure 的 code/stage/recovery action，并可再次收起。
+- [x] 16.12 收口四项 hot UI feedback：product model panel 移除 ready footer；普通 Native conversation 复用仅 Codex/Claude/Kimi 的 product panel 并固定 `doge-token-matrix`；账单移除 invoice 提示；Account 模型按 vendor count 渐进展开/收起。
+- [x] 16.13 将 managed provider display name 从 `Doge Token Matrix` 统一迁移为 `Doge`（stable id 不变，authenticated prepare 幂等覆盖旧配置），并让所有豆包 identity 统一使用用户提供的 `src/assets/model-icons/doubao.png`。

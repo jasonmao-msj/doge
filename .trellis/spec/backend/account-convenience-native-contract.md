@@ -961,6 +961,7 @@ if file.label == "Doge Kimi provider registry" {
 - Product picker mode：`ProviderTargetPickerMode = "product"`；catalog=`ProductTargetCatalogV1 { engines[], models[], modelsStatus, modelsUpdatedAt }`。
 - Product panel：`ProductEngineModelSelect({ catalog, executionTarget, onExecutionTargetChange })`。
 - Managed target：`providerProfileId="doge-token-matrix"`、`providerProfileSource="managed"`、`modelCatalogEntryId` 与 runtime `model` 分域。
+- Managed display：`PRODUCT_MANAGED_PROVIDER_LABEL = "Doge"`；内部 stable id 仍为 `doge-token-matrix`。`account_product_v1_prepare` 每次均以同一 stable id 幂等覆盖 Codex/Claude/Kimi registry 的 `name="Doge"`，因此旧本机显示名在下次 authenticated prepare 时迁移。
 - Claude product projection：`project_claude_model_for_managed_product(provider_profile_id, requested_model, provider_env)`；projection 只作用于 managed product profile 的 child turn。
 - Native model wire：`ProductModelWire { id, display_name?, model?, compatible_engines?, capabilities? }`；renderer view=`{ id, display_name, model, compatible_engines, capabilities }`。
 - Read-only refresh command：`account_product_v1_models() -> { ok, value: { models[], fetched_at } }`；必须限制 main window、读取当前 account scope 的 managed key、网络请求前释放 account state lock。
@@ -970,14 +971,17 @@ if file.label == "Doge Kimi provider registry" {
 
 ### 3. Contracts
 
-- Home create-session、Shared Next Turn 与 Account Center MUST 从同一个 refreshable product snapshot 读取 entitlement catalog，并复用同一个 compatibility helper 求 selected engine rows。
+- Home create-session、Shared Next Turn、Existing Native Session 的修改入口与 Account Center MUST 从同一个 refreshable product snapshot 读取 entitlement catalog，并复用同一个 compatibility helper 求 selected engine rows。product-ready 普通会话不得回落 legacy `ModelSelect` 的 Grok/OpenCode/provider/channel UI。
 - `ProductAccountAppGate.prepare` MUST 先完成 toolchain owner 再调用 `account_product_v1_prepare`。Codex/Claude `choiceRequired` 在产品自动准备中选择 bundled；Kimi 已安装时不得重装/升级，缺失时必须 plan.canRun + installer.ok + version installed 三段闭环。任一失败不得写 provider config 或进入 ready。
 - Native MUST preserve upstream order and separate catalog `id`、user `display_name`、callable `model`。`model/runtime_model` 缺失时回退公开 `id`；禁止从 display name 或 admin-only account mapping 猜调用名。
 - `compatible_engines` 缺失时使用 stable family fallback：GPT/OpenAI→Codex、Claude/Anthropic→Claude Code、Kimi/Moonshot/K3→Kimi CLI、豆包/Ark Coding→三种 managed adapter；unknown family fail closed。显式空/unknown-only集合时 row 不可选。`capabilities` 有 positive conversation value 时优先；image/audio/realtime/embedding-only row必须过滤，legacy catalog用 bounded negative heuristic。
 - 目录刷新 pending/error MUST 保留 last-known-good；成功刷新删除当前 model 时，在下一次发送前按同一 target repair contract 原子收敛。
 - 切换 engine 时 current model 兼容则保留；否则必须与 engine 一起原子切换为 upstream order 中第一个 compatible model。空交集 fail closed；切换 model 不得改变 engine。
 - Product surface MUST 隐藏 provider/channel/configuration/add-model controls；local/expert provider catalog owner 在 `mode="product"` MUST disabled，不发 profile/model prefetch。
-- Existing Native Session 的 engine/provider binding 保持 immutable；跨 engine 继续走 new-session/Provider Continuation，不得原地替换 Runtime owner。
+- Existing Native Session 的 engine/provider binding 保持 immutable；product panel 只展示 Codex/Claude/Kimi，选择结果固定生成 `doge-token-matrix` target；跨 engine/provider 继续走 existing managed prepare + new-session/Provider Continuation，不得原地替换 Runtime owner。
+- Product panel 底部不得常驻“订阅已生效/目录来源”说明；`ready` 时空间全部归模型列表，只有 `refreshing/stale` 才在 search 下方显示 transient status。
+- Account billing 只显示真实 order facts；既然 upstream 无 invoice capability，UI MUST 完全不提发票或下载能力，而不只是隐藏 action。
+- Account 可用模型 MUST 默认只展示 vendor label + model count；每个 vendor row 通过 button `aria-expanded/aria-controls` 按需 mount/unmount model detail list，再次点击收起。Doubao vendor/model identities（`豆包`、`doubao-*`、`ark-code-*`）MUST 统一解析到 `src/assets/model-icons/doubao.png`。所有 raster brand asset 必须经 `ProviderBrandIconImg` 渲染并提供 `16×16` intrinsic size、`max-width/max-height:100%` 与 `object-fit:contain`，禁止依赖 optional consumer stylesheet 限尺寸。
 - UI selected target、readiness/accessibility projection、persisted `modelCatalogEntryId` 与 dispatched runtime `model` MUST 同源；不得出现 trigger 正确但 readiness/global model 仍旧的 split truth。
 - Runtime/provider failure MUST 保留 exact selection 并 fail closed；禁止 silent engine/model/provider fallback。
 - `/v1/models` 只证明 catalog entitlement；三种 endpoint 的 minimal 200 只证明 protocol adapter basic reachability。只有真实 CLI 发出的 system/tools/stream/client headers payload 完成 terminal response，才可标记对应组合 E2E ready。
@@ -988,6 +992,11 @@ if file.label == "Doge Kimi provider registry" {
 | 场景 | Doge 行为 | Release truth |
 |---|---|---|
 | product Home 打开 picker | 右侧 panel；3 engines 显示当前 compatible rows | UI + catalog contract |
+| product-ready Native conversation 打开 picker | 与 Home 相同的右侧 panel，只显示 Codex/Claude/Kimi；选择固定 managed target | existing binding 仍走 continuation/new session |
+| product model catalog ready | 不渲染固定 footer，模型列表占满剩余高度 | refreshing/stale 才显示 transient status |
+| Account 可用模型 collapsed/expanded | collapsed 只显示 vendor + count；click/keyboard 展开真实 display names，再次操作收起 | 不把所有 model name 拼成截断单行 |
+| billing 无 invoice capability | 只显示 order row，不出现 invoice/download copy | 不用 unsupported 提示暴露未提供功能 |
+| 豆包 display/runtime alias | `豆包`、`doubao-*`、`ark-code-*` 使用同一本地 PNG | 不回退通用 Doubao SVG 或 engine icon |
 | upstream 新增 `claude-opus-4-8` | bounded refresh 后进入同一 snapshot | 不修改 Doge exact-id manifest |
 | refresh pending / failure | 保留 rows，显示 refreshing/stale + retry | 不清空 Composer / Account Center |
 | fresh device 缺 Kimi | typed install + post-install version verify | 完成后才继续 provider prepare |
@@ -1000,14 +1009,19 @@ if file.label == "Doge Kimi provider registry" {
 ### 5. Good / Base / Bad Cases
 
 - Good：production `/v1/models` 新增一个 valid text row 后，Native 保留 `display_name/model`，刷新 owner 一次发布给 panel、Composer 与 Account Center；选择与发送使用同一 target identity。
+- Good：product-ready Native 会话打开与 Home 相同的 panel；点击 Kimi model 生成 `providerProfileId="doge-token-matrix"` 且由既有 continuation/new-session owner 执行。
 - Base：三个 engine 共享 upstream entitlement catalog 与 helper；上游可用 `compatible_engines` 收窄 subset，不需要客户端列举 id。
+- Base：Account vendor row 默认只显示数量，用户展开后才 mount 该 vendor 的 model list。
 - Bad：因为 `/v1/messages` curl 返回 200，就宣称 Claude Code 支持该 model；真实 client headers 可能走另一 group/fallback policy。
 - Bad：为获得 200 在 Doge 本地伪造非 Claude-Code User-Agent，绕过 token2api `ClaudeCodeOnly` policy。
 - Bad：某组合失败后自动改成 engine 默认 model，让用户看到的 Target 与计费/usage/runtime 不一致。
+- Bad：product-ready Native 会话仍渲染 Grok/OpenCode 或 provider profile picker；这会重新引入用户不需要理解的 local/expert channel。
 
 ### 6. Tests Required
 
-- React component：同一 catalog 3 engine rows、compatible preserve / incompatible atomic fallback、切 model 保留 engine、搜索/vendor grouping、empty intersection disabled、panel stays open、Escape close、无 provider/config controls。
+- React component：同一 catalog 3 engine rows、compatible preserve / incompatible atomic fallback、切 model 保留 engine、搜索/vendor grouping、empty intersection disabled、panel stays open、Escape close、无 provider/config controls、ready 无固定 footer、Native conversation 同样为 product mode。
+- Account component：billing source/copy 无 invoice；vendor summary count 默认可见，model detail 初始不 mount，pointer/keyboard 展开后出现、再次点击消失。
+- Brand icon：`resolveProviderBrandIcon` 对 `豆包`、`doubao-entry`、`ark-code-latest` 全部返回本地 `doubao.png`；`ProviderBrandIconImg` component test 断言 intrinsic size 与 container bounds。
 - Refresh coordinator：same-subscription coalescing、freshness skip、pending保留rows、success原子发布、failure stale、logout/account-switch stale settle不覆盖。
 - Product provisioning：Codex/Claude ready/choiceRequired/bundle failure；Kimi installed/missing plan blocked/install failed/post-verify failed；断言 provider prepare 只在 provisioning success 后调用。
 - Composer regression：Home dynamic product mode；Shared removed-model selection 自动 repair并持久化 managed target；readiness/display/runtime identity 跟随 `selectedAtomicTarget`。
@@ -1036,6 +1050,9 @@ POST /v1/messages minimal probe = 200
 const catalog = productEntitlement.models; // refreshed upstream rows
 const rows = compatibleProductModelsForEngineV1(nextEngine, catalog);
 commitTarget(resolveProductManagedExecutionTargetV1({ engines, models: rows }));
+
+// Product-ready Home / Shared / Native modification share one presentation.
+const usesProductTargetCatalog = productEntitlement.status === "ready";
 ```
 
 ```text

@@ -37,6 +37,18 @@
 - 行为证据：pointer hover 与 keyboard focus 均打开真实 Tooltip portal；Enter 展开带 `aria-expanded/aria-controls` 的多行 safe diagnostics；再次点击收起并清除 Tooltip portal。显示值只来自 validated `GatewayFailureV1.code/stage/recovery.action`，不渲染 raw backend message、stack 或 secret。
 - 视觉 contract：Account Gate 为 `z-index: 10000`，portalled Account help Tooltip 显式提升到 `10020`，修复截图中已渲染 Tooltip 被全屏 Gate 遮挡的问题。
 
+### Product UI hot feedback 增量验证（2026-08-23）
+
+- Verification level：`L3 Cross-layer`。影响 product-ready Composer target presentation、managed provider config projection、Account progressive details 与 shared brand icon owner；stable provider id、IPC payload、vault secret contract 与 Native immutable binding 未改变。
+- affected Vitest：PASS，Composer/ModelSelect/Product panel/Account details/visual contract/product target/vendor grouping/icon resolver/raster bounds 共 9 files / 127 tests。
+- `npm run typecheck`：PASS；targeted ESLint：PASS；`cargo fmt --all -- --check`：PASS。
+- `cargo test --manifest-path src-tauri/Cargo.toml configuration_tests --lib`：PASS，10 tests；证明 Codex TOML 与 Codex/Claude/Kimi registry 均写 `name="Doge"`，且 secret-safe contract 不变。
+- `cargo check --manifest-path src-tauri/Cargo.toml --lib`：PASS，只有仓库既有 warnings。
+- `npm run check:runtime-contracts`：PASS。
+- `npm run check:large-files`：report mode 完成，仍只报告仓库既有 baseline/new-file ratchet；本轮没有新增超阈值 source file。
+- 本机 authenticated hot prepare 实证：`~/.doge/config.json` 的 Codex/Claude/Kimi managed entries 与 Codex provider-home TOML 均已从旧显示名迁移为 `Doge`；只读取 name 字段，未输出 secret。
+- 豆包 asset：`src/assets/model-icons/doubao.png` 与用户提供 PNG 的 SHA-256 相同；`豆包` / `doubao-entry` / `ark-code-latest` 共用该 asset。`ProviderBrandIconImg` 固定 `16×16` intrinsic size 并限制 `max-width/max-height:100%`、`object-fit:contain`，避免 1024px raster 在 stylesheet 未加载时按原尺寸铺满。
+
 ## Isolated baseline governance failures
 
 - `npm run check:engine-controller-facade`：`src/features/engine/hooks/useEngineController.ts` 为 610 行，超过 600 行阈值；本 change 未修改该文件。
