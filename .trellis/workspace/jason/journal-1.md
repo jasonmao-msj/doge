@@ -1347,3 +1347,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 40: 记录 Composite 路由生产实测
+
+**Date**: 2026-08-23
+**Task**: 记录 Composite 路由生产实测
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+保存并重开复核 7 条 Doge APP Composite routes；Kimi CLI route 成功，Claude/GPT/豆包由 single Kimi pricing channel 拒绝；未修改 channel pricing。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `32ef2ffe1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
