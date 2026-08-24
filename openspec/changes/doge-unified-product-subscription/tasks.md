@@ -128,3 +128,4 @@
 - [x] 16.8 按 account/runtime、dynamic catalog/picker、docs/tests 分类提交，执行 Trellis session record，push `codex/*` branch 并创建未合并 Doge PR #19。
 - [x] 16.9 修复 `tauri:dev:hot` dev flavor / `devUrl` 漂移：显式加载 `tauri.dev.conf.json`，统一 Vite `1420`，增加 branding 与 dev startup contract，避免 UI 验收误连 stale bundle。
 - [x] 16.10 经用户授权保存并重开复核 7 条 production Composite routes；真实 CLI 证明 Kimi route 成功，Claude/GPT/豆包被 `Doge APP` 单一 Kimi pricing channel 拒绝，未擅自修改 pricing。
+- [x] 16.11 改进 Account bootstrap 错误态：修复全屏 Gate 遮挡 Tooltip 的 stacking contract；问号支持 hover/focus 说明与 click/keyboard 展开，详情只展示 validated closed failure 的 code/stage/recovery action，并可再次收起。

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountGatewayProvider } from "../gateway/AccountGatewayProvider";
 import { createMockAccountGatewayV1 } from "../mock/MockAccountGatewayV1";
@@ -154,7 +155,7 @@ describe("AccountExperience", () => {
 
     expect(await screen.findByText("账号服务暂时不可用")).toBeTruthy();
     const helpButton = screen.getByRole("button", {
-      name: "查看说明：账号服务暂时不可用",
+      name: "查看错误详情",
     });
     expect(helpButton).toBeTruthy();
     expect(screen.queryByText("请检查网络连接，或稍后重试。")).toBeNull();
@@ -168,8 +169,44 @@ describe("AccountExperience", () => {
     });
     await waitFor(() => {
       expect(document.querySelector('[data-slot="tooltip-popup"]')?.textContent).toContain(
-        "请检查网络连接，或稍后重试。",
+        "查看错误详情",
       );
+    });
+  });
+
+  it("reveals and hides safe multiline bootstrap diagnostics from the help trigger", async () => {
+    const user = userEvent.setup();
+    renderScenarioV1("bootstrap.offline");
+    const detailsButton = await screen.findByRole("button", { name: "查看错误详情" });
+
+    expect(detailsButton.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("region", { name: "账号服务错误详情" })).toBeNull();
+
+    await user.tab();
+    expect(document.activeElement).toBe(detailsButton);
+    await waitFor(() => {
+      expect(document.querySelector('[data-slot="tooltip-popup"]')?.textContent).toContain(
+        "查看错误详情",
+      );
+    });
+    await user.keyboard("{Enter}");
+
+    const details = await screen.findByRole("region", { name: "账号服务错误详情" });
+    expect(screen.getByRole("button", { name: "收起错误详情" }).getAttribute("aria-expanded"))
+      .toBe("true");
+    expect(details.textContent).toContain("请检查网络连接，或稍后重试。");
+    expect(within(details).getByText("错误代码")).toBeTruthy();
+    expect(within(details).getByText("offline")).toBeTruthy();
+    expect(within(details).getByText("capabilities")).toBeTruthy();
+    expect(within(details).getByText("useLocalMode")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "收起错误详情" }));
+    expect(screen.queryByRole("region", { name: "账号服务错误详情" })).toBeNull();
+    expect(screen.getByRole("button", { name: "查看错误详情" }).getAttribute("aria-expanded"))
+      .toBe("false");
+    await user.tab();
+    await waitFor(() => {
+      expect(document.querySelector('[data-slot="tooltip-popup"]')).toBeNull();
     });
   });
 

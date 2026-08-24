@@ -1849,6 +1849,53 @@
   white-space: nowrap;
 }
 
+.account-failure-details {
+  grid-column: 2 / -1;
+  min-width: 0;
+  max-height: min(14rem, 38vh);
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  color: var(--text-secondary);
+  background: var(--surface-secondary, var(--surface-muted));
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.account-failure-details p,
+.account-failure-details dl,
+.account-failure-details dd {
+  margin: 0;
+}
+
+.account-failure-details dl {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.account-failure-details dl > div {
+  display: grid;
+  grid-template-columns: minmax(5rem, auto) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.account-failure-details dt {
+  color: var(--text-tertiary, var(--muted-foreground));
+}
+
+.account-failure-details code {
+  color: var(--text-primary);
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+
+.account-failure-details-empty {
+  margin-top: 8px !important;
+  color: var(--text-tertiary, var(--muted-foreground));
+}
+
 .account-spin {
   animation: account-spin 1s linear infinite;
 }

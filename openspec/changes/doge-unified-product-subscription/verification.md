@@ -26,6 +26,17 @@
 | `openspec validate doge-unified-product-subscription --strict --no-interactive` | PASS |
 | `git diff --check` | PASS |
 
+### Account bootstrap 错误详情增量验证（2026-08-23）
+
+- Verification level：`L2 Feature`。仅修改 Account feature 内 component/copy/style 与测试；未修改 IPC、auth/vault、持久化或 startup runtime。
+- `npx vitest run src/features/account/components/AccountExperience.test.tsx src/features/account/components/accountVisualContract.test.ts --reporter=dot`：PASS，2 files / 33 tests。
+- `npm run typecheck`：PASS。
+- targeted ESLint（`AccountExperience`、`AccountHelpTooltip`、copy 与相关 tests）：PASS，0 errors / 0 warnings。
+- `git diff --check`：PASS。
+- `npm run check:large-files`：report mode 完成；仍报告仓库既有 baseline/new-file ratchet，其中 `account-experience.css` 已是既有大文件，本次仅增加错误详情 scoped rules。
+- 行为证据：pointer hover 与 keyboard focus 均打开真实 Tooltip portal；Enter 展开带 `aria-expanded/aria-controls` 的多行 safe diagnostics；再次点击收起并清除 Tooltip portal。显示值只来自 validated `GatewayFailureV1.code/stage/recovery.action`，不渲染 raw backend message、stack 或 secret。
+- 视觉 contract：Account Gate 为 `z-index: 10000`，portalled Account help Tooltip 显式提升到 `10020`，修复截图中已渲染 Tooltip 被全屏 Gate 遮挡的问题。
+
 ## Isolated baseline governance failures
 
 - `npm run check:engine-controller-facade`：`src/features/engine/hooks/useEngineController.ts` 为 610 行，超过 600 行阈值；本 change 未修改该文件。

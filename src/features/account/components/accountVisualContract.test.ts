@@ -17,6 +17,10 @@ const experienceSource = readFileSync(
   new URL("./AccountExperience.tsx", import.meta.url),
   "utf8",
 );
+const helpTooltipSource = readFileSync(
+  new URL("./AccountHelpTooltip.tsx", import.meta.url),
+  "utf8",
+);
 const centerSource = readFileSync(
   new URL("./AccountCenter.tsx", import.meta.url),
   "utf8",
@@ -82,6 +86,9 @@ describe("Account visual contract", () => {
     expect(tooltipRule).toMatch(/width:\s*max-content/);
     expect(tooltipRule).toMatch(/max-width:\s*min\(/);
     expect(tooltipRule).toMatch(/height:\s*auto/);
+    expect(helpTooltipSource).toContain("ACCOUNT_HELP_TOOLTIP_Z_INDEX = 10_020");
+    expect(helpTooltipSource).toContain("style={{ zIndex: ACCOUNT_HELP_TOOLTIP_Z_INDEX }}");
+    expect(gateCss).toMatch(/\.account-app-gate\s*\{[^}]*z-index:\s*10000/s);
   });
 
   it("keeps the unavailable state compact and does not restyle its help trigger as an action", () => {
@@ -92,6 +99,17 @@ describe("Account visual contract", () => {
     expect(unavailableRule).toMatch(/min-height:\s*0/);
     expect(unavailableRule).not.toMatch(/flex-direction:\s*column/);
     expect(experienceCss).not.toMatch(/\.account-experience-state button\s*\{/);
+  });
+
+  it("keeps expanded account failure details readable for multiline diagnostics", () => {
+    const detailsRule = experienceCss.match(
+      /\.account-failure-details\s*\{[^}]*\}/s,
+    )?.[0] ?? "";
+    expect(detailsRule).toMatch(/grid-column:\s*2\s*\/\s*-1/);
+    expect(detailsRule).toMatch(/max-height:\s*min\(/);
+    expect(detailsRule).toMatch(/overflow:\s*auto/);
+    expect(helpTooltipSource).toContain('aria-expanded={expanded}');
+    expect(experienceSource).toContain("controller.failure.recovery.action");
   });
 
   it("uses the product avatar only for account identity and keeps usage icons domain-specific", () => {
