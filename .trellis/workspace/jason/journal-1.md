@@ -1380,3 +1380,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 41: 完善账号服务错误详情
+
+**Date**: 2026-08-23
+**Task**: 完善账号服务错误详情
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+修复 Account Gate 遮挡 portalled Tooltip 的层级问题；问号支持 hover/focus 与 click/keyboard 展开收起，仅展示 validated GatewayFailureV1 的安全 code、stage、recovery action；补齐组件、视觉 contract、OpenSpec 与 frontend 质量规范，L2 验证通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a4bf34144` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 40
+- **Total Sessions**: 41
 - **Last Active**: 2026-08-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1382 | Active |
+| `journal-1.md` | ~1415 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 41 | 2026-08-23 | 完善账号服务错误详情 | `a4bf34144` | `codex/fix-managed-provider-session-defaults` |
 | 40 | 2026-08-23 | 记录 Composite 路由生产实测 | `32ef2ffe1` | `codex/fix-managed-provider-session-defaults` |
 | 39 | 2026-08-23 | 记录热开发修复与全量复验 | `4c1c0adb8` | `codex/fix-managed-provider-session-defaults` |
 | 38 | 2026-08-23 | 修复 Tauri 热开发 flavor | `0b0733feb` | `codex/fix-managed-provider-session-defaults` |
