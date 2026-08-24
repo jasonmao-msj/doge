@@ -247,6 +247,21 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
           })
         }
       />
+      <button
+        type="button"
+        data-testid="select-product-doubao-model"
+        onClick={() =>
+          onExecutionTargetChange?.({
+            engine: "kimi",
+            providerProfileId: "doge-token-matrix",
+            modelCatalogEntryId: "豆包",
+            model: "豆包",
+            reasoning: null,
+            providerProfileNameSnapshot: "Doge",
+            providerProfileSource: "managed",
+          })
+        }
+      />
     </>
   ),
 }));
@@ -259,6 +274,7 @@ function ComposerHarness({
   createSessionTargetPicker = false,
   onCreationTargetEngineChange,
   onSelectEngine,
+  onSelectModel = () => {},
   selectedEngine = "claude",
   activeThreadId = "thread-1",
   sharedTargetPickerLocked = false,
@@ -278,6 +294,7 @@ function ComposerHarness({
   createSessionTargetPicker?: boolean;
   onCreationTargetEngineChange?: (engine: EngineType | null) => void;
   onSelectEngine?: (engine: EngineType) => void;
+  onSelectModel?: (modelId: string) => void;
   selectedEngine?: EngineType;
   activeThreadId?: string | null;
   sharedTargetPickerLocked?: boolean;
@@ -360,7 +377,7 @@ function ComposerHarness({
           : models
       }
       selectedModelId={sharedTarget?.model ?? selectedModelId}
-      onSelectModel={() => {}}
+      onSelectModel={onSelectModel}
       reasoningOptions={[]}
       selectedEffort={sharedTarget?.effort ?? null}
       onSelectEffort={() => {}}
@@ -692,6 +709,51 @@ describe("Composer file reference token", () => {
     expect(getTextarea(view.container).dataset.providerProfileId).toBe(
       "doge-token-matrix",
     );
+  });
+
+  it("persists the Composite public alias when Native Kimi selects Doubao", () => {
+    publishProductReadyV1({
+      entitlement: {
+        status: "active",
+        subscriptionId: 9,
+        groupId: 5,
+        groupName: "Doge",
+        planName: "Doge subscription",
+        expiresAt: "2030-02-01T00:00:00Z",
+        usage: null,
+      },
+      engines: [
+        { id: "codex", displayName: "Codex" },
+        { id: "claude-code", displayName: "Claude" },
+        { id: "kimi", displayName: "Kimi CLI" },
+      ],
+      models: [{
+        id: "豆包",
+        displayName: "豆包",
+        model: "豆包",
+        compatibleEngines: ["codex", "claude", "kimi"],
+        capabilities: ["chat"],
+      }],
+    });
+    const onSelectModel = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={() => {}}
+        onSelectModel={onSelectModel}
+        selectedEngine="kimi"
+        selectedModelId="gpt-5.5"
+        providerProfileId="doge-token-matrix"
+      />,
+    );
+
+    fireEvent.click(view.getByTestId("select-product-doubao-model"));
+
+    expect(onSelectModel).toHaveBeenCalledWith("豆包");
+    expect(view.getByTestId("composer-target-authority").dataset).toMatchObject({
+      pickerMode: "product",
+      readinessEngine: "kimi",
+      readinessModel: "豆包",
+    });
   });
 
   it("automatically prepares an active Home subscription before using a local fallback", () => {

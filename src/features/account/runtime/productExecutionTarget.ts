@@ -14,6 +14,7 @@ import {
 } from "./productModelCompatibility";
 
 export const PRODUCT_MANAGED_PROVIDER_LABEL = "Doge";
+export const PRODUCT_DOUBAO_RUNTIME_MODEL = "豆包";
 
 const PRODUCT_ENGINE_RUNTIME_IDS: Record<
   ProductEngineIdV1,
@@ -31,8 +32,18 @@ export function productEngineRuntimeIdV1(
 }
 
 export function resolveProductRuntimeModelIdV1(
-  model: Pick<ProductModelViewV1, "id" | "model">,
+  model: Pick<ProductModelViewV1, "id" | "model"> &
+    Partial<Pick<ProductModelViewV1, "displayName">>,
 ): string {
+  const identity = `${model.id} ${model.model} ${model.displayName ?? ""}`
+    .toLocaleLowerCase();
+  if (
+    identity.includes("豆包") ||
+    identity.includes("doubao") ||
+    identity.includes("ark-code")
+  ) {
+    return PRODUCT_DOUBAO_RUNTIME_MODEL;
+  }
   return normalizeProductModelIdentityV1(model.model || model.id);
 }
 

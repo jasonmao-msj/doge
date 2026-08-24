@@ -403,6 +403,30 @@ describe("useAppShellComposerModelSection handleSelectModel", () => {
     expect(setSelectedModelId).not.toHaveBeenCalled();
   });
 
+  it("preserves the managed Kimi Doubao alias outside the local CLI catalog", () => {
+    const composerSelectionResolverRef: { current: unknown } = { current: null };
+    const { result } = renderSection({
+      activeEngine: "kimi",
+      activeThreadId: "kimi:session-managed",
+      activeProviderProfileId: "doge-token-matrix",
+      composerSelectionResolverRef,
+      engineModelsAsOptions: kimiModels,
+      selectedComposerSelection: {
+        modelId: "豆包",
+        effort: null,
+      },
+    });
+
+    expect(result.current.effectiveSelectedModelId).toBe("豆包");
+    expect(result.current.effectiveSelectedModel).toBeNull();
+    expect(result.current.resolvedModel).toBe("豆包");
+    expect(composerSelectionResolverRef.current).toMatchObject({
+      id: "豆包",
+      model: "豆包",
+      effort: null,
+    });
+  });
+
   it("keeps a Native custom Codex model capability-neutral", () => {
     const composerSelectionResolverRef: { current: unknown } = { current: null };
     const { result } = renderSection({

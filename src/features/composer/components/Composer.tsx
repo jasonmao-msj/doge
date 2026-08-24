@@ -1529,15 +1529,22 @@ function ComposerImpl({
       const catalogEntryId =
         target.modelCatalogEntryId?.trim() || target.model?.trim() || null;
       const runtimeModel = target.model?.trim() || catalogEntryId;
+      const persistedModelId =
+        usesProductTargetCatalog &&
+        target.providerProfileId?.trim() === MANAGED_PROVIDER_PROFILE_ID_V1
+          ? runtimeModel
+          : catalogEntryId;
       const nextEffort = target.reasoning?.effort ?? null;
       if (sameProfile) {
-        if (catalogEntryId && runtimeModel) {
+        if (catalogEntryId && runtimeModel && persistedModelId) {
           setNativeAtomicSelection({
             modelCatalogEntryId: catalogEntryId,
             model: runtimeModel,
           });
-          // 持久化用 catalog entry id；自由名与 runtime 通常相同
-          onSelectModel(catalogEntryId);
+          // Native send 读取 per-thread model selection。Product picker 必须
+          // 持久化 callable runtime model；display/catalog identity 由本地
+          // nativeAtomicSelection 保留，禁止 UI 显示豆包但实际发送默认模型。
+          onSelectModel(persistedModelId);
         }
         if (nextEffort !== selectedEffort) {
           onSelectEffort(nextEffort);
@@ -1563,12 +1570,12 @@ function ComposerImpl({
       if (target.engine !== selectedEngine) {
         onSelectEngine?.(target.engine);
       }
-      if (catalogEntryId && runtimeModel) {
+      if (catalogEntryId && runtimeModel && persistedModelId) {
         setNativeAtomicSelection({
           modelCatalogEntryId: catalogEntryId,
           model: runtimeModel,
         });
-        onSelectModel(catalogEntryId);
+        onSelectModel(persistedModelId);
       }
       if (nextEffort !== selectedEffort) {
         onSelectEffort(nextEffort);
@@ -1585,6 +1592,7 @@ function ComposerImpl({
       requestManagedEngineAccess,
       selectedEffort,
       selectedEngine,
+      usesProductTargetCatalog,
     ],
   );
   const handleCreationTargetChange = useCallback(

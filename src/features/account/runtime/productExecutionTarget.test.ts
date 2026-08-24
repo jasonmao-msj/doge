@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  PRODUCT_DOUBAO_RUNTIME_MODEL,
   isSameProductExecutionTargetV1,
   resolveProductManagedExecutionTargetV1,
   resolveProductRuntimeModelIdV1,
@@ -51,13 +52,30 @@ describe("resolveProductManagedExecutionTargetV1", () => {
     });
   });
 
-  it("uses the upstream runtime model while keeping the display identity separate", () => {
+  it("uses the Composite public alias instead of the private Ark account model", () => {
     expect(
       resolveProductRuntimeModelIdV1({
         id: "doubao-entry",
         model: "ark-code-latest",
       }),
-    ).toBe("ark-code-latest");
+    ).toBe("豆包");
+  });
+
+  it("normalizes a public Doubao alias to the callable Ark runtime model", () => {
+    expect(
+      resolveProductRuntimeModelIdV1({
+        id: "豆包",
+        displayName: "豆包",
+        model: "豆包",
+      }),
+    ).toBe(PRODUCT_DOUBAO_RUNTIME_MODEL);
+    expect(
+      resolveProductRuntimeModelIdV1({
+        id: "doubao-entry",
+        displayName: "豆包",
+        model: "",
+      }),
+    ).toBe(PRODUCT_DOUBAO_RUNTIME_MODEL);
   });
 
   it("normalizes the Kimi fallback catalog namespace to the product runtime id", () => {
