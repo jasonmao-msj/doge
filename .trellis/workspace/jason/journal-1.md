@@ -1314,3 +1314,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 39: 记录热开发修复与全量复验
+
+**Date**: 2026-08-23
+**Task**: 记录热开发修复与全量复验
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+更新统一订阅 verification/tasks：记录 dev flavor 修复、最新 1119-file Vitest 全绿、debug bundle build 与 token2api 未保存 capability probe。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4c1c0adb8` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
