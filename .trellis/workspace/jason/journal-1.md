@@ -1448,3 +1448,37 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 43: 修复豆包图标 CSS 尺寸覆盖
+
+**Date**: 2026-08-23
+**Task**: 修复豆包图标 CSS 尺寸覆盖
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+根据实机截图定位 selectors.css 的 img width/height 100% 覆盖 HTML intrinsic attribute，且 Product trigger wrapper auto-size/overflow-visible；改为共享 img inline 16×16 与 trigger wrapper 16×16 + overflow hidden，补 exact style regression，并同步 raster visual contract。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `feefbbea9` | (see git log) |
+| `dfbfb70d7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
