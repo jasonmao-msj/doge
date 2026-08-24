@@ -981,7 +981,7 @@ if file.label == "Doge Kimi provider registry" {
 - Existing Native Session 的 engine/provider binding 保持 immutable；product panel 只展示 Codex/Claude/Kimi，选择结果固定生成 `doge-token-matrix` target；跨 engine/provider 继续走 existing managed prepare + new-session/Provider Continuation，不得原地替换 Runtime owner。
 - Product panel 底部不得常驻“订阅已生效/目录来源”说明；`ready` 时空间全部归模型列表，只有 `refreshing/stale` 才在 search 下方显示 transient status。
 - Account billing 只显示真实 order facts；既然 upstream 无 invoice capability，UI MUST 完全不提发票或下载能力，而不只是隐藏 action。
-- Account 可用模型 MUST 默认只展示 vendor label + model count；每个 vendor row 通过 button `aria-expanded/aria-controls` 按需 mount/unmount model detail list，再次点击收起。Doubao vendor/model identities（`豆包`、`doubao-*`、`ark-code-*`）MUST 统一解析到 `src/assets/model-icons/doubao.png`。所有 raster brand asset 必须经 `ProviderBrandIconImg` 渲染并提供 `16×16` intrinsic size、`max-width/max-height:100%` 与 `object-fit:contain`，禁止依赖 optional consumer stylesheet 限尺寸。
+- Account 可用模型 MUST 默认只展示 vendor label + model count；每个 vendor row 通过 button `aria-expanded/aria-controls` 按需 mount/unmount model detail list，再次点击收起。Doubao vendor/model identities（`豆包`、`doubao-*`、`ark-code-*`）MUST 统一解析到 `src/assets/model-icons/doubao.png`。所有 raster brand asset 必须经 `ProviderBrandIconImg` 渲染并提供 attribute + inline `16×16`、`max-width/max-height:100%` 与 `object-fit:contain`；Product trigger wrapper 同样固定 `16×16 + overflow:hidden`，禁止依赖 optional consumer stylesheet 限尺寸。
 - UI selected target、readiness/accessibility projection、persisted `modelCatalogEntryId` 与 dispatched runtime `model` MUST 同源；不得出现 trigger 正确但 readiness/global model 仍旧的 split truth。
 - Runtime/provider failure MUST 保留 exact selection 并 fail closed；禁止 silent engine/model/provider fallback。
 - `/v1/models` 只证明 catalog entitlement；三种 endpoint 的 minimal 200 只证明 protocol adapter basic reachability。只有真实 CLI 发出的 system/tools/stream/client headers payload 完成 terminal response，才可标记对应组合 E2E ready。
@@ -1021,7 +1021,7 @@ if file.label == "Doge Kimi provider registry" {
 
 - React component：同一 catalog 3 engine rows、compatible preserve / incompatible atomic fallback、切 model 保留 engine、搜索/vendor grouping、empty intersection disabled、panel stays open、Escape close、无 provider/config controls、ready 无固定 footer、Native conversation 同样为 product mode。
 - Account component：billing source/copy 无 invoice；vendor summary count 默认可见，model detail 初始不 mount，pointer/keyboard 展开后出现、再次点击消失。
-- Brand icon：`resolveProviderBrandIcon` 对 `豆包`、`doubao-entry`、`ark-code-latest` 全部返回本地 `doubao.png`；`ProviderBrandIconImg` component test 断言 intrinsic size 与 container bounds。
+- Brand icon：`resolveProviderBrandIcon` 对 `豆包`、`doubao-entry`、`ark-code-latest` 全部返回本地 `doubao.png`；`ProviderBrandIconImg` 与 Product trigger component tests 断言 intrinsic + inline size、wrapper `overflow:hidden`，覆盖 consumer CSS `img { width:100%; height:100% }`。
 - Refresh coordinator：same-subscription coalescing、freshness skip、pending保留rows、success原子发布、failure stale、logout/account-switch stale settle不覆盖。
 - Product provisioning：Codex/Claude ready/choiceRequired/bundle failure；Kimi installed/missing plan blocked/install failed/post-verify failed；断言 provider prepare 只在 provisioning success 后调用。
 - Composer regression：Home dynamic product mode；Shared removed-model selection 自动 repair并持久化 managed target；readiness/display/runtime identity 跟随 `selectedAtomicTarget`。

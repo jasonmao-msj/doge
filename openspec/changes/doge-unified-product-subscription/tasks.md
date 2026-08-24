@@ -131,3 +131,4 @@
 - [x] 16.11 改进 Account bootstrap 错误态：修复全屏 Gate 遮挡 Tooltip 的 stacking contract；问号支持 hover/focus 说明与 click/keyboard 展开，详情只展示 validated closed failure 的 code/stage/recovery action，并可再次收起。
 - [x] 16.12 收口四项 hot UI feedback：product model panel 移除 ready footer；普通 Native conversation 复用仅 Codex/Claude/Kimi 的 product panel 并固定 `doge-token-matrix`；账单移除 invoice 提示；Account 模型按 vendor count 渐进展开/收起。
 - [x] 16.13 将 managed provider display name 从 `Doge Token Matrix` 统一迁移为 `Doge`（stable id 不变，authenticated prepare 幂等覆盖旧配置），并让所有豆包 identity 统一使用用户提供的 `src/assets/model-icons/doubao.png`。
+- [x] 16.14 修复豆包 1024px raster 被 `.selector-model-brand-icon img { width:100%; height:100% }` 放大的二次回归：共享 `<img>` 增加 inline `16×16`，Product trigger wrapper 固定 `16×16 + overflow:hidden`，并锁定 exact style contract。

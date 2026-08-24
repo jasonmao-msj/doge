@@ -48,6 +48,7 @@
 - `npm run check:large-files`：report mode 完成，仍只报告仓库既有 baseline/new-file ratchet；本轮没有新增超阈值 source file。
 - 本机 authenticated hot prepare 实证：`~/.doge/config.json` 的 Codex/Claude/Kimi managed entries 与 Codex provider-home TOML 均已从旧显示名迁移为 `Doge`；只读取 name 字段，未输出 secret。
 - 豆包 asset：`src/assets/model-icons/doubao.png` 与用户提供 PNG 的 SHA-256 相同；`豆包` / `doubao-entry` / `ark-code-latest` 共用该 asset。`ProviderBrandIconImg` 固定 `16×16` intrinsic size 并限制 `max-width/max-height:100%`、`object-fit:contain`，避免 1024px raster 在 stylesheet 未加载时按原尺寸铺满。
+- 二次实机反馈证明 HTML `width/height` attribute 会被现有 `.selector-model-brand-icon img { width:100%; height:100% }` author CSS 覆盖，且 Product trigger 的内层 wrapper 原为 auto-size / overflow-visible。修复后 `<img>` 使用 inline `width:16px;height:16px`，wrapper 同时固定 `16×16 + overflow:hidden`；focused Vitest 3 files / 66 tests、typecheck 与 targeted ESLint 均 PASS。
 
 ## Isolated baseline governance failures
 
