@@ -335,7 +335,11 @@ function ProductModelIcon({
     .find((candidate) => candidate !== null) ?? null;
   if (src) {
     return (
-      <span className="selector-model-brand-icon" aria-hidden>
+      <span
+        className="selector-model-brand-icon"
+        aria-hidden
+        style={{ width: 16, height: 16, overflow: "hidden" }}
+      >
         <ProviderBrandIconImg src={src} />
       </span>
     );

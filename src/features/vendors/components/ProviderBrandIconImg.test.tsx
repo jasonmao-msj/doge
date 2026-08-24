@@ -15,6 +15,8 @@ describe("ProviderBrandIconImg", () => {
 
     expect(image?.getAttribute("width")).toBe("16");
     expect(image?.getAttribute("height")).toBe("16");
+    expect(image?.style.width).toBe("16px");
+    expect(image?.style.height).toBe("16px");
     expect(image?.style.maxWidth).toBe("100%");
     expect(image?.style.maxHeight).toBe("100%");
     expect(image?.style.objectFit).toBe("contain");

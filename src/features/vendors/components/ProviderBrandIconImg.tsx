@@ -10,6 +10,8 @@ import { providerBrandIconNeedsDarkTile } from "../providerBrandIcon";
  */
 const BASE_ICON_STYLE: CSSProperties = {
   display: "block",
+  width: 16,
+  height: 16,
   maxWidth: "100%",
   maxHeight: "100%",
   objectFit: "contain",

@@ -189,6 +189,16 @@ describe("ProductEngineModelSelect", () => {
     fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
     expect(screen.getByRole("radio", { name: "豆包" })).toBeTruthy();
     expect(screen.queryByText("ark-code-latest")).toBeNull();
+
+    const triggerIcon = screen
+      .getByRole("button", { name: /当前组合/ })
+      .querySelector(".selector-model-brand-icon");
+    const triggerImage = triggerIcon?.querySelector("img");
+    expect((triggerIcon as HTMLElement | null)?.style.width).toBe("16px");
+    expect((triggerIcon as HTMLElement | null)?.style.height).toBe("16px");
+    expect((triggerIcon as HTMLElement | null)?.style.overflow).toBe("hidden");
+    expect(triggerImage?.style.width).toBe("16px");
+    expect(triggerImage?.style.height).toBe("16px");
   });
 });
 
