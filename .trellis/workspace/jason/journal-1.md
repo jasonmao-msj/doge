@@ -1549,3 +1549,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 46: 修复 Claude 续接卡死与 Anthropic 路由
+
+**Date**: 2026-08-23
+**Task**: 修复 Claude 续接卡死与 Anthropic 路由
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+定位 Claude synthetic API error 的 live snake_case 与 transcript camelCase 分裂；将 API-error assistant/result.is_error 归一为 terminal TurnError 并 cleanup exact process group。production Doge 统一定价补充 Sonnet 与豆包 Anthropic 规则，真实 Messages、Claude CLI、frozen Codex Context Package 导入及同 session resume 全部成功；同步 ADR、code-spec、OpenSpec 与回归测试。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `efbebcf6a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

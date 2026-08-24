@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 45
+- **Total Sessions**: 46
 - **Last Active**: 2026-08-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1551 | Active |
+| `journal-1.md` | ~1584 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 46 | 2026-08-23 | 修复 Claude 续接卡死与 Anthropic 路由 | `efbebcf6a` | `codex/fix-managed-provider-session-defaults` |
 | 45 | 2026-08-23 | 修复 Codex 503 恢复与单一 doge 开发入口 | `80cf57fdf` | `codex/fix-managed-provider-session-defaults` |
 | 44 | 2026-08-23 | 贯通豆包运行模型与生产定价 | `bdbe27bc0`, `d7c5cb0fc` | `codex/fix-managed-provider-session-defaults` |
 | 43 | 2026-08-23 | 修复豆包图标 CSS 尺寸覆盖 | `feefbbea9`, `dfbfb70d7` | `codex/fix-managed-provider-session-defaults` |
