@@ -450,8 +450,8 @@ if (isClaudeControlPlaneMessage(message)) {
 
 ### 1. Scope / Trigger
 
-- Trigger：组件测试渲染 workspace home、app shell、summary/dashboard surface，且渲染树包含 `BrowserDock`、Tauri bridge、polling/listener、webview/session bootstrap 等 runtime-heavy child。
-- 目标：防止非目标测试真实挂载 runtime-heavy child 后产生 React `act(...)` warning、stderr noise 或异步 cleanup 漂移。
+- Trigger：组件测试渲染 workspace home、app shell、summary/dashboard/graph surface，且渲染树包含 `BrowserDock`、Tauri bridge、polling/listener、webview/session bootstrap，或为了一个 leaf assertion 挂载完整 graph/application parent。
+- 目标：防止非目标测试真实挂载 runtime-heavy child 后产生 React `act(...)` warning、stderr noise、异步 cleanup 漂移，或在 Windows batched load 下耗尽默认 timeout。
 
 ### 2. Signatures
 
@@ -470,6 +470,8 @@ vi.mock("../../browser-agent/components/BrowserDock", () => ({
 - Summary/home tests SHOULD assert their own rendered contract only, not incidental webview/session bootstrap effects.
 - Tests MUST NOT leave React `act(...)` warnings or stderr payloads for `heavy-test-noise` to collect.
 - Runtime-heavy child behavior MUST be covered in its own focused test file, where async effects are explicitly awaited or mocked.
+- Leaf-owned UI behavior（例如 child `<details>` disclosure）MUST 在最低 owner component 上直接测试；只有 assertion 依赖 parent orchestration/cross-surface state 时才允许 full parent harness。
+- Parent harness timeout MUST NOT be raised when moving the same assertion to a leaf harness can remove incidental initialization cost.
 - React 19 Suspense / `React.lazy` teardown MUST drain both microtasks and host-task scheduled work inside `act(...)`; do not assume repeated `Promise.resolve()` alone covers `pingSuspendedRoot`.
 - Do not solve unrelated `act(...)` warnings by globally silencing `console.error`; that hides regressions.
 
@@ -483,17 +485,21 @@ vi.mock("../../browser-agent/components/BrowserDock", () => ({
 | Suspense lazy boundary teardown | drain microtask + host task inside `act(...)` | only add more `Promise.resolve()` rounds |
 | unrelated child warning | isolate or await the actual child effect | blanket `console.error = vi.fn()` |
 | async preview/outline compile | wait for the rendered async state that proves compile settled | exit test after initial render and leak `act(...)` warning |
+| leaf disclosure under Windows batch load | render leaf owner with representative domain props | mount full graph parent or raise test timeout |
 
 ### 5. Good / Base / Bad Cases
 
 - Good：`WorkspaceHome.test.tsx` mocks `BrowserDock` to keep workspace summary tests deterministic.
+- Good：`ProjectMapNavigationPanel.test.tsx` 用 real path/explanation helpers 构造 props，直接验证 collapsed → expanded，不挂载完整 `ProjectMapPanel`。
 - Base：a parent component test mocks Tauri-dependent children that are outside the assertion scope.
 - Bad：letting a dashboard test mount `BrowserDock`, polling hooks, and webview bootstrap just because they appear in the production tree.
+- Bad：单个 disclosure test 在 Windows 超时后改成 `it(..., 15_000)`，保留不相关 graph mount。
 
 ### 6. Tests Required
 
 - Parent tests：assert parent-owned UI and callbacks after runtime-heavy children are mocked.
 - Child tests：cover the runtime-heavy component separately, including async effect settle, cleanup, and failure paths.
+- Leaf tests：assert owner-local render/interaction under default Vitest timeout；同时保留 pure helper tests，避免在 leaf fixture 复制 domain algorithm。
 - Gate：when touching test-governance or noisy runtime components, run the relevant targeted test and `heavy-test-noise` gate used by CI.
 
 ### 7. Wrong vs Correct
@@ -503,6 +509,10 @@ vi.mock("../../browser-agent/components/BrowserDock", () => ({
 ```typescript
 render(<WorkspaceHome workspace={workspace} currentBranch={branch} />);
 // BrowserDock mounts and emits act(...) warnings unrelated to WorkspaceHome.
+
+it("expands details", () => {
+  render(<FullProjectMapPanel />);
+}, 15_000);
 ```
 
 #### Correct
@@ -513,6 +523,14 @@ vi.mock("../../browser-agent/components/BrowserDock", () => ({
 }));
 
 render(<WorkspaceHome workspace={workspace} currentBranch={branch} />);
+
+render(
+  <ProjectMapNavigationPanel
+    pathResult={pathResult}
+    associationExplanation={associationExplanation}
+    {...focusedProps}
+  />,
+);
 ```
 
 ## CodeMirror State-Coupled Extensions 不可跨越 Lazy Boundary

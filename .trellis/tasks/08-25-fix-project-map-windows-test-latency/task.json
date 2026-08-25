@@ -1,0 +1,53 @@
+{
+  "id": "fix-project-map-windows-test-latency",
+  "name": "fix-project-map-windows-test-latency",
+  "title": "稳定 ProjectMap Windows 测试延迟并打双端包",
+  "description": "OpenSpec: stabilize-project-map-windows-test-latency；修复 Windows CI timeout 后触发双端 release artifacts。",
+  "status": "planning",
+  "dev_type": "frontend",
+  "scope": "frontend",
+  "package": null,
+  "priority": "P1",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-25",
+  "completedAt": null,
+  "branch": "codex/fix-project-map-windows-timeout",
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

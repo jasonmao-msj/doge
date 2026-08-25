@@ -326,29 +326,6 @@ describe("ProjectMapPanel", () => {
     expect(view.container.querySelector(".project-map-graph-viewport")).toBeTruthy();
   });
 
-  it("shows path association explanations inside a collapsed details block", () => {
-    renderMockProjectMapPanel();
-
-    fireEvent.click(screen.getByRole("button", { name: "projectMap.viewIa.navigationMode" }));
-    const sourceSelect = screen.getByLabelText("projectMap.navigation.path.source") as HTMLSelectElement;
-    const targetSelect = screen.getByLabelText("projectMap.navigation.path.target") as HTMLSelectElement;
-    const sourceOption = sourceSelect.options[0]!.value;
-    const targetOption = sourceSelect.options[1]!.value;
-    fireEvent.change(sourceSelect, {
-      target: { value: sourceOption },
-    });
-    fireEvent.change(targetSelect, {
-      target: { value: targetOption },
-    });
-
-    const pathExplanation = screen.getByText("projectMap.navigation.path.explain");
-    expect(pathExplanation).toBeTruthy();
-    fireEvent.click(pathExplanation);
-    const explanationPanel = pathExplanation.closest(".project-map-path-explanation") as HTMLElement;
-    expect((explanationPanel as HTMLDetailsElement).open).toBe(true);
-    expect(within(explanationPanel).getAllByText(/belongs under|relation/i).length).toBeGreaterThan(0);
-  });
-
   it("focuses graph nodes from grouped query and recent activity rows", () => {
     const view = renderMockProjectMapPanel({ changedFilePaths: ["src/**"] });
 
