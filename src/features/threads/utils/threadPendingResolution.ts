@@ -3,7 +3,13 @@ import { isClaudeSessionBootstrapThreadId } from "./claudeForkThread";
 export type PendingResolutionInput = {
   workspaceId: string;
   engine: "claude" | "gemini" | "grok" | "kimi" | "opencode";
-  threadsByWorkspace: Record<string, Array<{ id: string }>>;
+  threadsByWorkspace: Record<
+    string,
+    Array<{
+      id: string;
+      engineSource?: "claude" | "codex" | "gemini" | "grok" | "kimi" | "opencode";
+    }>
+  >;
   activeThreadIdByWorkspace: Record<string, string | null>;
   threadStatusById: Record<string, { isProcessing?: boolean } | undefined>;
   activeTurnIdByThread: Record<string, string | null | undefined>;
@@ -29,6 +35,16 @@ function isPendingThreadForEngine(
     return isClaudeSessionBootstrapThreadId(threadId);
   }
   return threadId.startsWith(`${engine}-pending-`);
+}
+
+function isTurnBoundProvisionalCandidate(
+  engine: PendingResolutionInput["engine"],
+  thread: PendingResolutionInput["threadsByWorkspace"][string][number],
+): boolean {
+  if (isPendingThreadForEngine(engine, thread.id)) {
+    return true;
+  }
+  return thread.engineSource === engine && !thread.id.startsWith(`${engine}:`);
 }
 
 export function resolvePendingThreadIdForSession({
@@ -119,7 +135,7 @@ export function resolvePendingThreadIdForTurn({
   }
 
   const pendingThreads = (threadsByWorkspace[workspaceId] ?? []).filter((thread) =>
-    isPendingThreadForEngine(engine, thread.id),
+    isTurnBoundProvisionalCandidate(engine, thread),
   );
   if (pendingThreads.length === 0) {
     return null;
@@ -135,7 +151,6 @@ export function resolvePendingThreadIdForTurn({
     const activePendingId = activeThreadIdByWorkspace[workspaceId] ?? null;
     if (
       activePendingId &&
-      isPendingThreadForEngine(engine, activePendingId) &&
       matchedPendingThreads.some((thread) => thread.id === activePendingId)
     ) {
       return activePendingId;

@@ -231,6 +231,73 @@ queue.push(event);
 - `contextProtocol` classifier 必须匹配完整 protocol envelope；过滤只发生在
   presentation boundary，原始 Runtime/Canonical evidence 保留。
 
+## Scenario: Turn-bound provisional identity promotion and same-tick terminal settlement
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `threadPendingResolution.ts`、`useThreadTurnEvents.onThreadSessionIdUpdated`、Native engine session hint routing，或 canonical terminal alias settlement。
+- 目标：Product Home 可能以无 engine prefix 的 logical UUID 启动 Native turn；canonical `session_*` 到达后必须按 exact engine/turn promotion，terminal 紧随其后时不得让旧 logical row 永久显示 responding。
+
+### 2. Signatures
+
+- `resolvePendingThreadIdForTurn({ workspaceId, engine, turnId, threadsByWorkspace, activeThreadIdByWorkspace, activeTurnIdByThread }) -> string | null`
+- provisional candidate：`{ id, engineSource }`，其中 `engineSource == engine`、`id` 不是 `${engine}:<native-id>`、`activeTurnIdByThread[id] == turnId`。
+- `onThreadSessionIdUpdated(workspaceId, threadId, sessionId, engineHint, turnId)`。
+- `resolvePendingAliasThread(workspaceId, canonicalThreadId, turnId) -> provisionalThreadId | null`。
+
+### 3. Contracts
+
+- conventional `${engine}-pending-*` 与 Claude bootstrap/fork identity 继续参与 resolver；除此之外，只有 explicit `engineSource` + exact normalized `turnId` 同时匹配的无 canonical prefix thread MAY 成为 provisional owner。
+- session promotion MUST 接受 exact turn resolver result，不得再次用 pending prefix 拒绝它。workspace-level fallback 仍 MUST 要求 conventional pending prefix + active/content anchor。
+- `kimi:`、`grok:`、`gemini:`、`opencode:`、`claude:` canonical terminal MUST 查询 exact turn alias。promotion 与 terminal 在同一 React scheduling interval 到达时，terminal MUST idempotently settle canonical + provisional 两侧。
+- assistant text、`item/completed`、active selection、thread title、UUID shape 均不是 promotion 或 terminal authority。
+- established canonical target、engine mismatch、turn mismatch MUST fail closed；不得 merge unrelated concurrent session。
+
+### 4. Validation & Error Matrix
+
+| 场景 | 必须行为 | 禁止行为 |
+|---|---|---|
+| `01a*` + `engineSource=kimi` + exact turn | promotion 到 `kimi:session_*` | 因无 `kimi-pending-*` prefix 跳过 |
+| 同 UUID 但 engine mismatch | resolver=`null` | 仅凭 active tab rebind |
+| same engine、turn mismatch | resolver=`null` | 仅凭 `isProcessing` rebind |
+| canonical target 已 established | 保留原 session，skip promotion | 新 turn 偷绑旧历史 |
+| session hint 后 2ms terminal | settle canonical + provisional | 等 rerender/timer 后只 settle canonical |
+| final assistant text 已显示但无 terminal | 保持 processing / liveness diagnostics | 从正文猜 completed |
+
+### 5. Good / Base / Bad Cases
+
+- Good：Product Home logical id=`01a…`、engine=`kimi`、turn=`kimi-turn-1`；session hint promotion 后 terminal 同 tick 到达，两侧 `isProcessing=false`、`activeTurnId=null`，Sidebar 只保留 canonical row。
+- Base：普通 `kimi-pending-*` 沿既有路径 promotion/settle，行为不变。
+- Bad：把所有 unprefixed active thread 当 pending；并发 session 会被当前 tab selection 偷绑。
+- Bad：看到 assistant text 后立即清 loading；tool/error 尚未 terminal 时会提前结束 turn。
+
+### 6. Tests Required
+
+- Resolver unit：engine-tagged unprefixed Good、engine mismatch、turn mismatch、multiple exact matches active tie-break。
+- Hook regression：session hint 接收 unprefixed exact-turn source并 dispatch `renameThreadId`；同一 `act` 内 canonical terminal 对 canonical/provisional 都调用 `markProcessing(false)` 与 `setActiveTurnId(null)`。
+- Existing guards：established target、finalized mismatch、concurrent Claude pending、prefix-based Kimi/Grok/OpenCode tests继续通过。
+- Gates：focused Vitest、typecheck、target ESLint、runtime contracts、strict OpenSpec 与 `git diff --check`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+if (!threadId.startsWith(`${engine}-pending-`)) return null;
+if (assistantText) markProcessing(threadId, false);
+```
+
+#### Correct
+
+```typescript
+const owner = candidates.find(
+  (thread) =>
+    thread.engineSource === engine &&
+    activeTurnIdByThread[thread.id]?.trim() === turnId.trim(),
+);
+// terminal authority then settles canonical id and exact-turn alias.
+```
+
 ## Forbidden Patterns
 
 - 让 `groupToolItems(...)`、anchor/sticky 计算、final boundary 计算直接重新依赖最热的 live text source。

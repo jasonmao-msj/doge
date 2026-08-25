@@ -1,0 +1,5 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "frontend quality gate"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 verification scope"}
+{"file": "openspec/changes/fix-product-provisional-thread-terminal-settlement/specs/kimi-engine-runtime/spec.md", "reason": "Kimi regression acceptance"}
