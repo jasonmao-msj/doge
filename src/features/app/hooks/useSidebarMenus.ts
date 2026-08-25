@@ -939,9 +939,9 @@ export function useSidebarMenus({
           }
         }
         await onReloadWorkspaceThreads(dialog.workspaceId);
-        replaceProviderContinuationDialog(null);
-        onSelectThread(dialog.workspaceId, result.operation.resultSessionId);
-        // 应用续接目标模型到新会话 composer。
+        // Seed the exact destination owner before navigation. Otherwise the
+        // target selection reload can win the React batch with source-engine
+        // state and leave the new Claude session displaying a Codex model.
         // modelId 优先 catalog entry id（picker 按 id 匹配）；model 是 runtime。
         // 两者皆空时仍回调，由上层按目标 provider catalog 默认/首档补齐，避免「选择模型」空态。
         const destCatalogEntryId =
@@ -956,7 +956,7 @@ export function useSidebarMenus({
           typeof destination.reasoningEffort === "string"
             ? destination.reasoningEffort.trim()
             : "";
-        onProviderContinuationTargetReady?.({
+        await onProviderContinuationTargetReady?.({
           workspaceId: dialog.workspaceId,
           threadId: result.operation.resultSessionId,
           engine: destEngine,
@@ -965,6 +965,8 @@ export function useSidebarMenus({
           modelRuntime: destRuntimeModel || null,
           effort: destEffort || null,
         });
+        replaceProviderContinuationDialog(null);
+        onSelectThread(dialog.workspaceId, result.operation.resultSessionId);
         return;
       }
       const latest = providerContinuationDialogStateRef.current;

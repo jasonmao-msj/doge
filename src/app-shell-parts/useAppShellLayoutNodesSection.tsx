@@ -69,6 +69,7 @@ import {
   type AppShellDomainContextName,
   type AppShellDomainContexts,
 } from "./appShellDomainContexts";
+import { hydrateProviderContinuationTarget } from "./providerContinuationTargetHydration";
 
 const accountConvenienceV1Enabled = isAccountConvenienceV1Enabled();
 
@@ -1304,79 +1305,21 @@ export function useAppShellLayoutNodesSection(
       modelRuntime?: string | null;
       effort: string | null;
     }) => {
-      // 续接成功：把目标供应商模型落到新会话 composer。
-      // picker 按 catalog entry id 匹配；仅传 runtime（MiniMax-M3）会显示「选择模型」。
-      // 解析顺序：catalog entry id → runtime 反查 → default/首档。
-      let resolvedModelId = input.modelId?.trim() || null;
-      const runtimeHint =
-        input.modelRuntime?.trim() || input.modelId?.trim() || null;
-      const effort = input.effort?.trim() || null;
-      const engine = input.engine as
-        | "claude"
-        | "codex"
-        | "kimi"
-        | "grok"
-        | "opencode"
-        | "gemini";
-
-      if (
-        engine === "claude" ||
-        engine === "codex" ||
-        engine === "kimi" ||
-        engine === "grok" ||
-        engine === "opencode"
-      ) {
-        try {
-          const models = await getEngineModels(engine, {
-            providerProfileId: input.providerProfileId,
-            forceRefresh: true,
+      await hydrateProviderContinuationTarget(input, {
+        setActiveEngine,
+        getEngineModels,
+        refreshEngineModels,
+        persistComposerSelectionForThread,
+        onCatalogError: (error) => {
+          addDebugEntry?.({
+            id: `${Date.now()}-provider-continuation-target-catalog-error`,
+            timestamp: Date.now(),
+            source: "error",
+            label: "provider continuation target catalog error",
+            payload: error instanceof Error ? error.message : String(error),
           });
-          void refreshEngineModels(engine, {
-            providerProfileId: input.providerProfileId,
-            forceRefresh: true,
-            phase: "on-demand",
-          });
-          const byCatalogId = resolvedModelId
-            ? models.find((model) => model.id === resolvedModelId)
-            : undefined;
-          if (!byCatalogId && runtimeHint) {
-            const byRuntime = models.find(
-              (model) =>
-                (model.model?.trim() || model.id) === runtimeHint,
-            );
-            if (byRuntime) {
-              resolvedModelId = byRuntime.id;
-            }
-          } else if (byCatalogId) {
-            resolvedModelId = byCatalogId.id;
-          }
-          if (
-            !resolvedModelId ||
-            !models.some((model) => model.id === resolvedModelId)
-          ) {
-            const defaultModel =
-              models.find((model) => model.isDefault) ?? models[0] ?? null;
-            if (defaultModel) {
-              resolvedModelId = defaultModel.id;
-            }
-          }
-        } catch {
-          // catalog 拉取失败时仍尽量用 destination 给的 id/runtime 落盘
-        }
-      }
-
-      if (resolvedModelId || effort) {
-        persistComposerSelectionForThread(input.workspaceId, input.threadId, {
-          modelId: resolvedModelId,
-          effort,
-        });
-      }
-      if (resolvedModelId) {
-        handleSelectModel(resolvedModelId);
-      }
-      if (effort) {
-        setSelectedEffort(effort);
-      }
+        },
+      });
     },
   );
 

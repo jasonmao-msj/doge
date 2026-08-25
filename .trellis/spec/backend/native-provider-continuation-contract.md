@@ -344,3 +344,82 @@ setDialogState({ stage: "preparing", request });
 void prepareNativeProviderContinuation(request);
 // create command 仅由 Dialog 的一次 confirm handler 调用
 ```
+
+## Scenario: Ready Provider Continuation MUST Hydrate Destination Before Navigation
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `useSidebarMenus.confirmProviderContinuation`、`onProviderContinuationTargetReady`、active Engine 切换、per-thread Composer selection 或 continuation ready 后的 catalog reload/navigation。
+- 目标：backend target 已 `ready` 时，目标 Claude/Codex Session 首帧必须消费 frozen destination target；不得短暂或永久继承来源 Session 的 engine/model，也不得因手动修正而创建第二个同 binding Continuation。
+
+### 2. Signatures
+
+```ts
+onProviderContinuationTargetReady?(input: {
+  workspaceId: string;
+  threadId: string;
+  engine: string;
+  providerProfileId: string | null;
+  modelId: string | null;
+  modelRuntime?: string | null;
+  effort: string | null;
+}): void | Promise<void>
+
+hydrateProviderContinuationTarget(input, {
+  setActiveEngine,
+  getEngineModels,
+  refreshEngineModels,
+  persistComposerSelectionForThread,
+  onCatalogError,
+}): Promise<void>
+```
+
+### 3. Contracts
+
+- `ready` flow MUST await workspace catalog reload，then await target hydration，then call `onSelectThread(exactResultSessionId)`；禁止 fire-and-forget target hydration。
+- Target hydration MUST use payload `workspaceId + threadId` as write owner，显式 publish destination engine，并把 normalized model/effort 写入该 target 的 per-thread Composer selection。
+- Destination engine MUST come from frozen continuation snapshot；MUST NOT 只从同一 React batch 内可能 stale 的 `threadsByWorkspace` closure 推断。
+- Target 尚未 active 时 MUST NOT 调用 source/current-thread-scoped `handleSelectModel`、`setSelectedEffort` 或等价 setter。
+- Provider-scoped catalog 成功时按 `catalog id -> runtime model -> default/first` 解析；失败时 MAY 保留 non-empty frozen model id/runtime fallback，但 MUST 记录 diagnostic，MUST NOT 重试 target creation。
+- Active target 的同 engine + same Provider binding model change MUST 走普通 per-thread model update；只有 Engine/Provider binding 真实变化才打开新的 Continuation Dialog。
+
+### 4. Validation & Error Matrix
+
+| 场景 | 必须行为 | 禁止行为 |
+|---|---|---|
+| Codex → Claude operation ready | hydrate Claude engine/model，随后选择 target | 先导航后异步补写 |
+| catalog reload state 尚未 rerender | frozen destination engine 仍生效 | 使用来源 activeEngine |
+| provider model catalog 读取失败 | 保留 frozen non-empty model + diagnostic | 清空模型、blind retry target |
+| target 尚未 active | 只写 exact target selection | 覆盖 source selection |
+| Claude+Doge target 内换 Claude model | in-place model persistence | Claude → Claude second Continuation |
+| hydration Promise pending | Dialog 保持 running，target 不选择 | Canvas 先打开 stale target |
+
+### 5. Good / Base / Bad Cases
+
+- Good：`reload -> await hydrate(exact target) -> select target`，selection hook 首次 reload 即读取完整 target。
+- Base：destination 未冻结 model，catalog default 在 hydration 阶段补齐后再导航。
+- Bad：`onSelectThread(); void onProviderContinuationTargetReady()`；target reload 会先读到空/来源 state。
+- Bad：在 target 尚未 active 时调用 `handleSelectModel(destinationModel)`；该 setter 的 owner 仍是 source Session。
+
+### 6. Tests Required
+
+- `useSidebarMenus.test.tsx` MUST 使用 deferred hydration Promise，断言 resolve 前 `onSelectThread` 零调用，resolve 后 exact target 只选择一次。
+- `providerContinuationTargetHydration.test.ts` MUST 断言 destination engine → catalog load/publish → exact target persistence 的顺序；catalog failure 保留 frozen model 并记录 error。
+- Composer regression MUST 覆盖 active Claude+Doge same-profile model click：调用 `onSelectModel`，不发布 Provider Continuation request。
+- Hot Desktop MUST 覆盖 Codex source → Claude target → ordinary send；target footer 首帧为 Claude，且不会出现第二个 Continuation Dialog。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+onSelectThread(workspaceId, targetThreadId);
+void onProviderContinuationTargetReady?.(targetSnapshot);
+```
+
+#### Correct
+
+```ts
+await onProviderContinuationTargetReady?.(targetSnapshot);
+onSelectThread(workspaceId, targetThreadId);
+```

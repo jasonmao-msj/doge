@@ -99,6 +99,7 @@ React Component
     raw stdout event 与落盘 history：字段可能从 snake_case 变 camelCase、补充 status 或把 Provider error
     包成 synthetic assistant。Adapter MUST 在 live boundary 归一 authoritative rejection 并立即 settle；
     history scanner 只负责 recovery evidence，不能替代前台终态。process exit/EOF 仍只属于 cleanup。
+30. 异步 mutation 创建新 Session/Entity 后若立即导航，必须先以 exact target identity 完成 destination state hydration，再选择目标。禁止先导航再 fire-and-forget 补写，也禁止用仍绑定 source active owner 的 setter 写 target；catalog/reducer dispatch 完成不等于 React closure 已看到新 row。
 
 ## 常见失败模式
 

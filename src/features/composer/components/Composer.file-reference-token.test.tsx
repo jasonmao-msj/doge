@@ -234,6 +234,21 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
       />
       <button
         type="button"
+        data-testid="select-claude-token-matrix-target"
+        onClick={() =>
+          onExecutionTargetChange?.({
+            engine: "claude",
+            providerProfileId: "doge-token-matrix",
+            modelCatalogEntryId: "claude-opus-4-8",
+            model: "claude-opus-4-8",
+            reasoning: null,
+            providerProfileNameSnapshot: "Doge",
+            providerProfileSource: "managed",
+          })
+        }
+      />
+      <button
+        type="button"
         data-testid="select-product-kimi-model"
         onClick={() =>
           onExecutionTargetChange?.({
@@ -1537,6 +1552,41 @@ describe("Composer file reference token", () => {
         runtimeCapabilityFingerprint: null,
       },
     });
+    unsubscribe();
+  });
+
+  it("updates a Claude continuation model in place for the same Doge binding", () => {
+    const continuation = vi.fn();
+    const unsubscribe = subscribeProviderContinuationDialogRequests(continuation);
+    const onSelectModel = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={() => {}}
+        selectedEngine="claude"
+        providerProfileId="doge-token-matrix"
+        selectedModelId="claude-sonnet-4-8"
+        models={[
+          {
+            id: "claude-sonnet-4-8",
+            displayName: "Claude Sonnet 4.8",
+            model: "claude-sonnet-4-8",
+            providerProfileId: "doge-token-matrix",
+          },
+          {
+            id: "claude-opus-4-8",
+            displayName: "Claude Opus 4.8",
+            model: "claude-opus-4-8",
+            providerProfileId: "doge-token-matrix",
+          },
+        ]}
+        onSelectModel={onSelectModel}
+      />,
+    );
+
+    fireEvent.click(view.getByTestId("select-claude-token-matrix-target"));
+
+    expect(onSelectModel).toHaveBeenCalledWith("claude-opus-4-8");
+    expect(continuation).not.toHaveBeenCalled();
     unsubscribe();
   });
 

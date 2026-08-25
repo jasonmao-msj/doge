@@ -1,0 +1,8 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/backend/native-provider-continuation-contract.md", "reason": "Provider Continuation ready/navigation contract"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "per-thread selection convergence and source isolation"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "async ordering and stale closure boundaries"}
+{"file": "src/features/app/hooks/useSidebarMenus.ts", "reason": "ready callback ordering owner"}
+{"file": "src/app-shell-parts/useAppShellLayoutNodesSection.tsx", "reason": "destination target hydration owner"}

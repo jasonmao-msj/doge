@@ -1681,3 +1681,69 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 50: 修复跨引擎 Claude 续接目标水合
+
+**Date**: 2026-08-24
+**Task**: 修复跨引擎 Claude 续接目标水合
+**Branch**: `codex/fix-cross-engine-claude-continuation`
+
+### Summary
+
+将 Provider Continuation ready 流程改为 destination-first awaited hydration：显式收敛目标 engine、写 exact target per-thread model/effort 后再导航；移除 source active-session setter 补写。L3 自动门禁与 debug App Codex→Claude→普通发送实测通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2f4f03839` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 51: 同步主分支并解决续接 PR 冲突
+
+**Date**: 2026-08-24
+**Task**: 同步主分支并解决续接 PR 冲突
+**Branch**: `codex/fix-cross-engine-claude-continuation`
+
+### Summary
+
+在 PR #21 合并后语义合并最新 main，保留 provisional terminal 与 Provider Continuation 两套 OpenSpec/ADR/Trellis 事实，并将冲突的 session journal 校准为 49/50。联合 L3 回归 9 files/283 tests、typecheck、runtime/docs/OpenSpec/diff gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f1f38451e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
