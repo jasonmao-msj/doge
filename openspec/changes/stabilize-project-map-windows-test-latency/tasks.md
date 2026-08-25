@@ -11,6 +11,6 @@
 
 ## 3. Delivery and artifacts
 
-- [ ] 3.1 commit、Trellis record、push branch并创建 PR。
-- [ ] 3.2 dispatch release workflow：Windows unsigned NSIS + macOS aarch64/x86_64 ad-hoc DMG。
-- [ ] 3.3 由 `gpt-5.6-luna` subagent 监控 release workflow terminal state并提取 artifacts。
+- [x] 3.1 commit、Trellis record、push branch并创建 PR #26。
+- [x] 3.2 dispatch release workflow：Windows unsigned NSIS + macOS aarch64/x86_64 ad-hoc DMG。
+- [x] 3.3 由 `gpt-5.6-luna` subagent 监控 release workflow terminal state并提取 artifacts。
