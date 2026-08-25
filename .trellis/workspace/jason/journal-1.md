@@ -1747,3 +1747,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 52: 修复 Messages 边界回归并恢复 CI
+
+**Date**: 2026-08-24
+**Task**: 修复 Messages 边界回归并恢复 CI
+**Branch**: `codex/fix-messages-boundary-regressions`
+
+### Summary
+
+偿还 35 条新增 Messages dependency edge，将 conversation/runtime/file/task/shared primitives 迁至 canonical neutral owners，并通过 host composition 保留 Prompt Distill 与 History Fold；boundary 恢复 inbound=0、outbound=40/40、new=0，L3 focused tests、lint、typecheck、doctor、docs、branding、runtime contracts 与 OpenSpec strict 均通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c3785467a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
