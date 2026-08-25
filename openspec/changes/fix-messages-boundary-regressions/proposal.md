@@ -13,7 +13,7 @@
 - 将 Prompt Distill 与 Multi-Agent History Fold 改为 host composition/slot：Messages 只发布 intent 或消费 render slot，不直接 import peer UI feature。
 - 仅对稳定的 Messages public capability 通过 `src/features/messages/index.ts` 暴露，禁止 external deep import。
 - 删除无行为作用的 peer-store test coupling，并把 exact outbound baseline 收缩到修复后的真实 graph；不得新增 baseline exception。
-- 修复 Windows test runner 的两类 source portability 误报：`node:path.relative()` 的 `\\` path 必须先归一为 `/` 再匹配 provenance allowlist；CSS source 的 CRLF/CR 必须先归一为 LF 再做 exact assertion。
+- 修复 Windows test runner 的两类 source portability 误报：`node:path.relative()` 的 `\\` path 必须先归一为 `/` 再匹配 provenance allowlist；CSS source 的 CRLF/CR 必须经 shared test helper `normalizeSourceText()` 归一为 LF 再做 exact assertion。
 - 补充/保持 boundary checker、streaming、history projection、prompt distill composition 与 timeline fold focused regression。
 
 ## Scope

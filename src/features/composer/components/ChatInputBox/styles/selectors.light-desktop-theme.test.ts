@@ -1,12 +1,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { normalizeSourceText } from "@/test/sourceText";
 
-function normalizeLineEndings(value: string): string {
-  return value.replace(/\r\n?/g, "\n");
-}
-
-const selectorsCss = normalizeLineEndings(
+const selectorsCss = normalizeSourceText(
   readFileSync(
     fileURLToPath(new URL("./selectors.css", import.meta.url)),
     "utf8",
@@ -14,12 +11,6 @@ const selectorsCss = normalizeLineEndings(
 );
 
 describe("selector light desktop theme guards", () => {
-  it("normalizes Windows CSS line endings before exact source assertions", () => {
-    expect(normalizeLineEndings("selector {\r\n  color: red;\r\n}\r\n")).toBe(
-      "selector {\n  color: red;\n}\n",
-    );
-  });
-
   it("applies the same light dropdown surface style to all desktop platforms", () => {
     expect(selectorsCss).toContain(
       ':root[data-theme="light"] .app.layout-desktop .selector-dropdown',
