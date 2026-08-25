@@ -1,0 +1,6 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 verification selection"}
+{"file": ".trellis/spec/backend/native-provider-continuation-contract.md", "reason": "continuation acceptance matrix"}
+{"file": "src/features/app/hooks/useSidebarMenus.test.tsx", "reason": "async ready ordering regression"}
+{"file": "src/app-shell-parts/useAppShellLayoutNodesSection.test.ts", "reason": "target hydration regression"}

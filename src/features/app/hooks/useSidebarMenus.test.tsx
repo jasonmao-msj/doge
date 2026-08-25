@@ -1207,6 +1207,7 @@ describe("useSidebarMenus", () => {
 
   it("creates a provider continuation from a native thread", async () => {
     const catalogRefresh = createDeferred<void>();
+    const targetHydration = createDeferred<void>();
     prepareNativeProviderContinuationMock.mockResolvedValueOnce({
       status: "prepared",
       fidelity: "degraded",
@@ -1225,6 +1226,9 @@ describe("useSidebarMenus", () => {
     const handlers = {
       ...createHandlers(),
       onReloadWorkspaceThreads: vi.fn(() => catalogRefresh.promise),
+      onProviderContinuationTargetReady: vi.fn(
+        () => targetHydration.promise,
+      ),
       codexProviderProfiles: [
         {
           id: "provider-b",
@@ -1305,6 +1309,23 @@ describe("useSidebarMenus", () => {
 
     await act(async () => {
       catalogRefresh.resolve();
+    });
+
+    await waitFor(() => {
+      expect(handlers.onProviderContinuationTargetReady).toHaveBeenCalledWith({
+        workspaceId: "ws-1",
+        threadId: "target-1",
+        engine: "codex",
+        providerProfileId: "provider-b",
+        modelId: null,
+        modelRuntime: null,
+        effort: null,
+      });
+    });
+    expect(handlers.onSelectThread).not.toHaveBeenCalled();
+
+    await act(async () => {
+      targetHydration.resolve();
       await confirmationPromise;
     });
 
@@ -1982,6 +2003,64 @@ describe("useSidebarMenus", () => {
       "ws-1",
       "claude:target-2",
     );
+  });
+
+  it("keeps the ready dialog recoverable when destination hydration fails", async () => {
+    createNativeProviderContinuationMock.mockResolvedValueOnce({
+      status: "ready",
+      fidelity: "strong",
+      operation: {
+        phase: "ready",
+        resultSessionId: "claude:target-hydration-retry",
+      },
+    });
+    const handlers = {
+      ...createHandlers(),
+      onProviderContinuationTargetReady: vi.fn(async () => {
+        throw new Error("destination hydration failed");
+      }),
+      getThreadSummary: () => ({
+        id: "codex-source-hydration",
+        name: "Source",
+        updatedAt: 1,
+        threadKind: "native" as const,
+        engineSource: "codex" as const,
+        providerProfileId: "doge-token-matrix",
+      }),
+    };
+    const { result } = renderHook(() => useSidebarMenus(handlers));
+
+    act(() => {
+      requestProviderContinuationDialog({
+        workspaceId: "ws-1",
+        sourceSessionId: "codex-source-hydration",
+        destination: {
+          engine: "claude",
+          providerProfileId: "doge-token-matrix",
+          modelCatalogEntryId: "claude-opus-4-8",
+          model: "claude-opus-4-8",
+          providerProfileNameSnapshot: "Doge",
+          providerProfileSource: "managed",
+          runtimeCapabilityFingerprint: "echo-checksum",
+        },
+      });
+    });
+    await waitFor(() => {
+      expect(result.current.providerContinuationDialogState?.stage).toBe(
+        "confirm",
+      );
+    });
+
+    await act(async () => {
+      await result.current.confirmProviderContinuation();
+    });
+
+    expect(handlers.onSelectThread).not.toHaveBeenCalled();
+    expect(result.current.providerContinuationDialogState).toMatchObject({
+      stage: "error",
+      retryAction: "execute",
+      technicalDetail: "destination hydration failed",
+    });
   });
 
   it("keeps a continuation visible while disabling a missing source link", () => {
