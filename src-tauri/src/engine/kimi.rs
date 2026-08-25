@@ -740,6 +740,22 @@ mod tests {
         assert!(session.interrupted_turns.lock().await.is_empty());
     }
 
+    #[test]
+    fn managed_binary_override_pins_spawn_binary() {
+        let session = KimiSession::new(
+            "workspace-managed".to_string(),
+            std::env::temp_dir(),
+            Some(crate::engine::EngineConfig {
+                bin_path: Some("bundled-kimi".to_string()),
+                ..Default::default()
+            }),
+        );
+
+        // The account toolchain pins the bundled binary through EngineConfig;
+        // build_command must prefer it over PATH lookup.
+        assert_eq!(session.bin_path.as_deref(), Some("bundled-kimi"));
+    }
+
     #[cfg(unix)]
     #[tokio::test]
     async fn failed_interrupt_result_keeps_turn_owner_registered() {

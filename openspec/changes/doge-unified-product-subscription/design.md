@@ -7,7 +7,7 @@
 1. Native 从 generic checkout catalog 读取 `group_platform=composite` 的上架 plan。
 2. Native 从 subscription summary 判断该账号是否存在与 product plan `group_id` 匹配的 active subscription。
 3. 无 entitlement 时，Gate 直接消费上游 plan/payment 字段完成 checkout；有 entitlement 时进入 idempotent preparation。
-4. preparation 先完成 product engine provisioning：Codex/Claude Code 通过现有 Account toolchain resolver 选择已验证 external 或 bundled binary，旧 external 版本的 choice 自动选择 bundled；Kimi CLI 仅在缺失时使用现有 typed installer 安装并再次 version-verify，已有安装不自动升级。任一失败保持 Gate 与 retry，不能先写 provider config 假装 ready。
+4. preparation 先完成 product engine provisioning：Codex/Claude/Kimi 通过现有 Account toolchain resolver 选择已验证 external 或 bundled binary（2026-08-25 起 Kimi bundled 产物进入 bundled-engines manifest，不再走 npm 在线自动安装），旧 external 版本的 choice 自动选择 bundled；任一失败保持 Gate 与 retry，不能先写 provider config 假装 ready。
 5. preparation 查找或创建绑定该 Composite group 的 Doge managed key，OS vault 是 secret 的持久化事实源；renderer 不接触 secret。Kimi CLI 运行时若无法通过 env 接收 key，由 Native 在隔离的 `KIMI_CODE_HOME` 生成 `0600` runtime config。
    - Kimi 的 Doge registry target 是 JSON，不得落入 Codex TOML verifier；managed merge 必须替换旧 provider entry 并移除 `apiKey/api_key/token/secret` 等 legacy 明文字段，再由 launch adapter 注入。
 6. Native 用该 credential 读取 `/v1/models`，输出去重后的 product model catalog，并向已支持的本地 engine 投影 Token Matrix provider configuration。

@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { createManagedEngineToolchainClientV1 } from "./managedEngineToolchain";
+import {
+  createManagedEngineToolchainClientV1,
+  resolveManagedToolchainEngineIdV1,
+} from "./managedEngineToolchain";
 
 function ready(source: "bundled" | "external") {
   return {
@@ -28,6 +31,18 @@ function choiceRequired() {
 }
 
 describe("managed engine toolchain client", () => {
+  it.each([
+    ["codex", "codex"],
+    ["claude", "claude-code"],
+    ["kimi", "kimi"],
+  ] as const)("maps vendor engine %s to %s", (engineId, expected) => {
+    expect(resolveManagedToolchainEngineIdV1(engineId)).toBe(expected);
+  });
+
+  it("leaves generic npm engines outside the managed toolchain", () => {
+    expect(resolveManagedToolchainEngineIdV1("grok")).toBeNull();
+  });
+
   it("accepts an automatic bundled selection without storage", async () => {
     const resolve = vi.fn(async () => ready("bundled"));
     const client = createManagedEngineToolchainClientV1({ resolve, storage: null });

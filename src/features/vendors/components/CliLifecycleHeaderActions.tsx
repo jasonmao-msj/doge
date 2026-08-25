@@ -12,6 +12,7 @@ import { useCliVersionStatus } from "../hooks/useCliVersionStatus";
 import { useCliInstallLifecycle } from "@/features/settings/hooks/useCliInstallLifecycle";
 import { CliInstallerPanel } from "@/features/settings/components/CliInstallerPanel";
 import { resolveCliLifecycleButtons } from "./cliLifecycleButtons";
+import { resolveManagedToolchainEngineIdV1 } from "@/features/account/runtime/managedEngineToolchain";
 
 type CliLifecycleContextValue = {
   engine: CliInstallEngine;
@@ -90,11 +91,20 @@ export function CliLifecycleProvider({
   const latestVersion = normalizeLocalVersion(status?.latestVersion);
   const updateAvailable = status?.updateAvailable === true;
   const nodeOk = status?.nodeOk !== false;
+  const isManagedEngine = resolveManagedToolchainEngineIdV1(engine) !== null;
   const visibility = status
-    ? resolveCliLifecycleButtons({
+    ? isManagedEngine
+      ? {
+          // Managed engines are provisioned from the verified toolchain. The
+          // legacy npm installer must not mutate that managed runtime.
+          showInstall: false,
+          showUpgrade: false,
+          showUninstall: false,
+        }
+      : resolveCliLifecycleButtons({
         installed: status.installed,
         updateAvailable: status.updateAvailable,
-      })
+        })
     : {
         showInstall: false,
         showUpgrade: false,

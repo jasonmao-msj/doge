@@ -1,7 +1,7 @@
 # Account Convenience Native Contract
 
 > **Current product calibration (2026-08-23):** OpenSpec `require-account-engine-subscription-onboarding` 已把 Account 从 Local Mode 之上的可选增值层改为 main-window mandatory gate。下文既有 broker/vault/secret-isolation contracts 继续有效；“Account failure 不 gate Local Mode”“用户选择 existing API Key”“展示配置 diff/bubble”只作为旧 change 的历史行为，不得用于当前产品主链。`doge-unified-product-subscription` 另为 macOS debug 增加 compile-time local development vault exception；Release 仍只使用 OS credential vault。
-> **Unified product cleanup (2026-08-24):** shipping renderer 已删除 legacy `AccountAppGate`、engine-scoped subscription/usage panels、engine checkout client/preferences/activation wrapper；`router.tsx` 只能渲染 `ProductAccountAppGate`。下文 `Mandatory engine subscription onboarding`、`In-App second managed engine acquisition` 等章节仅保留历史设计证据，不得恢复对应 UI/IPC consumer。当前产品只保留 `account_engine_v1_toolchain` 作为 Product Gate 的 Codex/Claude bundled/external provisioning owner。
+> **Unified product cleanup (2026-08-24):** shipping renderer 已删除 legacy `AccountAppGate`、engine-scoped subscription/usage panels、engine checkout client/preferences/activation wrapper；`router.tsx` 只能渲染 `ProductAccountAppGate`。下文 `Mandatory engine subscription onboarding`、`In-App second managed engine acquisition` 等章节仅保留历史设计证据，不得恢复对应 UI/IPC consumer。当前产品只保留 `account_engine_v1_toolchain` 作为 Product Gate 的 Codex/Claude/Kimi bundled/external provisioning owner。
 
 ## Scenario: Local Mode 之上的 token2api Account 增值层
 
@@ -267,6 +267,7 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 - 无 external 时选 bundled；external version `>= bundled` 时静默选 external；external `< bundled` 时要求一次 closed choice。bundled choice 不得覆盖/卸载 external；external choice必须通过 protocol verifier。
 - renderer 不接收 executable absolute path、archive URL、command preview、stdout/stderr；只接收 closed status/source/version。版本选择 generation 失效后不得 prepare/activate stale target。
 - `account_engine_v1_toolchain` 通过 manifest/path/`--version` verification 后，才可将 selected binary 写入当前进程 `AccountRuntime.managed_engine_binaries`。`account_engine_v1_activate` 必须只读取同一 closed engine id 的该 mapping，重新调用 `EngineManager::refresh_engine_status_for_binary`，成功后调用 `set_active_engine_after_account_toolchain_verification`；不得将 renderer 提供的路径写入 global config，也不得依赖可被后台 PATH/config detection 覆盖的 `engine_statuses` cache。
+- Settings 的 Kimi lifecycle status MUST 读取同一 `account_engine_v1_toolchain("kimi", null)` managed result，并以 verified bundled/external version 映射 `installed`；不得回落到 generic `cli_version_status` 的 PATH/npm probe，也不得为 managed Kimi 暴露 npm install/update action。
 - Tauri `beforeDevCommand` 必须先执行 `prepare:bundled-engines`。debug `resource_dir/bundled-engines/current` 必须是 prepared source 的 independent real tree；不得使用指向 source 的 symlink。Tauri 后续 resources copy 会跟随 symlink，将 source/destination 解析为同一文件并截断 bundled manifest/binaries。空或非法 runtime manifest 必须阻断 frontend/native startup。
 - Codex bundled sibling resources/PATH 必须随 launch 保留；Claude 使用 standalone executable。managed session 使用 resolver path，manual/local engine path 保持原行为。
 - Claude selected binary MUST 只写 `ClaudeSessionManager.provider_configs["doge-token-matrix"]`；禁止写 `EngineManager.engine_configs[Claude]` 或覆盖 `default_config`。普通 turn、manual compact 与 provider continuation 都通过 provider-scoped session 取得该 path；daemon send/compact 对 account provider fail closed。
@@ -302,6 +303,7 @@ if (!pattern.test(value) || isForbiddenAccountValueV1(value)) {
 - Packaging：tauri Windows config/produced installer证明 `currentUser`，普通双击安装/启动后完成 Codex/Claude prepare；管理员运行不作为验收证据。
 - Dev resources：`scripts/tauri-dev-resources.test.mjs` MUST 覆盖 full tree staging、stale replacement、legacy symlink replacement、missing/invalid manifest rejection；在 macOS debug tree 运行 Codex/Claude `--version` 作为 actual binary evidence。
 - Activation boundary：`src/services/tauri/accountEngine.test.ts` MUST 锁定 `account_engine_v1_activate` + `{ engineId }`；`src/services/accountEngineActivation.test.ts` MUST 锁定 AccountGate 使用 account-scoped command；`EngineManager` Rust test MUST 证明 verified activation ignores unavailable global status。
+- Kimi Settings lifecycle：`useCliVersionStatus.test.ts` MUST 证明 managed toolchain status 映射为 installed version，且不调用 generic `getCliVersionStatus`；`CliLifecycleHeaderActions.test.tsx` MUST 证明 managed Kimi 不显示 npm install/update action。
 
 ### 6. Good / Base / Bad Cases
 
@@ -986,14 +988,14 @@ if file.label == "Doge Kimi provider registry" {
 - Native model wire：`ProductModelWire { id, display_name?, model?, compatible_engines?, capabilities? }`；renderer view=`{ id, display_name, model, compatible_engines, capabilities }`。
 - Read-only refresh command：`account_product_v1_models() -> { ok, value: { models[], fetched_at } }`；必须限制 main window、读取当前 account scope 的 managed key、网络请求前释放 account state lock。
 - Frontend refresh owner：`refreshProductModelsV1({ force? })`；30s freshness、same-subscription single in-flight、last-known-good、focus/visibility + 60s visible fallback。
-- Product toolchain owner：`prepareProductEngineProvisioningV1({ onEngine? })`；Codex/Claude Code 复用 `account_engine_v1_toolchain`，Kimi 复用 `cli_version_status / cli_install_plan / cli_install_run`。
+- Product toolchain owner：`prepareProductEngineProvisioningV1({ onEngine? })`；Codex/Claude Code/Kimi 复用 `account_engine_v1_toolchain`（Kimi bundled 产物来自 MoonshotAI/kimi-code GitHub release zip）。
 - Compatibility evidence：`engine × product model × real CLI payload`，至少覆盖 Codex Responses Agent payload、Claude Code Messages payload、Kimi stream-json Chat payload。
 - Current OpenAI price allowlist：`gpt-5.6-luna + gpt-5.6-sol + gpt-5.6-terra` 共享 `Doge 统一定价` GPT rule；三者保留 exact requested model identity。
 
 ### 3. Contracts
 
 - Home create-session、Shared Next Turn、Existing Native Session 的修改入口与 Account Center MUST 从同一个 refreshable product snapshot 读取 entitlement catalog，并复用同一个 compatibility helper 求 selected engine rows。product-ready 普通会话不得回落 legacy `ModelSelect` 的 Grok/OpenCode/provider/channel UI。
-- `ProductAccountAppGate.prepare` MUST 先完成 toolchain owner 再调用 `account_product_v1_prepare`。Codex/Claude `choiceRequired` 在产品自动准备中选择 bundled；Kimi 已安装时不得重装/升级，缺失时必须 plan.canRun + installer.ok + version installed 三段闭环。任一失败不得写 provider config 或进入 ready。
+- `ProductAccountAppGate.prepare` MUST 先完成 toolchain owner 再调用 `account_product_v1_prepare`。Codex/Claude/Kimi `choiceRequired` 在产品自动准备中选择 bundled；Kimi 与 Codex/Claude 一样从 bundled-engines manifest 解析（external 缺失选 bundled、external 更新静默复用），缺失时不得回退 npm 在线安装。任一失败不得写 provider config 或进入 ready。
 - Native MUST preserve upstream order and separate catalog `id`、user `display_name`、callable `model`。`model/runtime_model` 缺失时回退公开 `id`；禁止从 display name 或 admin-only account mapping 猜调用名。
 - `compatible_engines` 缺失时使用 stable family fallback：GPT/OpenAI→Codex、Claude/Anthropic→Claude Code、Kimi/Moonshot/K3→Kimi CLI、豆包/Ark Coding→三种 managed adapter；unknown family fail closed。显式空/unknown-only集合时 row 不可选。`capabilities` 有 positive conversation value 时优先；image/audio/realtime/embedding-only row必须过滤，legacy catalog用 bounded negative heuristic。
 - 目录刷新 pending/error MUST 保留 last-known-good；成功刷新删除当前 model 时，在下一次发送前按同一 target repair contract 原子收敛。

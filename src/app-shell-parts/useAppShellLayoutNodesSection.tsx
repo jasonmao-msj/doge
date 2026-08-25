@@ -12,8 +12,11 @@ import { isAccountConvenienceV1Enabled } from "../features/account/runtime/featu
 import { managedEngineIdForRuntimeV1 } from "../features/account/runtime/engineEntitlementStore";
 import {
   requestAccountEngineSwitchV1,
+  publishAccountEngineReadyV1,
+  subscribeAccountEngineSwitchV1,
   subscribeAccountEngineReadyV1,
 } from "../features/account/runtime/engineSwitchSignal";
+import { activateAccountEngineV1 } from "../services/accountEngineCommands";
 import { useProjectMapDataset } from "../features/project-map/hooks/useProjectMapDataset";
 import {
   buildIntentCanvasContextAttachment,
@@ -804,6 +807,42 @@ export function useAppShellLayoutNodesSection(
       threadsByWorkspace,
     ],
   );
+  useEffect(() => {
+    let disposed = false;
+    let switchGeneration = 0;
+    let switchQueue = Promise.resolve();
+    const unsubscribe = subscribeAccountEngineSwitchV1((intent) => {
+      const targetEngineId = intent.targetEngineId;
+      if (targetEngineId === null) return;
+      const generation = ++switchGeneration;
+      switchQueue = switchQueue
+        .catch(() => undefined)
+        .then(async () => {
+          if (disposed || generation !== switchGeneration) return;
+          await activateAccountEngineV1(targetEngineId);
+          if (disposed || generation !== switchGeneration) return;
+          publishAccountEngineReadyV1({
+            engineId: targetEngineId,
+            openNewConversation: intent.openNewConversation,
+          });
+        })
+        .catch((error: unknown) => {
+          if (disposed || generation !== switchGeneration) return;
+          addDebugEntry?.({
+            id: `${Date.now()}-account-engine-switch-error`,
+            timestamp: Date.now(),
+            source: "error",
+            label: "account engine/switch error",
+            payload: error instanceof Error ? error.message : String(error),
+          });
+        });
+    });
+    return () => {
+      disposed = true;
+      switchGeneration += 1;
+      unsubscribe();
+    };
+  }, [addDebugEntry]);
   useEffect(() => {
     let disposed = false;
     const unsubscribe = subscribeAccountEngineReadyV1((intent) => {

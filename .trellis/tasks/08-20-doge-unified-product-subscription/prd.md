@@ -41,7 +41,7 @@
 - 套餐卡直接消费上游 plan 返回的 `name`、`price`、`description` 等展示字段；客户端不硬编码“模型 / 目录 / 配置”等能力清单。
 - Gate 主标题下不重复展示套餐卖点；套餐说明仅由卡片中的上游 `description` 承载。
 - 支付成功后自动开通套餐包含的全部模型能力。
-- product prepare 必须先确保 Codex、Claude Code、Kimi CLI 可执行：前两者优先使用已验证 external 或内置 bundle，Kimi 仅在缺失时自动安装；安装/验证失败不得进入 ready。
+- product prepare 必须先确保 Codex、Claude Code、Kimi CLI 可执行：三者均优先使用已验证 external 或内置 bundle（2026-08-25 起 Kimi 不再走 npm 在线自动安装）；验证失败不得进入 ready。
 - Account Gate 从 engine-scoped entitlement 升级为 product-scoped entitlement；启动主链不再要求用户先选择引擎。
 - 对话框点击当前模型入口后，右侧滑出 engine/model 组合选择面板。
 - 组合面板采用 Doge 原生右侧栏视觉，不使用悬浮卡片；打开时占据固定右侧区域，主内容同步让位。

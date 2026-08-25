@@ -31,7 +31,7 @@ function renderHeader(
     updateAvailable: boolean;
     installed?: boolean;
   } | null,
-  options?: { loading?: boolean },
+  options?: { loading?: boolean; engine?: "claude" | "codex" | "kimi" | "grok" },
 ) {
   useCliVersionStatusMock.mockReturnValue({
     status: status
@@ -49,7 +49,7 @@ function renderHeader(
   });
 
   render(
-    <CliLifecycleProvider engine="claude" active>
+    <CliLifecycleProvider engine={options?.engine ?? "claude"} active>
       <CliLifecycleHeaderActions />
     </CliLifecycleProvider>,
   );
@@ -76,7 +76,7 @@ describe("CliLifecycleHeaderActions", () => {
       localVersion: "2.0.52 (Claude Code)",
       latestVersion: "2.0.53",
       updateAvailable: true,
-    });
+    }, { engine: "grok" });
 
     expect(screen.getByText("→ 2.0.53")).toBeTruthy();
     expect(
@@ -126,5 +126,24 @@ describe("CliLifecycleHeaderActions", () => {
     });
 
     expect(screen.getByText("settings.cliVersionNotInstalled")).toBeTruthy();
+  });
+
+  it.each([
+    ["Codex", "codex", "0.147.0"],
+    ["Claude", "claude", "2.1.233"],
+    ["Kimi", "kimi", "0.38.0"],
+  ] as const)("does not expose the npm installer for managed %s", (_label, engine, version) => {
+    renderHeader(
+      {
+        localVersion: version,
+        latestVersion: null,
+        updateAvailable: false,
+      },
+      { engine },
+    );
+
+    expect(screen.getByText("settings.cliVersionLabel")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "settings.cliInstallLatest" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "settings.cliUpdateLatest" })).toBeNull();
   });
 });

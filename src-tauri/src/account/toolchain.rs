@@ -91,7 +91,7 @@ pub(super) async fn resolve(
     choice: Option<ToolchainChoice>,
     settings: &AppSettings,
 ) -> Result<ToolchainResolution, ToolchainError> {
-    if !matches!(engine_id, "codex" | "claude-code") {
+    if !matches!(engine_id, "codex" | "claude-code" | "kimi") {
         return Err(ToolchainError::UnsupportedEngine);
     }
     let bundle_root = resource_dir.join(BUNDLED_ENGINE_RESOURCE_DIR);
@@ -189,6 +189,7 @@ fn external_binary(engine_id: &str, settings: &AppSettings) -> Option<PathBuf> {
     match engine_id {
         "codex" => find_cli_binary("codex", settings.codex_bin.as_deref()),
         "claude-code" => find_cli_binary("claude", settings.claude_bin.as_deref()),
+        "kimi" => find_cli_binary("kimi", settings.kimi_bin.as_deref()),
         _ => None,
     }
 }

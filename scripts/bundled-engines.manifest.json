@@ -46,6 +46,29 @@
           "executable": "claude.exe"
         }
       }
+    },
+    "kimi": {
+      "version": "0.38.0",
+      "variants": {
+        "aarch64-apple-darwin": {
+          "url": "https://github.com/MoonshotAI/kimi-code/releases/download/@moonshot-ai%2Fkimi-code%400.38.0/kimi-code-darwin-arm64.zip",
+          "sha256": "48f534fcbf2d42c0cf80334c1c89e8253d4c198a149980e234b6e927c2759fda",
+          "archive": "zip",
+          "executable": "kimi"
+        },
+        "x86_64-apple-darwin": {
+          "url": "https://github.com/MoonshotAI/kimi-code/releases/download/@moonshot-ai%2Fkimi-code%400.38.0/kimi-code-darwin-x64.zip",
+          "sha256": "6fe3a3b775bd75c91da1e77a159d8e915c55f60e945b18e7074c63701d316554",
+          "archive": "zip",
+          "executable": "kimi"
+        },
+        "x86_64-pc-windows-msvc": {
+          "url": "https://github.com/MoonshotAI/kimi-code/releases/download/@moonshot-ai%2Fkimi-code%400.38.0/kimi-code-win32-x64.zip",
+          "sha256": "80e4de3f2bd7c33ba10cfe3c2282492b0758fae9887537f4ff79ec2022957004",
+          "archive": "zip",
+          "executable": "kimi.exe"
+        }
+      }
     }
   }
 }

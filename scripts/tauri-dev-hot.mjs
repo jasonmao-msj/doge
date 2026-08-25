@@ -5,6 +5,13 @@ import { fileURLToPath } from "node:url";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const repoRoot = path.resolve(path.dirname(scriptPath), "..");
+const tauriCliScriptPath = path.resolve(
+  repoRoot,
+  "node_modules",
+  "@tauri-apps",
+  "cli",
+  "tauri.js",
+);
 
 export function findConflictingPackagedDogeProcesses(psOutput) {
   return String(psOutput)
@@ -52,10 +59,24 @@ export function assertNoConflictingPackagedDogeApp() {
   );
 }
 
+export function getTauriSpawnSpec(platform = process.platform, args = []) {
+  if (platform === "win32") {
+    return {
+      command: process.execPath,
+      args: [tauriCliScriptPath, "dev", ...args],
+    };
+  }
+
+  return {
+    command: "tauri",
+    args: ["dev", ...args],
+  };
+}
+
 export function startTauriDev(args = process.argv.slice(2)) {
   assertNoConflictingPackagedDogeApp();
-  const tauriBin = process.platform === "win32" ? "tauri.cmd" : "tauri";
-  const child = spawn(tauriBin, ["dev", ...args], {
+  const { command, args: spawnArgs } = getTauriSpawnSpec(process.platform, args);
+  const child = spawn(command, spawnArgs, {
     cwd: repoRoot,
     env: process.env,
     stdio: "inherit",

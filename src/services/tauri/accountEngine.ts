@@ -6,3 +6,7 @@ export function resolveAccountEngineToolchainV1(
 ): Promise<unknown> {
   return invoke("account_engine_v1_toolchain", { engineId, choice });
 }
+
+export function activateAccountEngineV1(engineId: string): Promise<void> {
+  return invoke("account_engine_v1_activate", { engineId });
+}

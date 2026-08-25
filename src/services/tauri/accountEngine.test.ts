@@ -5,6 +5,7 @@ const tauri = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: tauri.invoke }));
 
 import {
+  activateAccountEngineV1,
   resolveAccountEngineToolchainV1,
 } from "./accountEngine";
 
@@ -21,6 +22,16 @@ describe("account engine Tauri commands", () => {
     expect(tauri.invoke).toHaveBeenCalledWith(
       "account_engine_v1_toolchain",
       { engineId: "codex", choice: "bundled" },
+    );
+  });
+
+  it("activates a verified account engine through the native command", async () => {
+    tauri.invoke.mockResolvedValue(undefined);
+
+    await expect(activateAccountEngineV1("codex")).resolves.toBeUndefined();
+    expect(tauri.invoke).toHaveBeenCalledWith(
+      "account_engine_v1_activate",
+      { engineId: "codex" },
     );
   });
 });

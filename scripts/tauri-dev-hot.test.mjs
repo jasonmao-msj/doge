@@ -1,6 +1,34 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { findConflictingPackagedDogeProcesses } from "./tauri-dev-hot.mjs";
+import path from "node:path";
+import {
+  findConflictingPackagedDogeProcesses,
+  getTauriSpawnSpec,
+} from "./tauri-dev-hot.mjs";
+
+test("launches the Tauri JavaScript entrypoint directly on Windows", () => {
+  const spec = getTauriSpawnSpec("win32", ["--help"]);
+
+  assert.equal(spec.command, process.execPath);
+  assert.deepEqual(spec.args, [
+    path.resolve(
+      process.cwd(),
+      "node_modules",
+      "@tauri-apps",
+      "cli",
+      "tauri.js",
+    ),
+    "dev",
+    "--help",
+  ]);
+});
+
+test("uses the tauri executable on non-Windows platforms", () => {
+  assert.deepEqual(getTauriSpawnSpec("darwin"), {
+    command: "tauri",
+    args: ["dev"],
+  });
+});
 
 test("detects packaged Doge processes that can capture the dev single-instance identity", () => {
   const conflicts = findConflictingPackagedDogeProcesses(`
