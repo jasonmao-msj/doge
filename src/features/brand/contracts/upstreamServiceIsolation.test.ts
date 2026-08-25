@@ -36,6 +36,10 @@ const developerOnlyUpstreamProvenance = new Set([
   "src/features/subagent-ui/constants/personaAvatarAssets.ts",
 ]);
 
+function normalizeRepoPath(path: string): string {
+  return path.replaceAll("\\", "/");
+}
+
 function collectShippingFiles(path: string): string[] {
   const absolutePath = join(repoRoot, path);
   if (!statSync(absolutePath).isDirectory()) {
@@ -60,7 +64,7 @@ function findForbiddenOccurrences(needles: string[]) {
   return shippingRoots
     .flatMap(collectShippingFiles)
     .flatMap((absolutePath) => {
-      const repoPath = relative(repoRoot, absolutePath);
+      const repoPath = normalizeRepoPath(relative(repoRoot, absolutePath));
       if (developerOnlyUpstreamProvenance.has(repoPath)) {
         return [];
       }
@@ -72,6 +76,11 @@ function findForbiddenOccurrences(needles: string[]) {
 }
 
 describe("upstream service isolation", () => {
+  it("normalizes Windows paths before applying provenance allowlists", () => {
+    expect(normalizeRepoPath("src\\features\\subagent-ui\\constants\\personaAuthorPool.ts"))
+      .toBe("src/features/subagent-ui/constants/personaAuthorPool.ts");
+  });
+
   it("ships no upstream analytics, managed relay, repository, or release endpoint", () => {
     expect(
       findForbiddenOccurrences([

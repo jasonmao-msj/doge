@@ -30,6 +30,8 @@
 
 `npm run check:heavy-test-noise` 不是本次 L3 的 blocking gate，但做了扩展探测：先发现并修正本 change 引起的 `appShellLazyBoundaries` stale exact-JSX assertion；重跑后继续到 batch 67 / file 268，因未触碰的 `ComposerBranchBadge.test.tsx` popover 查询失败而停止。报告同时记录仓库既有 `AskUserQuestionDialog` / `ButtonArea` / `ProviderSelect` act warnings 与少量已存在 stdout/stderr。上述文件均不在本 change impact surface，未夹带修复；PR CI 的正式 `test-js` 将给出 terminal evidence。
 
+手动 dispatch [CI run 32814979384](https://github.com/jasonmao-msj/doge/actions/runs/32814979384)：attempt 1 的四个长 job 被 GitHub Actions internal error 同时取消；attempt 2 中 `typecheck`（含 Messages boundary + tsc）、`lint`、`docs`、`test-js` 全量、`memory-kind-contract` 与 `build-macos` 均通过。Windows integration 暴露 test-infra path separator bug：`relative()` 在 Windows 返回 `\\`，而 developer provenance allowlist 使用 `/`，导致四个明确允许项误报；已用 `normalizeRepoPath()` 修复并增加 Windows-style regression，local 3/3 pass。Rust full test 1147/1148 pass，唯一失败 `engine::status::tests::hanging_probe_times_out_and_terminates_its_process_group` 是未触碰的 process-group timing test；follow-up CI rerun 待记录。
+
 ## Manual / platform scope
 
 - 未做 Tauri Desktop 目视 smoke：本 change 无 copy/CSS/DOM geometry 与 runtime protocol 变化，host composition 已由 React behavior + static contract 覆盖。

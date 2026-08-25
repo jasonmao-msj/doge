@@ -21,4 +21,6 @@
 - [x] 4.1 **P0 · deps: 3.1,3.2,3.3** — 收缩 exact outbound baseline，达到 `inbound=0 / new=0`，保留 deterministic negative fixtures。
 - [x] 4.2 **P0 · deps: 4.1** — 增补/更新 focused regressions，执行 L3 verification matrix。
 - [x] 4.3 **P1 · deps: 4.2** — `$check-cross-layer`、`$check`、`$finish-work` 复核并记录未覆盖的 L4 scope。
-- [ ] 4.4 **P0 · deps: 4.3** — commit、push、创建新 PR，并等待/检查 PR CI terminal state。
+- [x] 4.4 **P0 · deps: 4.3** — commit、push并创建 PR #24。
+- [x] 4.5 **P0 · deps: 4.4** — 手动 dispatch CI；修复解除 typecheck 阻断后暴露的 Windows provenance path separator 误报。
+- [ ] 4.6 **P0 · deps: 4.5** — push follow-up，重跑失败 CI jobs 并记录 terminal state。

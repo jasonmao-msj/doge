@@ -13,12 +13,14 @@
 - 将 Prompt Distill 与 Multi-Agent History Fold 改为 host composition/slot：Messages 只发布 intent 或消费 render slot，不直接 import peer UI feature。
 - 仅对稳定的 Messages public capability 通过 `src/features/messages/index.ts` 暴露，禁止 external deep import。
 - 删除无行为作用的 peer-store test coupling，并把 exact outbound baseline 收缩到修复后的真实 graph；不得新增 baseline exception。
+- 修复 Windows test runner 将 `node:path.relative()` 的 `\\` path 直接用于 `/` provenance allowlist 的跨平台误报，保证解除 typecheck 阻断后 Windows integration 能继续推进。
 - 补充/保持 boundary checker、streaming、history projection、prompt distill composition 与 timeline fold focused regression。
 
 ## Scope
 
 - Frontend architecture：Messages、Threads、Layout、Shared Session、Multi-Agent、Files、Tasks 之间的 owner/import direction。
 - CI contract：`check:messages-boundaries` exact baseline 与对应 deterministic tests。
+- Test infrastructure：`upstreamServiceIsolation` repository path normalization。
 - 不修改 runtime protocol、canonical persistence schema、消息渲染行为、stream cadence、Shared owner/settlement authority 或用户可见 copy。
 
 ## Verification
