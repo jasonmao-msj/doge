@@ -22,5 +22,5 @@
 - [x] 4.2 **P0 · deps: 4.1** — 增补/更新 focused regressions，执行 L3 verification matrix。
 - [x] 4.3 **P1 · deps: 4.2** — `$check-cross-layer`、`$check`、`$finish-work` 复核并记录未覆盖的 L4 scope。
 - [x] 4.4 **P0 · deps: 4.3** — commit、push并创建 PR #24。
-- [x] 4.5 **P0 · deps: 4.4** — 手动 dispatch CI；修复解除 typecheck 阻断后暴露的 Windows provenance path separator 误报。
+- [x] 4.5 **P0 · deps: 4.4** — 手动 dispatch CI；修复解除 typecheck 阻断后暴露的 Windows provenance path separator 与 CSS CRLF exact-assertion 误报。
 - [ ] 4.6 **P0 · deps: 4.5** — push follow-up，重跑失败 CI jobs 并记录 terminal state。
