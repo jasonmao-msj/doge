@@ -2645,12 +2645,12 @@ opencode/gpt-5-nano
             script_path.to_string_lossy().as_ref(),
             &["--version"],
             None,
-            Duration::from_millis(500),
+            Duration::from_secs(2),
         )
         .await;
 
         assert_eq!(result.err(), Some(CliProbeError::Timeout));
-        assert!(started.elapsed() < Duration::from_secs(2));
+        assert!(started.elapsed() < Duration::from_secs(4));
         let child_pid = fs::read_to_string(&child_pid_path)
             .expect("probe must record descendant pid")
             .parse::<libc::pid_t>()

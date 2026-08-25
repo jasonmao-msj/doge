@@ -38,7 +38,7 @@ vi.mock("../../../../engine/components/EngineIcon", () => ({
 }));
 
 vi.mock("../../../../vendors/providerBrandIcon", () => ({
-  providerBrandIconNeedsDarkTile: () => false,
+  providerBrandIconThemeStrategy: () => "original",
   PROVIDER_BRAND_ICON_SRC: {
     claude: "/icons/claude.svg",
     openai: "/icons/openai.svg",
@@ -1144,7 +1144,7 @@ describe("ModelSelect atomic target groups", () => {
     return trigger;
   }
 
-  it("defaults every actively subscribed Home engine submenu to Doge Token Matrix", async () => {
+  it("defaults every actively subscribed Home engine submenu to Doge", async () => {
     act(() => {
       publishManagedEngineEntitlementsV1([
         { id: "codex", displayName: "Codex", entitlement: { status: "active", expiresAt: null } },
@@ -1154,7 +1154,7 @@ describe("ModelSelect atomic target groups", () => {
     const groups = buildAtomicGroups();
     groups[0].profiles.push({
       id: "doge-token-matrix",
-      label: "Doge Token Matrix",
+      label: "Doge",
       source: "managed",
       loading: false,
       error: null,
@@ -1166,7 +1166,7 @@ describe("ModelSelect atomic target groups", () => {
     });
     groups[1].profiles.push({
       id: "doge-token-matrix",
-      label: "Doge Token Matrix",
+      label: "Doge",
       source: "managed",
       loading: false,
       error: null,
@@ -1190,7 +1190,7 @@ describe("ModelSelect atomic target groups", () => {
           providerProfileId: "doge-token-matrix",
           modelCatalogEntryId: "gpt-5.6-sol",
           model: "gpt-5.6-sol",
-          providerProfileNameSnapshot: "Doge Token Matrix",
+          providerProfileNameSnapshot: "Doge",
           providerProfileSource: "managed",
         }}
         targetGroups={groups}
@@ -1209,7 +1209,7 @@ describe("ModelSelect atomic target groups", () => {
     const claudeChannel = document.querySelector(
       "[data-submenu-footer='claude'] [data-channel-select-trigger='claude'][data-provider-profile-id='doge-token-matrix']",
     );
-    expect(claudeChannel?.textContent).toContain("Doge Token Matrix");
+    expect(claudeChannel?.textContent).toContain("Doge");
 
   });
 

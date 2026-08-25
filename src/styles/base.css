@@ -37,6 +37,25 @@
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
 }
 
+/*
+ * Provider/LLM icon theme contract. Monochrome `currentColor` SVGs loaded via
+ * <img> render black unless explicitly adapted; color brands remain untouched.
+ */
+.vendor-brand-icon-img--mono-adaptive {
+  filter: grayscale(1) brightness(0);
+}
+
+:root[data-theme="dark"] .vendor-brand-icon-img--mono-adaptive,
+:root[data-theme="dim"] .vendor-brand-icon-img--mono-adaptive {
+  filter: grayscale(1) brightness(0) invert(1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .vendor-brand-icon-img--mono-adaptive {
+    filter: grayscale(1) brightness(0) invert(1);
+  }
+}
+
 * {
   box-sizing: border-box;
 }

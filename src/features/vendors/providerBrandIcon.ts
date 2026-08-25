@@ -16,6 +16,7 @@ import openrouterIcon from "@lobehub/icons-static-svg/icons/openrouter-color.svg
 import qwenIcon from "@lobehub/icons-static-svg/icons/qwen-color.svg";
 import xiaomimimoIcon from "@lobehub/icons-static-svg/icons/xiaomimimo.svg";
 import zhipuIcon from "@lobehub/icons-static-svg/icons/zhipu-color.svg";
+import doubaoIcon from "../../assets/model-icons/doubao.png";
 
 export type ProviderBrandVendor =
   | "claude"
@@ -24,6 +25,7 @@ export type ProviderBrandVendor =
   | "kimi"
   | "moonshot"
   | "deepseek"
+  | "doubao"
   | "minimax"
   | "xiaomi"
   | "bailian"
@@ -38,6 +40,7 @@ export const PROVIDER_BRAND_ICON_SRC: Record<ProviderBrandVendor, string> = {
   kimi: kimiIcon,
   moonshot: moonshotIcon,
   deepseek: deepseekIcon,
+  doubao: doubaoIcon,
   minimax: minimaxIcon,
   xiaomi: xiaomimimoIcon,
   bailian: bailianIcon,
@@ -55,9 +58,29 @@ export const QWEN_BRAND_ICON_SRC = qwenIcon;
  */
 const DARK_TILE_BRAND_ICON_SRCS: ReadonlySet<string> = new Set([kimiIcon]);
 
-/** 判断品牌图标是否需要深色底衬瓦片(浅色背景下白色主体字形不可见的图标) */
-export function providerBrandIconNeedsDarkTile(src: string): boolean {
-  return DARK_TILE_BRAND_ICON_SRCS.has(src);
+/**
+ * `currentColor` 单色 SVG 经 `<img>` 加载后不会继承宿主文字色，默认会以黑色渲染。
+ * 这些品牌由共享 renderer 的 theme class 在暗色皮肤下统一反白。
+ */
+const ADAPTIVE_MONO_BRAND_ICON_SRCS: ReadonlySet<string> = new Set([
+  anthropicIcon,
+  moonshotIcon,
+  opencodeIcon,
+  openaiIcon,
+  xiaomimimoIcon,
+]);
+
+export type ProviderBrandIconThemeStrategy =
+  | "original"
+  | "mono-adaptive"
+  | "dark-tile";
+
+export function providerBrandIconThemeStrategy(
+  src: string,
+): ProviderBrandIconThemeStrategy {
+  if (DARK_TILE_BRAND_ICON_SRCS.has(src)) return "dark-tile";
+  if (ADAPTIVE_MONO_BRAND_ICON_SRCS.has(src)) return "mono-adaptive";
+  return "original";
 }
 
 /** baseUrl host → 品牌(顺序即优先级,先命中先返回) */
@@ -92,6 +115,7 @@ const MODEL_VENDOR_PATTERNS: ReadonlyArray<
   [/xiaomi|mimo/i, "xiaomi"],
   [/longcat/i, "longcat"],
   [/opencode/i, "opencode"],
+  [/doubao|豆包|ark-code/i, "doubao"],
   [/claude|anthropic/i, "claude"],
   [/gpt[-\s]|^gpt\d|^o[134]\b|openai/i, "openai"],
 ];

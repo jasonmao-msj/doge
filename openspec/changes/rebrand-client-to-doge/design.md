@@ -87,7 +87,7 @@ Canonical tagline：`把复杂的事，叼回来做好。`
 | `displayName` | `doge` |
 | `repository` | `jasonmao-msj/doge` |
 | `bundleIdentifier` | `io.github.jasonmao-msj.doge` |
-| `devBundleIdentifier` | `io.github.jasonmao-msj.doge.dev` |
+| Development identity | 与 shipping manifest 共用 `doge` / `io.github.jasonmao-msj.doge`；debug secret backend 由 compile-time selector 隔离 |
 | `appHomeDirectory` | `.doge` |
 | `updateEndpoint` | `https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json` |
 | `issueEndpoint` | `https://github.com/jasonmao-msj/doge/issues/new` |
@@ -108,7 +108,7 @@ Alternatives：
 | Rust package/default bin | `doge` | old binary name 不继续 shipping |
 | Rust lib | `doge_lib` | source imports 原子更新 |
 | daemon | `doge_daemon` | old daemon filename 可在 discovery reader 暂时识别 |
-| Tauri product | `doge` / `doge-dev` | old app 独立存在 |
+| Tauri product | `doge` | development 与 E2E 不再分叉为第二套 product/app-data state |
 | Bundle ID | `io.github.jasonmao-msj.doge` | old app-data 仅作为 migration source |
 | App home | `~/.doge` | `.ccgui` → `.mossx` → `.codemoss` priority reader |
 | Internal marker/media type | `doge.*` / `vnd.doge.*` | dual-read legacy；new-write doge |

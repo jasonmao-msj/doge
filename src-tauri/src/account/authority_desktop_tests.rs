@@ -354,6 +354,14 @@ async fn subscription_usage_authority_wire_uses_progress_and_group_scoped_dashbo
             .map(|value| value.used_usd),
         Some(1.25)
     );
+    assert_eq!(
+        progress[0]
+            .progress
+            .daily
+            .as_ref()
+            .map(|value| value.window_start.as_str()),
+        Some("2030-01-01T00:00:00+08:00")
+    );
 
     let snapshot = authority
         .usage_dashboard_snapshot(
@@ -361,6 +369,7 @@ async fn subscription_usage_authority_wire_uses_progress_and_group_scoped_dashbo
             11,
             "2029-01-02",
             "2030-01-01",
+            "day",
             true,
             true,
         )
@@ -370,6 +379,7 @@ async fn subscription_usage_authority_wire_uses_progress_and_group_scoped_dashbo
     assert_eq!(snapshot.models[0].model, "gpt-5");
     let query = captured_query.lock().expect("usage query");
     assert_eq!(query.get("group_id").map(String::as_str), Some("11"));
+    assert_eq!(query.get("granularity").map(String::as_str), Some("day"));
     assert_eq!(
         query.get("start_date").map(String::as_str),
         Some("2029-01-02")
@@ -383,6 +393,136 @@ async fn subscription_usage_authority_wire_uses_progress_and_group_scoped_dashbo
         query.get("include_model_stats").map(String::as_str),
         Some("true")
     );
+}
+
+#[tokio::test]
+async fn product_account_detail_wire_matches_generic_token2api_user_routes() {
+    let captured_usage_query = Arc::new(Mutex::new(HashMap::<String, String>::new()));
+    let app = Router::new()
+        .route(
+            "/api/v1/payment/checkout-info",
+            get(|| async {
+                Json(json!({
+                    "code": 0,
+                    "data": {
+                        "methods": {
+                            "alipay": {
+                                "payment_type": "alipay",
+                                "display_name": "支付宝",
+                                "currency": "CNY"
+                            }
+                        },
+                        "subscription_usd_to_cny_rate": 7.2,
+                        "plans": [{
+                            "id": 5,
+                            "group_id": 11,
+                            "group_platform": "composite",
+                            "group_name": "Doge",
+                            "name": "Doge Pro",
+                            "description": "All supported models",
+                            "price": 12.0,
+                            "original_price": 16.0,
+                            "validity_days": 30,
+                            "validity_unit": "day",
+                            "features": ["All models"],
+                            "daily_limit_usd": 2.0,
+                            "weekly_limit_usd": 8.0,
+                            "monthly_limit_usd": 20.0
+                        }]
+                    }
+                }))
+            }),
+        )
+        .route(
+            "/api/v1/usage/stats",
+            get({
+                let captured_usage_query = Arc::clone(&captured_usage_query);
+                move |Query(query): Query<HashMap<String, String>>| {
+                    let captured_usage_query = Arc::clone(&captured_usage_query);
+                    async move {
+                        *captured_usage_query
+                            .lock()
+                            .expect("capture product usage query") = query;
+                        Json(json!({
+                            "code": 0,
+                            "data": {
+                                "total_requests": 7,
+                                "total_input_tokens": 100,
+                                "total_output_tokens": 20,
+                                "total_cache_tokens": 10,
+                                "total_cache_creation_tokens": 4,
+                                "total_cache_read_tokens": 6,
+                                "total_tokens": 130,
+                                "total_cost": 1.25,
+                                "total_actual_cost": 1.0,
+                                "average_duration_ms": 7200.0
+                            }
+                        }))
+                    }
+                }
+            }),
+        )
+        .route(
+            "/api/v1/payment/orders/my",
+            get(|| async {
+                Json(json!({
+                    "code": 0,
+                    "data": {
+                        "items": [{
+                            "id": 91,
+                            "amount": 12.0,
+                            "pay_amount": 86.4,
+                            "currency": "CNY",
+                            "status": "completed",
+                            "order_type": "subscription",
+                            "plan_id": 5,
+                            "created_at": "2030-01-01T00:00:00Z",
+                            "paid_at": "2030-01-01T00:01:00Z",
+                            "expires_at": "2030-01-01T00:30:00Z"
+                        }],
+                        "total": 1,
+                        "page": 1,
+                        "page_size": 20,
+                        "pages": 1
+                    }
+                }))
+            }),
+        );
+    let origin = spawn_protocol_server(app).await;
+    let authority = TokenMatrixAuthority::new_for_protocol_test(origin, None);
+
+    let checkout = authority
+        .product_checkout_info("synthetic-access")
+        .await
+        .expect("product checkout info");
+    assert_eq!(checkout.plans[0].validity_unit, "day");
+    assert_eq!(checkout.plans[0].features, vec!["All models"]);
+    assert_eq!(checkout.plans[0].monthly_limit_usd, Some(20.0));
+
+    let usage = authority
+        .product_usage_stats("synthetic-access", 11, "2030-01-01", "2030-01-30")
+        .await
+        .expect("product usage stats");
+    assert_eq!(usage.total_requests, 7);
+    assert_eq!(usage.average_duration_ms, 7200.0);
+    let query = captured_usage_query.lock().expect("product usage query");
+    assert_eq!(query.get("group_id").map(String::as_str), Some("11"));
+    assert_eq!(
+        query.get("start_date").map(String::as_str),
+        Some("2030-01-01")
+    );
+    assert_eq!(
+        query.get("end_date").map(String::as_str),
+        Some("2030-01-30")
+    );
+
+    let orders = authority
+        .product_orders("synthetic-access")
+        .await
+        .expect("product orders");
+    assert_eq!(orders.items[0].plan_id, Some(5));
+    assert_eq!(orders.items[0].currency, "CNY");
+    assert_eq!(orders.items[0].pay_amount, 86.4);
 }
 
 #[tokio::test]

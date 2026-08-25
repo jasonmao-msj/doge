@@ -45,6 +45,9 @@ createNativeProviderContinuation({
   destination,
   confirmDegraded?,
 }): Promise<NativeProviderContinuationResponse>
+
+structured_claude_api_error(event) -> Option<(message, code)>
+structured_claude_result_error(event) -> Option<(message, code)>
 ```
 
 ### 3. Contracts
@@ -116,6 +119,13 @@ createNativeProviderContinuation({
   acceptance marker。仅出现 marker 字样不是证据。当前 bootstrap user entry 之后的
   structured `isApiErrorMessage` / `apiErrorStatus` 是强负 evidence，MUST 覆盖 user-entry
   persistence、acceptance marker、process error 与 connector warning。
+- Claude live stream MUST 同时识别 camelCase 与 snake_case API-error evidence：
+  `isApiErrorMessage` / `is_api_error_message`、`apiErrorStatus` /
+  `api_error_status`；缺少 numeric status 时 MAY 从标准 `API Error: <status>` 文本提取。
+  `result.is_error=true` 或 `result.subtype=error` 同样是 authoritative terminal error。
+  上述 evidence 到达后 MUST 立即 emit exactly one `TurnError`、停止 stdout read，并终止
+  exact process group；process exit/EOF/stderr drain 只属于 cleanup，MUST NOT 继续阻塞
+  continuation command 或普通 Claude turn。
 - destination `modelCatalogEntryId` 保存 UI selection identity；destination `model` 保存
   CLI runtime identity。Claude backend MUST 在 target side effect 前用 Provider-scoped
   catalog 校验两者；已知 UI-only id 返回 `invalid-target-model`。
@@ -143,6 +153,8 @@ createNativeProviderContinuation({
 | 已触发 target side effect 后 artifact checksum 失败 | `recovery-required` | 重读来源或新建第二目标 |
 | target side effect 后 ACK 不确定 | `acceptance-ambiguous` | 创建第二个目标 |
 | bootstrap 后 target history 有 structured API rejection | `target-provider-rejected`，保留同一 target identity | marker/user entry 将 operation 转 ready |
+| live stream API rejection 后 stdout 仍保持 open | 立即 `TurnError` + exact process-group cleanup | 等待 EOF/result 导致 Dialog 永久 `running` |
+| `result.is_error=true` 且没有 assistant error event | terminal `claude_result_error` | 投影为成功 `TurnCompleted` |
 | catalog entry `id != model` | runtime 使用 `model`，backend 校验 | UI `id` 进入 Claude `--model` |
 | Claude CLI 完成但模型未复述 marker | 按同一 target identity 持久化 ready | 报假失败并要求重复创建 |
 | recovery history 有完整 bootstrap user entry | 复用既有 target 并补 catalog | 只认模型输出、创建第二个 target |
@@ -158,6 +170,8 @@ createNativeProviderContinuation({
   `lineageParentSessionId` 填入 `parentThreadId`。
 - Bad：把模型是否严格服从“只回 marker”当 transport ACK；这会造成首次假失败、第二次才恢复。
 - Bad：Claude recovery 只做 `jsonl.contains(marker)`；普通用户文本也可能包含相同字样。
+- Bad：只在 transcript scanner 识别 camelCase rejection，却让 live stdout 的
+  `is_api_error_message` 继续走 assistant text；离线状态正确但前台会无限等待 EOF。
 
 ### 6. Tests Required
 
@@ -178,6 +192,9 @@ createNativeProviderContinuation({
   普通与 pinned Continuation Family 默认折叠及 disclosure 展开/收起。
 - Rust：额外覆盖 `ContextBootstrap` command args、普通 command wrapper、progress milestone
   单调性与 prepared guarded discard。
+- Rust：Claude stream tests MUST 覆盖 camelCase/snake_case API-error assistant、
+  `result.is_error=true`、error 后 child 继续持有 stdout；断言 bounded settlement、
+  active process owner 清空、一个 `TurnError`、零 `TurnCompleted`。
 - Contract：`cargo check --lib`、`npm run typecheck`、
   `npm run check:runtime-contracts`、OpenSpec strict validation。
 - Release gate：真实 Desktop 执行 Claude A → Codex B → Claude A，人工观察历史连续性、
@@ -203,6 +220,26 @@ let accepted = bootstrap_completed
 if accepted {
     commit_existing_target_identity();
 }
+```
+
+#### Wrong: structured API error waits for process EOF
+
+```rust
+if let EngineEvent::TurnError { .. } = event {
+    emit(event);
+    continue; // stdout may remain open forever
+}
+```
+
+#### Correct: logical error settles before cleanup
+
+```rust
+if let EngineEvent::TurnError { .. } = event {
+    emit(event);
+    break 'stream;
+}
+force_kill_exact_process_group().await;
+return Err(provider_error);
 ```
 
 ## Scenario: Provider Continuation Product Projection

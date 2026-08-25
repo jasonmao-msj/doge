@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import process from "node:process";
+import { assertNoConflictingPackagedDogeApp } from "./tauri-dev-hot.mjs";
 
 function resolveIsolatedPort() {
   const rawPort = process.env.MOSS_DEV_PORT ?? "";
@@ -12,6 +13,7 @@ function resolveIsolatedPort() {
 }
 
 const isolatedPort = resolveIsolatedPort();
+assertNoConflictingPackagedDogeApp();
 const tauriBin = process.platform === "win32" ? "tauri.cmd" : "tauri";
 const isolatedConfig = JSON.stringify({
   build: {
@@ -21,7 +23,7 @@ const isolatedConfig = JSON.stringify({
 
 const child = spawn(
   tauriBin,
-  ["dev", "--config", "src-tauri/tauri.dev.conf.json", "--config", isolatedConfig],
+  ["dev", "--config", isolatedConfig],
   {
     env: {
       ...process.env,

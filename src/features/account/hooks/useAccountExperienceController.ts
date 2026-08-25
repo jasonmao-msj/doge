@@ -53,6 +53,7 @@ export type {
 
 export type AccountExperienceControllerOptionsV1 = {
   readonly loadAuthenticatedExtras?: boolean;
+  readonly loadLegacyConfigurationExtras?: boolean;
 };
 
 export function useAccountExperienceControllerV1(
@@ -60,6 +61,8 @@ export function useAccountExperienceControllerV1(
 ) {
   const gateway = useAccountGatewayV1();
   const loadExtras = options.loadAuthenticatedExtras !== false;
+  const loadLegacyConfigurationExtras =
+    options.loadLegacyConfigurationExtras !== false;
   const [bootstrap, setBootstrap] = useState<AccountBootstrapViewV1 | null>(
     null,
   );
@@ -210,6 +213,7 @@ export function useAccountExperienceControllerV1(
     if (!loadExtras) return;
     const profileResult = await gateway.profile.read({});
     if (profileResult.ok) setProfile(profileResult.value);
+    if (!loadLegacyConfigurationExtras) return;
     await readManagedKeyStatus();
     await loadApiKeyCandidates();
     const taskResult = await gateway.configuration.readCurrentTask({});
@@ -229,6 +233,7 @@ export function useAccountExperienceControllerV1(
     gateway,
     loadApiKeyCandidates,
     loadExtras,
+    loadLegacyConfigurationExtras,
     readManagedKeyStatus,
     readOffer,
     reconcileConfigurationTask,

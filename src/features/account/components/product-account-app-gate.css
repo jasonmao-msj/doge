@@ -1,0 +1,361 @@
+.account-app-gate {
+  --gate-accent: #715cff;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 56px 24px 32px;
+  color: var(--text-primary);
+  background:
+    radial-gradient(circle at 50% 8%, color-mix(in srgb, var(--gate-accent) 10%, transparent), transparent 34%),
+    var(--background);
+}
+
+.account-gate-window-drag {
+  position: fixed;
+  inset: 0 0 auto;
+  height: 42px;
+}
+
+.account-gate-card {
+  position: relative;
+  width: min(100%, 760px);
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 50px 56px;
+  box-sizing: border-box;
+}
+
+.account-gate-brand {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: 10px;
+  margin-bottom: 28px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 620;
+}
+
+.account-gate-logo {
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 18px color-mix(in srgb, var(--gate-accent) 20%, transparent));
+}
+
+.account-gate-centered h1,
+.account-gate-centered h2 {
+  margin: 0;
+  font-size: clamp(25px, 4vw, 34px);
+  line-height: 1.15;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+
+.account-gate-centered h2 { font-size: 22px; }
+
+.account-gate-centered {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.account-gate-centered > svg {
+  width: 32px;
+  height: 32px;
+  color: var(--text-secondary);
+}
+
+.account-gate-spin { animation: account-gate-spin .9s linear infinite; }
+@keyframes account-gate-spin { to { transform: rotate(360deg); } }
+
+.account-gate-methods button:focus-visible,
+.account-gate-primary:focus-visible,
+.account-gate-secondary:focus-visible,
+.account-gate-text-button:focus-visible,
+.account-gate-logout:focus-visible,
+.account-gate-dismiss:focus-visible {
+  outline: 2px solid var(--ring, var(--gate-accent));
+  outline-offset: 3px;
+}
+
+.account-product-plan-list {
+  width: 100%;
+  display: grid;
+  gap: 14px;
+}
+
+.account-product-plan {
+  padding: 20px;
+  border: 1px solid var(--border-subtle, var(--border));
+  border-radius: 14px;
+  background: var(--surface-raised, var(--card));
+  box-shadow: 0 10px 30px color-mix(in srgb, #000 8%, transparent);
+}
+
+.account-product-plan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.account-product-plan-title {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.account-product-plan-title h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.account-product-plan-title p {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-product-plan-price {
+  display: inline-flex;
+  align-items: baseline;
+  flex: 0 0 auto;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.account-product-plan-price strong {
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 680;
+}
+
+.account-product-plan-price small {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.account-product-plan-lines {
+  margin: 18px 0;
+  border-top: 1px solid var(--border-subtle, var(--border));
+}
+
+.account-product-plan-line {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border-subtle, var(--border));
+  font-size: 13px;
+}
+
+.account-product-plan-line > span:first-child {
+  color: var(--text-secondary);
+}
+
+.account-product-plan-line > span:last-child {
+  overflow: hidden;
+  color: var(--text-primary);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-product-plan-cta {
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--background);
+  background: var(--text-primary);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.account-product-plan-cta:hover:not(:disabled) {
+  opacity: .9;
+}
+
+.account-product-plan-cta:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.account-gate-methods {
+  display: grid;
+  gap: 10px;
+}
+
+.account-gate-methods button {
+  min-height: 54px;
+  border: 1px solid var(--border-subtle, var(--border));
+  border-radius: 12px;
+  color: inherit;
+  background: var(--surface-raised, var(--card));
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-gate-methods button:hover {
+  border-color: color-mix(in srgb, var(--gate-accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--gate-accent) 7%, var(--surface-raised, var(--card)));
+}
+
+.account-gate-primary,
+.account-gate-secondary {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 680;
+  cursor: pointer;
+}
+.account-gate-primary { color: white; background: var(--gate-accent); }
+.account-gate-secondary { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
+
+.account-gate-text-button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.account-gate-text-button:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover, var(--accent));
+}
+
+.account-gate-logout {
+  position: absolute;
+  top: 48px;
+  right: 14px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.account-gate-logout:hover {
+  color: var(--text-primary);
+  background: var(--surface-hover, var(--accent));
+}
+
+.account-gate-secondary:disabled,
+.account-gate-text-button:disabled,
+.account-gate-logout:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.account-gate-dismiss {
+  position: absolute;
+  top: 48px;
+  left: 14px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+.account-gate-dismiss:hover { color: var(--text-primary); background: var(--surface-hover, var(--accent)); }
+.account-gate-dismiss svg { width: 18px; height: 18px; }
+
+.account-gate-dismiss:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.account-gate-inline-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 18px;
+  color: var(--destructive, #d94c4c);
+  font-size: 13px;
+}
+
+.account-gate-auth {
+  width: min(100%, 500px);
+  margin: 0 auto;
+}
+.account-gate-auth .account-auth-shell { max-width: 500px; }
+.account-gate-auth .account-auth-tabs { justify-content: stretch; }
+.account-gate-auth .account-auth-tabs [data-slot="tabs-tab"] { flex: 1; }
+.account-gate-auth .account-auth-form { margin-top: 24px; }
+.account-gate-auth .account-auth-form input { min-height: 48px; }
+.account-gate-auth .account-primary-button { min-height: 48px; }
+
+.account-gate-qr {
+  width: min(240px, 70vw);
+  height: auto;
+  border-radius: 12px;
+  background: white;
+  padding: 10px;
+}
+
+@media (max-width: 680px) {
+  .account-app-gate { padding-inline: 16px; }
+  .account-gate-card { min-height: 440px; padding: 42px 12px 30px; }
+  .account-gate-dismiss { top: 34px; left: 0; }
+  .account-gate-logout { top: 34px; right: 0; }
+
+  .account-product-plan {
+    padding: 17px;
+  }
+
+  .account-product-plan-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .account-product-plan-line {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-gate-spin { animation-duration: 1.8s; }
+}

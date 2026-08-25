@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { formatTokenCount } from "@/utils/tokenFormat";
 
 /**
  * Context — 上下文窗口占用指示器。
@@ -61,10 +62,6 @@ const percentFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
-const compactFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-});
-
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -76,7 +73,7 @@ export const formatContextTokens = (
   if (typeof tokens !== "number" || !Number.isFinite(tokens)) {
     return undefined;
   }
-  return compactFormatter.format(tokens);
+  return formatTokenCount(tokens);
 };
 
 export const formatContextPercent = (
@@ -443,7 +440,7 @@ const TokensWithCost = ({
 }) => (
   <span>
     {typeof tokens === "number" && Number.isFinite(tokens)
-      ? compactFormatter.format(tokens)
+      ? formatTokenCount(tokens)
       : "—"}
     {costText ? (
       <span className="ml-2 text-muted-foreground">• {costText}</span>

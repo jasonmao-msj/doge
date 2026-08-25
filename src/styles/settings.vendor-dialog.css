@@ -936,6 +936,19 @@ pre.vendor-official-code-editor {
   flex-shrink: 0;
 }
 
+.vendor-official-config[data-managed-locked="true"] .vendor-official-config-copy {
+  opacity: .52;
+}
+
+.vendor-official-status-locked {
+  color: var(--text-faint, var(--text-muted));
+}
+
+.vendor-official-status-locked > svg {
+  width: 13px;
+  height: 13px;
+}
+
 .vendor-official-actions-divider {
   width: 1px;
   height: 14px;

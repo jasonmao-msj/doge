@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { RealAccountGatewayV1 } from "./accountGateway";
+import { createRealAccountGatewayV1, RealAccountGatewayV1 } from "./accountGateway";
+import { ACCOUNT_GOOD_CONTRACT_FIXTURES_V1 } from "../features/account/contracts/fixtures";
+import type { AccountIpcRequestEnvelopeV1 } from "../features/account/contracts/transport";
 import {
   executeAccountRequestV1,
   getAccountNativeContextV1,
@@ -20,6 +22,10 @@ describe("RealAccountGatewayV1", () => {
     vi.mocked(getAccountNativeContextV1).mockReset();
     vi.mocked(prepareAccountMutationV1).mockReset();
     vi.mocked(subscribeAccountWakeupV1).mockReset();
+  });
+
+  it("shares one real gateway owner for the WebView process", () => {
+    expect(createRealAccountGatewayV1()).toBe(createRealAccountGatewayV1());
   });
 
   it("validates native wakeups before notifying subscribers", async () => {
@@ -102,6 +108,97 @@ describe("RealAccountGatewayV1", () => {
         recovery: { action: "useLocalMode" },
       },
     });
+  });
+
+  it("reuses one successful bootstrap until an authoritative wakeup invalidates it", async () => {
+    let nativeListener: ((payload: unknown) => void) | null = null;
+    vi.mocked(subscribeAccountWakeupV1).mockImplementation(async (listener) => {
+      nativeListener = listener;
+      return () => undefined;
+    });
+    vi.mocked(getAccountNativeContextV1).mockResolvedValue({
+      processGeneration: 1,
+      accountEpoch: 1,
+    });
+    vi.mocked(executeAccountRequestV1).mockImplementation(async (request) => ({
+      ...ACCOUNT_GOOD_CONTRACT_FIXTURES_V1.ipcResponse,
+      requestId: (request as AccountIpcRequestEnvelopeV1).requestId,
+    }));
+
+    const gateway = new RealAccountGatewayV1();
+    gateway.subscribe(() => undefined);
+    await Promise.resolve();
+
+    const [first, concurrent] = await Promise.all([
+      gateway.bootstrap({}),
+      gateway.bootstrap({}),
+    ]);
+    const cached = await gateway.bootstrap({});
+
+    expect(first.ok).toBe(true);
+    expect(concurrent).toEqual(first);
+    expect(cached).toEqual(first);
+    expect(executeAccountRequestV1).toHaveBeenCalledTimes(1);
+
+    const emit = nativeListener as unknown as (payload: unknown) => void;
+    emit({
+      contractId: "doge-account-ipc",
+      contractVersion: "1.0.0",
+      event: {
+        kind: "sessionChanged",
+        eventId: "event_1-0-bootstrap-invalidated",
+        emittedAt: "2030-01-01T00:00:00Z",
+        processGeneration: 1,
+        eventSeq: 0,
+        accountEpoch: 1,
+      },
+    });
+
+    await gateway.bootstrap({});
+    expect(executeAccountRequestV1).toHaveBeenCalledTimes(2);
+  });
+
+  it("invalidates one bootstrap generation once when multiple subscribers receive the same wakeup", async () => {
+    const nativeListeners: Array<(payload: unknown) => void> = [];
+    vi.mocked(subscribeAccountWakeupV1).mockImplementation(async (listener) => {
+      nativeListeners.push(listener);
+      return () => undefined;
+    });
+    vi.mocked(getAccountNativeContextV1).mockResolvedValue({
+      processGeneration: 1,
+      accountEpoch: 1,
+    });
+    vi.mocked(executeAccountRequestV1).mockImplementation(async (request) => ({
+      ...ACCOUNT_GOOD_CONTRACT_FIXTURES_V1.ipcResponse,
+      requestId: (request as AccountIpcRequestEnvelopeV1).requestId,
+    }));
+
+    const gateway = new RealAccountGatewayV1();
+    gateway.subscribe(() => undefined);
+    gateway.subscribe(() => undefined);
+    await Promise.resolve();
+    expect(nativeListeners).toHaveLength(2);
+    await gateway.bootstrap({});
+
+    const wakeup = {
+      contractId: "doge-account-ipc",
+      contractVersion: "1.0.0",
+      event: {
+        kind: "sessionChanged",
+        eventId: "event_1-0-shared-bootstrap-invalidation",
+        emittedAt: "2030-01-01T00:00:00Z",
+        processGeneration: 1,
+        eventSeq: 0,
+        accountEpoch: 1,
+      },
+    };
+    nativeListeners[0]?.(wakeup);
+    const first = gateway.bootstrap({});
+    nativeListeners[1]?.(wakeup);
+    const second = gateway.bootstrap({});
+
+    await Promise.all([first, second]);
+    expect(executeAccountRequestV1).toHaveBeenCalledTimes(2);
   });
 
   it("retries one mutation acceptance with the same request then returns reconcilable uncertainty", async () => {

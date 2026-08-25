@@ -810,7 +810,15 @@ impl AccountRuntime {
         }) {
             let snapshot = match engine.entitlement.group_id.filter(|value| *value > 0) {
                 Some(group_id) => authority
-                    .usage_dashboard_snapshot(&access, group_id, &start_date, &end_date, true, true)
+                    .usage_dashboard_snapshot(
+                        &access,
+                        group_id,
+                        &start_date,
+                        &end_date,
+                        "day",
+                        true,
+                        true,
+                    )
                     .await
                     .ok(),
                 None => None,
@@ -841,7 +849,11 @@ impl AccountRuntime {
             .subscription_summary(&access)
             .await
             .map_err(|error| authority_failure(error, "subscription"))?;
-        Ok(subscription_summary_value(&catalog, &summary, &rfc3339_now()))
+        Ok(subscription_summary_value(
+            &catalog,
+            &summary,
+            &rfc3339_now(),
+        ))
     }
 
     pub(super) async fn read_usage_day_models(
@@ -884,7 +896,7 @@ impl AccountRuntime {
             .ok_or_else(|| capability_failure("usage"))?;
         let date = date.format("%Y-%m-%d").to_string();
         let snapshot = authority
-            .usage_dashboard_snapshot(&access, group_id, &date, &date, false, true)
+            .usage_dashboard_snapshot(&access, group_id, &date, &date, "day", false, true)
             .await
             .map_err(|error| authority_failure(error, "usage"))?;
         Ok(usage_day_models_value(engine_id, &date, &snapshot))

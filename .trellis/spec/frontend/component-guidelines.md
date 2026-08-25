@@ -63,6 +63,73 @@ const sidebarNodeWithTopbar = isValidElement(props.children)
 - 大样式文件允许分片 `*.part1.css/*.part2.css`，但必须保持 selector contract 稳定。
 - 条件 class 建议复用 `src/lib/utils.ts` 的 `cn()`。
 
+## Scenario: Shared Visual Primitive MUST Own Its Stylesheet
+
+### 1. Scope / Trigger
+
+- Trigger：把 visual shell / frame / card primitive 抽到 shared module，替换其 consumer，或让多个 sibling entry 复用同一组 CSS classes。
+- 目标：consumer 替换不能让 JSX 仍存在、TypeScript/Vitest 全绿，但 production bundle 丢失 stylesheet side effect，导致 image/control 按 UA 默认尺寸渲染。
+
+### 2. Signatures
+
+- Shared owner：`SharedView.tsx` 直接 `import "./shared-view.css"`。
+- Consumers：`LegacyEntry.tsx`、`NewEntry.tsx` 只 import shared component，不重复拥有 stylesheet side effect。
+- Critical image：`<img className="feature-logo" width={N} height={N} ... />`，CSS 同步约束 `width/height/object-fit`。
+
+### 3. Contracts
+
+- 定义并渲染 feature-scoped visual classes 的最低 shared module MUST 导入对应 stylesheet；禁止把 import 留在任一 optional/legacy consumer。
+- sibling consumers MUST NOT 各自复制 stylesheet import；bundler dedupe 不能替代明确 ownership。
+- startup/gate/logo/avatar 等首屏关键图片 MUST 提供 intrinsic `width/height`，避免 CSS chunk 尚未 settle 时按原始 raster 尺寸产生 full-window flash。
+- 将 SVG/data URL 替换为 PNG/JPEG/WebP 等 raster asset 时，最低 shared `<img>` owner MUST 同时提供 attribute intrinsic `width/height` 与 inline pixel `width/height`，并设置 `max-width/max-height: 100%`、`object-fit: contain`；wrapper MUST 有确定尺寸与 `overflow: hidden`。仅有 HTML attribute 不足以对抗 `.wrapper img { width:100%; height:100% }` 等 author CSS，禁止只在某个 optional consumer stylesheet 限尺寸。
+- consumer replacement review MUST 搜索 `import "*.css"` propagation；JSX/type import 可达不代表 CSS side effect 可达。
+- jsdom unit tests 不能作为 layout evidence；可见 startup shell 还 MUST 做 exact current flavor 的 Tauri visual smoke。
+
+### 4. Validation & Error Matrix
+
+| 场景 | 必须行为 | 禁止行为 |
+|---|---|---|
+| Legacy + Product entry 复用 frame | shared view 唯一导入 CSS，两条入口均有样式 | CSS 只挂在 Legacy entry |
+| Product entry 替换 Router owner | bundle graph 仍从 shared view reach stylesheet | JSX 正常但 logo 原图铺满窗口 |
+| CSS 尚未下载/热更新 | intrinsic image size 保持 layout bounded | 首屏按 raster natural size 闪烁 |
+| jsdom tests 全绿 | 继续执行 static import contract + real visual smoke | 将 jsdom 当作 CSS layout 验收 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：`AccountAppGateViews.tsx` owns `account-app-gate.css`；legacy/product gates 只 import shared views；logo 同时声明 `54×54` intrinsic size。
+- Base：single-consumer leaf component 可自行拥有同目录 stylesheet；一旦抽成 sibling-shared owner，stylesheet 随 owner 迁移。
+- Bad：新 Router 改用 `ProductGate`，但 stylesheet 仍只由不再挂载的 `LegacyGate` 导入。
+
+### 6. Tests Required
+
+- Static visual contract MUST assert shared owner contains exact stylesheet import，所有 sibling consumers 不再承担该 import。
+- Static/component contract MUST assert critical raster image 包含 bounded intrinsic dimensions。
+- Shared raster primitive component test MUST 同时断言 intrinsic attributes、inline pixel size 与 wrapper clipping；至少使用一个大尺寸 fixture，避免 natural size 或 consumer `width:100%` override 被 jsdom 结构测试遗漏。
+- Manual smoke MUST 使用当前 source 编译出的 exact app flavor；旧 `.app` / 自动启动的同名 bundle 不能作为 evidence。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+// LegacyGate.tsx
+import "./account-app-gate.css";
+import { GateFrame } from "./AccountAppGateViews";
+
+// ProductGate.tsx renders GateFrame but never reaches the stylesheet.
+```
+
+#### Correct
+
+```tsx
+// AccountAppGateViews.tsx
+import "./account-app-gate.css";
+
+export function GateFrame({ children }: Props) {
+  return <main className="account-app-gate">{children}</main>;
+}
+```
+
 ## i18n 规范
 
 - 用户可见文案必须走 `useTranslation().t("...")`。
@@ -513,6 +580,7 @@ return {
 - Toolbar icons MUST inherit `currentColor` or theme tokens. Do not use fixed-color SVG assets such as `stroke="black"` for toolbar icons.
 - Composer geometry is a visual contract: normal composer radius around `14px`, home desktop radius around `16px`, home narrow radius around `14px`; readiness mode chip should be small rounded rectangle, not `999px` pill.
 - Default composer body height SHOULD stay compact; home default wrapper height should remain about two rows shorter than the old `138px` treatment unless a new explicit design updates the contract.
+- `ProductEngineModelSelect` used by an existing Native Session MUST treat engine selection as panel-local draft state. Engine click MUST NOT publish `onExecutionTargetChange`; only an explicit compatible model click MAY publish one complete `engine + modelCatalogEntryId + runtime model + managed provider` target. A successful model commit MUST keep the panel open so the user can continue comparing targets; only Escape、scrim 或显式 close action 关闭 panel. This prevents Provider Continuation from freezing the source engine's still-compatible model before the user chooses the destination model while preserving the product picker interaction contract.
 
 ### 4. Validation & Error Matrix
 
@@ -527,6 +595,7 @@ return {
 | selected mode/reasoning | 仍显示语义 icon | 用文本替代 icon 或撑宽按钮 |
 | selected boolean tools | 邮件、运行跟随、折叠步骤、记忆引用使用同色 icon + 同规格 overlay check | 混用蓝色邮件、绿色圆点、发光 badge 或容器边框 |
 | default composer render | 高度紧凑，resize/max-height 可用 | 默认高度回到过高三行+大空白 |
+| Native Session 从 Kimi+豆包切到 Codex+Sol | 点 Codex 只换 draft model list；点 Sol 后一次发布 Codex+Sol target | engine click 先发布 Codex+豆包并启动 Continuation，之后 UI 显示 Sol 但 runtime 回落 CLI default |
 
 ### 5. Good / Base / Bad Cases
 
@@ -550,6 +619,7 @@ return {
 - `ModeSelect.test.tsx` MUST cover codicon trigger rendering and mode selection behavior.
 - `HomeChat.styles.test.ts` SHOULD assert home composer scoped override keeps inline tools transparent/compact when homepage selector rules exist.
 - Theme visual QA SHOULD check dark and light composer screenshots for icon visibility.
+- `ProductEngineModelSelect.test.tsx` MUST cover cross-engine two-step selection: engine click emits zero target changes; subsequent model click emits exactly one target with the selected destination engine/runtime model and `doge-token-matrix`.
 
 ### 7. Wrong vs Correct
 
@@ -577,4 +647,63 @@ return {
 <button className="selector-button selector-button-mode-trigger">
   <span className={`codicon ${currentMode.icon} selector-button-mode-icon`} />
 </button>
+```
+
+## Scenario: Provider and LLM brand icons use one theme strategy owner
+
+### 1. Scope / Trigger
+
+- Trigger：新增/替换 provider、LLM、model icon，或在 Composer、Account、Settings 等 surface 渲染 `resolveProviderBrandIcon()` 的结果。
+
+### 2. Signatures
+
+- Registry：`providerBrandIconThemeStrategy(src) -> "original" | "mono-adaptive" | "dark-tile"`。
+- Renderer：`<ProviderBrandIconImg src={src} className? />`。
+- Global classes：`.vendor-brand-icon-img`、`.vendor-brand-icon-img--mono-adaptive`、`.vendor-brand-icon-tile`。
+
+### 3. Contracts
+
+- 所有 provider/model brand asset MUST 经 `ProviderBrandIconImg` 渲染；consumer 不得直接 `<img src={resolvedBrandSrc}>`。
+- `currentColor` mono SVG 通过 `<img>` 加载时不会继承 DOM `color`，registry MUST 标记 `mono-adaptive`；light 为黑，dark/dim/system-dark 用 global class 反白。
+- 彩色品牌使用 `original`，禁止全局 invert；白色主体品牌使用 `dark-tile`，不得在浅色 surface 隐形。
+- Renderer MUST 保留 intrinsic + inline `16×16`、`max-width/max-height:100%` 与 `object-fit:contain`，避免 raster 原尺寸突破 wrapper。
+- 若未来确需 light/dark 两套 asset，variant 选择仍归 registry/renderer owner；consumer 只传 brand identity 或 resolved entry，不自行判断 theme。
+
+### 4. Validation & Error Matrix
+
+| asset 类型 / theme | 必须行为 | 禁止行为 |
+|---|---|---|
+| OpenAI mono + light | 黑色 glyph | 固定白色 |
+| OpenAI mono + dark/dim | 浅色 glyph | 黑色融入背景 |
+| system theme + OS dark | 与 explicit dark 同口径 | 只覆盖 `[data-theme=dark]` |
+| Doubao/Claude color | 保持原色 | `invert(1)` 破坏品牌色 |
+| Kimi 白字 + light | dark tile 内可读 | 只剩彩色点 |
+| 1024px raster | wrapper 内 16×16 contain | CSS 未加载时铺满页面 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：Account model table 与 Composer selector 都调用 `ProviderBrandIconImg`，OpenAI 在 dark theme 自动反白。
+- Base：新增 mono provider 时只扩 registry 的 mono set，所有 surface 同时生效。
+- Bad：Account 单独写 `.openai-icon { filter: invert(1) }`，Settings/Composer 仍不可读。
+
+### 6. Tests Required
+
+- Registry test MUST 覆盖 mono/color/dark-tile 三类 strategy。
+- Renderer test MUST 锁定 global classes 与 intrinsic/inline bounds。
+- Static visual contract MUST 覆盖 explicit dark、dim 与 system-dark selector；至少一个 consumer contract MUST 证明不再裸渲染 resolved `<img>`。
+- Affected Composer/Account/Provider component focused tests、target ESLint、typecheck MUST PASS。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+<img src={resolveProviderBrandIcon({ modelId }) ?? ""} />
+```
+
+#### Correct
+
+```tsx
+const src = resolveProviderBrandIcon({ modelId });
+return src ? <ProviderBrandIconImg src={src} /> : <BrandFallbackIcon />;
 ```

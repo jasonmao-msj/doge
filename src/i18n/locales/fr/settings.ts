@@ -1069,6 +1069,8 @@ const settings = {
       "manageModels": "Gérer les modèles",
       "localProviderName": "Utiliser le settings.json local",
       "localProviderDescription": "Autoriser explicitement la lecture de ~/.claude/settings.json",
+      "managedProductLockLabel": "Géré par Doge",
+      "managedProductLockDescription": "Quand l’abonnement Doge est actif, l’application utilise toujours la configuration Doge isolée. La configuration locale reste réservée aux CLI lancés directement dans le terminal.",
       "authorizeAndEnable": "Autoriser et activer",
       "revokeAuthorization": "Révoquer l'autorisation",
       "whatIsThis": "Qu'est-ce que c'est ?",

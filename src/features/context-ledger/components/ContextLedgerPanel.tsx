@@ -19,6 +19,7 @@ import {
 } from "../utils/contextLedgerGovernance";
 import { formatContextLedgerInspectionMarkdown } from "../utils/contextLedgerInspectionMarkdown";
 import { normalizeManagedInstructionSource } from "../../skills/utils/managedInstructionSource";
+import { formatTokenCount } from "@/utils/tokenFormat";
 
 type ContextLedgerPanelProps = {
   projection: ContextLedgerProjection;
@@ -39,18 +40,7 @@ type ContextLedgerPanelProps = {
 };
 
 function formatCompactCount(value: number) {
-  if (!Number.isFinite(value) || value <= 0) {
-    return "0";
-  }
-  if (value >= 1_000_000) {
-    const millions = value / 1_000_000;
-    return Number.isInteger(millions) ? `${millions}m` : `${millions.toFixed(1)}m`;
-  }
-  if (value >= 1_000) {
-    const thousands = value / 1_000;
-    return Number.isInteger(thousands) ? `${thousands}k` : `${thousands.toFixed(1)}k`;
-  }
-  return `${Math.round(value)}`;
+  return formatTokenCount(value);
 }
 
 function resolveGroupLabel(t: (key: string) => string, group: ContextLedgerGroup) {

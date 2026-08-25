@@ -87,6 +87,18 @@ React Component
 26. Tauri debug resource 若也被 bundle resources copy 消费，staging destination 必须是与 source
     独立的 real tree，禁止 symlink。启动前验证 generated manifest 非空且合法；否则后续 copy
     可能把 source/destination 解析为同一文件并截断 runtime resource。
+27. Model catalog entitlement、protocol endpoint smoke 与真实 CLI compatibility 必须分层取证。
+    `/v1/models` 有 id 或 minimal curl 200 不能证明 Codex/Claude/Kimi 的真实 Agent payload
+    （system/tools/stream/client headers）可完成；engine×model compatibility 只能由 exact Runtime
+    target + typed terminal 证明，失败不得被 UI label、dispatch ACK 或另一 client identity 覆盖。
+28. display/catalog/runtime identity 分域后，必须逐层审计 picker local state、per-thread persistence、
+    AppShell effective-model repair、command payload 与 CLI launch config。UI label/勾选正确不能证明 runtime
+    model 生效；至少用 exact per-thread selection + launch config alias + CLI request log 三点对账，禁止任一
+    local/global catalog fallback 把 callable runtime 静默修回默认 model。
+29. Runtime live wire 与 persisted transcript 可能不是同一 schema。修复 terminal/recovery 时必须同时抓取
+    raw stdout event 与落盘 history：字段可能从 snake_case 变 camelCase、补充 status 或把 Provider error
+    包成 synthetic assistant。Adapter MUST 在 live boundary 归一 authoritative rejection 并立即 settle；
+    history scanner 只负责 recovery evidence，不能替代前台终态。process exit/EOF 仍只属于 cleanup。
 
 ## 常见失败模式
 
@@ -136,6 +148,8 @@ React Component
 - 把 `target.engine === selectedEngine` 当成 managed access 已就绪；同 engine 从本地渠道切到
   托管渠道时绕过 native prepare，直到 CLI launch 才发现 OS vault secret 缺失并向用户暴露
   raw `credential is unavailable`。
+- 只修 transcript scanner 的 camelCase API rejection，遗漏 live stdout 的 snake_case flag；DB 已写
+  `target-provider-rejected`，但调用方仍卡在等待 EOF，形成“离线事实正确、前台永远 running”的分裂。
 
 ## Optional Payload Contract
 
@@ -182,6 +196,9 @@ React Component
 - managed Provider transition 至少覆盖：同 engine local/manual → managed、renderer
   `prepared` stale 但 native credential 缺失、prepare 失败时零 Session/Continuation side
   effect、prepare ready 后才建立新的 durable Provider binding。
+- runtime error parity 至少覆盖：同一 Provider rejection 的 live wire 与 persisted history 两种 fixture、
+  camel/snake field 兼容、error result fallback、stdout 持有不退出；断言 exactly-one terminal、
+  no completed、exact process owner 释放、UI caller Promise bounded settlement。
 - mocked RPC 只能证明 mapping，不能代替 fake Runtime side-effect assertion。关键
   routing change 至少留一个可观察实际 Provider process/session key 与 Runtime model 的
   focused test。

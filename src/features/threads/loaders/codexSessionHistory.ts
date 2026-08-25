@@ -2,7 +2,11 @@ import type { ConversationItem } from "../../../types";
 import { findEquivalentReasoningObservationIndex } from "../assembly/conversationNormalization";
 import { normalizeCollabAgentStatusMap } from "../../../utils/collabToolParsing";
 import { buildConversationItemFromThreadItem } from "../../../utils/threadItems";
-import { asRecord, asString } from "./historyLoaderUtils";
+import {
+  asRecord,
+  asString,
+  extractHistoryErrorMessage,
+} from "./historyLoaderUtils";
 
 type CodexSessionEntry = Record<string, unknown>;
 type PendingCommandExecution = {
@@ -478,6 +482,25 @@ function buildReasoningItem(payload: Record<string, unknown>, fallbackId: string
 
 function buildAssistantMessageItem(payload: Record<string, unknown>, fallbackId: string) {
   const text = extractMessageText(payload);
+  if (!text) {
+    return null;
+  }
+  return buildConversationItem({
+    id: fallbackId,
+    type: "agentMessage",
+    text,
+  });
+}
+
+function extractTaskCompleteErrorText(payload: Record<string, unknown>) {
+  return extractHistoryErrorMessage(payload.error);
+}
+
+function buildTaskCompleteErrorItem(
+  payload: Record<string, unknown>,
+  fallbackId: string,
+) {
+  const text = extractTaskCompleteErrorText(payload);
   if (!text) {
     return null;
   }
@@ -1191,6 +1214,19 @@ export function parseCodexSessionHistory(input: unknown): ConversationItem[] {
             messageTimestampById.set(message.id, entryTimestampMs);
           }
           appendCodexHistoryItem(items, message);
+        }
+        return;
+      }
+      if (payloadType === "task_complete") {
+        const errorMessage = buildTaskCompleteErrorItem(
+          payload,
+          `codex-task-error-${index + 1}`,
+        );
+        if (errorMessage) {
+          if (entryTimestampMs !== null) {
+            messageTimestampById.set(errorMessage.id, entryTimestampMs);
+          }
+          appendCodexHistoryItem(items, errorMessage);
         }
       }
       return;

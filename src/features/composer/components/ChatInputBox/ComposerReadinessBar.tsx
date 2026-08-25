@@ -2,11 +2,12 @@ import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { EngineIcon } from '../../../engine/components/EngineIcon';
 import type { ComposerSendReadiness } from '../../utils/composerSendReadiness';
-import type { ModelInfo, ProviderId } from './types';
+import type { ModelInfo, ProductTargetCatalogV1, ProviderId } from './types';
 import type { ProviderModelGroup } from './modelOptions';
 import { ModelSelect } from './selectors/ModelSelect';
 import type { ProviderTargetGroup } from './hooks/useProviderTargetCatalogOwners';
 import type { ExecutionTarget } from '../../../shared-session/target/types';
+import { ProductEngineModelSelect } from './selectors/ProductEngineModelSelect';
 
 function parseContextChipCount(chip: string, prefix: string) {
   if (!chip.startsWith(prefix)) {
@@ -24,6 +25,7 @@ type ComposerReadinessBarProps = {
   modelGroups?: ProviderModelGroup[];
   targetGroups?: ProviderTargetGroup[];
   preferManagedProviderDefaults?: boolean;
+  productTargetCatalog?: ProductTargetCatalogV1;
   executionTarget?: ExecutionTarget | null;
   onExecutionTargetChange?: (target: ExecutionTarget) => void;
   onOpenTargetCatalog?: () => Promise<void> | void;
@@ -54,6 +56,7 @@ export function ComposerReadinessBar({
   modelGroups,
   targetGroups,
   preferManagedProviderDefaults,
+  productTargetCatalog,
   executionTarget,
   onExecutionTargetChange,
   onOpenTargetCatalog,
@@ -107,7 +110,13 @@ export function ComposerReadinessBar({
       })}
     >
       <div className="composer-readiness-target-group" title={readiness.activity.detailLabel}>
-        {onModelSelect || onExecutionTargetChange ? (
+        {productTargetCatalog && executionTarget && onExecutionTargetChange ? (
+          <ProductEngineModelSelect
+            catalog={productTargetCatalog}
+            executionTarget={executionTarget}
+            onExecutionTargetChange={onExecutionTargetChange}
+          />
+        ) : onModelSelect || onExecutionTargetChange ? (
           <ModelSelect
             value={selectedModel ?? ''}
             onChange={onModelSelect ?? (() => {})}

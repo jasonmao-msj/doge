@@ -15,7 +15,7 @@ use super::{
     parse_imported_session_id, parse_json_value, parse_opencode_agent_list,
     parse_opencode_auth_providers, parse_opencode_debug_config_agents,
     parse_opencode_help_commands, parse_opencode_mcp_servers, parse_opencode_session_list,
-    parse_opencode_updated_at, provider_keys_match,
+    parse_opencode_updated_at, project_claude_model_for_managed_product, provider_keys_match,
     record_claude_auto_session_metadata_for_sync_result,
     resolve_claude_auto_session_metadata_session_id, resolve_claude_session_id_for_engine_send,
     resolve_enabled_engine_for_send, validate_remote_requested_engine, EngineConfig,
@@ -31,7 +31,7 @@ use crate::types::{WorkspaceEntry, WorkspaceKind, WorkspaceSettings};
 use chrono::{Local, TimeZone};
 use rusqlite::{params, Connection};
 use serde_json::json;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex as StdMutex};
@@ -80,6 +80,77 @@ fn claude_dispatch_receipt_preserves_managed_provider_identity() {
         "claude::workspace-managed::provider-anthropic"
     );
     assert!(receipt["reasoningEffort"].is_null());
+}
+
+#[test]
+fn managed_product_claude_routes_arbitrary_runtime_model_through_turn_env() {
+    let mut env = BTreeMap::from([
+        (
+            "ANTHROPIC_BASE_URL".to_string(),
+            "https://token-matrix.com".to_string(),
+        ),
+        (
+            "ANTHROPIC_AUTH_TOKEN".to_string(),
+            "synthetic-secret".to_string(),
+        ),
+    ]);
+
+    let cli_model = project_claude_model_for_managed_product(
+        Some(crate::engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID),
+        Some("kimi-for-coding".to_string()),
+        &mut env,
+    );
+
+    assert_eq!(cli_model.as_deref(), Some("sonnet"));
+    for key in [
+        "ANTHROPIC_DEFAULT_FABLE_MODEL",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    ] {
+        assert_eq!(env.get(key).map(String::as_str), Some("kimi-for-coding"));
+    }
+    assert!(!env.contains_key("ANTHROPIC_MODEL"));
+    assert_eq!(
+        env.get("ANTHROPIC_REASONING_MODEL").map(String::as_str),
+        Some("sonnet")
+    );
+    assert_eq!(
+        env.get("CLAUDE_CODE_SUBAGENT_MODEL").map(String::as_str),
+        Some("sonnet")
+    );
+}
+
+#[test]
+fn managed_product_claude_accepts_safe_unicode_public_model_id() {
+    let mut env = BTreeMap::new();
+    let cli_model = project_claude_model_for_managed_product(
+        Some(crate::engine::claude::provider_profile::CLAUDE_ACCOUNT_MANAGED_PROVIDER_PROFILE_ID),
+        Some("豆包".to_string()),
+        &mut env,
+    );
+
+    assert!(is_valid_claude_model_for_passthrough("豆包"));
+    assert_eq!(cli_model.as_deref(), Some("sonnet"));
+    assert_eq!(
+        env.get("ANTHROPIC_DEFAULT_SONNET_MODEL")
+            .map(String::as_str),
+        Some("豆包")
+    );
+}
+
+#[test]
+fn non_product_claude_keeps_explicit_cli_model() {
+    let mut env = BTreeMap::new();
+    assert_eq!(
+        project_claude_model_for_managed_product(
+            Some("provider-anthropic"),
+            Some("claude-opus-4-8".to_string()),
+            &mut env,
+        ),
+        Some("claude-opus-4-8".to_string())
+    );
+    assert!(env.is_empty());
 }
 
 #[test]

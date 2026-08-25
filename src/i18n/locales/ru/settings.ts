@@ -1069,6 +1069,8 @@ const settings = {
       "manageModels": "Управление моделями",
       "localProviderName": "Локальный settings.json",
       "localProviderDescription": "Использовать конфигурацию напрямую из ~/.claude/settings.json",
+      "managedProductLockLabel": "Управляется Doge",
+      "managedProductLockDescription": "Пока подписка Doge активна, приложение всегда использует изолированную конфигурацию Doge. Локальная конфигурация используется только при прямом запуске CLI из терминала.",
       "authorizeAndEnable": "Авторизовать и включить",
       "revokeAuthorization": "Отозвать авторизацию",
       "whatIsThis": "Что это?",

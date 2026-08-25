@@ -1,11 +1,13 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import Check from "lucide-react/dist/esm/icons/check";
 import KeyRound from "lucide-react/dist/esm/icons/key-round";
+import LoaderCircle from "lucide-react/dist/esm/icons/loader-circle";
 import LogOut from "lucide-react/dist/esm/icons/log-out";
 import MoreHorizontal from "lucide-react/dist/esm/icons/more-horizontal";
 import Pencil from "lucide-react/dist/esm/icons/pencil";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import X from "lucide-react/dist/esm/icons/x";
+import dogeMascotAvatar from "../../../assets/brand/doge-mascot-avatar.png";
 import {
   Popover,
   PopoverContent,
@@ -18,16 +20,25 @@ import {
 } from "../../../components/ui/tooltip";
 import type { AccountExperienceControllerV1 } from "../hooks/useAccountExperienceController";
 import { useAccountExperienceCopyV1 } from "../hooks/useAccountExperienceCopy";
+import type { ProductEntitlementSnapshotV1 } from "../runtime/productEntitlementStore";
 import { AccountSecurityPanel } from "./AccountSecurityPanel";
 
 export type AccountCenterHeaderProps = {
   readonly controller: AccountExperienceControllerV1;
   readonly showLegacyConfiguration: boolean;
+  readonly product: ProductEntitlementSnapshotV1;
+  readonly refreshing: boolean;
+  readonly lastUpdatedAt: string | null;
+  readonly onRefresh: () => Promise<void>;
 };
 
 export function AccountCenterHeader({
   controller,
   showLegacyConfiguration,
+  product,
+  refreshing,
+  lastUpdatedAt,
+  onRefresh,
 }: AccountCenterHeaderProps) {
   const copy = useAccountExperienceCopyV1();
   const session = controller.bootstrap?.session;
@@ -42,10 +53,6 @@ export function AccountCenterHeader({
   const passwordEditable =
     controller.bootstrap?.capabilities.entries["account.passwordChange"]
       ?.status === "enabled";
-  const usageFetchedAt =
-    controller.centerTab === "usage"
-      ? (controller.usage?.fetchedAt ?? null)
-      : null;
   const revokeAllSessionsEnabled =
     controller.bootstrap?.capabilities.entries["account.revokeAllSessions"]
       ?.status === "enabled";
@@ -70,86 +77,30 @@ export function AccountCenterHeader({
   if (!session || session.status !== "authenticated") return null;
 
   return (
-    <header className="account-center-header">
-      <div>
-        {editingProfile ? (
-          <form
-            className="account-header-profile-editor"
-            onSubmit={submitProfile}
-          >
-            <input
-              aria-label={copy.displayName}
-              name="display-name"
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              autoComplete="off"
-              maxLength={80}
-              required
-              autoFocus
-            />
-            <AccountHeaderIconAction
-              label={copy.saveProfile}
-              busy={controller.busy}
-              disabled={controller.busy}
-              onClick={() => undefined}
-              submit
-            >
-              <Check size={17} aria-hidden />
-            </AccountHeaderIconAction>
-            <AccountHeaderIconAction
-              label={copy.cancel}
-              busy={false}
-              disabled={controller.busy}
-              onClick={() => {
-                setDisplayName(profileLabel);
-                setEditingProfile(false);
-              }}
-            >
-              <X size={17} aria-hidden />
-            </AccountHeaderIconAction>
-          </form>
-        ) : (
-          <div className="account-header-profile-line">
-            <h2 id="account-center-title">{profileLabel}</h2>
-            {profileEditable ? (
-              <AccountHeaderIconAction
-                label={copy.editProfile}
-                busy={false}
-                disabled={controller.busy}
-                onClick={() => setEditingProfile(true)}
-              >
-                <Pencil size={15} aria-hidden />
-              </AccountHeaderIconAction>
-            ) : null}
-          </div>
-        )}
-        <p className="account-connection-status">
-          <span className="account-connection-dot" aria-hidden />
-          <span>{copy.signedInAs}</span>
-          <span aria-hidden>·</span>
-          <span>{session.primaryEmailLabel}</span>
-        </p>
-      </div>
+    <>
+      <header className="account-center-header">
+        <div>
+          <h1 id="account-center-title">{copy.accountDetailsTitle}</h1>
+        </div>
       <div className="account-center-header-actions">
-        {usageFetchedAt ? (
+        {lastUpdatedAt ? (
           <time
             className="account-header-fetched-at"
-            dateTime={usageFetchedAt}
-            data-freshness={controller.usage?.freshness ?? "fresh"}
+            dateTime={lastUpdatedAt}
           >
-            {formatShortDateTimeV1(usageFetchedAt)}
+            {formatShortDateTimeV1(lastUpdatedAt)}
           </time>
         ) : null}
-        {controller.centerTab === "usage" ? (
+        {product.status === "ready" ? (
           <AccountHeaderIconAction
-            label={copy.refreshUsage}
-            busy={controller.usageLoading}
-            disabled={controller.usageLoading}
-            onClick={() => void controller.loadUsage()}
+            label={copy.accountDetailsRefresh}
+            busy={refreshing}
+            disabled={refreshing}
+            onClick={() => void onRefresh()}
           >
             <RefreshCw
               size={18}
-              className={controller.usageLoading ? "account-spin" : ""}
+              className={refreshing ? "account-spin" : ""}
               aria-hidden
             />
           </AccountHeaderIconAction>
@@ -172,7 +123,79 @@ export function AccountCenterHeader({
           <LogOut size={18} aria-hidden />
         </AccountHeaderIconAction>
       </div>
-    </header>
+      </header>
+      <section className="account-profile-card" aria-label={copy.profile}>
+        <img className="account-profile-avatar" src={dogeMascotAvatar} alt="" aria-hidden />
+        <div className="account-profile-identity">
+          {editingProfile ? (
+            <form
+              className="account-header-profile-editor"
+              onSubmit={submitProfile}
+            >
+              <input
+                aria-label={copy.displayName}
+                name="display-name"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                autoComplete="off"
+                maxLength={80}
+                required
+                autoFocus
+              />
+              <AccountHeaderIconAction
+                label={copy.saveProfile}
+                busy={controller.busy}
+                disabled={controller.busy}
+                onClick={() => undefined}
+                submit
+              >
+                <Check size={17} aria-hidden />
+              </AccountHeaderIconAction>
+              <AccountHeaderIconAction
+                label={copy.cancel}
+                busy={false}
+                disabled={controller.busy}
+                onClick={() => {
+                  setDisplayName(profileLabel);
+                  setEditingProfile(false);
+                }}
+              >
+                <X size={17} aria-hidden />
+              </AccountHeaderIconAction>
+            </form>
+          ) : (
+            <div className="account-header-profile-line">
+              <h2>{profileLabel}</h2>
+              {profileEditable ? (
+                <AccountHeaderIconAction
+                  label={copy.editProfile}
+                  busy={false}
+                  disabled={controller.busy}
+                  onClick={() => setEditingProfile(true)}
+                >
+                  <Pencil size={15} aria-hidden />
+                </AccountHeaderIconAction>
+              ) : null}
+            </div>
+          )}
+          <p>{session.primaryEmailLabel}</p>
+          <span className="sr-only">{copy.signedInAs}</span>
+        </div>
+        {product.status === "ready" && product.entitlement ? (
+          <span className="account-product-status-badge">
+            <i aria-hidden />
+            <span>{product.entitlement.planName ?? copy.subscription}</span>
+            <span aria-hidden>·</span>
+            <span>{copy.accountSubscriptionActive}</span>
+          </span>
+        ) : (
+          <span className="account-product-status-badge" data-status="loading">
+            <LoaderCircle className="account-spin" aria-hidden />
+            <span>{copy.loading}</span>
+          </span>
+        )}
+      </section>
+    </>
   );
 }
 

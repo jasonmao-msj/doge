@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountGatewayProvider } from "../gateway/AccountGatewayProvider";
 import { createMockAccountGatewayV1 } from "../mock/MockAccountGatewayV1";
@@ -7,10 +8,18 @@ import { createScenarioRuntimeV1 } from "../mock/ScenarioRuntimeV1";
 import { AccountExperience } from "./AccountExperience";
 import { AccountConfigurationBubbleHost } from "./AccountConfigurationBubbleHost";
 import { setAccountConfigurationBubbleVisibleV1 } from "../runtime/configurationBubbleStore";
+import {
+  clearProductEntitlementV1,
+  publishProductReadyV1,
+} from "../runtime/productEntitlementStore";
 import { createAccountCallContextV1 } from "../utils/accountFormValues";
 
 const externalLinkMocks = vi.hoisted(() => ({
   openAccountExternalUrl: vi.fn(async () => undefined),
+}));
+const productDetailMocks = vi.hoisted(() => ({
+  readUsage: vi.fn(),
+  readBilling: vi.fn(),
 }));
 
 vi.mock("react-i18next", () => ({
@@ -18,6 +27,10 @@ vi.mock("react-i18next", () => ({
 }));
 
 vi.mock("../../../services/accountExternalLinks", () => externalLinkMocks);
+vi.mock("../../../services/accountProductCommands", () => ({
+  readAccountProductUsageV1: productDetailMocks.readUsage,
+  readAccountProductBillingV1: productDetailMocks.readBilling,
+}));
 
 function renderScenarioV1(scenarioId: string) {
   const runtime = createScenarioRuntimeV1(scenarioId);
@@ -47,10 +60,16 @@ function renderScenarioV1(scenarioId: string) {
 beforeEach(() => {
   vi.spyOn(Date, "now").mockReturnValue(1_893_456_000_000);
   externalLinkMocks.openAccountExternalUrl.mockClear();
+  productDetailMocks.readUsage.mockReset();
+  productDetailMocks.readBilling.mockReset();
+  productDetailMocks.readUsage.mockReturnValue(new Promise(() => undefined));
+  productDetailMocks.readBilling.mockReturnValue(new Promise(() => undefined));
+  act(() => publishTestProductReady());
 });
 
 afterEach(() => {
   setAccountConfigurationBubbleVisibleV1(false);
+  act(() => clearProductEntitlementV1());
   vi.restoreAllMocks();
 });
 
@@ -136,7 +155,7 @@ describe("AccountExperience", () => {
 
     expect(await screen.findByText("账号服务暂时不可用")).toBeTruthy();
     const helpButton = screen.getByRole("button", {
-      name: "查看说明：账号服务暂时不可用",
+      name: "查看错误详情",
     });
     expect(helpButton).toBeTruthy();
     expect(screen.queryByText("请检查网络连接，或稍后重试。")).toBeNull();
@@ -150,8 +169,44 @@ describe("AccountExperience", () => {
     });
     await waitFor(() => {
       expect(document.querySelector('[data-slot="tooltip-popup"]')?.textContent).toContain(
-        "请检查网络连接，或稍后重试。",
+        "查看错误详情",
       );
+    });
+  });
+
+  it("reveals and hides safe multiline bootstrap diagnostics from the help trigger", async () => {
+    const user = userEvent.setup();
+    renderScenarioV1("bootstrap.offline");
+    const detailsButton = await screen.findByRole("button", { name: "查看错误详情" });
+
+    expect(detailsButton.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("region", { name: "账号服务错误详情" })).toBeNull();
+
+    await user.tab();
+    expect(document.activeElement).toBe(detailsButton);
+    await waitFor(() => {
+      expect(document.querySelector('[data-slot="tooltip-popup"]')?.textContent).toContain(
+        "查看错误详情",
+      );
+    });
+    await user.keyboard("{Enter}");
+
+    const details = await screen.findByRole("region", { name: "账号服务错误详情" });
+    expect(screen.getByRole("button", { name: "收起错误详情" }).getAttribute("aria-expanded"))
+      .toBe("true");
+    expect(details.textContent).toContain("请检查网络连接，或稍后重试。");
+    expect(within(details).getByText("错误代码")).toBeTruthy();
+    expect(within(details).getByText("offline")).toBeTruthy();
+    expect(within(details).getByText("capabilities")).toBeTruthy();
+    expect(within(details).getByText("useLocalMode")).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "收起错误详情" }));
+    expect(screen.queryByRole("region", { name: "账号服务错误详情" })).toBeNull();
+    expect(screen.getByRole("button", { name: "查看错误详情" }).getAttribute("aria-expanded"))
+      .toBe("false");
+    await user.tab();
+    await waitFor(() => {
+      expect(document.querySelector('[data-slot="tooltip-popup"]')).toBeNull();
     });
   });
 
@@ -188,6 +243,25 @@ describe("AccountExperience", () => {
     });
     expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
     expect(screen.queryByDisplayValue("synthetic-password")).toBeNull();
+  });
+
+  it("loads profile but skips legacy API-key configuration reads in the product account center", async () => {
+    const runtime = createScenarioRuntimeV1("session.cold-restore");
+    if (!runtime.ok) throw new Error("missing session scenario");
+    const gateway = createMockAccountGatewayV1(runtime.value);
+    const profileRead = vi.spyOn(gateway.profile, "read");
+    const keyStatusRead = vi.spyOn(gateway.managedKey, "readStatus");
+    const keyCandidatesRead = vi.spyOn(gateway.managedKey, "listCandidates");
+    render(
+      <AccountGatewayProvider gateway={gateway}>
+        <AccountExperience />
+      </AccountGatewayProvider>,
+    );
+
+    expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
+    await waitFor(() => expect(profileRead).toHaveBeenCalledTimes(1));
+    expect(keyStatusRead).not.toHaveBeenCalled();
+    expect(keyCandidatesRead).not.toHaveBeenCalled();
   });
 
   it("buffers an early recovery event and resets the password inside Doge", async () => {
@@ -291,103 +365,32 @@ describe("AccountExperience", () => {
     expect(await screen.findByRole("heading", { name: "设置新密码" })).toBeTruthy();
   });
 
-  it("does not read quota until the user opens the quota tab", async () => {
-    vi.spyOn(HTMLElement.prototype, "scrollWidth", "get").mockReturnValue(900);
+  it("loads product usage and billing without calling the legacy engine-scoped usage gateway", async () => {
+    const currentUsage = deferredValue<ReturnType<typeof productUsageEnvelope>>();
+    const billing = deferredValue<ReturnType<typeof productBillingEnvelope>>();
+    productDetailMocks.readUsage.mockReturnValue(currentUsage.promise);
+    productDetailMocks.readBilling.mockReturnValue(billing.promise);
     const { gateway, container } = renderScenarioV1("usage.fresh-normal");
-    const usageRead = vi.spyOn(gateway.usage, "read");
-    const dayModelsRead = vi.spyOn(gateway.usage, "readDayModels");
-    expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
-    expect(usageRead).not.toHaveBeenCalled();
-    await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: "额度" }));
-    });
-    await waitFor(() => expect(usageRead).toHaveBeenCalledTimes(1));
-    const codexCard = screen.getByRole("button", { name: /Codex/ });
-    const claudeCard = screen.getByRole("button", { name: /Claude/ });
-    const refreshButton = screen.getByRole("button", { name: "刷新额度" });
-    const logoutButton = screen.getByRole("button", { name: "退出登录" });
-    expect(codexCard.getAttribute("aria-pressed")).toBe("true");
-    expect(claudeCard.getAttribute("aria-pressed")).toBe("false");
-    expect(container.querySelector(".account-usage-engine-list")?.getAttribute("data-columns")).toBe("2");
-    expect(refreshButton.textContent).toBe("");
-    expect(logoutButton.textContent).toBe("");
-    expect(container.querySelector("time.account-header-fetched-at")?.textContent).toMatch(
-      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/,
-    );
-    expect(screen.queryByRole("heading", { name: "额度" })).toBeNull();
-    fireEvent.focus(refreshButton);
-    expect((await screen.findByRole("tooltip")).textContent).toContain("刷新额度");
-    fireEvent.blur(refreshButton);
-    expect(screen.getByText("过去一年")).toBeTruthy();
-    expect(screen.getAllByText("今日").length).toBeGreaterThan(0);
-    expect(
-      container.querySelectorAll(".account-usage-day[data-level='0']").length,
-    ).toBeGreaterThan(300);
-    expect(container.querySelector(".account-usage-heatmap-legend")).toBeNull();
-    expect(
-      Array.from(container.querySelectorAll(".account-usage-weekdays span"))
-        .map((element) => element.textContent)
-        .filter(Boolean),
-    ).toEqual(["一", "三", "五"]);
-    const monthLabels = Array.from(
-      container.querySelectorAll(".account-usage-heatmap-months span"),
-    ).map((element) => element.textContent ?? "").filter(Boolean);
-    expect(monthLabels.length).toBeGreaterThan(10);
-    expect(monthLabels.every((label) => label.includes("月") && !/[A-Za-z]/.test(label))).toBe(true);
-    expect(monthLabels.some((label, index) => label === monthLabels[index - 1])).toBe(false);
-    await waitFor(() => {
-      expect(container.querySelector<HTMLElement>(".account-usage-heatmap-scroll")?.scrollLeft)
-        .toBe(900);
-    });
-    const activeDay = container.querySelector<HTMLButtonElement>(
-      ".account-usage-day[data-level='2']",
-    );
-    expect(activeDay).toBeTruthy();
-    fireEvent.pointerEnter(activeDay!);
-    await waitFor(() => expect(dayModelsRead).toHaveBeenCalledTimes(1));
-    expect(dayModelsRead.mock.calls[0]?.[0]).toEqual({
-      engineId: "codex",
-      date: activeDay?.dataset.date,
-    });
-    fireEvent.pointerEnter(activeDay!);
-    expect(dayModelsRead).toHaveBeenCalledTimes(1);
-    fireEvent.click(claudeCard);
-    expect(usageRead).toHaveBeenCalledTimes(1);
-    expect(codexCard.getAttribute("aria-pressed")).toBe("false");
-    expect(claudeCard.getAttribute("aria-pressed")).toBe("true");
-    const claudeDay = container.querySelector<HTMLButtonElement>(
-      ".account-usage-day[data-level='3']",
-    );
-    expect(claudeDay).toBeTruthy();
-    fireEvent.pointerEnter(claudeDay!);
-    await waitFor(() => expect(dayModelsRead).toHaveBeenCalledTimes(2));
-    expect(dayModelsRead.mock.calls[1]?.[0]).toEqual({
-      engineId: "claude-code",
-      date: claudeDay?.dataset.date,
-    });
+    const legacyUsageRead = vi.spyOn(gateway.usage, "read");
 
-    const firstUsageResult = await usageRead.mock.results[0]!.value;
-    let settleRefresh: ((value: typeof firstUsageResult) => void) | null = null;
-    usageRead.mockImplementationOnce(() => new Promise((resolve) => {
-      settleRefresh = resolve;
-    }));
-    fireEvent.click(refreshButton);
-    expect(refreshButton.getAttribute("aria-busy")).toBe("true");
-    expect(refreshButton.hasAttribute("disabled")).toBe(true);
-    fireEvent.click(refreshButton);
-    expect(usageRead).toHaveBeenCalledTimes(2);
-    await act(async () => {
-      settleRefresh?.(firstUsageResult);
-    });
-    await waitFor(() => expect(refreshButton.getAttribute("aria-busy")).toBe("false"));
-  });
-
-  it("keeps subscription and quota as the only account tabs", async () => {
-    renderScenarioV1("subscription.summary");
     expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "订阅" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "额度" })).toBeTruthy();
-    expect(screen.queryByRole("tab", { name: "安全" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "账号与订阅" })).toBeTruthy();
+    expect(screen.queryByText("管理订阅状态、查看额度消耗与账单")).toBeNull();
+    await waitFor(() => expect(productDetailMocks.readUsage).toHaveBeenCalledWith(
+      expect.objectContaining({ granularity: "day" }),
+    ));
+    await waitFor(() => expect(productDetailMocks.readBilling).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      currentUsage.resolve(productUsageEnvelope());
+      billing.resolve(productBillingEnvelope());
+      await Promise.all([currentUsage.promise, billing.promise]);
+    });
+    expect(legacyUsageRead).not.toHaveBeenCalled();
+    expect(container.querySelector(".account-usage-stat-grid")).toBeTruthy();
+    expect(screen.getByRole("table", { name: "模型用量" })).toBeTruthy();
+    expect(screen.queryByText(/暂未记录 Doge 的运行引擎/)).toBeNull();
+    expect(screen.queryByRole("tab", { name: "订阅" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "额度" })).toBeNull();
   });
 
   it("lists files before lazily loading safe change details", async () => {
@@ -595,3 +598,106 @@ describe("AccountExperience", () => {
     expect(screen.queryByDisplayValue("new-password")).toBeNull();
   });
 });
+
+function publishTestProductReady(): void {
+  publishProductReadyV1({
+    entitlement: {
+      status: "active",
+      subscriptionId: 9,
+      groupId: 5,
+      groupName: "Doge",
+      planName: "Doge Pro",
+      expiresAt: "2030-02-01T00:00:00Z",
+      usage: {
+        daily: { usedUsd: 1, limitUsd: 10, percentage: 10 },
+        weekly: { usedUsd: 2, limitUsd: 20, percentage: 10 },
+        monthly: { usedUsd: 3, limitUsd: 30, percentage: 10 },
+      },
+    },
+    engines: [
+      { id: "codex", displayName: "Codex" },
+      { id: "claude-code", displayName: "Claude" },
+      { id: "kimi", displayName: "Kimi" },
+    ],
+    models: [{
+      id: "gpt-5.6-sol",
+      displayName: "gpt-5.6-sol",
+      model: "gpt-5.6-sol",
+      compatibleEngines: ["codex"],
+      capabilities: ["chat"],
+    }],
+  });
+}
+
+function productUsageEnvelope() {
+  return {
+    ok: true,
+    value: {
+      query: {
+        start_date: "2030-01-02",
+        end_date: "2030-01-10",
+        granularity: "day",
+      },
+      fetched_at: "2030-01-10T12:00:00Z",
+      range: {
+        query_start_date: "2030-01-02",
+        query_end_date: "2030-01-10",
+      },
+      totals: {
+        requests: 7,
+        input_tokens: 100,
+        output_tokens: 20,
+        cache_tokens: 10,
+        total_tokens: 130,
+        standard_cost_usd: 1.25,
+        actual_cost_usd: 1,
+        average_duration_ms: 7200,
+      },
+      trend_status: "available",
+      trend: [{
+        bucket: "2030-01-02",
+        input_tokens: 100,
+        output_tokens: 20,
+        cache_creation_tokens: 4,
+        cache_read_tokens: 6,
+        total_tokens: 130,
+        standard_cost_usd: 0.1,
+        actual_cost_usd: 0.08,
+      }],
+      models_status: "available",
+      models: [{
+        id: "gpt-5.6-sol",
+        display_name: "gpt-5.6-sol",
+        requests: 5,
+        total_tokens: 100,
+        standard_cost_usd: 1,
+        actual_cost_usd: 0.8,
+      }],
+    },
+  };
+}
+
+function productBillingEnvelope() {
+  return {
+    ok: true,
+    value: {
+      fetched_at: "2030-01-10T12:00:00Z",
+      orders: [{
+        id: 91,
+        plan_name: "Doge Pro",
+        occurred_at: "2030-01-01T00:01:00Z",
+        amount: 86.4,
+        currency: "CNY",
+        status: "paid",
+      }],
+    },
+  };
+}
+
+function deferredValue<Value>() {
+  let resolve: (value: Value) => void = () => undefined;
+  const promise = new Promise<Value>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+}

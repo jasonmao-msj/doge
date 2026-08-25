@@ -127,7 +127,6 @@ import { useSystemProxySettings } from "./settings-view/hooks/useSystemProxySett
 import { AccountSettingsSection } from "../../account/components/AccountSettingsSection";
 import { isAccountConvenienceV1Enabled } from "../../account/runtime/featureFlag";
 import { ACCOUNT_UI_PREVIEW_V1_ENABLED } from "../../account/runtime/uiPreviewFlag";
-import { createRealAccountGatewayV1 } from "../../../services/accountGateway";
 
 const accountConvenienceV1Enabled = isAccountConvenienceV1Enabled();
 const AccountPreviewSettingsSection = ACCOUNT_UI_PREVIEW_V1_ENABLED
@@ -143,8 +142,7 @@ function AccountSettingsSectionHost() {
 }
 
 function RealAccountSettingsSectionHost() {
-  const gateway = useMemo(() => createRealAccountGatewayV1(), []);
-  return <AccountSettingsSection gateway={gateway} />;
+  return <AccountSettingsSection />;
 }
 
 export type SettingsViewProps = {
@@ -1919,20 +1917,20 @@ export function SettingsView({
           </button>
         </aside>
         <div className="settings-content-wrap">
-          <div className="settings-page-head" data-tauri-drag-region="true">
-            <div className="settings-page-head-inner">
-              <h1 className="settings-page-title">
-                {activeSectionHeader.title}
-              </h1>
-              {activeSection !== "community" &&
-                activeSection !== "about" &&
-                activeSection !== "account" && (
-                <p className="settings-page-description">
-                  {activeSectionHeader.description}
-                </p>
-              )}
+          {activeSection !== "account" ? (
+            <div className="settings-page-head" data-tauri-drag-region="true">
+              <div className="settings-page-head-inner">
+                <h1 className="settings-page-title">
+                  {activeSectionHeader.title}
+                </h1>
+                {activeSection !== "community" && activeSection !== "about" ? (
+                  <p className="settings-page-description">
+                    {activeSectionHeader.description}
+                  </p>
+                ) : null}
+              </div>
             </div>
-          </div>
+          ) : null}
           <ScrollArea
             className={`settings-content ${
               activeSection === "providers" || activeSection === "vendors"

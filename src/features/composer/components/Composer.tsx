@@ -67,6 +67,7 @@ import { isSameProviderExecutionProfile } from "./ChatInputBox/selectors/ModelSe
 import {
   accessModeToPermissionMode,
   permissionModeToAccessMode,
+  type ProductTargetCatalogV1,
   type ProviderId,
 } from "./ChatInputBox/types";
 import {
@@ -107,6 +108,13 @@ import {
   subscribeManagedEnginePreparationV1,
 } from "../../account/runtime/engineEntitlementStore";
 import { requestAccountEngineSwitchV1 } from "../../account/runtime/engineSwitchSignal";
+import { useProductEntitlementSnapshotV1 } from "../../account/runtime/productEntitlementStore";
+import {
+  isSameProductExecutionTargetV1,
+  productEngineRuntimeIdV1,
+  resolveProductManagedExecutionTargetV1,
+} from "../../account/runtime/productExecutionTarget";
+import { productModelMatchesIdentityV1 } from "../../account/runtime/productModelCompatibility";
 import { overlaySessionFileChangesWithGitStats } from "../../messages/utils/turnFileChanges";
 import {
   ingestFileEditsFromConversationItems,
@@ -186,7 +194,6 @@ import {
   isMultiAgentTargetSupported,
   MultiAgentComposerToggle,
 } from "../../multi-agent/components/ComposerToggle";
-
 
 type RewindExecutionOptions = {
   mode?: RewindMode;
@@ -744,8 +751,42 @@ function ComposerImpl({
     activeThreadId ?? "",
   );
   const selectedSharedTarget = sharedTargetState.selectedNextTarget;
+  const isSharedSessionResolved =
+    isSharedSession || isSharedSessionThreadId(activeThreadId);
   const [selectedCreationTarget, setSelectedCreationTarget] =
     useState<ExecutionTarget | null>(null);
+  const productEntitlement = useProductEntitlementSnapshotV1();
+  const usesProductManagedCreation =
+    createSessionTargetPicker && productEntitlement.status === "ready";
+  // Product-ready users always use the same managed engine/model picker.
+  // Native conversations no longer fall back to the legacy provider/channel
+  // menu; selecting any row still crosses the existing continuation boundary.
+  const usesProductTargetCatalog = productEntitlement.status === "ready";
+  const productTargetCatalog = useMemo<ProductTargetCatalogV1 | undefined>(
+    () =>
+      usesProductTargetCatalog
+        ? {
+            engines: productEntitlement.engines.map((engine) => ({
+              id: productEngineRuntimeIdV1(engine.id),
+              displayName: engine.displayName,
+            })),
+            models: productEntitlement.models,
+            modelsStatus:
+              productEntitlement.modelsStatus === "refreshing" ||
+              productEntitlement.modelsStatus === "stale"
+                ? productEntitlement.modelsStatus
+                : "ready",
+            modelsUpdatedAt: productEntitlement.modelsUpdatedAt,
+          }
+        : undefined,
+    [
+      productEntitlement.engines,
+      productEntitlement.models,
+      productEntitlement.modelsStatus,
+      productEntitlement.modelsUpdatedAt,
+      usesProductTargetCatalog,
+    ],
+  );
   const managedEnginePreparation = useSyncExternalStore(
     subscribeManagedEnginePreparationV1,
     readManagedEnginePreparationV1,
@@ -758,16 +799,18 @@ function ComposerImpl({
       ? "unknown"
       : readManagedEngineEntitlementsV1()[managedEngineId];
   const needsManagedCreationPreparation =
+    !usesProductManagedCreation &&
     createSessionTargetPicker &&
     requestedProviderProfileId === null &&
     managedEngineId !== null &&
     managedEngineEntitlementStatus === "active" &&
     managedEnginePreparation[managedEngineId] !== "prepared";
   const usesManagedCreationDefault =
-    createSessionTargetPicker &&
-    requestedProviderProfileId === null &&
-    managedEngineId !== null &&
-    managedEnginePreparation[managedEngineId] === "prepared";
+    usesProductManagedCreation ||
+    (createSessionTargetPicker &&
+      requestedProviderProfileId === null &&
+      managedEngineId !== null &&
+      managedEnginePreparation[managedEngineId] === "prepared");
   const creationProviderProfileId =
     requestedProviderProfileId ??
     (usesManagedCreationDefault ? MANAGED_PROVIDER_PROFILE_ID_V1 : null);
@@ -775,8 +818,7 @@ function ComposerImpl({
     ? undefined
     : models.some(
         (model) =>
-          model.providerProfileId?.trim() ===
-          MANAGED_PROVIDER_PROFILE_ID_V1,
+          model.providerProfileId?.trim() === MANAGED_PROVIDER_PROFILE_ID_V1,
       );
   // 首页 picker 主动切换 engine 时，parent selectedEngine 可能尚未异步跟上；
   // 用 ref 标记「等待 parent 追上的目标」，避免误清 sticky creation target。
@@ -800,8 +842,56 @@ function ComposerImpl({
     selectedEngine,
     selectedModelId,
   ]);
-  const effectiveCreationTarget =
+  const preferredCreationTarget =
     selectedCreationTarget ?? defaultCreationTarget;
+  const productManagedCreationTarget = useMemo(
+    () =>
+      usesProductManagedCreation
+        ? resolveProductManagedExecutionTargetV1({
+            // Product Home has one deterministic starting point on every app
+            // open. Persisted global/local engine defaults are not product
+            // authority; explicit picker interaction is kept in this local
+            // target until the new session is created.
+            target: selectedCreationTarget,
+            preferredEngine: "codex",
+            engines: productEntitlement.engines,
+            models: productEntitlement.models,
+          })
+        : null,
+    [
+      productEntitlement.engines,
+      productEntitlement.models,
+      selectedCreationTarget,
+      usesProductManagedCreation,
+    ],
+  );
+  const productManagedSharedTarget = useMemo(
+    () =>
+      usesProductTargetCatalog && isSharedSessionResolved
+        ? resolveProductManagedExecutionTargetV1({
+            target: selectedSharedTarget,
+            engines: productEntitlement.engines,
+            models: productEntitlement.models,
+          })
+        : null,
+    [
+      isSharedSessionResolved,
+      productEntitlement.engines,
+      productEntitlement.models,
+      selectedSharedTarget,
+      usesProductTargetCatalog,
+    ],
+  );
+  const productManagedSharedTargetNeedsRepair =
+    usesProductTargetCatalog &&
+    isSharedSessionResolved &&
+    !isSameProductExecutionTargetV1(
+      selectedSharedTarget,
+      productManagedSharedTarget,
+    );
+  const effectiveCreationTarget = usesProductManagedCreation
+    ? productManagedCreationTarget
+    : preferredCreationTarget;
   const requestedManagedCreationPreparationRef = useRef<string | null>(null);
   useEffect(() => {
     if (!needsManagedCreationPreparation || managedEngineId === null) {
@@ -978,10 +1068,10 @@ function ComposerImpl({
   // 身份 id-first 纵深防御（fix-shared-session-identity-id-first）：
   // prop 链收敛正确时与 isSharedSession 一致；prop 过期时 shared: id 仍兜底，
   // 保证 shared id 永不进入 native 续接分支。
-  const isSharedSessionResolved =
-    isSharedSession || isSharedSessionThreadId(activeThreadId);
   const selectedAtomicTarget = isSharedSessionResolved
-    ? selectedSharedTarget
+    ? usesProductTargetCatalog
+      ? (productManagedSharedTarget ?? selectedSharedTarget)
+      : selectedSharedTarget
     : createSessionTargetPicker
       ? effectiveCreationTarget
       : nativeSessionTarget;
@@ -997,11 +1087,7 @@ function ComposerImpl({
   // 协作运行中（含启动/汇总空窗）pill 显示进行中，避免「未开启」误导
   const collabRunActive =
     hasActiveAgentRun ||
-    Boolean(
-      collabUi &&
-        collabUi.phase !== "idle" &&
-        collabUi.phase !== "done",
-    );
+    Boolean(collabUi && collabUi.phase !== "idle" && collabUi.phase !== "done");
   // 编排执行中锁定主输入区；终态后 collabRunActive 变 false 自动恢复
   const collabLocksComposer = collabRunActive;
   const composerInteractionDisabled = disabled || collabLocksComposer;
@@ -1206,7 +1292,9 @@ function ComposerImpl({
     onPickImages?.();
   }, [imageInputSupported, notifyImageInputUnsupported, onPickImages]);
   const sharedTargetResolved =
-    !isSharedSession || isResolvedExecutionTarget(selectedSharedTarget);
+    !isSharedSession ||
+    (isResolvedExecutionTarget(selectedSharedTarget) &&
+      !productManagedSharedTargetNeedsRepair);
   const managedCreationTargetPending =
     usesManagedCreationDefault &&
     !isResolvedExecutionTarget(effectiveCreationTarget);
@@ -1229,7 +1317,14 @@ function ComposerImpl({
       if (!activeWorkspaceId || !activeThreadId || sharedTargetPickerLocked) {
         return;
       }
-      if (!isResolvedExecutionTarget(target)) {
+      const nextTarget = usesProductTargetCatalog
+        ? resolveProductManagedExecutionTargetV1({
+            target,
+            engines: productEntitlement.engines,
+            models: productEntitlement.models,
+          })
+        : target;
+      if (!isResolvedExecutionTarget(nextTarget)) {
         // CLI / Provider 菜单导航属于 Picker 内部过渡态，不是一次持久化失败。
         // 只有完整 Model row 形成 ResolvedExecutionTarget 后才允许跨过该边界。
         return;
@@ -1240,7 +1335,7 @@ function ComposerImpl({
       const previousState = getSharedTargetState(workspaceId, threadId);
       const previousTarget = previousState.selectedNextTarget;
       // 乐观更新：先 hydrate UI，再异步持久化。
-      hydrateSharedTargetState(workspaceId, threadId, target);
+      hydrateSharedTargetState(workspaceId, threadId, nextTarget);
       beginSharedTargetPersist(workspaceId, threadId);
       const persistenceKey = `${workspaceId}::${threadId}`;
       const previousPersistence =
@@ -1252,11 +1347,11 @@ function ComposerImpl({
           const response = await persistSharedSessionSelectedTarget(
             workspaceId,
             threadId,
-            target,
+            nextTarget,
           );
           const persistedTarget = resolveBackendAuthoritativeExecutionTarget(
             response,
-            target,
+            nextTarget,
           );
           hydrateSharedTargetState(workspaceId, threadId, persistedTarget);
           dispatchSharedSendEvent(workspaceId, threadId, {
@@ -1305,8 +1400,50 @@ function ComposerImpl({
         }
       });
     },
-    [activeThreadId, activeWorkspaceId, sharedTargetPickerLocked, t],
+    [
+      activeThreadId,
+      activeWorkspaceId,
+      productEntitlement.engines,
+      productEntitlement.models,
+      sharedTargetPickerLocked,
+      t,
+      usesProductTargetCatalog,
+    ],
   );
+  const productSharedRepairAttemptRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      !activeWorkspaceId ||
+      !activeThreadId ||
+      !productManagedSharedTargetNeedsRepair ||
+      !productManagedSharedTarget ||
+      sharedTargetPickerLocked
+    ) {
+      if (!productManagedSharedTargetNeedsRepair) {
+        productSharedRepairAttemptRef.current = null;
+      }
+      return;
+    }
+    const repairKey = [
+      activeWorkspaceId,
+      activeThreadId,
+      productManagedSharedTarget.engine,
+      productManagedSharedTarget.modelCatalogEntryId ?? "",
+      productManagedSharedTarget.model ?? "",
+    ].join("::");
+    if (productSharedRepairAttemptRef.current === repairKey) {
+      return;
+    }
+    productSharedRepairAttemptRef.current = repairKey;
+    handleSharedTargetChange(productManagedSharedTarget);
+  }, [
+    activeThreadId,
+    activeWorkspaceId,
+    handleSharedTargetChange,
+    productManagedSharedTarget,
+    productManagedSharedTargetNeedsRepair,
+    sharedTargetPickerLocked,
+  ]);
   const handleNativeProviderTargetChange = useCallback(
     (target: ExecutionTarget) => {
       if (
@@ -1338,34 +1475,34 @@ function ComposerImpl({
     },
     [activeThreadId, activeWorkspaceId, isSharedSessionResolved],
   );
-  const requestManagedEngineAccess = useCallback((
-    target: ExecutionTarget,
-    revalidateManagedCredential = false,
-  ) => {
-    if (!isAccountConvenienceV1Enabled()) {
-      return false;
-    }
-    const targetEngineId = managedEngineIdForRuntimeV1(target.engine);
-    if (targetEngineId === null) return false;
-    if (readManagedEngineEntitlementsV1()[targetEngineId] === "unknown") {
-      return false;
-    }
-    const selectsManagedProvider =
-      target.providerProfileId?.trim() === MANAGED_PROVIDER_PROFILE_ID_V1;
-    const needsManagedPreparation =
-      selectsManagedProvider &&
-      (revalidateManagedCredential ||
-        managedEnginePreparation[targetEngineId] !== "prepared");
-    if (target.engine === selectedEngine && !needsManagedPreparation) {
-      return false;
-    }
-    requestAccountEngineSwitchV1({
-      source: "enginePicker",
-      targetEngineId,
-      openNewConversation: true,
-    });
-    return true;
-  }, [managedEnginePreparation, selectedEngine]);
+  const requestManagedEngineAccess = useCallback(
+    (target: ExecutionTarget, revalidateManagedCredential = false) => {
+      if (!isAccountConvenienceV1Enabled()) {
+        return false;
+      }
+      const targetEngineId = managedEngineIdForRuntimeV1(target.engine);
+      if (targetEngineId === null) return false;
+      if (readManagedEngineEntitlementsV1()[targetEngineId] === "unknown") {
+        return false;
+      }
+      const selectsManagedProvider =
+        target.providerProfileId?.trim() === MANAGED_PROVIDER_PROFILE_ID_V1;
+      const needsManagedPreparation =
+        selectsManagedProvider &&
+        (revalidateManagedCredential ||
+          managedEnginePreparation[targetEngineId] !== "prepared");
+      if (target.engine === selectedEngine && !needsManagedPreparation) {
+        return false;
+      }
+      requestAccountEngineSwitchV1({
+        source: "enginePicker",
+        targetEngineId,
+        openNewConversation: true,
+      });
+      return true;
+    },
+    [managedEnginePreparation, selectedEngine],
+  );
   /**
    * Native 会话也走首页同款 Atomic 双栏 picker（含「本地配置」渠道）。
    * 同 engine+profile 只切模型；跨 managed profile 走续接；其余走 engine/model 切换。
@@ -1391,15 +1528,22 @@ function ComposerImpl({
       const catalogEntryId =
         target.modelCatalogEntryId?.trim() || target.model?.trim() || null;
       const runtimeModel = target.model?.trim() || catalogEntryId;
+      const persistedModelId =
+        usesProductTargetCatalog &&
+        target.providerProfileId?.trim() === MANAGED_PROVIDER_PROFILE_ID_V1
+          ? runtimeModel
+          : catalogEntryId;
       const nextEffort = target.reasoning?.effort ?? null;
       if (sameProfile) {
-        if (catalogEntryId && runtimeModel) {
+        if (catalogEntryId && runtimeModel && persistedModelId) {
           setNativeAtomicSelection({
             modelCatalogEntryId: catalogEntryId,
             model: runtimeModel,
           });
-          // 持久化用 catalog entry id；自由名与 runtime 通常相同
-          onSelectModel(catalogEntryId);
+          // Native send 读取 per-thread model selection。Product picker 必须
+          // 持久化 callable runtime model；display/catalog identity 由本地
+          // nativeAtomicSelection 保留，禁止 UI 显示豆包但实际发送默认模型。
+          onSelectModel(persistedModelId);
         }
         if (nextEffort !== selectedEffort) {
           onSelectEffort(nextEffort);
@@ -1425,12 +1569,12 @@ function ComposerImpl({
       if (target.engine !== selectedEngine) {
         onSelectEngine?.(target.engine);
       }
-      if (catalogEntryId && runtimeModel) {
+      if (catalogEntryId && runtimeModel && persistedModelId) {
         setNativeAtomicSelection({
           modelCatalogEntryId: catalogEntryId,
           model: runtimeModel,
         });
-        onSelectModel(catalogEntryId);
+        onSelectModel(persistedModelId);
       }
       if (nextEffort !== selectedEffort) {
         onSelectEffort(nextEffort);
@@ -1447,25 +1591,49 @@ function ComposerImpl({
       requestManagedEngineAccess,
       selectedEffort,
       selectedEngine,
+      usesProductTargetCatalog,
     ],
   );
   const handleCreationTargetChange = useCallback(
     (target: ExecutionTarget) => {
-      if (!createSessionTargetPicker || !isResolvedExecutionTarget(target)) {
+      if (!createSessionTargetPicker) {
         return;
       }
-      if (requestManagedEngineAccess(target)) {
+      const nextTarget = usesProductManagedCreation
+        ? resolveProductManagedExecutionTargetV1({
+            target,
+            engines: productEntitlement.engines,
+            models: productEntitlement.models,
+          })
+        : isResolvedExecutionTarget(target)
+          ? target
+          : null;
+      if (!nextTarget || !isResolvedExecutionTarget(nextTarget)) {
+        return;
+      }
+      if (
+        !usesProductManagedCreation &&
+        requestManagedEngineAccess(nextTarget)
+      ) {
         return;
       }
       // 首页 engine 选择必须同步全局 activeEngine + client store，否则重启后首页
       // 回落到默认 claude，而项目会话因 thread.engineSource 仍显示上次的 CLI。
-      if (target.engine !== selectedEngine) {
-        pendingPickerEngineRef.current = target.engine;
-        onSelectEngine?.(target.engine);
+      if (nextTarget.engine !== selectedEngine) {
+        pendingPickerEngineRef.current = nextTarget.engine;
+        onSelectEngine?.(nextTarget.engine);
       }
-      setSelectedCreationTarget(target);
+      setSelectedCreationTarget(nextTarget);
     },
-    [createSessionTargetPicker, onSelectEngine, requestManagedEngineAccess, selectedEngine],
+    [
+      createSessionTargetPicker,
+      onSelectEngine,
+      productEntitlement.engines,
+      productEntitlement.models,
+      requestManagedEngineAccess,
+      selectedEngine,
+      usesProductManagedCreation,
+    ],
   );
   // 草稿值直接订阅模块级 store(而非经 app-shell 根 prop 灌入):按键写 store 时
   // 只有 Composer 自身重渲染,不再把整个 app-shell 拖下水。
@@ -1696,11 +1864,7 @@ function ComposerImpl({
       onRequestGitStatusRefresh();
     }, 450);
     return () => window.clearTimeout(timer);
-  }, [
-    isGitRepository,
-    onRequestGitStatusRefresh,
-    sessionToolFileSignature,
-  ]);
+  }, [isGitRepository, onRequestGitStatusRefresh, sessionToolFileSignature]);
 
   const handleRevertFileForStrip = useCallback(
     async (path: string) => {
@@ -2985,13 +3149,27 @@ function ComposerImpl({
     isProcessing && isComposerInputInteractionActive
       ? deferredAccountRateLimits
       : accountRateLimits;
+  const readinessEngine = selectedAtomicTarget?.engine ?? selectedEngine;
+  const readinessModelCatalogEntryId =
+    selectedAtomicTarget?.modelCatalogEntryId?.trim() || selectedModelId;
+  const readinessRuntimeModel = selectedAtomicTarget?.model?.trim() || null;
   const selectedEngineInfo = useMemo(
-    () => engines?.find((engine) => engine.type === selectedEngine),
-    [engines, selectedEngine],
+    () => engines?.find((engine) => engine.type === readinessEngine),
+    [engines, readinessEngine],
   );
   const selectedModelOption = useMemo(
-    () => models.find((model) => model.id === selectedModelId),
-    [models, selectedModelId],
+    () =>
+      models.find(
+        (model) =>
+          model.id === readinessModelCatalogEntryId ||
+          model.model === readinessRuntimeModel,
+      ),
+    [models, readinessModelCatalogEntryId, readinessRuntimeModel],
+  );
+  const productReadinessModel = productTargetCatalog?.models.find(
+    (model) =>
+      productModelMatchesIdentityV1(model, readinessModelCatalogEntryId) ||
+      productModelMatchesIdentityV1(model, readinessRuntimeModel),
   );
   const selectedPermissionMode = accessModeToPermissionMode(accessMode);
   const activeUserInputRequest = useMemo(
@@ -3025,25 +3203,27 @@ function ComposerImpl({
         )
       : null;
   const composerReadinessAccessMode =
-    selectedEngine === "codex" && _selectedCollaborationModeId === "plan"
+    readinessEngine === "codex" && _selectedCollaborationModeId === "plan"
       ? "read-only"
       : accessMode;
   const composerSendReadiness = useMemo(
     () =>
       buildComposerSendReadiness({
-        engine: selectedEngine ?? "claude",
+        engine: readinessEngine ?? "claude",
         providerLabel:
           selectedEngineInfo?.shortName ||
           selectedEngineInfo?.displayName ||
-          selectedEngine ||
+          readinessEngine ||
           "Claude",
         modelLabel:
+          productReadinessModel?.displayName ||
           selectedModelOption?.displayName ||
           selectedModelOption?.model ||
-          selectedModelId ||
+          readinessRuntimeModel ||
+          readinessModelCatalogEntryId ||
           t("composer.noModels"),
         modeLabel:
-          selectedEngine === "codex" && _selectedCollaborationModeId === "plan"
+          readinessEngine === "codex" && _selectedCollaborationModeId === "plan"
             ? t("codexModes.plan.label")
             : t(`modes.${selectedPermissionMode}.label`),
         modeImpactLabel: t(
@@ -3085,13 +3265,15 @@ function ComposerImpl({
       resolvedComposerStreamActivityPhase,
       runtimeLifecycleState,
       selectedChatInputAgent?.name,
-      selectedEngine,
+      readinessEngine,
+      readinessModelCatalogEntryId,
+      readinessRuntimeModel,
+      productReadinessModel?.displayName,
       selectedEngineInfo?.displayName,
       selectedEngineInfo?.shortName,
       _selectedCollaborationModeId,
       selectedInlineFileReferences.length,
       selectedManualMemories.length,
-      selectedModelId,
       selectedModelOption?.displayName,
       selectedModelOption?.model,
       selectedNoteCards.length,
@@ -3502,9 +3684,7 @@ function ComposerImpl({
               sessionScopeKey={activeThreadId ?? null}
               isCodexEngine={isCodexEngine}
               onOpenDiffPath={onOpenDiffPath}
-              onRevertFile={
-                onRevertFile ? handleRevertFileForStrip : undefined
-              }
+              onRevertFile={onRevertFile ? handleRevertFileForStrip : undefined}
               onRevertAllFiles={
                 onRevertAllFiles ? handleRevertAllFilesForStrip : undefined
               }
@@ -3513,9 +3693,7 @@ function ComposerImpl({
               ref={chatInputRef}
               text={text}
               disabled={composerInteractionDisabled}
-              submitDisabled={
-                effectiveSubmitDisabled || collabLocksComposer
-              }
+              submitDisabled={effectiveSubmitDisabled || collabLocksComposer}
               isProcessing={isProcessing}
               streamActivityPhase={resolvedComposerStreamActivityPhase}
               canStop={canStop}
@@ -3532,10 +3710,13 @@ function ComposerImpl({
               // 全场景统一首页 Atomic 双栏 picker（含「本地配置」渠道），
               // 不再维护 conversation native 单栏/无渠道分叉。
               providerTargetPickerMode={
-                isSharedSessionResolved && !createSessionTargetPicker
-                  ? "shared"
-                  : "create-session"
+                usesProductTargetCatalog
+                  ? "product"
+                  : isSharedSessionResolved && !createSessionTargetPicker
+                    ? "shared"
+                    : "create-session"
               }
+              productTargetCatalog={productTargetCatalog}
               threadId={activeThreadId}
               engines={engines}
               models={models}

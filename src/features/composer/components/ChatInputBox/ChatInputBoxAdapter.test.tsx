@@ -2175,6 +2175,39 @@ describe('ChatInputBoxAdapter toggle bridge', () => {
     expect(latest.onExecutionTargetChange).toEqual(expect.any(Function));
   });
 
+  it('forwards the product entitlement catalog without provider picker semantics', async () => {
+    const productTargetCatalog = {
+      engines: [
+        { id: 'codex' as const, displayName: 'Codex' },
+        { id: 'claude' as const, displayName: 'Claude' },
+        { id: 'kimi' as const, displayName: 'Kimi CLI' },
+      ],
+      models: [{
+        id: 'gpt-5.6-sol',
+        displayName: 'GPT-5.6 Sol',
+        model: 'gpt-5.6-sol',
+        compatibleEngines: ['codex' as const],
+        capabilities: ['chat'],
+      }],
+      modelsStatus: 'ready' as const,
+      modelsUpdatedAt: 1_893_456_000_000,
+    };
+    renderAdapter({
+      providerTargetPickerMode: 'product',
+      productTargetCatalog,
+      onExecutionTargetChange: vi.fn(),
+    });
+
+    await waitFor(() => expect(mockState.latestProps).toBeTruthy());
+
+    const latest = mockState.latestProps as {
+      providerTargetPickerMode?: string;
+      productTargetCatalog?: unknown;
+    };
+    expect(latest.providerTargetPickerMode).toBe('product');
+    expect(latest.productTargetCatalog).toBe(productTargetCatalog);
+  });
+
   it('defaults conversation sessions to the home-style atomic create-session picker', async () => {
     renderAdapter({
       isSharedSession: false,

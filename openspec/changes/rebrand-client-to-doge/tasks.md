@@ -32,6 +32,7 @@
 - [x] 3.5 [P0][depends:3.1][I:npm/Cargo metadata 与 Rust imports][O:npm package `doge`、Rust package/default-run `doge`、lib `doge_lib`][V:`npm install --package-lock-only --ignore-scripts` 后 lock diff + `cargo check --manifest-path src-tauri/Cargo.toml`] 修改 package/crate identity。
 - [x] 3.6 [P0][depends:3.5][I:daemon/binary discovery、build scripts、artifact paths][O:`doge` / `doge_daemon` 新写与 old daemon compatibility read][V:build-script tests、daemon discovery tests、无 dangling `cc_gui_daemon` shipping write] 修改二进制与 daemon identity。
 - [x] 3.7 [P0][depends:3.2,3.3,3.4,3.5,3.6][I:全 identity change][O:跨层 manifest 全部与 canonical doge 对齐][V:`npm run check:branding` + Cargo/npm/Tauri focused tests] 完成 identity matrix gate。
+- [x] 3.8 [P0][supersedes:3.4 dev flavor][I:用户实机证明 `doge-dev` 与 canonical doge app-data/UI 分叉][O:删除独立 dev config/name/identifier，所有 dev scripts 继承 canonical Tauri identity][V:startup contract + branding gate + standard hot launch 目视验证] 收敛单一 doge 开发身份。
 
 ## 4. Storage、local keys 与 serialized compatibility
 

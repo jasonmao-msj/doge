@@ -1107,3 +1107,544 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 34: 修复本地开发钥匙串重复弹窗并接入稳定签名链路
+
+**Date**: 2026-08-23
+**Task**: macOS 免钥匙串弹窗开发启动
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+诊断确认 dev 产物为 ad-hoc linker-signed，每次重编译 cdhash 变化导致 login Keychain 中 `com.doge.account` 凭据的 ACL 授权失效，启动读取凭据时重复弹密码框。接入仓库已有的稳定自签身份链路：`tauri dev --runner` 包装 cargo，经 `CARGO_TARGET_*_RUNNER` 在产物 exec 前用 `Doge Local Development` 身份签名；本机身份已就绪并对 `target/debug/doge` 完成非交互签名验证（稳定 identifier + Internal Requirements DR）。README 记录启动方式与首次「始终允许」步骤。
+
+### Main Changes
+
+- package.json 新增 `tauri:dev:hot:signed:mac`（setup 幂等 + `tauri dev --runner scripts/macos-dev-signed-cargo.sh`）
+- 纳管 `scripts/setup-macos-dev-signing.sh`、`scripts/macos-dev-signed-cargo.sh`、`scripts/macos-dev-signed-runner.sh` 与 contract test
+- `README.zh-CN.md` 本地开发新增「macOS 免钥匙串弹窗启动」
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b34b8f9ee` | build(dev): 接入稳定签名开发链路避免钥匙串重复授权弹窗 |
+| `798a02510` | docs(readme): 记录 macOS 免钥匙串弹窗开发启动方式 |
+
+### Testing
+
+- [OK] L1（dev 工具脚本 + 文档，无应用代码路径）：contract test 通过；`tauri --runner` 语义经假 runner 探针确认（替换 cargo 程序调用）；非交互 codesign + `--verify --strict` 通过；签名元数据确认稳定 identifier 与 Internal Requirements
+- [PENDING] 首次 GUI 启动点击「始终允许」由用户执行
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 用户首次 `npm run tauri:dev:hot:signed:mac` 时在钥匙串弹窗选择「始终允许」，此后重编译不再弹窗
+
+
+## Session 34: 统一订阅、动态模型与账户详情验收
+
+**Date**: 2026-08-23
+**Task**: 统一订阅、动态模型与账户详情验收
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+完成 product-scoped 统一订阅、macOS debug local vault、Kimi 托管链路、三引擎自动 provisioning、动态模型目录与 Composer 组合选择、原型化渐进账户详情；完成 L4 JS/Rust/build/contract 验证并记录 token2api production route 与锁屏目视阻塞。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b639fb8a7` | (see git log) |
+| `4f5c41737` | (see git log) |
+| `92ef3e99d` | (see git log) |
+| `90461be7a` | (see git log) |
+| `fc4d87876` | (see git log) |
+| `7fcbd565c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 35: 统一订阅 PR 交付
+
+**Date**: 2026-08-23
+**Task**: 统一订阅 PR 交付
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+创建未合并 PR #1124 并回写 OpenSpec 交付状态；production 路由和 macOS 锁屏目视验收仍作为显式 blocker，task 保持 active。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `94ee6d38f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 36: 校正统一订阅 PR 目标
+
+**Date**: 2026-08-23
+**Task**: 校正统一订阅 PR 目标
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+确认 feature 属于 Doge fork；关闭误投且未合并的 upstream PR #1124，创建正确的 Doge PR #19，并验证当前分支与 origin/main merge-tree 无冲突。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e72ecfaff` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 37: 上游 Composite 只读审计
+
+**Date**: 2026-08-23
+**Task**: 上游 Composite 只读审计
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+只读确认 Doge APP 当前无 saved Composite routes，Claude #11 未绑定 Doge APP，Kimi #37 与豆包 OpenAI/Anthropic 已绑定；未修改上游生产配置，并将证据写入 PR #19 verification。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7765f6833` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 38: 修复 Tauri 热开发 flavor
+
+**Date**: 2026-08-23
+**Task**: 修复 Tauri 热开发 flavor
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+让 tauri:dev:hot 显式加载 dev config，并将 devUrl 对齐 Vite 1420；增加 branding 与 dev startup contract 回归检查。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0b0733feb` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 39: 记录热开发修复与全量复验
+
+**Date**: 2026-08-23
+**Task**: 记录热开发修复与全量复验
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+更新统一订阅 verification/tasks：记录 dev flavor 修复、最新 1119-file Vitest 全绿、debug bundle build 与 token2api 未保存 capability probe。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4c1c0adb8` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 40: 记录 Composite 路由生产实测
+
+**Date**: 2026-08-23
+**Task**: 记录 Composite 路由生产实测
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+保存并重开复核 7 条 Doge APP Composite routes；Kimi CLI route 成功，Claude/GPT/豆包由 single Kimi pricing channel 拒绝；未修改 channel pricing。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `32ef2ffe1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 41: 完善账号服务错误详情
+
+**Date**: 2026-08-23
+**Task**: 完善账号服务错误详情
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+修复 Account Gate 遮挡 portalled Tooltip 的层级问题；问号支持 hover/focus 与 click/keyboard 展开收起，仅展示 validated GatewayFailureV1 的安全 code、stage、recovery action；补齐组件、视觉 contract、OpenSpec 与 frontend 质量规范，L2 验证通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a4bf34144` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 42: 收口产品交互与豆包图标
+
+**Date**: 2026-08-23
+**Task**: 收口产品交互与豆包图标
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+移除模型侧栏固定 footer；product-ready 普通会话统一使用 Codex/Claude/Kimi managed picker；managed 配置显示名迁移为 Doge；账单移除发票提示；可用模型改为 vendor count 渐进展开；豆包全 identity 使用用户 PNG，并在共享 img owner 增加 intrinsic/container bounds。L3 focused verification 与 spec/ADR 同步完成。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7e1f7957e` | (see git log) |
+| `55228e451` | (see git log) |
+| `d3381401e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 43: 修复豆包图标 CSS 尺寸覆盖
+
+**Date**: 2026-08-23
+**Task**: 修复豆包图标 CSS 尺寸覆盖
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+根据实机截图定位 selectors.css 的 img width/height 100% 覆盖 HTML intrinsic attribute，且 Product trigger wrapper auto-size/overflow-visible；改为共享 img inline 16×16 与 trigger wrapper 16×16 + overflow hidden，补 exact style regression，并同步 raster visual contract。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `feefbbea9` | (see git log) |
+| `dfbfb70d7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 44: 贯通豆包运行模型与生产定价
+
+**Date**: 2026-08-23
+**Task**: 贯通豆包运行模型与生产定价
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+修复 Native product picker 仅保存 display/catalog id、managed Kimi 被 local catalog 修回 gpt-5.5 的 split truth；豆包统一使用 Composite 公开 alias。经用户授权把 token2api Kimi channel 更新为 Doge 统一定价，OpenAI allowlist 增加 ark-code-latest + 豆包且不伪造 Coding Plan token 单价；managed key 直连豆包返回 HTTP 200。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bdbe27bc0` | (see git log) |
+| `d7c5cb0fc` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 45: 修复 Codex 503 恢复与单一 doge 开发入口
+
+**Date**: 2026-08-23
+**Task**: 修复 Codex 503 恢复与单一 doge 开发入口
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+为 Doge 统一定价补齐 gpt-5.6-luna 并以 canonical managed key 验证 Responses 200；恢复 Codex failed task_complete 为持久错误消息；删除 doge-dev Tauri flavor，让 hot/isolated/signed 开发命令统一继承 canonical doge identity，保留 macOS debug file vault。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `80cf57fdf` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 46: 修复 Claude 续接卡死与 Anthropic 路由
+
+**Date**: 2026-08-23
+**Task**: 修复 Claude 续接卡死与 Anthropic 路由
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+定位 Claude synthetic API error 的 live snake_case 与 transcript camelCase 分裂；将 API-error assistant/result.is_error 归一为 terminal TurnError 并 cleanup exact process group。production Doge 统一定价补充 Sonnet 与豆包 Anthropic 规则，真实 Messages、Claude CLI、frozen Codex Context Package 导入及同 session resume 全部成功；同步 ADR、code-spec、OpenSpec 与回归测试。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `efbebcf6a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 47: 统一订阅、账户详情与托管会话收口
+
+**Date**: 2026-08-24
+**Task**: 统一订阅、账户详情与托管会话收口
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+完成统一 Product Gate、动态账户用量趋势、Doge 隔离配置强制更新、模型与 provider 选择收口；修复 Codex Sol/Terra 上游定价路由、Home 默认 Codex 首模型、Native Provider Continuation 原子 engine/model 选择，并清退旧按引擎订阅代码。L3 focused frontend 487/487、Rust account 106 passed/1 ignored、typecheck/lint/contracts/OpenSpec individual strict 均通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4fec2776d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 48: 修复 PR 订阅恢复与托管隔离
+
+**Date**: 2026-08-24
+**Task**: 修复 PR 订阅恢复与托管隔离
+**Branch**: `codex/fix-managed-provider-session-defaults`
+
+### Summary
+
+修复 product managed key 的 account/device/group 稳定 identity、refund terminal projection 与 checkout bounded retry/expiry；恢复 product-ready Kimi Sidebar 入口并让模型提交后 picker 保持打开；同步 OpenSpec、Trellis executable contract 和 multi-CLI foundation calibration。L3 验证：affected frontend 43 files/672 tests、Rust account 105 passed/2 ignored、typecheck、changed-file ESLint、cargo check/fmt、doctor/runtime/engine/model/docs/branding/OpenSpec/diff check 全部通过；L4 release/platform/payment smoke 留给 CI。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ee54ca918` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

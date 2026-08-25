@@ -142,7 +142,7 @@ describe("ContextLedgerPanel", () => {
     );
 
     expect(screen.getByText("composer.contextLedgerTitle")).toBeTruthy();
-    expect(screen.getByText((content) => content.includes("composer.contextLedgerSummaryTokens:220k"))).toBeTruthy();
+    expect(screen.getByText((content) => content.includes("composer.contextLedgerSummaryTokens:220K"))).toBeTruthy();
     expect(screen.queryByText("composer.contextLedgerTitleRecentTurnsCodex")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /composer.contextLedgerTitle/ }));
@@ -172,7 +172,7 @@ describe("ContextLedgerPanel", () => {
     expect(screen.getByText("composer.contextLedgerGroupRecentTurns")).toBeTruthy();
     expect(screen.getByText("composer.contextLedgerTruthNote")).toBeTruthy();
     expect(screen.getByText("composer.contextLedgerComparisonLastSend")).toBeTruthy();
-    expect(screen.getByText("composer.contextLedgerComparisonUsageDelta:+40k")).toBeTruthy();
+    expect(screen.getByText("composer.contextLedgerComparisonUsageDelta:+40K")).toBeTruthy();
     expect(screen.getByText("composer.contextLedgerComparisonLastSendHint")).toBeTruthy();
     expect(screen.getAllByText("composer.contextLedgerComparisonAdded:1").length).toBeGreaterThan(0);
     expect(screen.getAllByText("composer.contextLedgerComparisonChanged:1").length).toBeGreaterThan(0);

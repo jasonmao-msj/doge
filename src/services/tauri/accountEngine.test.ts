@@ -5,32 +5,22 @@ const tauri = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: tauri.invoke }));
 
 import {
-  abandonAccountEngineCheckoutV1,
-  activateAccountEngineV1,
+  resolveAccountEngineToolchainV1,
 } from "./accountEngine";
 
 beforeEach(() => vi.clearAllMocks());
 
 describe("account engine Tauri commands", () => {
-  it("maps checkout abandonment to the exact native command and camelCase payload", async () => {
-    tauri.invoke.mockResolvedValue({ ok: true, value: null });
+  it("keeps only the product provisioning toolchain command", async () => {
+    tauri.invoke.mockResolvedValue({ ok: true, value: { status: "ready" } });
 
-    await expect(abandonAccountEngineCheckoutV1(88)).resolves.toEqual({
+    await expect(resolveAccountEngineToolchainV1("codex", "bundled")).resolves.toEqual({
       ok: true,
-      value: null,
+      value: { status: "ready" },
     });
     expect(tauri.invoke).toHaveBeenCalledWith(
-      "account_engine_v1_abandon_checkout",
-      { checkoutId: 88 },
+      "account_engine_v1_toolchain",
+      { engineId: "codex", choice: "bundled" },
     );
-  });
-
-  it("activates a verified managed engine through the account-scoped command", async () => {
-    tauri.invoke.mockResolvedValue(undefined);
-
-    await expect(activateAccountEngineV1("claude-code")).resolves.toBeUndefined();
-    expect(tauri.invoke).toHaveBeenCalledWith("account_engine_v1_activate", {
-      engineId: "claude-code",
-    });
   });
 });

@@ -1,14 +1,8 @@
-import {
-  Tabs,
-  TabsList,
-  TabsPanel,
-  TabsTab,
-} from "../../../components/ui/tabs";
 import type { AccountExperienceControllerV1 } from "../hooks/useAccountExperienceController";
-import { useAccountExperienceCopyV1 } from "../hooks/useAccountExperienceCopy";
+import { useProductAccountDetailsV1 } from "../hooks/useProductAccountDetails";
+import { useProductEntitlementSnapshotV1 } from "../runtime/productEntitlementStore";
 import { AccountCenterHeader } from "./AccountCenterHeader";
-import { AccountSubscriptionPanel } from "./AccountSubscriptionPanel";
-import { AccountUsagePanel } from "./AccountUsagePanel";
+import { ProductAccountDetails } from "./ProductAccountDetails";
 
 export type AccountCenterProps = {
   readonly controller: AccountExperienceControllerV1;
@@ -19,47 +13,22 @@ export function AccountCenter({
   controller,
   showLegacyConfiguration,
 }: AccountCenterProps) {
-  const copy = useAccountExperienceCopyV1();
   const session = controller.bootstrap?.session;
+  const details = useProductAccountDetailsV1();
+  const product = useProductEntitlementSnapshotV1();
   if (!session || session.status !== "authenticated") return null;
-  const subscriptionEnabled =
-    controller.bootstrap?.capabilities.entries["subscription.summary"]?.status ===
-    "enabled";
 
   return (
     <section className="account-center" aria-labelledby="account-center-title">
       <AccountCenterHeader
         controller={controller}
         showLegacyConfiguration={showLegacyConfiguration}
+        product={product}
+        refreshing={details.refreshing}
+        lastUpdatedAt={details.lastUpdatedAt}
+        onRefresh={() => details.refreshAll()}
       />
-      <Tabs
-        value={controller.centerTab}
-        onValueChange={(value) => {
-          if (value === "usage") controller.openUsage();
-          if (value === "subscription") controller.setCenterTab(value);
-        }}
-      >
-        <TabsList
-          className="account-center-tabs"
-          aria-label={copy.accountCenter}
-        >
-          <TabsTab
-            value="subscription"
-            onClick={() => controller.setCenterTab("subscription")}
-          >
-            {copy.subscription}
-          </TabsTab>
-          <TabsTab value="usage" onClick={controller.openUsage}>
-            {copy.usage}
-          </TabsTab>
-        </TabsList>
-        <TabsPanel value="subscription">
-          <AccountSubscriptionPanel enabled={subscriptionEnabled} />
-        </TabsPanel>
-        <TabsPanel value="usage">
-          <AccountUsagePanel controller={controller} />
-        </TabsPanel>
-      </Tabs>
+      <ProductAccountDetails details={details} product={product} />
     </section>
   );
 }

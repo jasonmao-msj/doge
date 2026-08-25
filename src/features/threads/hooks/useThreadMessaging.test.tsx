@@ -79,6 +79,46 @@ describe("useThreadMessaging", () => {
     },
   );
 
+  it("uses the frozen Home target before the pending Claude binding reaches reducer state", async () => {
+    const threadId = "claude-pending-home-managed";
+    const { result } = makeThreadMessagingHook("claude", {
+      activeThreadId: threadId,
+      threadEngineById: { [threadId]: "claude" },
+      providerProfileByThread: {},
+    });
+
+    await act(async () => {
+      await result.current.sendUserMessageToThread(
+        workspace,
+        threadId,
+        "hello from Home",
+        [],
+        {
+          model: "claude-opus-4-8",
+          createSessionTarget: {
+            engine: "claude",
+            providerProfileId: "doge-token-matrix",
+            providerProfileName: "Doge",
+            providerProfileSource: "managed",
+            modelCatalogEntryId: "claude-opus-4-8",
+            model: "claude-opus-4-8",
+            effort: null,
+          },
+        },
+      );
+    });
+
+    expect(engineSendMessage).toHaveBeenCalledWith(
+      "ws-1",
+      expect.objectContaining({
+        engine: "claude",
+        threadId,
+        providerProfileId: "doge-token-matrix",
+        model: "claude-opus-4-8",
+      }),
+    );
+  });
+
   it.each(["claude", "grok", "kimi", "opencode"] as const)(
     "does not block %s sends with non-empty images at client boundary",
     async (engine) => {
@@ -2600,6 +2640,47 @@ describe("useThreadMessaging", () => {
       "thread-provider-1",
       "first provider message",
       expect.any(Object),
+    );
+  });
+
+  it("consumes the frozen Doge target when first send creates a Claude thread", async () => {
+    const threadId = "claude-pending-doge";
+    const startThreadForWorkspace = vi.fn(async () => threadId);
+    const { result } = makeThreadMessagingHook("claude", {
+      activeThreadId: null,
+      ensuredThreadId: threadId,
+      startThreadForWorkspace,
+      threadEngineById: { [threadId]: "claude" },
+      providerProfileByThread: { [threadId]: "doge-token-matrix" },
+    });
+
+    await act(async () => {
+      await result.current.sendUserMessage("first managed Claude message", [], {
+        createSessionTarget: {
+          engine: "claude",
+          providerProfileId: "doge-token-matrix",
+          providerProfileName: "Doge",
+          providerProfileSource: "managed",
+          modelCatalogEntryId: "claude-opus-4-8",
+          model: "claude-opus-4-8",
+          effort: null,
+        },
+      });
+    });
+
+    expect(startThreadForWorkspace).toHaveBeenCalledWith("ws-1", {
+      activate: true,
+      engine: "claude",
+      providerProfileId: "doge-token-matrix",
+    });
+    expect(engineSendMessage).toHaveBeenCalledWith(
+      "ws-1",
+      expect.objectContaining({
+        engine: "claude",
+        threadId,
+        providerProfileId: "doge-token-matrix",
+        model: "claude-opus-4-8",
+      }),
     );
   });
 

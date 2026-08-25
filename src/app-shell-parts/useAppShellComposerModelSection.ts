@@ -16,6 +16,7 @@ import {
   upsertEngineSelectedModelId,
 } from "./modelSelection";
 import { resolveClaudeManagedRuntimeModel } from "../features/models/claudeManagedRuntimeModel";
+import { MANAGED_PROVIDER_PROFILE_ID_V1 } from "../features/account/runtime/engineEntitlementStore";
 
 export function useAppShellComposerModelSection({
   accessMode,
@@ -103,7 +104,10 @@ export function useAppShellComposerModelSection({
       // Codex/Claude：允许会话级自由/自定义模型名（含本地配置、catalog 未登记项），
       // 避免 Atomic picker 选中后被 repair 静默回退。
       allowUnknownActiveThreadModel:
-        activeEngine === "codex" || activeEngine === "claude",
+        activeEngine === "codex" ||
+        activeEngine === "claude" ||
+        (activeEngine === "kimi" &&
+          activeProviderProfileId?.trim() === MANAGED_PROVIDER_PROFILE_ID_V1),
       codexModels: effectiveModels,
       engineModelsAsOptions,
       engineSelectedModelIdByType,

@@ -1,7 +1,6 @@
 {
   "schemaVersion": 1,
   "name": "doge",
-  "developmentName": "doge-dev",
   "tagline": "把复杂的事，叼回来做好。",
   "story": "doge 是一只住在电脑里的拟人化 AI 小柴犬。它会把散落在文件、终端、任务和灵感里的事情一件件叼回来，陪你处理工作，也逐步学会照看生活里的计划与琐事。",
   "version": "0.1.0",
@@ -12,8 +11,7 @@
     "issuesUrl": "https://github.com/jasonmao-msj/doge/issues"
   },
   "bundle": {
-    "productionIdentifier": "io.github.jasonmao-msj.doge",
-    "developmentIdentifier": "io.github.jasonmao-msj.doge.dev"
+    "productionIdentifier": "io.github.jasonmao-msj.doge"
   },
   "runtime": {
     "appHomeDirectory": ".doge",

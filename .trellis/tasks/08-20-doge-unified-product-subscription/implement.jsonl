@@ -1,0 +1,16 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Account detail component, i18n and accessibility contract"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Independent slow-read owners, stale generation and cleanup"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Product store versus transient section state ownership"}
+{"file": ".trellis/spec/backend/account-convenience-native-contract.md", "reason": "Authenticated account, vault, privacy and usage authority boundary"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "React to service to IPC to token2api mapping"}
+{"file": "openspec/changes/doge-unified-product-subscription/design.md", "reason": "Current change architecture and progressive account detail decision"}
+{"file": "src-tauri/src/account/runtime/runtime_auth.rs", "reason": "Existing authority read and group-scoped usage pattern"}
+{"file": "src/features/account/runtime/productOnboardingClient.ts", "reason": "Existing strict product boundary parser pattern"}
+{"file": "src/features/account/components/AccountCenterHeader.tsx", "reason": "Preserved account lifecycle action pattern"}
+{"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "Dynamic catalog id/runtime-model contract"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Unknown upstream payload validation"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Single shared compatibility and refresh owner"}
+{"file": "openspec/changes/doge-unified-product-subscription/specs/unified-engine-model-selection/spec.md", "reason": "Dynamic catalog behavior contract"}

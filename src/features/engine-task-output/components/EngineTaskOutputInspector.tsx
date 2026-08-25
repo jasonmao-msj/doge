@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { formatTokenCount as formatGlobalTokenCount } from "@/utils/tokenFormat";
 import type {
   EngineTaskOutputArtifactRefreshState,
   EngineTaskOutputSnapshot,
@@ -44,13 +45,7 @@ function formatTokenCount(value: number | null | undefined) {
   if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     return null;
   }
-  if (value >= 1_000_000) {
-    return `${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `${(value / 1_000).toFixed(1)}k`;
-  }
-  return String(Math.round(value));
+  return formatGlobalTokenCount(value);
 }
 
 function resolveStatusKey(status: EngineTaskOutputStatus) {

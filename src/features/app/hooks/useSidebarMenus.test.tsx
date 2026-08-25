@@ -21,6 +21,10 @@ import type {
 } from "../../engine/hooks/useEngineController";
 import { seedCliEngineVisibility } from "../../composer/hooks/cliEngineVisibilityStore";
 import { requestProviderContinuationDialog } from "../../threads/services/providerContinuationRequests";
+import {
+  clearProductEntitlementV1,
+  publishProductReadyV1,
+} from "../../account/runtime/productEntitlementStore";
 
 const clientStoreMock = vi.hoisted(() => ({
   data: {} as Record<string, Record<string, unknown>>,
@@ -277,6 +281,7 @@ describe("useSidebarMenus", () => {
     clientStoreMock.writeClientStoreValue.mockClear();
     // 默认全部 CLI 启用，避免用例互相污染。
     seedCliEngineVisibility([]);
+    clearProductEntitlementV1();
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: {
@@ -991,6 +996,76 @@ describe("useSidebarMenus", () => {
       );
     },
   );
+
+  it("hides product provider submenus and creates Claude/Codex/Kimi with Doge", async () => {
+    seedCliEngineVisibility(["claude", "codex", "kimi"]);
+    publishProductReadyV1({
+      entitlement: {
+        status: "active",
+        subscriptionId: 9,
+        groupId: 35,
+        groupName: "Doge APP",
+        planName: "Doge订阅",
+        expiresAt: "2030-02-01T00:00:00Z",
+        usage: null,
+      },
+      engines: [
+        { id: "codex", displayName: "Codex" },
+        { id: "claude-code", displayName: "Claude" },
+        { id: "kimi", displayName: "Kimi CLI" },
+      ],
+      models: [],
+    });
+    const handlers = createHandlers();
+    const localAndOtherProfiles = [
+      { id: "__local__", name: "本地配置", source: "disk" as const },
+      { id: "provider-a", name: "Provider A", source: "managed" as const },
+    ];
+    const { result } = renderHook(() =>
+      useSidebarMenus({
+        ...handlers,
+        claudeProviderProfiles: localAndOtherProfiles,
+        codexProviderProfiles: localAndOtherProfiles,
+        kimiProviderProfiles: localAndOtherProfiles,
+      }),
+    );
+
+    await act(async () => {
+      result.current.showWorkspaceMenu(
+        {
+          clientX: 160,
+          clientY: 120,
+          preventDefault: vi.fn(),
+          stopPropagation: vi.fn(),
+        } as unknown as Parameters<typeof result.current.showWorkspaceMenu>[0],
+        workspace,
+      );
+    });
+
+    const actions = result.current.workspaceMenuState?.groups
+      .find((group) => group.id === "new-session")
+      ?.actions ?? [];
+    for (const engine of ["claude", "codex", "kimi"] as const) {
+      const action = actions.find((entry) => entry.id === `new-session-${engine}`);
+      expect(action?.children).toBeUndefined();
+      expect(action?.submenuTitle).toBeUndefined();
+      await act(async () => {
+        await action?.onSelect();
+      });
+      expect(handlers.onAddAgent).toHaveBeenCalledWith(
+        workspace,
+        engine,
+        expect.objectContaining({
+          providerProfileId: "doge-token-matrix",
+          providerProfile: {
+            id: "doge-token-matrix",
+            name: "Doge",
+            source: "managed",
+          },
+        }),
+      );
+    }
+  });
 
   it("enables the selected Claude managed provider for settings isActive sync", async () => {
     window.localStorage.removeItem("claudeLastProviderProfileId");

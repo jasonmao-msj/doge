@@ -45,6 +45,7 @@
 ### 3. Contracts
 
 - Tooltip MUST 通过 pointer hover 与 keyboard focus 可达；测试 MUST 激活 trigger 并断言 portal 内的实际说明内容，`getByRole("button")` 只算结构检查。
+- Tooltip content 若通过 Portal 挂到 `body`，且 trigger 位于 full-window Gate/Dialog/overlay 内，MUST 显式设置高于 owner overlay 的 stacking level；禁止假设 Portal 会继承 trigger 所在 stacking context。对应 static visual contract MUST 同时锁定 overlay 与 tooltip 的 `z-index`，并证明 tooltip 更高。
 - Retry / refresh MUST 在请求期间显示 pending feedback，并在快速失败后留下可见的 settled feedback；禁止依赖可能被 React batching 合并掉的瞬时 loading frame。
 - 测试 async feedback 时 MUST 使用 deferred Promise 锁住 pending phase，分别断言 pending 与 settled；禁止只断言 gateway mock 被调用。
 - Icon help trigger MUST 保持独立 icon-button 样式；父状态容器不得用 `.state button` 一类 broad selector 覆盖其尺寸、border 或 background。
@@ -56,6 +57,7 @@
 |---|---|---|
 | pointer hover help | visible tooltip popup + expected copy | trigger 存在 |
 | keyboard focus help | visible tooltip popup + expected copy | 只有 `aria-label` |
+| full-window overlay 内 help | portalled tooltip stacking level 高于 overlay，实际 popup 可见 | jsdom 中 portal DOM 存在但被 overlay 遮挡 |
 | async retry pending | disabled / `aria-busy` + pending label | gateway spy called |
 | async retry settled failure | retryable settled label / state | 页面仍长得一样 |
 | packaged App QA | 当前 flavor 的新布局与真实交互 | 旧 bundle 的 screenshot |
@@ -69,7 +71,7 @@
 ### 6. Tests Required
 
 - Component test：pointer hover、keyboard focus、pending、settled 四个行为断言。
-- Visual contract：锁定紧凑布局关键 selector，并证明 help trigger 不落入 broad action-button selector。
+- Visual contract：锁定紧凑布局关键 selector，证明 help trigger 不落入 broad action-button selector；若 tooltip 位于 full-window overlay 内，同时比较两者 stacking level。
 - 至少一次 exact packaged App manual QA：记录 flavor/path，并实际触发 tooltip 与 retry。
 
 ## Scenario: Renderer Error Feedback Must Not Use Native Alert

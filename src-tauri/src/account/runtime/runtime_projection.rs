@@ -68,7 +68,9 @@ pub(super) fn authority_requirement(operation: &str) -> Option<AuthorityRequirem
                 "stable_account_reasons_v1",
             ],
         ),
-        "usage.read" | "usage.readDayModels" | "subscription.read" => AuthorityRequirement::new("quotaPull", stable),
+        "usage.read" | "usage.readDayModels" | "subscription.read" => {
+            AuthorityRequirement::new("quotaPull", stable)
+        }
         "managedKey.listCandidates" => AuthorityRequirement::new(
             "apiKeyList",
             &[

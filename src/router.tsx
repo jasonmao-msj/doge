@@ -3,10 +3,11 @@ import { useWindowLabel } from "./features/layout/hooks/useWindowLabel";
 import { isDetachedFileExplorerWindowLabel } from "./features/files/detachedFileExplorer";
 import { isBrowserAgentDockWindowLabel } from "./features/browser-agent/browserAgentDockWindow";
 import { AppShell } from "./app-shell";
-import { AccountAppGate } from "./features/account/components/AccountAppGate";
-import { createRealAccountGatewayV1 } from "./services/accountGateway";
+import { ProductAccountAppGate } from "./features/account/components/ProductAccountAppGate";
+import { AccountGatewayProvider } from "./features/account/gateway/AccountGatewayProvider";
 import { StartupGateOverlay } from "./features/app/components/StartupGateOverlay";
 import { isStartupGateOverlayTestEnabled } from "./features/startup-orchestration/utils/startupGateOverlayTestFlag";
+import { createRealAccountGatewayV1 } from "./services/accountGateway";
 
 const AboutView = lazy(() =>
   import("./features/about/components/AboutView").then((module) => ({
@@ -40,10 +41,10 @@ const DetachedBrowserAgentWindow = lazy(() =>
 
 export function AppRouter() {
   const windowLabel = useWindowLabel();
+  const accountGateway = useMemo(() => createRealAccountGatewayV1(), []);
   const [startupGateOverlayEnabledAtMount] = useState(
     isStartupGateOverlayTestEnabled,
   );
-  const accountGateway = useMemo(() => createRealAccountGatewayV1(), []);
   let readyContent: ReactNode = <AppShell />;
   if (windowLabel === "about") {
     readyContent = (
@@ -77,12 +78,12 @@ export function AppRouter() {
     );
   }
   return (
-    <>
-      <AccountAppGate gateway={accountGateway} readyContent={readyContent} />
+    <AccountGatewayProvider gateway={accountGateway}>
+      <ProductAccountAppGate readyContent={readyContent} />
       {windowLabel === "main" && startupGateOverlayEnabledAtMount ? (
         <StartupGateOverlay />
       ) : null}
-    </>
+    </AccountGatewayProvider>
   );
 }
 

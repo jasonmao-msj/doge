@@ -893,7 +893,11 @@ fn default_opencode_enabled() -> bool {
 }
 
 fn default_disabled_cli_engines() -> Vec<String> {
-    vec!["grok".to_string(), "kimi".to_string(), "opencode".to_string()]
+    vec![
+        "grok".to_string(),
+        "kimi".to_string(),
+        "opencode".to_string(),
+    ]
 }
 
 fn default_email_sender_smtp_port() -> u16 {
@@ -940,7 +944,10 @@ pub(crate) struct AppSettings {
     pub(crate) gemini_enabled: bool,
     #[serde(default = "default_opencode_enabled", rename = "opencodeEnabled")]
     pub(crate) opencode_enabled: bool,
-    #[serde(default = "default_disabled_cli_engines", rename = "disabledCliEngines")]
+    #[serde(
+        default = "default_disabled_cli_engines",
+        rename = "disabledCliEngines"
+    )]
     pub(crate) disabled_cli_engines: Vec<String>,
     #[serde(default, rename = "sessionAttributionMode")]
     pub(crate) session_attribution_mode: WorkspaceSessionAttributionMode,

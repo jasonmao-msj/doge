@@ -1070,6 +1070,8 @@ const settings = {
       "cliSearchPlaceholder": "搜索CLI",
       "localProviderName": "使用本地 settings.json",
       "localProviderDescription": "明確授權讀取 ~/.claude/settings.json",
+      "managedProductLockLabel": "Doge 託管",
+      "managedProductLockDescription": "Doge 訂閱生效時，應用程式內固定使用隔離的 Doge 配置；本地配置僅供你在終端直接執行 CLI 時使用。",
       "allProviders": "所有供應商",
       "authorizeAndEnable": "授權並啟用",
       "revokeAuthorization": "取消授權",

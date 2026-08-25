@@ -289,6 +289,111 @@ pub(super) fn require_main_account_window(window: &tauri::Window) -> Result<(), 
     }
 }
 
+#[tauri::command]
+pub(crate) async fn account_product_v1_catalog(
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state.account_runtime.product_catalog_snapshot().await)
+}
+
+#[tauri::command]
+pub(crate) async fn account_product_v1_models(
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state.account_runtime.product_models_snapshot().await)
+}
+
+#[tauri::command]
+pub(crate) async fn account_product_v1_usage(
+    start_date: String,
+    end_date: String,
+    granularity: String,
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state
+        .account_runtime
+        .product_usage_snapshot(&start_date, &end_date, &granularity)
+        .await)
+}
+
+#[tauri::command]
+pub(crate) async fn account_product_v1_billing(
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state.account_runtime.product_billing_snapshot().await)
+}
+
+#[tauri::command]
+pub(crate) async fn account_product_v1_create_checkout(
+    plan_id: i64,
+    payment_type: String,
+    operation_id: String,
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state
+        .account_runtime
+        .product_checkout_create(plan_id, &payment_type, &operation_id)
+        .await)
+}
+
+#[tauri::command]
+pub(crate) async fn account_product_v1_checkout(
+    checkout_id: i64,
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state
+        .account_runtime
+        .product_checkout_snapshot(checkout_id)
+        .await)
+}
+
+#[tauri::command]
+pub(crate) async fn account_product_v1_pending_checkout(
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state
+        .account_runtime
+        .product_pending_checkout_snapshot()
+        .await)
+}
+
+#[tauri::command]
+pub(crate) async fn account_product_v1_abandon_checkout(
+    checkout_id: i64,
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state
+        .account_runtime
+        .product_checkout_abandon(checkout_id)
+        .await)
+}
+
+#[tauri::command]
+pub(crate) async fn account_product_v1_prepare(
+    operation_id: String,
+    state: State<'_, crate::state::AppState>,
+    window: tauri::Window,
+) -> Result<Value, String> {
+    require_main_account_window(&window)?;
+    Ok(state.account_runtime.product_prepare(&operation_id).await)
+}
+
 pub(super) struct ValidatedRequest<'a> {
     pub(super) kind: &'a str,
     pub(super) request_id: &'a str,

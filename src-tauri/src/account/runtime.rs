@@ -1,8 +1,8 @@
 use super::authority::{
     AuthWire, AuthorityCapabilityDescriptor, AuthorityError, DesktopEngineCatalogWire, LoginWire,
     PublicSettingsWire, SubscriptionProgressEntryWire, SubscriptionSummaryWire,
-    SubscriptionUsageWindowWire,
-    TokenMatrixAuthority, UsageDashboardSnapshotWire, UsageModelWire, UsageTrendWire,
+    SubscriptionUsageWindowWire, TokenMatrixAuthority, UsageDashboardSnapshotWire, UsageModelWire,
+    UsageTrendWire,
 };
 use super::configuration::{self, ConfigurationPlanState, ACCOUNT_RECIPE_ID};
 use super::desktop_continuation::DesktopContinuationBroker;
@@ -10,7 +10,7 @@ use super::persistence::{
     AcceptedOperationRecord, AccountMetadata, AccountRepository, EngineCheckoutRecord,
     ExternalFlowRecord,
 };
-use super::vault::{AccountVaultStatus, DurableAccountVault, OsAccountVault};
+use super::vault::{account_vault_for_data_dir, AccountVaultStatus, DurableAccountVault};
 use chrono::{SecondsFormat, TimeZone, Utc};
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -177,7 +177,7 @@ impl AccountRuntime {
                 enabled: false,
                 authority: None,
                 repository: None,
-                vault: Arc::new(OsAccountVault),
+                vault: account_vault_for_data_dir(data_dir),
                 state: Mutex::new(RuntimeState {
                     initialized: true,
                     account_epoch: 1,
@@ -255,7 +255,7 @@ impl AccountRuntime {
             enabled: true,
             authority: TokenMatrixAuthority::new().ok(),
             repository,
-            vault: Arc::new(OsAccountVault),
+            vault: account_vault_for_data_dir(data_dir),
             device_id,
             process_generation: random_process_generation(),
             event_sequence: Arc::new(AtomicU64::new(0)),
@@ -312,7 +312,7 @@ impl AccountRuntime {
         &self,
         engine_id: &str,
     ) -> Result<Zeroizing<String>, String> {
-        if !matches!(engine_id, "codex" | "claude-code") {
+        if !matches!(engine_id, "codex" | "claude-code" | "kimi") {
             return Err("Doge managed engine is unsupported".to_string());
         }
         let state = self.state.lock().await;
@@ -351,6 +351,45 @@ impl AccountRuntime {
             .env
             .insert("ANTHROPIC_AUTH_TOKEN".to_string(), token.to_string());
         Ok(Some(profile.clone()))
+    }
+
+    /// Re-materializes the managed Kimi provider home with the vault credential
+    /// injected as `api_key`. Non-managed profiles are left untouched.
+    pub(crate) async fn hydrate_managed_kimi_provider_home(
+        &self,
+        provider_profile_id: Option<&str>,
+        home_dir: &Path,
+        runtime_model: Option<&str>,
+    ) -> Result<(), String> {
+        let Some(profile_id) = provider_profile_id
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        else {
+            return Ok(());
+        };
+        if profile_id != crate::account::configuration::ACCOUNT_KIMI_PROVIDER_ID {
+            return Ok(());
+        }
+        let key = self.managed_engine_key_for_launch("kimi").await?;
+        let provider =
+            crate::engine::kimi_provider_profile::resolve_kimi_provider_model_config(profile_id)?
+                .ok_or_else(|| "Kimi managed provider entry is missing".to_string())?;
+        let mut injected = provider;
+        injected.api_key = key.to_string();
+        if let Some(model) = runtime_model
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+        {
+            if model.len() > 128 || model.chars().any(char::is_control) {
+                return Err("Kimi managed runtime model is invalid".to_string());
+            }
+            injected.model = model.to_string();
+        }
+        crate::engine::kimi_provider_profile::materialize_kimi_provider_at(
+            &injected,
+            &home_dir.join("config.toml"),
+            false,
+        )
     }
 
     pub(super) async fn contract_context(&self) -> Value {
@@ -586,6 +625,11 @@ mod runtime_engine;
 mod runtime_live_e2e_tests;
 mod runtime_oauth;
 mod runtime_operations;
+mod runtime_product;
+mod runtime_product_details;
+mod runtime_product_models;
+#[cfg(test)]
+mod runtime_product_tests;
 mod runtime_projection;
 
 use super::runtime_ipc::{
@@ -1232,6 +1276,7 @@ mod tests {
                         used_usd: 3.25,
                         remaining_usd: 16.75,
                         percentage: 16.25,
+                        window_start: "2030-01-02T00:00:00Z".to_string(),
                         resets_at: "2030-02-01T00:00:00Z".to_string(),
                     }),
                 },

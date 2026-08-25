@@ -1256,6 +1256,8 @@ const settings = {
       openCliDocs: "官方文档",
       localProviderName: "使用本地 settings.json",
       localProviderDescription: "显式授权读取 ~/.claude/settings.json",
+      managedProductLockLabel: "Doge 托管",
+      managedProductLockDescription: "Doge 订阅生效时，应用内固定使用隔离的 Doge 配置；本地配置仅供你在终端直接运行 CLI 时使用。",
       allProviders: "所有供应商",
       authorizeAndEnable: "授权并启用",
       revokeAuthorization: "取消授权",

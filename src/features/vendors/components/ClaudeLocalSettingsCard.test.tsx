@@ -101,6 +101,35 @@ describe("ClaudeLocalSettingsCard", () => {
     expect(props.onSwitch).toHaveBeenCalledWith(LOCAL_SETTINGS_PROVIDER_ID);
   });
 
+  it("locks local activation for a product-managed session but keeps terminal config editable", () => {
+    const { props, container } = renderCard(
+      localProvider({ isActive: false }),
+      {
+        inUse: false,
+        managedLock: {
+          label: "Doge managed",
+          description: "The app uses the isolated Doge profile.",
+        },
+      },
+    );
+
+    expect(
+      container.querySelector('[data-managed-locked="true"]'),
+    ).toBeTruthy();
+    expect(screen.getByText("Doge managed")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", {
+        name: /settings\.vendor\.useOfficialConfig/,
+      }),
+    ).toBeNull();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "settings.vendor.edit" }),
+    );
+    expect(props.onEdit).toHaveBeenCalledTimes(1);
+    expect(props.onSwitch).not.toHaveBeenCalled();
+  });
+
   it("surfaces local provider help in the row popover", async () => {
     renderCard(localProvider(), { inUse: true });
 

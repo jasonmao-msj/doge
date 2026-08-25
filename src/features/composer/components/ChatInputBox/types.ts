@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { CODEX_MODEL_CATALOG } from "../../../models/codexModelCatalog";
 import type { ComposerSendReadiness } from '../../utils/composerSendReadiness';
 import type { ExecutionTarget } from '../../../shared-session/target/types';
+import type { EngineType } from '../../../../types';
 
 // ============================================================
 // Core Entity Types
@@ -360,7 +361,25 @@ export interface ProviderInfo {
 export type ProviderId = 'claude' | 'codex' | 'gemini' | 'grok' | 'kimi' | 'opencode';
 export type ProviderModelCatalogs = Partial<Record<ProviderId, ModelInfo[]>>;
 /** Atomic 双栏 catalog 语义：Shared 持久化 vs 首页/会话 create-session 投影。 */
-export type ProviderTargetPickerMode = 'shared' | 'create-session';
+export type ProviderTargetPickerMode = 'shared' | 'create-session' | 'product';
+export type ProductTargetCatalogV1 = {
+  readonly engines: readonly {
+    readonly id: Extract<EngineType, 'codex' | 'claude' | 'kimi'>;
+    readonly displayName: string;
+  }[];
+  readonly models: readonly {
+    readonly id: string;
+    readonly displayName: string;
+    readonly model: string;
+    readonly compatibleEngines: readonly Extract<
+      EngineType,
+      'codex' | 'claude' | 'kimi'
+    >[];
+    readonly capabilities: readonly string[];
+  }[];
+  readonly modelsStatus: 'ready' | 'refreshing' | 'stale';
+  readonly modelsUpdatedAt: number | null;
+};
 export type CodexSpeedMode = 'standard' | 'fast' | 'unknown';
 export type StreamActivityPhase = 'idle' | 'waiting' | 'ingress';
 
@@ -557,6 +576,8 @@ export interface ChatInputBoxProps {
   onExecutionTargetChange?: (target: ExecutionTarget) => void;
   /** catalog 语义：shared 持久化 vs create-session 投影；不得用它推断 Session Kind。 */
   providerTargetPickerMode?: ProviderTargetPickerMode;
+  /** Product-ready surface：engine 与统一 model catalog 独立选择，provider 固定托管。 */
+  productTargetCatalog?: ProductTargetCatalogV1;
   /** Provider availability override (installed state from host app) */
   providerAvailability?: Partial<Record<ProviderId, boolean>>;
   /** Provider CLI versions (from host app detection) */

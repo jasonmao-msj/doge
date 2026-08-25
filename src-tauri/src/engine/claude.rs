@@ -1725,6 +1725,11 @@ impl ClaudeSession {
         // turn is settled as a success (result was already emitted) and the
         // exit-status failure checks are skipped for the process we force-kill.
         let mut settled_by_grace = false;
+        // A structured stream error is an authoritative terminal outcome even
+        // when Claude keeps stdout open and never emits `result`. Once observed,
+        // stop reading and reap the exact process group so callers do not remain
+        // stuck waiting for cleanup/EOF.
+        let mut terminal_stream_error_seen = false;
 
         // Spawn stderr reader
         let stderr_reader = BufReader::new(stderr);
@@ -1746,7 +1751,7 @@ impl ClaudeSession {
 
         // Process stdout events
         let mut session_id_emitted = false;
-        loop {
+        'stream: loop {
             if pending_text_delta.has_expired(text_delta_coalesce_window) {
                 self.flush_buffered_text_delta(turn_id, &mut pending_text_delta);
                 continue;
@@ -2009,6 +2014,7 @@ impl ClaudeSession {
 
                     // Convert and emit event
                     if let Some(unified_event) = self.convert_event(turn_id, &event) {
+                        let mut is_terminal_stream_error = false;
                         if let EngineEvent::TurnError { ref error, .. } = unified_event {
                             if stream_runtime_error.is_none() {
                                 stream_runtime_error = Some(error.clone());
@@ -2018,6 +2024,7 @@ impl ClaudeSession {
                                 continue;
                             }
                             stream_error_event_emitted = true;
+                            is_terminal_stream_error = true;
                         }
 
                         // Collect text for final response
@@ -2047,6 +2054,11 @@ impl ClaudeSession {
                                 ),
                             ),
                         );
+
+                        if is_terminal_stream_error {
+                            terminal_stream_error_seen = true;
+                            break 'stream;
+                        }
 
                         if self.has_pending_approval_request_for_turn(turn_id) {
                             match self
@@ -2143,14 +2155,13 @@ impl ClaudeSession {
             active.remove(turn_id)
         };
         let status = if let Some(mut child_proc) = child.take() {
-            if settled_by_grace {
-                // Post-result grace elapsed: the turn already produced `result`,
-                // and the process only lingers because MCP children / Stop hooks
-                // inherited its stdio pipes. Kill the whole process group so every
-                // pipe write end closes (unblocking the stderr reader below) and no
-                // descendants leak, then reap. The killed exit status is expected,
-                // so it is NOT treated as a failure (see the `settled_by_grace`
-                // guard on the status checks).
+            if settled_by_grace || terminal_stream_error_seen {
+                // Logical terminal evidence already exists: either a successful
+                // `result` exceeded its cleanup grace, or a structured stream
+                // error was observed. Kill the whole process group so lingering
+                // descendants cannot keep stdout/stderr open. The killed status is
+                // cleanup evidence only; success/error settlement is handled by
+                // the corresponding logical terminal branch below.
                 self.force_kill_process_group(&mut child_proc).await;
                 let _ = child_proc.wait().await;
                 None
@@ -2230,7 +2241,7 @@ impl ClaudeSession {
                 self.clear_turn_ephemeral_state(turn_id);
                 return Err(error_msg);
             }
-        } else if !settled_by_grace {
+        } else if !settled_by_grace && !terminal_stream_error_seen {
             // Process handle was taken by interrupt() or missing.
             // (A grace-settled turn also reports no status because we force-kill
             // it above; that path is a success and skips these failure checks.)

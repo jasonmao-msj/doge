@@ -22,6 +22,7 @@ import {
 import { writeClientStoreValue } from "../../../services/clientStorage";
 import { formatRelativeTime } from "../../../utils/time";
 import { formatRateLimitWindowLabel } from "../../../utils/rateLimitLabels";
+import { formatTokenCount } from "../../../utils/tokenFormat";
 import { pushErrorToast } from "../../../services/toasts";
 import type { ThreadAction, ThreadState } from "./useThreadsReducer";
 import { asString } from "../utils/threadNormalize";
@@ -150,8 +151,6 @@ export function useThreadMessagingSessionTooling({
       }
 
       const usage = tokenUsageByThread[threadId] ?? null;
-      const formatTokenCount = (value: number) =>
-        Math.max(0, Math.round(value)).toLocaleString("en-US");
 
       const noUsageLines = [
         "Context Usage",

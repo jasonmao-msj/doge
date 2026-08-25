@@ -1069,6 +1069,8 @@ const settings = {
       "manageModels": "모델 관리",
       "localProviderName": "로컬 settings.json",
       "localProviderDescription": "~/.claude/settings.json의 설정을 직접 사용",
+      "managedProductLockLabel": "Doge 관리",
+      "managedProductLockDescription": "Doge 구독이 활성화된 동안 앱에서는 격리된 Doge 설정을 항상 사용합니다. 로컬 설정은 터미널에서 CLI를 직접 실행할 때만 사용됩니다.",
       "authorizeAndEnable": "승인 및 활성화",
       "revokeAuthorization": "승인 취소",
       "whatIsThis": "이것은 무엇인가요?",

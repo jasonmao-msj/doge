@@ -20,7 +20,7 @@
 
 ### 3. Contracts
 
-- New Codex conversation entrypoints MUST present disk profile plus managed provider options when provider profiles are available. Disk must be the default launch option.
+- 非 product/local expert 的 New Codex conversation entrypoints MUST present disk profile plus managed provider options when provider profiles are available，且 Disk 为默认。统一产品订阅进入 `productEntitlement.status="ready"` 后例外：Home / Shared / Existing Native modification 统一使用 `ProductEngineModelSelect`，隐藏 disk/provider/configuration，选择固定 `providerProfileId="doge-token-matrix"`、display label `Doge`。
 - Frontend payload MUST pass `providerProfileId` for selected Codex provider. Blank/undefined means intentional disk default only when the entrypoint has no provider selector or selected disk maps to `__disk__`.
 - Codex start in-flight dedupe key MUST include `workspaceId`, `providerProfileId` defaulted to `__disk__`, `folderId/root`, and auto-session identity. Starts with different provider profile ids MUST NOT share a promise.
 - `ensureThread` reducer MUST merge provider metadata without erasing existing metadata when a later action omits provider fields.
@@ -39,6 +39,7 @@
 | 场景 | 必须行为 | 禁止行为 |
 |---|---|---|
 | 用户从 workspace menu 新建 Codex | 显示 disk + managed submenu，payload 包含 selected `providerProfileId` | 使用供应商 tab 的 active provider |
+| product-ready Composer 修改 Native conversation | 只显示 Codex/Claude/Kimi product panel，选择产出 `doge-token-matrix` target | 回落 legacy Grok/OpenCode/channel picker 或原地改 binding |
 | 两次同 workspace 同 provider start | 复用同一个 in-flight promise | 创建重复 pending/backend start |
 | 两次同 workspace 不同 provider start | 各自独立 start | 因 workspace 相同而 collapse |
 | catalog row 带 provider metadata | reducer/list/display 保留字段并显示 label | 后续 ensureThread 丢字段 |

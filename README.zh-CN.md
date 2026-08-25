@@ -54,6 +54,20 @@ npm run tauri:dev:hot
 npm run dev
 ```
 
+### macOS 无交互开发凭据
+
+macOS debug build 的账号 refresh credential 与托管 Codex / Claude / Kimi key 会写入 app data 下的开发专用文件，不访问或回退读取 login Keychain。因此日常仍直接使用：
+
+```bash
+npm run tauri:dev:hot
+```
+
+- 第一次切换到开发文件后可能需要正常登录一次；之后热更新、重编译和重启都会复用本地 session，不再弹 Keychain 密码授权。
+- 开发 vault 是明文的 owner-only 文件：目录权限 `0700`、文件权限 `0600`，只应在可信的开发 Mac 使用，禁止复制、提交或用于正式分发。
+- 开发与发布构建统一使用可见的 `doge` 应用身份；debug 凭据隔离由 compile-time vault selector 保证，不再创建独立 `doge-dev` 应用和 app-data 状态。
+- Release 与非目标 build 始终继续使用 OS credential vault；它们不会读取开发凭据文件，也没有 runtime 开关可以降级。
+- `npm run tauri:dev:hot:signed:mac` 仍保留给显式测试本地签名链；它同样使用 `doge` 应用身份，也不再是日常开发和 E2E 的前置条件。
+
 ### 常用检查
 
 日常开发优先运行与改动相关的测试：

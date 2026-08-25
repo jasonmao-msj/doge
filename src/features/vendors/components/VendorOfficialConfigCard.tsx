@@ -2,11 +2,17 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import Info from "lucide-react/dist/esm/icons/info";
 import Pencil from "lucide-react/dist/esm/icons/pencil";
+import LockKeyhole from "lucide-react/dist/esm/icons/lock-keyhole";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SettingsRowHelp } from "./SettingsRowHelp";
 
 export type VendorOfficialConfigMode = "auth" | "local" | "global";
+
+export type VendorManagedConfigurationLock = {
+  readonly label: string;
+  readonly description: string;
+};
 
 interface VendorOfficialConfigCardProps {
   title: string;
@@ -35,6 +41,8 @@ interface VendorOfficialConfigCardProps {
   /** 追加在标准动作之后的额外节点（少用） */
   extraActions?: ReactNode;
   className?: string;
+  /** Product-ready surfaces force the isolated Doge profile while preserving local-file editing. */
+  managedLock?: VendorManagedConfigurationLock;
 }
 
 export function VendorOfficialConfigCard({
@@ -49,6 +57,7 @@ export function VendorOfficialConfigCard({
   onHelp,
   extraActions,
   className,
+  managedLock,
 }: VendorOfficialConfigCardProps) {
   const { t } = useTranslation();
 
@@ -71,14 +80,17 @@ export function VendorOfficialConfigCard({
         "vendor-current-config vendor-official-config",
         className,
       )}
+      data-managed-locked={managedLock ? "true" : "false"}
     >
       <div className="vendor-official-config-row">
         <div className="vendor-official-config-main">
           <div className="vendor-official-config-copy">
             <div className="vendor-current-config-title">
               {title}
-              {helpContent ? (
-                <SettingsRowHelp>{helpContent}</SettingsRowHelp>
+              {managedLock || helpContent ? (
+                <SettingsRowHelp>
+                  {managedLock ? <p>{managedLock.description}</p> : helpContent}
+                </SettingsRowHelp>
               ) : onHelp ? (
                 <button
                   type="button"
@@ -97,7 +109,26 @@ export function VendorOfficialConfigCard({
           </div>
         </div>
         <div className="vendor-official-config-actions">
-          {inUse ? (
+          {managedLock ? (
+            <>
+              <span className="vendor-official-status vendor-official-status-locked">
+                <LockKeyhole aria-hidden />
+                {managedLock.label}
+              </span>
+              {onEdit ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  title={t("settings.vendor.edit")}
+                  aria-label={t("settings.vendor.edit")}
+                  onClick={onEdit}
+                >
+                  <Pencil aria-hidden />
+                </Button>
+              ) : null}
+            </>
+          ) : inUse ? (
             <>
               <span className="vendor-official-status">
                 <span

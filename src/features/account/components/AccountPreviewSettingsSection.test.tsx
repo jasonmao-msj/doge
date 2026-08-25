@@ -37,10 +37,12 @@ describe("AccountPreviewSettingsSection", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "登录" }));
     });
-    expect(await screen.findByRole("tab", { name: "订阅" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "额度" })).toBeTruthy();
-    expect(screen.queryByRole("tab", { name: "安全" })).toBeNull();
-    expect(screen.getByRole("status")).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "账号与订阅" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "额度使用" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "账单记录" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "订阅管理" })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: "订阅" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "额度" })).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -57,8 +59,9 @@ describe("AccountPreviewSettingsSection", () => {
       fireEvent.click(screen.getByRole("button", { name: "创建账号" }));
     });
     expect(await screen.findByText("已连接 Token 服务")).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "订阅" })).toBeTruthy();
-    expect(screen.getByRole("tab", { name: "额度" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "账号与订阅" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "额度使用" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "订阅管理" })).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

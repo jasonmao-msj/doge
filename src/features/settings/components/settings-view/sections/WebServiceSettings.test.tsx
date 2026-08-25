@@ -725,11 +725,13 @@ describe("WebServiceSettings", () => {
       />,
     );
 
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: "settings.webServiceAssetsInstallLocal",
-      }),
-    );
+    const installLocalButton = await screen.findByRole("button", {
+      name: "settings.webServiceAssetsInstallLocal",
+    });
+    await waitFor(() => {
+      expect((installLocalButton as HTMLButtonElement).disabled).toBe(false);
+    });
+    fireEvent.click(installLocalButton);
 
     await waitFor(() => {
       expect(installWebAssetsFromFileMock).toHaveBeenCalledWith(
@@ -759,11 +761,13 @@ describe("WebServiceSettings", () => {
       />,
     );
 
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: "settings.webServiceAssetsInstallLocal",
-      }),
-    );
+    const installLocalButton = await screen.findByRole("button", {
+      name: "settings.webServiceAssetsInstallLocal",
+    });
+    await waitFor(() => {
+      expect((installLocalButton as HTMLButtonElement).disabled).toBe(false);
+    });
+    fireEvent.click(installLocalButton);
 
     await waitFor(() => {
       expect(pickWebAssetsArchiveMock).toHaveBeenCalledTimes(1);
@@ -800,6 +804,9 @@ describe("WebServiceSettings", () => {
 
     const installButton = await screen.findByRole("button", {
       name: "settings.webServiceAssetsInstall",
+    });
+    await waitFor(() => {
+      expect((installButton as HTMLButtonElement).disabled).toBe(false);
     });
     fireEvent.click(installButton);
 

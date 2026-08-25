@@ -51,6 +51,88 @@ fn has_claude_permission_signal(message: &str) -> bool {
     looks_like_claude_permission_denial_message(message)
 }
 
+fn api_error_status_from_message(message: &str) -> Option<u64> {
+    let normalized = message.trim();
+    let prefix = "API Error:";
+    if !normalized
+        .get(..prefix.len())
+        .is_some_and(|candidate| candidate.eq_ignore_ascii_case(prefix))
+    {
+        return None;
+    }
+    normalized[prefix.len()..]
+        .trim_start()
+        .split(|character: char| !character.is_ascii_digit())
+        .next()
+        .filter(|value| !value.is_empty())?
+        .parse()
+        .ok()
+}
+
+fn structured_claude_api_error(event: &Value) -> Option<(String, Option<String>)> {
+    let explicit_status = event
+        .get("apiErrorStatus")
+        .or_else(|| event.get("api_error_status"))
+        .and_then(Value::as_u64);
+    let is_api_error = event
+        .get("isApiErrorMessage")
+        .or_else(|| event.get("is_api_error_message"))
+        .and_then(Value::as_bool)
+        == Some(true)
+        || explicit_status.is_some();
+    if !is_api_error {
+        return None;
+    }
+
+    let message = event
+        .pointer("/message/content")
+        .and_then(Value::as_array)
+        .and_then(|content| concat_text_blocks(content))
+        .or_else(|| {
+            event
+                .pointer("/error/message")
+                .or_else(|| event.get("error"))
+                .or_else(|| event.get("message"))
+                .and_then(Value::as_str)
+                .map(ToOwned::to_owned)
+        })
+        .filter(|message| !message.trim().is_empty())
+        .unwrap_or_else(|| match explicit_status {
+            Some(status) => format!("Claude API Error: {status}"),
+            None => "Claude API Error".to_string(),
+        });
+    let status = explicit_status.or_else(|| api_error_status_from_message(&message));
+    let code = Some(match status {
+        Some(status) => format!("claude_api_error_{status}"),
+        None => "claude_api_error".to_string(),
+    });
+    Some((message, code))
+}
+
+fn structured_claude_result_error(event: &Value) -> Option<(String, Option<String>)> {
+    let is_error = event.get("is_error").and_then(Value::as_bool) == Some(true)
+        || event.get("subtype").and_then(Value::as_str) == Some("error");
+    if !is_error {
+        return None;
+    }
+    let message = extract_result_text(event)
+        .or_else(|| {
+            event
+                .get("result")
+                .and_then(Value::as_str)
+                .map(ToOwned::to_owned)
+        })
+        .or_else(|| {
+            event
+                .get("error")
+                .and_then(Value::as_str)
+                .map(ToOwned::to_owned)
+        })
+        .filter(|message| !message.trim().is_empty())
+        .unwrap_or_else(|| "Claude result reported an error".to_string());
+    Some((message, Some("claude_result_error".to_string())))
+}
+
 fn detect_claude_synthetic_approval_kind(
     tool_input: Option<&Value>,
     tool_name: &str,
@@ -226,6 +308,18 @@ impl ClaudeSession {
 
             // Claude CLI 2.0.52+ format: assistant message event
             "assistant" => {
+                // Claude CLI may persist Provider/API failures as synthetic
+                // assistant messages instead of emitting `type=error`. This is
+                // authoritative terminal evidence, not assistant text. If it is
+                // treated as a normal cumulative message, the stream owner waits
+                // forever when the CLI keeps stdout open without a later result.
+                if let Some((error, code)) = structured_claude_api_error(event) {
+                    return Some(EngineEvent::TurnError {
+                        workspace_id: self.workspace_id.clone(),
+                        error,
+                        code,
+                    });
+                }
                 // Extract text content from the message
                 if let Some(message) = event.get("message") {
                     if let Some(content) = message.get("content").and_then(|c| c.as_array()) {
@@ -472,6 +566,14 @@ impl ClaudeSession {
                 // which looks for context_window.current_usage (the accurate context snapshot)
                 // We don't use result.usage here as it represents cumulative session stats,
                 // not the current context window usage
+
+                if let Some((error, code)) = structured_claude_result_error(event) {
+                    return Some(EngineEvent::TurnError {
+                        workspace_id: self.workspace_id.clone(),
+                        error,
+                        code,
+                    });
+                }
 
                 Some(EngineEvent::Raw {
                     workspace_id: self.workspace_id.clone(),

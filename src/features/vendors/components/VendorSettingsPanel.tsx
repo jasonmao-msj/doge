@@ -30,6 +30,7 @@ import {
 } from "../persistCustomModelCatalog";
 import type { AppSettings, CodexUnifiedExecExternalStatus } from "../../../types";
 import { notifyProviderTargetCatalogChanged } from "../../composer/components/ChatInputBox/hooks/useProviderTargetCatalogOwners";
+import { useProductEntitlementSnapshotV1 } from "../../account/runtime/productEntitlementStore";
 import { useProviderManagement } from "../hooks/useProviderManagement";
 import { useCodexProviderManagement } from "../hooks/useCodexProviderManagement";
 import { useKimiProviderManagement } from "../hooks/useKimiProviderManagement";
@@ -267,6 +268,13 @@ export function VendorSettingsPanel({
   onUpdateAppSettings,
 }: VendorSettingsPanelProps) {
   const { t } = useTranslation();
+  const productEntitlement = useProductEntitlementSnapshotV1();
+  const managedConfigurationLock = productEntitlement.status === "ready"
+    ? {
+        label: t("settings.vendor.managedProductLockLabel"),
+        description: t("settings.vendor.managedProductLockDescription"),
+      }
+    : undefined;
   const [activeCli, setActiveCli] = useState<CliEngineId>("claude");
   /** Narrow layout: list-only vs detail-only master–detail (ignored above 900px). */
   const [mobilePane, setMobilePane] = useState<"list" | "detail">("list");
@@ -1154,6 +1162,7 @@ export function VendorSettingsPanel({
                   inUse={claudeOfficialInUse}
                   onSwitch={claude.handleSwitchProvider}
                   onEdit={claude.handleOpenClaudeSettingsJsonDialog}
+                  managedLock={managedConfigurationLock}
                 />
                 {renderCustomPathEntry("claude")}
                 {renderPluginModelsEntry("claude", claudeModels.models.length)}
@@ -1251,6 +1260,7 @@ export function VendorSettingsPanel({
                     void codex.handleSwitchCodexProvider(DISABLED_PROVIDER_ID);
                   }}
                   onSaved={refreshUnifiedExecConfigViews}
+                  managedLock={managedConfigurationLock}
                 />
 
                 {renderCustomPathEntry("codex")}
@@ -1422,6 +1432,7 @@ export function VendorSettingsPanel({
                   )}
                   onSwitch={kimi.handleSwitchKimiProvider}
                   onEdit={() => setLocalOfficialEditEngine("kimi")}
+                  managedLock={managedConfigurationLock}
                 />
                 {renderCustomPathEntry("kimi")}
               </div>

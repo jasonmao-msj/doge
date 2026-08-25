@@ -18,6 +18,7 @@ import type {
   ReviewTarget,
   WorkspaceInfo,
   BrowserContextSendAttachment,
+  ComposerCreateSessionTarget,
   IntentCanvasContextSendAttachment,
   SelectedAgentOption,
   SharedQueuedExecutionTarget,
@@ -186,6 +187,7 @@ type SendMessageOptions = {
   intentCanvasContextAttachments?: IntentCanvasContextSendAttachment[];
   codexInvalidThreadRetryAttempted?: boolean;
   autoSession?: AutoSessionMetadata | null;
+  createSessionTarget?: ComposerCreateSessionTarget;
   sharedExecutionTarget?: SharedQueuedExecutionTarget;
   squadRequest?: true;
 };
@@ -2184,8 +2186,14 @@ export function useThreadMessaging({
             }
 
             const sendRequestedAt = Date.now();
+            const frozenCreateTargetProviderProfileId =
+              options?.createSessionTarget?.engine === resolvedEngine
+                ? options.createSessionTarget.providerProfileId?.trim() || null
+                : null;
             const providerProfileId =
-              getThreadProviderProfileId?.(workspace.id, threadId) ?? null;
+              frozenCreateTargetProviderProfileId ??
+              getThreadProviderProfileId?.(workspace.id, threadId) ??
+              null;
             response = await engineSendMessageService(workspace.id, {
               text: finalText,
               engine: resolvedEngine,
@@ -2836,15 +2844,26 @@ export function useThreadMessaging({
       const finalText = promptExpansion?.expanded ?? messageText;
 
       // Detect engine switch from the selected engine to thread ownership.
-      const currentEngine = normalizeEngineSelection(activeEngine);
+      const createSessionTarget = options?.createSessionTarget ?? null;
+      const currentEngine = normalizeEngineSelection(
+        createSessionTarget?.engine ?? activeEngine,
+      );
       const resolvedComposerSelection = resolveComposerSelection?.() ?? null;
-      const codexFirstSendProviderProfileId =
-        currentEngine === "codex"
+      const firstSendProviderProfileId = createSessionTarget
+        ? createSessionTarget.providerProfileId?.trim() || null
+        : currentEngine === "codex"
           ? resolvedComposerSelection?.providerProfileId?.trim() || null
           : null;
-      const codexFirstSendOptions = codexFirstSendProviderProfileId
-        ? { providerProfileId: codexFirstSendProviderProfileId }
+      const firstSendThreadOptions = firstSendProviderProfileId
+        ? { providerProfileId: firstSendProviderProfileId }
         : undefined;
+      const firstSendMessageOptions = createSessionTarget
+        ? {
+            ...options,
+            model: createSessionTarget.model,
+            effort: createSessionTarget.effort,
+          }
+        : options;
       if (activeThreadId) {
         const storedThreadEngine = getThreadEngine(
           activeWorkspace.id,
@@ -2899,7 +2918,7 @@ export function useThreadMessaging({
           const newThreadId = await startThreadForMessageSend(
             activeWorkspace,
             currentEngine,
-            codexFirstSendOptions,
+            firstSendThreadOptions,
           );
           if (!newThreadId) {
             return;
@@ -2911,7 +2930,7 @@ export function useThreadMessaging({
             finalText,
             images,
             {
-              ...options,
+              ...firstSendMessageOptions,
               skipPromptExpansion: true,
             },
           );
@@ -2926,13 +2945,13 @@ export function useThreadMessaging({
         : await startThreadForMessageSend(
             activeWorkspace,
             currentEngine,
-            codexFirstSendOptions,
+            firstSendThreadOptions,
           );
       if (!threadId) {
         return;
       }
       await sendMessageToThread(activeWorkspace, threadId, finalText, images, {
-        ...options,
+        ...firstSendMessageOptions,
         skipPromptExpansion: true,
       });
     },

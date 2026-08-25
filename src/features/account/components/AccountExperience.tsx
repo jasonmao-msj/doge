@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import Check from "lucide-react/dist/esm/icons/check";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
@@ -39,7 +39,9 @@ export type AccountExperienceProps = {
 };
 
 export function AccountExperience({ showLegacyConfiguration = false }: AccountExperienceProps) {
-  const controller = useAccountExperienceControllerV1();
+  const controller = useAccountExperienceControllerV1({
+    loadLegacyConfigurationExtras: showLegacyConfiguration,
+  });
   const copy = useAccountExperienceCopyV1();
 
   if (controller.loading) {
@@ -92,11 +94,16 @@ function AccountUnavailableState({
   readonly controller: AccountExperienceControllerV1;
 }) {
   const copy = useAccountExperienceCopyV1();
+  const detailsId = useId();
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const retryLabel = controller.bootstrapRetrying
     ? copy.retrying
     : controller.bootstrapRetryCompleted
       ? copy.retryAgain
       : copy.retry;
+  const detailsToggleLabel = detailsOpen
+    ? copy.unavailableDetailsHide
+    : copy.unavailableDetailsShow;
 
   return (
     <div
@@ -108,8 +115,13 @@ function AccountUnavailableState({
       <CircleAlert className="account-unavailable-icon" aria-hidden />
       <div className="account-title-with-help account-unavailable-heading">
         <span className="account-unavailable-title">{copy.unavailableTitle}</span>
-        <AccountHelpTooltip label={`${copy.help}：${copy.unavailableTitle}`}>
-          {copy.unavailableBody}
+        <AccountHelpTooltip
+          label={detailsToggleLabel}
+          expanded={detailsOpen}
+          controls={detailsId}
+          onTriggerClick={() => setDetailsOpen((current) => !current)}
+        >
+          {detailsToggleLabel}
         </AccountHelpTooltip>
       </div>
       <button
@@ -124,6 +136,35 @@ function AccountUnavailableState({
         ) : null}
         <span>{retryLabel}</span>
       </button>
+      {detailsOpen ? (
+        <section
+          id={detailsId}
+          className="account-failure-details"
+          aria-label={copy.unavailableDetailsRegion}
+        >
+          <p>{copy.unavailableBody}</p>
+          {controller.failure ? (
+            <dl>
+              <div>
+                <dt>{copy.unavailableErrorCode}</dt>
+                <dd><code>{controller.failure.code}</code></dd>
+              </div>
+              <div>
+                <dt>{copy.unavailableErrorStage}</dt>
+                <dd><code>{controller.failure.stage}</code></dd>
+              </div>
+              <div>
+                <dt>{copy.unavailableRecoveryAction}</dt>
+                <dd><code>{controller.failure.recovery.action}</code></dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="account-failure-details-empty">
+              {copy.unavailableDetailsEmpty}
+            </p>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

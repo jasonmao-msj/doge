@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 33
-- **Last Active**: 2026-08-20
+- **Total Sessions**: 48
+- **Last Active**: 2026-08-24
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1109 | Active |
+| `journal-1.md` | ~1650 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,21 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 48 | 2026-08-24 | 修复 PR 订阅恢复与托管隔离 | `ee54ca918` | `codex/fix-managed-provider-session-defaults` |
+| 47 | 2026-08-24 | 统一订阅、账户详情与托管会话收口 | `4fec2776d` | `codex/fix-managed-provider-session-defaults` |
+| 46 | 2026-08-23 | 修复 Claude 续接卡死与 Anthropic 路由 | `efbebcf6a` | `codex/fix-managed-provider-session-defaults` |
+| 45 | 2026-08-23 | 修复 Codex 503 恢复与单一 doge 开发入口 | `80cf57fdf` | `codex/fix-managed-provider-session-defaults` |
+| 44 | 2026-08-23 | 贯通豆包运行模型与生产定价 | `bdbe27bc0`, `d7c5cb0fc` | `codex/fix-managed-provider-session-defaults` |
+| 43 | 2026-08-23 | 修复豆包图标 CSS 尺寸覆盖 | `feefbbea9`, `dfbfb70d7` | `codex/fix-managed-provider-session-defaults` |
+| 42 | 2026-08-23 | 收口产品交互与豆包图标 | `7e1f7957e`, `55228e451`, `d3381401e` | `codex/fix-managed-provider-session-defaults` |
+| 41 | 2026-08-23 | 完善账号服务错误详情 | `a4bf34144` | `codex/fix-managed-provider-session-defaults` |
+| 40 | 2026-08-23 | 记录 Composite 路由生产实测 | `32ef2ffe1` | `codex/fix-managed-provider-session-defaults` |
+| 39 | 2026-08-23 | 记录热开发修复与全量复验 | `4c1c0adb8` | `codex/fix-managed-provider-session-defaults` |
+| 38 | 2026-08-23 | 修复 Tauri 热开发 flavor | `0b0733feb` | `codex/fix-managed-provider-session-defaults` |
+| 37 | 2026-08-23 | 上游 Composite 只读审计 | `7765f6833` | `codex/fix-managed-provider-session-defaults` |
+| 36 | 2026-08-23 | 校正统一订阅 PR 目标 | `e72ecfaff` | `codex/fix-managed-provider-session-defaults` |
+| 35 | 2026-08-23 | 统一订阅 PR 交付 | `94ee6d38f` | `codex/fix-managed-provider-session-defaults` |
+| 34 | 2026-08-23 | 统一订阅、动态模型与账户详情验收 | `b639fb8a7`, `4f5c41737`, `92ef3e99d`, `90461be7a`, `fc4d87876`, `7fcbd565c` | `codex/fix-managed-provider-session-defaults` |
 | 33 | 2026-08-20 | 恢复新会话托管渠道默认并建立分层测试 | `3865ba37b`, `2e3bd5db2` | `codex/fix-account-masked-email-bootstrap` |
 | 32 | 2026-08-19 | 收口账号订阅额度与引擎默认流程 | `6e649e5ac` | `codex/fix-account-masked-email-bootstrap` |
 | 31 | 2026-08-17 | 记录 Shared 会话额度投影问题 | `83fdbab1e` | `codex/fix-account-masked-email-bootstrap` |

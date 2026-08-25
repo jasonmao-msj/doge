@@ -35,11 +35,12 @@
 .selector-model-brand-icon {
   align-items: center;
   display: inline-flex;
+  width: 16px;
+  height: 16px;
   flex: none;
   justify-content: center;
   line-height: 1;
-  /* Keep room for brand tiles (kimi white-on-dark) without clipping. */
-  overflow: visible;
+  overflow: hidden;
 }
 
 .selector-model-brand-icon img {
