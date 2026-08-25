@@ -1714,3 +1714,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 51: 同步主分支并解决续接 PR 冲突
+
+**Date**: 2026-08-24
+**Task**: 同步主分支并解决续接 PR 冲突
+**Branch**: `codex/fix-cross-engine-claude-continuation`
+
+### Summary
+
+在 PR #21 合并后语义合并最新 main，保留 provisional terminal 与 Provider Continuation 两套 OpenSpec/ADR/Trellis 事实，并将冲突的 session journal 校准为 49/50。联合 L3 回归 9 files/283 tests、typecheck、runtime/docs/OpenSpec/diff gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f1f38451e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
