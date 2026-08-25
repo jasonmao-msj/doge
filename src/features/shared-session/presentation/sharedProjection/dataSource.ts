@@ -19,7 +19,7 @@ import { BUILTIN_ENGINE_TYPES } from "../../../engine/engineRegistry";
 import type { SharedProjectionItem } from "./types";
 import { LOCAL_PROVIDER_LABEL } from "../../../../utils/turnBadge";
 import { buildConversationItem } from "../../../../utils/threadItems";
-import { isMultiAgentSettledSummaryItemId } from "../../../multi-agent/utils/canvasItems";
+import { isMultiAgentSettledSummaryItemId } from "@/conversation-presentation/multi-agent/canvasItems";
 
 export const SHARED_PROJECTION_STORAGE_KEY = "doge.sharedProjection";
 const LEGACY_SHARED_PROJECTION_STORAGE_KEY = "mossx.sharedProjection";

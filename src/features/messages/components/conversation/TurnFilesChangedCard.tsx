@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "../../../../components/ui/ConfirmDialog";
-import { getFileTreeIconSvg } from "../../../files/utils/fileTreeIcons";
+import { getFileTreeIconSvg } from "@/utils/fileTreeIcons";
 import {
   areTurnFileChangesSummariesEqual,
   type TurnFileChangesSummary,

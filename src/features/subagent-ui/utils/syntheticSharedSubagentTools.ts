@@ -1,5 +1,5 @@
 import type { ConversationItem, EngineType, ThreadSummary } from "../../../types";
-import { isCollabSpawnTool, isSubagentTool } from "./isSubagentTool";
+import { isCollabSpawnTool, isSubagentTool } from "@/utils/isSubagentTool";
 import { resolveSyntheticChildToolStatus } from "./subagentCardStatus";
 import { extractCollabAgentIds } from "./subagentViewModel";
 

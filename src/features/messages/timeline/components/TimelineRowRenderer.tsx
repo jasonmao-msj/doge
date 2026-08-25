@@ -41,7 +41,7 @@ import {
 import {
   isSubagentStyleAgentTaskNotification,
   parseAgentTaskNotification as parseFullAgentTaskNotification,
-} from "../../../engine-task-output/contracts/agentTaskNotification";
+} from "@/contracts/agentTaskNotification";
 import {
   DiffRow,
   ExploreRow,
@@ -52,11 +52,10 @@ import {
   WorkingIndicator,
 } from "../../components/MessagesRows";
 import { ConversationRowErrorBoundary } from "../../components/conversation/ConversationRowErrorBoundary";
-import { MultiAgentHistoryFoldTimelineRow } from "../../../multi-agent/components/HistoryFoldCard";
 import {
-  isHistoryFoldItemId,
-} from "../../../multi-agent/store/historyFoldRegistry";
-import { isMultiAgentSettledSummaryItemId } from "../../../multi-agent/utils/canvasItems";
+  isMultiAgentHistFoldItemId,
+  isMultiAgentSettledSummaryItemId,
+} from "@/conversation-presentation/multi-agent/canvasItems";
 import { MiddleStepsCollapsedChip } from "./MiddleStepsCollapsedChip";
 import type {
   TimelineRowRendererProps,
@@ -154,7 +153,7 @@ export const TimelineRowRenderer = memo(function TimelineRowRenderer({
     selectedExitPlanExecutionByItemKey,
     streamMitigationProfile,
   } = presentation;
-  const { approvalNode, userInputNode } = slots;
+  const { approvalNode, renderHistoryFold, userInputNode } = slots;
   const { t } = useTranslation();
   const messageNodeRefs = useTimelineMessageNodeRefs({
     agentTaskNodeByTaskIdRef,
@@ -181,18 +180,15 @@ export const TimelineRowRenderer = memo(function TimelineRowRenderer({
     if (renderKind === "message" && renderItem.kind === "message") {
       const itemRenderKey = `message:${renderItem.id}`;
       // 协作终态 HistoryFold：插在时间线消息位置，随主幕布滚动
-      if (isHistoryFoldItemId(renderItem.id)) {
+      if (isMultiAgentHistFoldItemId(renderItem.id)) {
+        const historyFoldNode = renderHistoryFold?.(renderItem.id) ?? null;
         return (
           <div
             key={itemRenderKey}
             className="ma-hist-timeline-row"
             data-message-anchor-id={renderItem.id}
           >
-            <MultiAgentHistoryFoldTimelineRow
-              itemId={renderItem.id}
-              workspaceId={workspaceId}
-              threadId={threadId}
-            />
+            {historyFoldNode}
           </div>
         );
       }

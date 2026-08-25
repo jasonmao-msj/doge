@@ -30,7 +30,7 @@ import { FileMarkdownPreview } from "./FileMarkdownPreviewRouter";
 import { FileStructuredPreview } from "./FileStructuredPreview";
 import { FileTabularPreview } from "./FileTabularPreview";
 import type { FilePreviewPayload } from "../hooks/useFilePreviewPayload";
-import type { FileDocumentSnapshot } from "../utils/fileDocumentSnapshot";
+import type { FileDocumentSnapshot } from "@/utils/fileDocumentSnapshot";
 import type { FileViewSurface } from "../utils/fileViewSurface";
 import { highlightLine } from "../../../utils/syntax";
 import type { FileRenderPressure } from "../types/fileRenderPressure";

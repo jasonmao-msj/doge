@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FileReadTarget } from "../../../utils/workspacePaths";
 import { useFilePreviewPayload } from "./useFilePreviewPayload";
 import { resolveFilePreviewHandle } from "../../../services/tauri";
-import { resolveFileRenderProfile } from "../utils/fileRenderProfile";
+import { resolveFileRenderProfile } from "@/utils/fileRenderProfile";
 
 vi.mock("@tauri-apps/api/core", () => ({
   convertFileSrc: vi.fn((path: string) => `asset://localhost/${path}`),

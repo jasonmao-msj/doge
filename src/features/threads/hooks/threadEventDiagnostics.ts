@@ -1,5 +1,5 @@
 import type { CollaborationModeBlockedRequest } from "../../../types";
-import { isDebugLightPathEnabled } from "../utils/realtimePerfFlags";
+import { isDebugLightPathEnabled } from "@/conversation-presentation/realtimePerfFlags";
 
 export const TURN_FIRST_DELTA_WARNING_MS = 6_000;
 export const TURN_STALL_WARNING_MS = 6_000;

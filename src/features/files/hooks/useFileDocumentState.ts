@@ -11,7 +11,7 @@ import type { FileReadTarget } from "../../../utils/workspacePaths";
 import {
   createFileDocumentSnapshot,
   type FileDocumentSnapshot,
-} from "../utils/fileDocumentSnapshot";
+} from "@/utils/fileDocumentSnapshot";
 
 type UseFileDocumentStateArgs = {
   workspaceId: string;

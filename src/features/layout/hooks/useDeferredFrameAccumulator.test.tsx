@@ -5,7 +5,7 @@ import { useDeferredFrameAccumulator } from "./useDeferredFrameAccumulator";
 import {
   __resetRealtimePerfFlagCacheForTests,
   resetRealtimePerfFlags,
-} from "../../threads/utils/realtimePerfFlags";
+} from "@/conversation-presentation/realtimePerfFlags";
 
 describe("useDeferredFrameAccumulator", () => {
   beforeEach(() => {

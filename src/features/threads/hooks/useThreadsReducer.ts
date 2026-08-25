@@ -10,7 +10,7 @@ import {
   upsertItem,
 } from "../../../utils/threadItems";
 import { settlePlanInProgressSteps } from "../utils/threadNormalize";
-import { isMultiAgentHistFoldItemId } from "../../multi-agent/utils/canvasItems";
+import { isMultiAgentHistFoldItemId } from "@/conversation-presentation/multi-agent/canvasItems";
 import {
   isCollabWorkerNativeThreadId,
   rememberCollabWorkerNativeThreadId,
@@ -22,7 +22,7 @@ import {
 import {
   isIncrementalDerivationEnabled,
   isReducerNoopGuardEnabled,
-} from "../utils/realtimePerfFlags";
+} from "@/conversation-presentation/realtimePerfFlags";
 import {
   buildLegacyTextDeltaItemId,
   findAssistantMessageIndexByLegacyTextDelta,

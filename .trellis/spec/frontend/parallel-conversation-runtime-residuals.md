@@ -1,6 +1,6 @@
 # Parallel Conversation Runtime Residuals
 
-本文件适用于所有「多 session 并行对话」相关代码:`src/features/threads/hooks/useThread*.ts`、`useThreadEventHandlers.ts`、`useThreadsReducer.ts`、`useThreads.ts`、`useAppServerEvents.ts`、`src/features/messages/components/Markdown.tsx`、`LiveMarkdown.tsx`、`Messages.tsx`、`src/features/home/components/Home.tsx` / `HomeChat.tsx`、`src/services/eventBackpressure.ts`、`src/features/threads/utils/realtimePerfFlags.ts`、`src/services/mediaResourceOwners.ts`、`src/components/common/LocalImage.tsx`、`src-tauri/src/engine/claude.rs`、`src-tauri/src/engine/opencode.rs`、`src-tauri/src/engine/gemini.rs`、`src-tauri/src/event_sink.rs`。
+本文件适用于所有「多 session 并行对话」相关代码:`src/features/threads/hooks/useThread*.ts`、`useThreadEventHandlers.ts`、`useThreadsReducer.ts`、`useThreads.ts`、`useAppServerEvents.ts`、`src/features/messages/components/Markdown.tsx`、`LiveMarkdown.tsx`、`Messages.tsx`、`src/features/home/components/Home.tsx` / `HomeChat.tsx`、`src/services/eventBackpressure.ts`、`src/conversation-presentation/realtimePerfFlags.ts`、`src/services/mediaResourceOwners.ts`、`src/components/common/LocalImage.tsx`、`src-tauri/src/engine/claude.rs`、`src-tauri/src/engine/opencode.rs`、`src-tauri/src/engine/gemini.rs`、`src-tauri/src/event_sink.rs`。
 
 ## Scope / Trigger
 
@@ -432,7 +432,7 @@ manager.remove_gemini_session(workspace_id).await?;
 | 根因 | 验收指标 | 测试位置 |
 |---|---|---|
 | 1 | Drop session 后 1s 内 child 被 SIGTERM | `src-tauri/src/engine/claude/tests_core.rs` |
-| 2 | localStorage 写 '0' 后,`isXxxEnabled() === false`;清掉后回 true | `src/features/threads/utils/realtimePerfFlags.test.ts` |
+| 2 | localStorage 写 '0' 后,`isXxxEnabled() === false`;清掉后回 true | `src/conversation-presentation/realtimePerfFlags.test.ts` |
 | 3 | 8000 字符 `findProgressiveRevealBoundary` < 1ms;pending < 140 短路 | `src/features/messages/components/LiveMarkdown.test.tsx` |
 | 4 | 30s 长 turn,handlers useMemo rebuild ≤ 5/组 | `src/features/threads/hooks/useThreadEventHandlers.test.ts` |
 | 5 | 200 session 侧栏 DOM 节点 ≤ 25;`backgroundActivityByThread` 懒计算 | `src/features/home/components/Home.perf.test.tsx` |

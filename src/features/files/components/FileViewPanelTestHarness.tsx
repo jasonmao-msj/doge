@@ -38,7 +38,7 @@ import {
 } from "../../../services/tauri";
 import { loadKatexAssets } from "../../markdown/markdownMath";
 import { useFilePreviewPayload } from "../hooks/useFilePreviewPayload";
-import { getFileTreeIconSvg } from "../utils/fileTreeIcons";
+import { getFileTreeIconSvg } from "@/utils/fileTreeIcons";
 
 function openFileContentContextMenu() {
   const contextTarget =

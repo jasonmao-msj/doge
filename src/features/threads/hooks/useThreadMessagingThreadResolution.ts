@@ -4,7 +4,7 @@ import type { ConversationItem, DebugEntry, WorkspaceInfo } from "../../../types
 import {
   isClaudeRuntimeThreadId,
 } from "../utils/claudeForkThread";
-import { renameLiveAssistantTextThread } from "../utils/liveAssistantTextChannel";
+import { renameLiveAssistantTextThread } from "@/conversation-presentation/liveAssistantTextChannel";
 import { loadClaudeSession as loadClaudeSessionService } from "../../../services/tauri";
 import { parseClaudeHistoryMessagesWithShadowRecovery } from "../loaders/claudeHistoryLoader";
 import type { ThreadAction } from "./useThreadsReducer";

@@ -1,9 +1,9 @@
-import type { ConversationItem } from "../../../types/conversation";
+import type { ConversationItem } from "../../types/conversation";
 import {
   isCollabInternalPromptText,
   isCollabSummaryPromptText,
   stripCollabInternalPrompt,
-} from "./collabPrompt";
+} from "@/conversation-presentation/multi-agent/collabPrompt";
 
 /**
  * 主幕布 multi-agent 锚点身份与时间线纠偏。

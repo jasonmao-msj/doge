@@ -1,10 +1,7 @@
 import { memo, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  formatDurationCompact,
-  formatTokenCount,
-} from "../../messages/utils/messagesRenderUtils";
-import { formatRelativeTime } from "../../../utils/time";
+import { formatTokenCount } from "../../../utils/tokenFormat";
+import { formatDurationCompact, formatRelativeTime } from "../../../utils/time";
 import type {
   SessionOverviewQuotaWindowView,
   SessionOverviewViewModel,

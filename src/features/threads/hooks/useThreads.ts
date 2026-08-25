@@ -60,7 +60,7 @@ import {
   resolveClaudeContinuationThreadId as resolveClaudeContinuationThreadIdFromState,
   shouldShowHistoryLoadingForSelectionThread,
 } from "../utils/claudeThreadContinuity";
-import { clearLiveAssistantText } from "../utils/liveAssistantTextChannel";
+import { clearLiveAssistantText } from "@/conversation-presentation/liveAssistantTextChannel";
 import {
   resolvePendingThreadIdForSession,
   resolvePendingThreadIdForTurn,

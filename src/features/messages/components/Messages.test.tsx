@@ -13,7 +13,7 @@ import type { ConversationItem } from "../../../types";
 import {
   OPEN_TASK_RUN_EVENT,
   readOpenTaskRunEvent,
-} from "../../tasks/utils/taskRunNavigationEvents";
+} from "@/services/taskRunNavigationEvents";
 import type { TaskRunRecord } from "../../tasks/types";
 import { Messages } from "./Messages";
 import { MessagesAnchorRail } from "./conversation/MessagesAnchorRail";
@@ -139,6 +139,34 @@ describe("Messages", () => {
       />,
     );
     expect(container.querySelector("[data-testid='continuation-metadata']")).toBeNull();
+  });
+
+  it("renders a multi-agent history fold through the host slot", () => {
+    render(
+      <Messages
+        items={[
+          {
+            id: "agent:run-1:hist-fold",
+            kind: "message",
+            role: "assistant",
+            text: "",
+          },
+        ]}
+        threadId="thread-1"
+        workspaceId="workspace-1"
+        isThinking={false}
+        activeEngine="codex"
+        openTargets={[]}
+        selectedOpenAppId=""
+        renderHistoryFold={(itemId) => (
+          <div data-testid="history-fold-slot">{itemId}</div>
+        )}
+      />,
+    );
+
+    expect(screen.getByTestId("history-fold-slot").textContent).toBe(
+      "agent:run-1:hist-fold",
+    );
   });
 
   it("hides Codex host bootstrap only for a Provider Continuation target", () => {

@@ -5,8 +5,8 @@ import { normalizeSharedSessionEngine } from "../../shared-session/utils/sharedS
 import {
   isSharedProjectionDataSourceEnabled,
   resolveSharedConversationItems,
-} from "../../messages/presentation/sharedProjection/dataSource";
-import type { SharedProjectionItem } from "../../messages/presentation/sharedProjection/types";
+} from "@/features/shared-session/presentation/sharedProjection/dataSource";
+import type { SharedProjectionItem } from "@/features/shared-session/presentation/sharedProjection/types";
 import {
   findCanonicalAgentRunId,
   registerAgentConversationEvidence,
@@ -30,7 +30,7 @@ import {
   buildSharedHistorySessionProgress,
   normalizeHistoryLoadingProgress,
   type HistoryLoadingProgressListener,
-} from "../utils/historyLoadingProgress";
+} from "@/conversation-presentation/historyLoadingProgress";
 
 type SharedHistoryLoaderOptions = {
   workspaceId: string;

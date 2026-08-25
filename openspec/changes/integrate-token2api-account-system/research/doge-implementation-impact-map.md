@@ -172,7 +172,7 @@ src-tauri/src/account/
    - `src-tauri/src/computer_use/mod.rs::{COMPUTER_USE_BRIDGE_ENABLED,COMPUTER_USE_ACTIVATION_ENABLED}`，activation另有 env opt-out。
 2. **Frontend local override → build env → legacy → default-on**
    - `src/features/multi-agent/runtime/featureFlag.ts::isMultiAgentEnabled`：localStorage、Vite current/legacy aliases、default true。
-   - `src/features/messages/presentation/sharedProjection/dataSource.ts::isSharedProjectionDataSourceEnabled`：local override、build override、legacy override、default true。
+   - `src/features/shared-session/presentation/sharedProjection/dataSource.ts::isSharedProjectionDataSourceEnabled`：local override、build override、legacy override、default true。
 3. **Rust env kill switch**
    - `src-tauri/src/agent_orchestration/support.rs::require_agent_enabled`：current/legacy env aliases，explicit negative disables。
 

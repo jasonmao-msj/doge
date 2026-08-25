@@ -2,7 +2,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConversationItem, ThreadSummary, WorkspaceInfo } from "../../../types";
-import { __resetRealtimePerfFlagCacheForTests } from "../../threads/utils/realtimePerfFlags";
+import { __resetRealtimePerfFlagCacheForTests } from "@/conversation-presentation/realtimePerfFlags";
 import {
   SESSION_RADAR_HISTORY_UPDATED_EVENT,
   SESSION_RADAR_RECENT_STORAGE_KEY,

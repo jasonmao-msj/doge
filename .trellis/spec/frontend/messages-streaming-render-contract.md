@@ -231,6 +231,67 @@ queue.push(event);
 - `contextProtocol` classifier 必须匹配完整 protocol envelope；过滤只发生在
   presentation boundary，原始 Runtime/Canonical evidence 保留。
 
+## Scenario: Messages Peer Features Must Use Host Composition
+
+### 1. Scope / Trigger
+
+- Trigger：Messages 时间线需要调用 Prompt Distill、Multi-Agent History Fold 或其它 peer feature UI/runtime capability。
+- 目标：保持 `src/features/messages` 的 dependency direction，不让 feature integration 重新进入 streaming/timeline hot path 的 private imports。
+
+### 2. Signatures
+
+- Intent callback：`MessagesProps.onSaveAsPrompt?: (sourceText: string) => void`。
+- Peer render slot：`MessagesProps.renderHistoryFold?: (itemId: string) => ReactNode`。
+- Main host：`ActiveCanvasMessages` 组合 `Messages + usePromptDistillation + PromptDistillDialog + MultiAgentHistoryFoldTimelineRow`。
+- Nested host：`SubagentSessionCanvas` 为嵌套 Messages 提供同一 callback/slot。
+
+### 3. Contracts
+
+- Messages MUST NOT import `prompt-distill/**`、`multi-agent/components/**` 或 peer feature stores；它只发布 intent 或调用 optional render slot。
+- Host callback MUST 以 stable identity 传入；History Fold callback 只能依赖 `workspaceId + threadId`，不得读取 live assistant text 或每-delta snapshot。
+- `renderHistoryFold(itemId)` MUST preserve the exact timeline anchor id；slot 缺失时安全渲染 `null`，不得退回 peer deep import。
+- 每个 production Messages entry MUST 显式组合 Prompt Distill fallback 与 History Fold slot；新增嵌套 Messages surface 时不能只依赖 main Layout host。
+- Prompt Distill dialog state MUST stay in the host owner；opening/editing dialog MUST NOT force MessagesCore to own peer hook state。
+
+### 4. Validation & Error Matrix
+
+| 场景 | 必须行为 | 禁止行为 |
+|---|---|---|
+| 主幕 context menu 保存为 Prompt | host callback 打开原 Prompt Distill dialog | MessagesCore import Prompt Distill hook/dialog |
+| 子会话嵌套 Messages | 同样提供 distill callback 与 fold slot | 子会话丢失原能力 |
+| timeline 命中 `agent:*:hist-fold` | 用 exact item id 调用 host slot | Timeline import Multi-Agent registry/component |
+| slot 未提供 | fold row safely empty | runtime throw 或 peer fallback import |
+| live text 每 48ms publish | slot callback identity 不随 delta 变化 | 每 delta 重建 callback 打穿 timeline memo |
+
+### 5. Good / Base / Bad Cases
+
+- Good：Layout 用 `useCallback([workspaceId, threadId])` 注入 History Fold renderer，Messages 只识别 neutral item id。
+- Base：测试直接渲染 `<Messages>` 且不需要 peer integration 时可省略 slot/callback。
+- Bad：为方便直接在 `TimelineRowRenderer` import `HistoryFoldCard`，或在 `MessagesCore` mount `usePromptDistillation()`。
+
+### 6. Tests Required
+
+- `conversationCanvasNode.test.tsx` MUST assert default `onSaveAsPrompt` reaches Prompt Distill owner and History Fold slot preserves item id。
+- `SubagentSessionCanvas` 的 production composition MUST pass both props；修改该 surface 时追加 focused behavior test。
+- `check:messages-boundaries` MUST report `inbound=0`、`new=0`，且 baseline 不得新增上述 peer edges。
+- 变更后运行 Messages focused tests、typecheck、target ESLint 与 boundary contract tests。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```tsx
+import { PromptDistillDialog } from "../../prompt-distill/components/PromptDistillDialog";
+import { MultiAgentHistoryFoldTimelineRow } from "../../multi-agent/components/HistoryFoldCard";
+```
+
+#### Correct
+
+```tsx
+onSaveAsPrompt?.(sourceText);
+return renderHistoryFold?.(itemId) ?? null;
+```
+
 ## Scenario: Turn-bound provisional identity promotion and same-tick terminal settlement
 
 ### 1. Scope / Trigger

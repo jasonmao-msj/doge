@@ -115,6 +115,7 @@ describe("AppShell lazy feature boundaries", () => {
   it("keeps conversation canvas rendering behind a dedicated node builder", () => {
     const layoutNodesSource = readSource(join(srcDir, "features/layout/hooks/useLayoutNodes.tsx"));
     const canvasNodeSource = readSource(join(srcDir, "features/layout/hooks/conversationCanvasNode.tsx"));
+    const messagesCoreSource = readSource(join(srcDir, "features/messages/components/MessagesCore.tsx"));
 
     expect(layoutNodesSource).toContain("buildConversationCanvasNode");
     expect(layoutNodesSource).not.toContain(
@@ -122,9 +123,14 @@ describe("AppShell lazy feature boundaries", () => {
     );
     expect(canvasNodeSource).toContain("function ActiveCanvasMessages");
     expect(canvasNodeSource).toContain("useActiveCanvasSelector");
+    expect(canvasNodeSource).toContain("<Messages");
+    expect(canvasNodeSource).toContain("{...messagesProps}");
+    expect(canvasNodeSource).toContain("{...activeCanvasMessagesProps}");
+    expect(canvasNodeSource).toContain("onSaveAsPrompt={onSaveAsPrompt}");
     expect(canvasNodeSource).toContain(
-      "<Messages {...messagesProps} {...activeCanvasMessagesProps} />",
+      "renderHistoryFold={messagesProps.renderHistoryFold ?? renderHistoryFold}",
     );
+    expect(messagesCoreSource).not.toContain("usePromptDistillation");
     expect(canvasNodeSource).toContain(
       "<MessageForkConfirmDialog {...forkConfirmDialogProps} />",
     );

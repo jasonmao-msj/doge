@@ -8,7 +8,7 @@ import {
   multiAgentHistFoldItemId,
   multiAgentPendingUserItemId,
   multiAgentUserItemId,
-} from "../utils/canvasItems";
+} from "@/conversation-presentation/multi-agent/canvasItems";
 import {
   collabDisplayTitle,
   stripMainCanvasContextBlock,

@@ -5,7 +5,7 @@ import FileIcon from "../../../components/FileIcon";
 import { UnsavedChangesDialog } from "../../../components/ui/UnsavedChangesDialog";
 import { getGitFileFullDiff } from "../../../services/tauri";
 import { computeDiffFromUnifiedPatch } from "../../../utils/diff";
-import { resolveFileRenderProfile } from "../../files/utils/fileRenderProfile";
+import { resolveFileRenderProfile } from "@/utils/fileRenderProfile";
 import {
   resolveFileReadTarget,
   resolveWorkspaceRelativePath,

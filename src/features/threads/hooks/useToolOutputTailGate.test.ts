@@ -12,7 +12,7 @@ import {
 import {
   __resetRealtimePerfFlagCacheForTests,
   resetRealtimePerfFlags,
-} from "../utils/realtimePerfFlags";
+} from "@/conversation-presentation/realtimePerfFlags";
 
 describe("useToolOutputTailGate", () => {
   beforeEach(() => {

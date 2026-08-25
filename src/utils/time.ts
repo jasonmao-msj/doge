@@ -1,5 +1,26 @@
 import i18n from "../i18n";
 
+/** Human-readable compact duration for process chips, e.g. "1m 3s". */
+export function formatDurationCompact(durationMs: number) {
+  const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    if (minutes === 0 && seconds === 0) {
+      return `${hours}h`;
+    }
+    if (seconds === 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+  if (minutes > 0) {
+    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  }
+  return `${seconds}s`;
+}
+
 export function formatRelativeTime(timestamp: number) {
   const now = Date.now();
   const diffSeconds = Math.round((timestamp - now) / 1000);

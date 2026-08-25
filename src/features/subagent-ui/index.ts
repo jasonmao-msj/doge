@@ -17,7 +17,7 @@ export {
   isGrokSpawnSubagentTool,
   isSubagentOutputPoller,
   isSubagentTool,
-} from "./utils/isSubagentTool";
+} from "@/utils/isSubagentTool";
 export {
   buildSubagentCardFromSubagentInfo,
   buildSubagentCardFromToolItem,

@@ -6,11 +6,6 @@ import {
   formatDurationSecondsLabel,
   formatTokenCount,
 } from "./messagesRenderUtils";
-import {
-  resolveTurnTokenCountsFromUsage,
-  stampLatestFinalAssistantTurnTokens,
-} from "../../threads/hooks/threadReducerAssistantFinalMetadata";
-import type { ConversationItem, ThreadTokenUsage } from "../../../types";
 
 const t = (key: string, params?: Record<string, unknown>) => {
   if (key === "messages.durationSeconds") {
@@ -83,54 +78,5 @@ describe("formatDurationSecondsLabel", () => {
     expect(formatDurationSecondsLabel(63_000)).toBe("1m3s");
     expect(formatDurationSecondsLabel(120_000)).toBe("2m");
     expect(formatDurationSecondsLabel(3_661_000)).toBe("1h1m1s");
-  });
-});
-
-describe("stampLatestFinalAssistantTurnTokens", () => {
-  it("stamps last-turn usage onto the latest final assistant message", () => {
-    const items: ConversationItem[] = [
-      {
-        id: "a1",
-        kind: "message",
-        role: "assistant",
-        text: "old",
-        isFinal: true,
-        finalDurationMs: 1000,
-      },
-      {
-        id: "a2",
-        kind: "message",
-        role: "assistant",
-        text: "new",
-        isFinal: true,
-        finalDurationMs: 13_000,
-      },
-    ];
-    const usage: ThreadTokenUsage = {
-      total: {
-        totalTokens: 43_149,
-        inputTokens: 37,
-        cachedInputTokens: 42_963,
-        outputTokens: 149,
-        reasoningOutputTokens: 0,
-      },
-      last: {
-        totalTokens: 43_149,
-        inputTokens: 37,
-        cachedInputTokens: 42_963,
-        outputTokens: 149,
-        reasoningOutputTokens: 0,
-      },
-      modelContextWindow: null,
-    };
-    const counts = resolveTurnTokenCountsFromUsage(usage);
-    expect(counts).toEqual({ inputTokens: 43_000, outputTokens: 149 });
-    const next = stampLatestFinalAssistantTurnTokens(items, usage);
-    expect(next[0]).toEqual(items[0]);
-    expect(next[1]).toMatchObject({
-      id: "a2",
-      finalInputTokens: 43_000,
-      finalOutputTokens: 149,
-    });
   });
 });

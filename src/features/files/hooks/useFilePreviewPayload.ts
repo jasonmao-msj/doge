@@ -8,7 +8,7 @@ import {
 import type {
   FileRenderProfile,
   PreviewSourceKind,
-} from "../utils/fileRenderProfile";
+} from "@/utils/fileRenderProfile";
 import type { FileReadTarget } from "../../../utils/workspacePaths";
 
 export type FilePreviewPayload =

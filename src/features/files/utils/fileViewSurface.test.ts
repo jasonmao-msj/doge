@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   measureFilePreviewMetrics,
   resolveFileRenderProfile,
-} from "./fileRenderProfile";
+} from "@/utils/fileRenderProfile";
 import {
   resolveDefaultFileViewMode,
   resolveFileViewSurface,

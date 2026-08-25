@@ -7,7 +7,7 @@ import {
   clearLiveAssistantText,
   LIVE_ASSISTANT_TEXT_PUBLISH_INTERVAL_MS,
   resetLiveAssistantTextChannelForTests,
-} from "../utils/liveAssistantTextChannel";
+} from "@/conversation-presentation/liveAssistantTextChannel";
 
 describe("useLiveAssistantText", () => {
   afterEach(() => {

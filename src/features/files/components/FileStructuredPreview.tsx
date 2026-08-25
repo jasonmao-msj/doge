@@ -1,11 +1,11 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { highlightLine } from "../../../utils/syntax";
-import { resolveStructuredPreviewKind } from "../utils/fileRenderProfile";
+import { resolveStructuredPreviewKind } from "@/utils/fileRenderProfile";
 import {
   createFileDocumentSnapshot,
   type FileDocumentSnapshot,
-} from "../utils/fileDocumentSnapshot";
+} from "@/utils/fileDocumentSnapshot";
 
 type FileStructuredPreviewProps = {
   filePath: string;

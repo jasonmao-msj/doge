@@ -1,7 +1,7 @@
 import {
   resolveFileLanguageFromPath,
   type EditorLanguageId,
-} from "../../../utils/fileLanguageRegistry";
+} from "./fileLanguageRegistry";
 import { createFileDocumentSnapshot } from "./fileDocumentSnapshot";
 
 export type StructuredPreviewKind = "shell" | "dockerfile";

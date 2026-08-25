@@ -54,10 +54,10 @@ export {
   multiAgentHistFoldItemId,
   filterMultiAgentCanvasItems,
   isMultiAgentSettledSummaryItemId,
-} from "./utils/canvasItems";
+} from "@/conversation-presentation/multi-agent/canvasItems";
 export {
   stripCollabInternalPrompt,
   isCollabInternalPromptText,
   COLLAB_BRIEFING_MARKER,
   COLLAB_SUMMARY_MARKER,
-} from "./utils/collabPrompt";
+} from "@/conversation-presentation/multi-agent/collabPrompt";

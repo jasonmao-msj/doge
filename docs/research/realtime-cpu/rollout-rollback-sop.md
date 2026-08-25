@@ -5,7 +5,7 @@ status: active
 
 <!-- DOC-LIFECYCLE: active-runbook -->
 > [!NOTE]
-> **Lifecycle: Current scoped runbook.** 本 SOP 只覆盖文中四个 legacy realtime flags；current registry 已有九项。新增 flags、backend env gate 与 `liveTextExternalization` 的权威定义以 `src/features/threads/utils/realtimePerfFlags.ts` 和相关 specs 为准。
+> **Lifecycle: Current scoped runbook.** 本 SOP 只覆盖文中四个 legacy realtime flags；current registry 已有九项。新增 flags、backend env gate 与 `liveTextExternalization` 的权威定义以 `src/conversation-presentation/realtimePerfFlags.ts` 和相关 specs 为准。
 
 # Realtime CPU Optimization Rollout and Rollback SOP
 
@@ -20,7 +20,7 @@ This SOP covers client-side realtime conversation CPU optimizations for:
 
 No protocol/schema migration is involved. Rollback does not require data migration.
 
-> Current code source: `src/features/threads/utils/realtimePerfFlags.ts`. The four flags in this SOP currently default to enabled in production; `localStorage` values are diagnostic overrides, not a durable settings schema.
+> Current code source: `src/conversation-presentation/realtimePerfFlags.ts`. The four flags in this SOP currently default to enabled in production; `localStorage` values are diagnostic overrides, not a durable settings schema.
 
 ## Compatibility and Stability Hard Gates
 

@@ -2,7 +2,7 @@ import {
   shouldUseLowCostPreview,
   type FilePreviewMetrics,
   type FileRenderProfile,
-} from "./fileRenderProfile";
+} from "@/utils/fileRenderProfile";
 
 export type FileViewMode = "preview" | "edit";
 

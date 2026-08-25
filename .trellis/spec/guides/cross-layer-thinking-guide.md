@@ -100,6 +100,7 @@ React Component
     包成 synthetic assistant。Adapter MUST 在 live boundary 归一 authoritative rejection 并立即 settle；
     history scanner 只负责 recovery evidence，不能替代前台终态。process exit/EOF 仍只属于 cleanup。
 30. 异步 mutation 创建新 Session/Entity 后若立即导航，必须先以 exact target identity 完成 destination state hydration，再选择目标。禁止先导航再 fire-and-forget 补写，也禁止用仍绑定 source active owner 的 setter 写 target；catalog/reducer dispatch 完成不等于 React closure 已看到新 row。
+31. feature dependency boundary gate 报新增 edge 时，先按 ownership 分类再修：多 feature 共享的 pure/runtime/presentation capability 迁到 canonical neutral owner；peer UI integration 由更高层 host callback/slot 组合；确属 feature-owned 的稳定能力只走 public index。禁止用 re-export shim 隐藏 peer dependency，也禁止把新 edge 加入 exact debt baseline。owner move 后必须同时迁移 tests/mocks/import-type、收缩 stale baseline，并枚举所有 production entry，避免主入口修好但嵌套入口丢能力。
 
 ## 常见失败模式
 
@@ -151,6 +152,7 @@ React Component
   raw `credential is unavailable`。
 - 只修 transcript scanner 的 camelCase API rejection，遗漏 live stdout 的 snake_case flag；DB 已写
   `target-provider-rejected`，但调用方仍卡在等待 EOF，形成“离线事实正确、前台永远 running”的分裂。
+- boundary CI 红时只更新 allowlist/baseline，或新建 neutral re-export 文件继续 import peer owner；图表变绿但 ownership drift 被永久合法化。另一种常见遗漏是只给 main Layout 注入 peer slot，嵌套 Messages/Canvas entry 因没有 host composition 静默丢功能。
 
 ## Optional Payload Contract
 
@@ -203,6 +205,7 @@ React Component
 - mocked RPC 只能证明 mapping，不能代替 fake Runtime side-effect assertion。关键
   routing change 至少留一个可观察实际 Provider process/session key 与 Runtime model 的
   focused test。
+- feature boundary 修复至少覆盖：旧 private/peer path 在 `src/**` 零命中、关键 singleton 只有一个定义、所有 production entry 都传完整 host integration、repository checker 显示 `inbound=0/new=0` 且 exact baseline 无 removed residue。
 - contract 相关命令：
 
 ```bash

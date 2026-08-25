@@ -7,8 +7,8 @@
 // any reducer path, worker, or test. The companion hook
 // `useToolOutputTailGateController` wires the global flush scheduler.
 
-import { isToolOutputTailGateEnabled } from "../utils/realtimePerfFlags";
-import { readStreamingScheduleTier } from "../utils/realtimePerfFlags";
+import { isToolOutputTailGateEnabled } from "@/conversation-presentation/realtimePerfFlags";
+import { readStreamingScheduleTier } from "@/conversation-presentation/realtimePerfFlags";
 
 export type ToolOutputKind = "commandExecution" | "fileChange";
 

@@ -11,8 +11,8 @@ import {
   type AppServerEventHandlers,
   type DispatchAppServerEventOptions,
 } from "./useAppServerEvents";
-import { resolveLaneSchedule } from "../../threads/utils/renderSchedulingPolicy";
-import { readStreamingScheduleTier } from "../../threads/utils/realtimePerfFlags";
+import { resolveLaneSchedule } from "@/conversation-presentation/renderSchedulingPolicy";
+import { readStreamingScheduleTier } from "@/conversation-presentation/realtimePerfFlags";
 
 // 2026-06-24-harden-realtime-interaction-jank-during-tool-call
 // v2 app-server event consumer. `services/events.ts` owns the raw+batch

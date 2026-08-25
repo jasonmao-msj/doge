@@ -388,7 +388,7 @@ pnpm vitest run \
   src/features/composer/components/ChatInputBox/selectors/ModelSelect.test.tsx \
   src/features/composer/components/Composer.file-reference-token.test.tsx \
   src/features/composer/components/ChatInputBox/ChatInputBox.submit-button.test.tsx \
-  src/features/messages/presentation/sharedProjection/dataSource.test.ts \
+  src/features/shared-session/presentation/sharedProjection/dataSource.test.ts \
   src/features/messages/components/MessagesRows.stream-mitigation.test.tsx \
   src/features/messages/components/Messages.user-input.test.tsx \
   src/features/threads/loaders/sharedHistoryLoader.test.ts

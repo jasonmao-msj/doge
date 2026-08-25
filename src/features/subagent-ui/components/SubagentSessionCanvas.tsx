@@ -1,7 +1,10 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ConversationItem, EngineType } from "../../../types";
 import { Messages } from "../../messages";
+import { MultiAgentHistoryFoldTimelineRow } from "../../multi-agent/components/HistoryFoldCard";
+import { PromptDistillDialog } from "../../prompt-distill/components/PromptDistillDialog";
+import { usePromptDistillation } from "../../prompt-distill/hooks/usePromptDistillation";
 import {
   EMPTY_ACTIVE_CANVAS_ITEMS,
   useActiveCanvasSelector,
@@ -102,8 +105,11 @@ export const SubagentSessionCanvas = memo(function SubagentSessionCanvas({
   const canvasWorkspacePath = useActiveCanvasSelector((s) => s.workspacePath);
   const canvasWorkspaceId = useActiveCanvasSelector((s) => s.workspaceId);
 
-  const resolvedWorkspaceId = workspaceId ?? canvasWorkspaceId;
-  const resolvedWorkspacePath = workspacePath ?? canvasWorkspacePath;
+  const resolvedWorkspaceId = workspaceId ?? canvasWorkspaceId ?? null;
+  const resolvedWorkspacePath = workspacePath ?? canvasWorkspacePath ?? null;
+  const promptDistillation = usePromptDistillation({
+    workspaceId: resolvedWorkspaceId,
+  });
   const loadCandidates = useMemo(
     () => candidateThreadIds(sessionThreadId, parentThreadId),
     [parentThreadId, sessionThreadId],
@@ -123,6 +129,16 @@ export const SubagentSessionCanvas = memo(function SubagentSessionCanvas({
   const [resolvedLoadId, setResolvedLoadId] = useState(sessionThreadId);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const renderHistoryFold = useCallback(
+    (itemId: string) => (
+      <MultiAgentHistoryFoldTimelineRow
+        itemId={itemId}
+        workspaceId={resolvedWorkspaceId}
+        threadId={resolvedLoadId}
+      />
+    ),
+    [resolvedLoadId, resolvedWorkspaceId],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -370,18 +386,34 @@ export const SubagentSessionCanvas = memo(function SubagentSessionCanvas({
 
   // 嵌套 Messages 仅渲染子会话 transcript（与 Grok 详情一致：user/assistant 气泡）
   return (
-    <div className="subagent-session-canvas" data-subagent-session-canvas="1">
-      <Messages
-        items={displayItems}
-        threadId={resolvedLoadId}
-        workspaceId={resolvedWorkspaceId}
-        workspacePath={resolvedWorkspacePath}
-        isThinking={false}
-        openTargets={[]}
-        selectedOpenAppId=""
-        activeEngine={activeEngine}
-        conversationState={null}
+    <>
+      <div className="subagent-session-canvas" data-subagent-session-canvas="1">
+        <Messages
+          items={displayItems}
+          threadId={resolvedLoadId}
+          workspaceId={resolvedWorkspaceId}
+          workspacePath={resolvedWorkspacePath}
+          isThinking={false}
+          openTargets={[]}
+          selectedOpenAppId=""
+          activeEngine={activeEngine}
+          conversationState={null}
+          onSaveAsPrompt={promptDistillation.start}
+          renderHistoryFold={renderHistoryFold}
+        />
+      </div>
+      <PromptDistillDialog
+        isOpen={promptDistillation.isOpen}
+        phase={promptDistillation.phase}
+        name={promptDistillation.name}
+        content={promptDistillation.content}
+        error={promptDistillation.error}
+        distillingEngine={promptDistillation.distillingEngine}
+        onNameChange={promptDistillation.setName}
+        onContentChange={promptDistillation.setContent}
+        onSave={() => void promptDistillation.save()}
+        onClose={promptDistillation.close}
       />
-    </div>
+    </>
   );
 });

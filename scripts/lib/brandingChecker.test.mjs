@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { scanText, validateAllowlist } from "./brandingChecker.mjs";
+import {
+  DEFAULT_ALLOWLIST,
+  scanText,
+  validateAllowlist,
+} from "./brandingChecker.mjs";
 
 test("doge-only shipping text passes", () => {
   assert.deepEqual(scanText("src/example.ts", "export const product = 'doge';", []), []);
@@ -56,4 +60,25 @@ test("allowlist entries require reason and removal condition", () => {
       ]),
     /missing reason/,
   );
+});
+
+test("neutral owner moves preserve narrow legacy compatibility readers", () => {
+  const fixtures = [
+    [
+      "src/features/shared-session/presentation/sharedProjection/dataSource.ts",
+      'const legacyKey = "mossx.sharedProjection";',
+    ],
+    [
+      "src/conversation-presentation/multi-agent/collabPrompt.ts",
+      'const legacyMarker = "[[mossx.collab.summary";',
+    ],
+    [
+      "src/conversation-presentation/realtimePerfFlags.ts",
+      "// Historical backend flag: CCGUI_APP_SERVER_EVENT_BATCH",
+    ],
+  ];
+
+  for (const [path, source] of fixtures) {
+    assert.deepEqual(scanText(path, source, DEFAULT_ALLOWLIST), []);
+  }
 });

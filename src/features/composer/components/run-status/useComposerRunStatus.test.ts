@@ -2,7 +2,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { useComposerRunStatus } from "./useComposerRunStatus";
-import type { TurnFileChangesSummary } from "../../../messages/utils/turnFileChanges";
+import type { TurnFileChangesSummary } from "@/features/messages";
 
 const demoSessionFiles: TurnFileChangesSummary = {
   files: [

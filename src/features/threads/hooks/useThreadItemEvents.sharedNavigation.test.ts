@@ -5,13 +5,13 @@ import {
   getLiveAssistantTextSnapshot,
   LIVE_ASSISTANT_TEXT_PUBLISH_INTERVAL_MS,
   resetLiveAssistantTextChannelForTests,
-} from "../utils/liveAssistantTextChannel";
+} from "@/conversation-presentation/liveAssistantTextChannel";
 import { useLiveAssistantText } from "./useLiveAssistantText";
 import { useThreadItemEvents } from "./useThreadItemEvents";
 
-vi.mock("../utils/realtimePerfFlags", async (importOriginal) => {
+vi.mock("@/conversation-presentation/realtimePerfFlags", async (importOriginal) => {
   const actual = await importOriginal<
-    typeof import("../utils/realtimePerfFlags")
+    typeof import("@/conversation-presentation/realtimePerfFlags")
   >();
   return { ...actual, isLiveTextExternalizationEnabled: () => true };
 });

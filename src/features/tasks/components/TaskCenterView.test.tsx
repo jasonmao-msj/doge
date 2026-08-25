@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TaskCenterView } from "./TaskCenterView";
 import type { TaskRunRecord } from "../types";
-import { dispatchOpenTaskRunEvent } from "../utils/taskRunNavigationEvents";
+import { dispatchOpenTaskRunEvent } from "@/services/taskRunNavigationEvents";
 
 function makeRun(overrides: Partial<TaskRunRecord> = {}): TaskRunRecord {
   return {

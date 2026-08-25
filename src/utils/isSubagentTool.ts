@@ -1,4 +1,4 @@
-import { extractToolName } from "../../../utils/toolSemantics";
+import { extractToolName } from "./toolSemantics";
 
 type ToolLike = {
   toolType?: unknown;

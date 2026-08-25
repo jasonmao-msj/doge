@@ -1,0 +1,53 @@
+{
+  "id": "08-24-fix-messages-boundary-regressions",
+  "name": "08-24-fix-messages-boundary-regressions",
+  "title": "修复 Messages 边界回归并恢复 CI",
+  "description": "OpenSpec: fix-messages-boundary-regressions；偿还 35 条新增边界依赖并恢复 typecheck CI。",
+  "status": "planning",
+  "dev_type": "frontend",
+  "scope": "frontend",
+  "package": null,
+  "priority": "P1",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-24",
+  "completedAt": null,
+  "branch": "codex/fix-messages-boundary-regressions",
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

@@ -8,11 +8,11 @@ import {
   injectMainCanvasContext,
   stripMainCanvasContextBlock,
 } from "./mainCanvasContextInjection";
-import { multiAgentHistFoldItemId } from "../utils/canvasItems";
+import { multiAgentHistFoldItemId } from "@/conversation-presentation/multi-agent/canvasItems";
 import {
   buildCollabBriefingSendText,
   buildCollabSummarySendText,
-} from "../utils/collabPrompt";
+} from "@/conversation-presentation/multi-agent/collabPrompt";
 
 function msg(
   id: string,

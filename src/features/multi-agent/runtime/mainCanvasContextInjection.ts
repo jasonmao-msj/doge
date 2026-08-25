@@ -8,8 +8,8 @@ import type { ConversationItem } from "../../../types/conversation";
 import {
   isCollabInternalPromptText,
   stripCollabInternalPrompt,
-} from "../utils/collabPrompt";
-import { isMultiAgentHistFoldItemId } from "../utils/canvasItems";
+} from "@/conversation-presentation/multi-agent/collabPrompt";
+import { isMultiAgentHistFoldItemId } from "@/conversation-presentation/multi-agent/canvasItems";
 
 export const MAIN_CANVAS_CONTEXT_PREFIX = "【主幕对话上下文】";
 

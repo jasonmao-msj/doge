@@ -16,7 +16,7 @@ import type { RuntimeReconnectRecoveryCallbackResult } from "../../../../runtime
 import type { MessagesPresentationMode } from "../presentation/messagesLiveWindow";
 import type { MessagesEngine } from "../../utils/messagesRenderUtils";
 import type { parseReasoning } from "../../presentation/messagesReasoning";
-import type { HistoryLoadingProgress } from "../../../threads/utils/historyLoadingProgress";
+import type { HistoryLoadingProgress } from "@/conversation-presentation/historyLoadingProgress";
 
 type MessageItem = Extract<ConversationItem, { kind: "message" }>;
 type ReasoningItem = Extract<ConversationItem, { kind: "reasoning" }>;
@@ -162,6 +162,7 @@ export type TimelinePresentationModel = {
 
 export type TimelineSlotsModel = {
   approvalNode: ReactNode | null;
+  renderHistoryFold?: (itemId: string) => ReactNode;
   userInputNode: ReactNode | null;
 };
 

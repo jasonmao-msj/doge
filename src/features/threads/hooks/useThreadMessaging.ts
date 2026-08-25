@@ -154,7 +154,7 @@ import {
   resolveCodexAcceptedTurnFact,
   shouldDeferCodexActivityUntilTurnAccepted,
 } from "../utils/codexConversationLiveness";
-import { drainLiveAssistantTextTail } from "../utils/liveAssistantTextChannel";
+import { drainLiveAssistantTextTail } from "@/conversation-presentation/liveAssistantTextChannel";
 import { formatBrowserContextPromptOnce } from "../../browser-agent";
 import {
   buildLocalizedMemoryScoutPreviewText,

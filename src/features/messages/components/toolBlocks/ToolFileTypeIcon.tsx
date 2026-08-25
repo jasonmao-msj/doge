@@ -3,7 +3,7 @@
  * 让 Read / Edit 行一眼可辨文件类型，与 TurnFilesChangedCard / Git 面板一致。
  */
 import { memo, useMemo } from "react";
-import { getFileTreeIconSvg } from "../../../files/utils/fileTreeIcons";
+import { getFileTreeIconSvg } from "@/utils/fileTreeIcons";
 import { getFileName } from "./toolConstants";
 
 export type ToolFileTypeIconProps = {

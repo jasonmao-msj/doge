@@ -1,5 +1,5 @@
 import type { ConversationItem } from "../../../../types";
-import { parseAgentTaskNotification } from "../../../engine-task-output/contracts/agentTaskNotification";
+import { parseAgentTaskNotification } from "@/contracts/agentTaskNotification";
 import type { GroupedEntry } from "../../utils/groupToolItems";
 import type { MessageConversationItem } from "../../utils/messageItemPredicates";
 import { resolveUserMessagePresentation } from "../../presentation/messagesUserPresentation";
