@@ -1648,3 +1648,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 49: 修复 Product Home 临时会话终态结算
+
+**Date**: 2026-08-24
+**Task**: 修复 Product Home 临时会话终态结算
+**Branch**: `codex/fix-product-provisional-terminal-settlement`
+
+### Summary
+
+按 exact engineSource 与 activeTurnId 识别无前缀 provisional owner，合并 Kimi/Grok canonical session identity，并让 same-tick terminal 同时结算临时与正式 thread；L3 自动验证和 tauri hot 实机目视均通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9c31b1546` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
