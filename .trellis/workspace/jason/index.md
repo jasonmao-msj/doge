@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 48
+- **Total Sessions**: 49
 - **Last Active**: 2026-08-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1650 | Active |
+| `journal-1.md` | ~1683 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 49 | 2026-08-24 | 修复跨引擎 Claude 续接目标水合 | `2f4f03839` | `codex/fix-cross-engine-claude-continuation` |
 | 48 | 2026-08-24 | 修复 PR 订阅恢复与托管隔离 | `ee54ca918` | `codex/fix-managed-provider-session-defaults` |
 | 47 | 2026-08-24 | 统一订阅、账户详情与托管会话收口 | `4fec2776d` | `codex/fix-managed-provider-session-defaults` |
 | 46 | 2026-08-23 | 修复 Claude 续接卡死与 Anthropic 路由 | `efbebcf6a` | `codex/fix-managed-provider-session-defaults` |

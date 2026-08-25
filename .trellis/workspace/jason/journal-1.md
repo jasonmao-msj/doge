@@ -1648,3 +1648,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 49: 修复跨引擎 Claude 续接目标水合
+
+**Date**: 2026-08-24
+**Task**: 修复跨引擎 Claude 续接目标水合
+**Branch**: `codex/fix-cross-engine-claude-continuation`
+
+### Summary
+
+将 Provider Continuation ready 流程改为 destination-first awaited hydration：显式收敛目标 engine、写 exact target per-thread model/effort 后再导航；移除 source active-session setter 补写。L3 自动门禁与 debug App Codex→Claude→普通发送实测通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2f4f03839` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
