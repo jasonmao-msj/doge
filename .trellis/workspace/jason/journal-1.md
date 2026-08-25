@@ -1813,3 +1813,36 @@ PR #24 手动 CI 解除 Messages boundary 阻断后暴露 Windows path separator
 ### Next Steps
 
 - None - task complete
+
+
+## Session 54: 修复 Windows CSS source 换行误报
+
+**Date**: 2026-08-24
+**Task**: 修复 Windows CSS source 换行误报
+**Branch**: `codex/fix-messages-boundary-regressions`
+
+### Summary
+
+PR #24 Windows integration 越过 provenance blocker 后暴露 CSS exact-source assertion 对 CRLF 不兼容；读取 selectors.css 时统一 CRLF/CR 为 LF，新增显式 Windows line-ending regression，focused 8/8、lint、OpenSpec/docs gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8c521ee6d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
