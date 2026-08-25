@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 54
-- **Last Active**: 2026-08-24
+- **Total Sessions**: 55
+- **Last Active**: 2026-08-25
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1848 | Active |
+| `journal-1.md` | ~1881 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 55 | 2026-08-25 | 统一跨平台 source-text 测试换行 | `8b96f39b9` | `codex/fix-messages-boundary-regressions` |
 | 54 | 2026-08-24 | 修复 Windows CSS source 换行误报 | `8c521ee6d` | `codex/fix-messages-boundary-regressions` |
 | 53 | 2026-08-24 | 修复 Windows provenance path CI 误报 | `150ecf9ca` | `codex/fix-messages-boundary-regressions` |
 | 52 | 2026-08-24 | 修复 Messages 边界回归并恢复 CI | `c3785467a` | `codex/fix-messages-boundary-regressions` |

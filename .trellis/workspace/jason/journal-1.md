@@ -1846,3 +1846,36 @@ PR #24 Windows integration 越过 provenance blocker 后暴露 CSS exact-source 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 55: 统一跨平台 source-text 测试换行
+
+**Date**: 2026-08-25
+**Task**: 统一跨平台 source-text 测试换行
+**Branch**: `codex/fix-messages-boundary-regressions`
+
+### Summary
+
+PR #24 Windows integration 越过两个已修 blocker 后暴露 Settings CSS exact assertion 的 CRLF 误报；抽取 src/test/sourceText.ts normalizeSourceText，统一 CRLF/CR 为 LF，并接入 Composer/Settings static source tests；focused 9/9、lint、OpenSpec/docs gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8b96f39b9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
