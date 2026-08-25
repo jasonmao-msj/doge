@@ -1872,6 +1872,7 @@ impl DaemonState {
                         &workspace_path,
                         &provider_launch_profile.runtime_key,
                         provider_launch_profile.home_dir.as_deref(),
+                        None,
                     )
                     .await;
                 let resolved_session_id = resolve_kimi_session_id_for_engine_send(

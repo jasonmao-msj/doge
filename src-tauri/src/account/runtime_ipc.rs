@@ -203,10 +203,10 @@ pub(crate) async fn account_engine_v1_toolchain(
     };
     if let Some(binary) = resolution.selected_binary.as_ref() {
         let binary = binary.to_string_lossy().to_string();
-        let engine_type = if engine_id == "claude-code" {
-            crate::engine::EngineType::Claude
-        } else {
-            crate::engine::EngineType::Codex
+        let engine_type = match engine_id.as_str() {
+            "claude-code" => crate::engine::EngineType::Claude,
+            "kimi" => crate::engine::EngineType::Kimi,
+            _ => crate::engine::EngineType::Codex,
         };
         let verified = state
             .engine_manager

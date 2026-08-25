@@ -2673,12 +2673,24 @@ pub async fn engine_send_message(
                     )
                     .await?;
             }
+            let managed_kimi_bin =
+                if effective_provider_profile_id.as_deref()
+                    == Some(crate::account::configuration::ACCOUNT_KIMI_PROVIDER_ID)
+                {
+                    state
+                        .account_runtime
+                        .managed_engine_binary_for_launch("kimi")
+                        .await
+                } else {
+                    None
+                };
             let session = manager
                 .get_or_create_kimi_session_for_runtime(
                     &workspace_id,
                     &workspace_path,
                     &provider_launch_profile.runtime_key,
                     provider_launch_profile.home_dir.as_deref(),
+                    managed_kimi_bin.as_deref(),
                 )
                 .await;
 
@@ -3579,12 +3591,24 @@ pub async fn engine_send_message_sync(
                     )
                     .await?;
             }
+            let managed_kimi_bin =
+                if effective_provider_profile_id.as_deref()
+                    == Some(crate::account::configuration::ACCOUNT_KIMI_PROVIDER_ID)
+                {
+                    state
+                        .account_runtime
+                        .managed_engine_binary_for_launch("kimi")
+                        .await
+                } else {
+                    None
+                };
             let session = manager
                 .get_or_create_kimi_session_for_runtime(
                     &workspace_id,
                     &workspace_path,
                     &provider_launch_profile.runtime_key,
                     provider_launch_profile.home_dir.as_deref(),
+                    managed_kimi_bin.as_deref(),
                 )
                 .await;
             let resolved_session_id = resolve_kimi_session_id_for_engine_send(

@@ -50,6 +50,16 @@ const switchEngineMock = vi.mocked(switchEngine);
 const getClientStoreSyncMock = vi.mocked(getClientStoreSync);
 const writeClientStoreValueMock = vi.mocked(writeClientStoreValue);
 
+const { inspectManagedCodexMock } = vi.hoisted(() => ({
+  inspectManagedCodexMock: vi.fn(),
+}));
+
+vi.mock("../../account/runtime/managedEngineToolchain", () => ({
+  createManagedEngineToolchainClientV1: () => ({
+    inspect: inspectManagedCodexMock,
+  }),
+}));
+
 function createEngineStatus(
   engineType: EngineStatus["engineType"],
   installed: boolean,
@@ -91,6 +101,10 @@ describe("useEngineController", () => {
     });
     getClientStoreSyncMock.mockReturnValue(undefined);
     writeClientStoreValueMock.mockReset();
+    inspectManagedCodexMock.mockResolvedValue({
+      ok: false,
+      error: { code: "managed-toolchain-unavailable" },
+    });
   });
 
   it("preserves default flag when custom claude model overrides same id", async () => {
@@ -1699,6 +1713,73 @@ describe("useEngineController", () => {
     expect(switchEngineMock).toHaveBeenCalledWith("codex");
     expect(runCodexDoctorMock).not.toHaveBeenCalled();
     expect(result.current.activeEngine).toBe("codex");
+  });
+
+  it("exposes bundled Codex in the selector when the generic probe misses it", async () => {
+    detectEnginesMock.mockResolvedValue([
+      createEngineStatus("claude", true),
+      createEngineStatus("codex", false),
+    ]);
+    getActiveEngineMock.mockResolvedValue("claude");
+    getEngineModelsMock.mockResolvedValue([]);
+    inspectManagedCodexMock.mockResolvedValue({
+      ok: true,
+      value: {
+        engineId: "codex",
+        status: "ready",
+        bundledVersion: "0.147.0",
+        externalVersion: null,
+        selectedSource: "bundled",
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useEngineController({ activeWorkspace: null }),
+    );
+
+    await waitFor(() => expect(result.current.isInitialized).toBe(true));
+    expect(result.current.availableEngines.find((engine) => engine.type === "codex"))
+      .toEqual(expect.objectContaining({
+        installed: true,
+        version: "0.147.0",
+        availabilityState: "ready",
+      }));
+    expect(result.current.installedEngines.map((engine) => engine.type)).toContain(
+      "codex",
+    );
+
+    await act(async () => {
+      await result.current.setActiveEngine("codex");
+    });
+
+    expect(switchEngineMock).toHaveBeenCalledWith("codex");
+    expect(runCodexDoctorMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the generic status and records managed Codex inspect failures", async () => {
+    detectEnginesMock.mockResolvedValue([
+      createEngineStatus("claude", true),
+      createEngineStatus("codex", false),
+    ]);
+    getActiveEngineMock.mockResolvedValue("claude");
+    getEngineModelsMock.mockResolvedValue([]);
+    inspectManagedCodexMock.mockRejectedValue(new Error("command unavailable"));
+    const onDebug = vi.fn();
+
+    const { result } = renderHook(() =>
+      useEngineController({ activeWorkspace: null, onDebug }),
+    );
+
+    await waitFor(() => expect(result.current.isInitialized).toBe(true));
+    expect(result.current.availableEngines.find((engine) => engine.type === "codex"))
+      .toEqual(expect.objectContaining({
+        installed: false,
+        availabilityState: "unavailable",
+      }));
+    expect(onDebug).toHaveBeenCalledWith(expect.objectContaining({
+      label: "engine/managed codex inspect error",
+      payload: "command unavailable",
+    }));
   });
 
   it("adds Codex doctor evidence when refreshed status is still unavailable", async () => {

@@ -7,9 +7,9 @@
 ## Current Status
 
 <!-- @@@auto:current-status -->
-- **Active File**: `journal-0.md`
-- **Total Sessions**: 1
-- **Last Active**: 2026-08-19
+- **Active File**: `journal-1.md`
+- **Total Sessions**: 2
+- **Last Active**: 2026-08-25
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-
+| `journal-1.md` | ~40 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 2 | 2026-08-25 | Fix Codex managed CLI routing | `c661f0162` | `codex/fix-codex-managed-routing` |
 | 1 | 2026-08-19 | 修复本地开发内置引擎资源 | `0386e1de1`, `f2f1e264e` | `codex/fix-local-dev-managed-engine-resources` |
 <!-- @@@/auto:session-history -->
 

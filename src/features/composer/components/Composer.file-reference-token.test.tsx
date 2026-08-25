@@ -463,7 +463,50 @@ describe("Composer file reference token", () => {
       openNewConversation: true,
     });
     expect(onSelectEngine).not.toHaveBeenCalled();
-    expect(onCreationTargetEngineChange).toHaveBeenLastCalledWith("claude");
+    expect(onCreationTargetEngineChange).toHaveBeenLastCalledWith("codex");
+    unsubscribe();
+  });
+
+  it("keeps the selected Codex target while managed engine preparation is pending", async () => {
+    publishManagedEngineEntitlementsV1([
+      {
+        id: "codex",
+        displayName: "Codex",
+        entitlement: { status: "active", expiresAt: null },
+      },
+      {
+        id: "claude-code",
+        displayName: "Claude",
+        entitlement: { status: "active", expiresAt: null },
+      },
+    ]);
+    const onSend = vi.fn();
+    const switchIntent = vi.fn();
+    const unsubscribe = subscribeAccountEngineSwitchV1(switchIntent);
+    const view = render(
+      <ComposerHarness onSend={onSend} createSessionTargetPicker />,
+    );
+
+    await act(async () => {
+      fireEvent.click(view.getByTestId("select-shared-target"));
+      await Promise.resolve();
+      const textarea = getTextarea(view.container);
+      fireEvent.change(textarea, { target: { value: "use codex" } });
+      fireEvent.keyDown(textarea, { key: "Enter" });
+      await Promise.resolve();
+    });
+
+    expect(switchIntent).toHaveBeenCalledWith({
+      source: "enginePicker",
+      targetEngineId: "codex",
+      openNewConversation: true,
+    });
+    expect(onSend).toHaveBeenCalledWith(
+      "use codex",
+      expect.objectContaining({
+        createSessionTarget: expect.objectContaining({ engine: "codex" }),
+      }),
+    );
     unsubscribe();
   });
 

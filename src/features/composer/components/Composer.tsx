@@ -1615,6 +1615,10 @@ function ComposerImpl({
         !usesProductManagedCreation &&
         requestManagedEngineAccess(nextTarget)
       ) {
+        // Preserve the user's explicit target while the managed engine switch
+        // is in flight. Otherwise Home falls back to its previous default
+        // engine and the first message can be sent to Claude.
+        setSelectedCreationTarget(nextTarget);
         return;
       }
       // 首页 engine 选择必须同步全局 activeEngine + client store，否则重启后首页

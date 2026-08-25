@@ -18,6 +18,7 @@ import {
 import { startupOrchestrator } from "../../startup-orchestration/utils/startupOrchestrator";
 import {
   buildAvailableEngines,
+  applyManagedCodexStatus,
   ENABLED_ENGINE_TYPES,
   type EngineDisplayInfo,
 } from "./engineControllerAvailability";
@@ -40,6 +41,10 @@ import {
 import { useEngineRuntimeNotices } from "./useEngineRuntimeNotices";
 import { useEngineCatalogRevision } from "./useEngineCatalogRevision";
 import { isManagedProviderProfileIdV1 } from "../../account/runtime/engineEntitlementStore";
+import {
+  createManagedEngineToolchainClientV1,
+  type ManagedEngineToolchainResultV1,
+} from "../../account/runtime/managedEngineToolchain";
 
 export type { EngineDisplayInfo } from "./engineControllerAvailability";
 
@@ -53,6 +58,29 @@ type RefreshEngineModelsOptions = {
   phase?: "idle-prewarm" | "on-demand";
   providerProfileId?: string | null;
 };
+
+const managedToolchain = createManagedEngineToolchainClientV1();
+
+async function inspectManagedCodex(
+  onDebug?: (entry: DebugEntry) => void,
+): Promise<ManagedEngineToolchainResultV1 | null> {
+  if (isWebServiceRuntime()) {
+    return null;
+  }
+  try {
+    return await managedToolchain.inspect("codex");
+  } catch (error) {
+    // Older/native runtimes may not expose the managed toolchain command yet.
+    onDebug?.({
+      id: `${Date.now()}-managed-codex-inspect-error`,
+      timestamp: Date.now(),
+      source: "error",
+      label: "engine/managed codex inspect error",
+      payload: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
 
 export type EngineRefreshResult = {
   availableEngines: EngineDisplayInfo[];
@@ -242,12 +270,16 @@ export function useEngineController({
       });
 
       try {
-        const [rawStatuses, detectedEngine] = await Promise.all([
+        const [rawStatuses, detectedEngine, managedCodexStatus] = await Promise.all([
           detectEngines(),
           getActiveEngine(),
+          inspectManagedCodex(onDebug),
         ]);
-        const statuses = rawStatuses.filter((status) =>
-          enabledEngineTypes.includes(status.engineType),
+        const statuses = applyManagedCodexStatus(
+          rawStatuses.filter((status) =>
+            enabledEngineTypes.includes(status.engineType),
+          ),
+          managedCodexStatus,
         );
 
         let nextActiveEngine = detectedEngine;
@@ -391,8 +423,11 @@ export function useEngineController({
         null;
       if (!targetStatus?.installed) {
         try {
-          const refreshedStatuses = (await detectEngines()).filter((status) =>
-            enabledEngineTypes.includes(status.engineType),
+          const refreshedStatuses = applyManagedCodexStatus(
+            (await detectEngines()).filter((status) =>
+              enabledEngineTypes.includes(status.engineType),
+            ),
+            await inspectManagedCodex(onDebug),
           );
           setEngineStatuses(refreshedStatuses);
           targetStatus =

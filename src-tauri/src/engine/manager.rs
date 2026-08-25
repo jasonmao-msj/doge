@@ -236,6 +236,7 @@ impl EngineManager {
         let mut status = match engine_type {
             EngineType::Claude => detect_claude_status(Some(binary)).await,
             EngineType::Codex => detect_codex_status(Some(binary)).await,
+            EngineType::Kimi => detect_kimi_status(Some(binary)).await,
             _ => disabled_engine_status(engine_type),
         };
         // The account toolchain owns this path. Existing renderer-facing engine status
@@ -688,17 +689,22 @@ impl EngineManager {
             workspace_path,
             workspace_id,
             None,
+            None,
         )
         .await
     }
 
     /// Get or create a Kimi session isolated by provider runtime key.
+    ///
+    /// `bin_override` lets the account toolchain pin the bundled Kimi binary for
+    /// managed-provider sessions without mutating the user's global engine config.
     pub async fn get_or_create_kimi_session_for_runtime(
         &self,
         workspace_id: &str,
         workspace_path: &Path,
         runtime_key: &str,
         home_dir: Option<&Path>,
+        bin_override: Option<&str>,
     ) -> Arc<KimiSession> {
         {
             let sessions = self.kimi_sessions.lock().await;
@@ -707,8 +713,13 @@ impl EngineManager {
             }
         }
 
-        let config =
+        let mut config =
             kimi_engine_config_with_home(self.get_engine_config(EngineType::Kimi).await, home_dir);
+        if let Some(binary) = bin_override.filter(|value| !value.trim().is_empty()) {
+            config
+                .get_or_insert_with(EngineConfig::default)
+                .bin_path = Some(binary.to_string());
+        }
         let session = Arc::new(KimiSession::new(
             workspace_id.to_string(),
             workspace_path.to_path_buf(),
@@ -1292,6 +1303,7 @@ mod tests {
                 &workspace_path,
                 "kimi::workspace-1::provider-a",
                 Some(&workspace_path.join("provider-a")),
+                None,
             )
             .await;
         let reused = manager
@@ -1300,6 +1312,7 @@ mod tests {
                 &workspace_path,
                 "kimi::workspace-1::provider-a",
                 Some(&workspace_path.join("provider-a")),
+                None,
             )
             .await;
         let isolated = manager
@@ -1308,6 +1321,7 @@ mod tests {
                 &workspace_path,
                 "kimi::workspace-1::provider-b",
                 Some(&workspace_path.join("provider-b")),
+                None,
             )
             .await;
 

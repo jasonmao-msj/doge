@@ -1,10 +1,22 @@
 import { resolveAccountEngineToolchainV1 } from "../../../services/accountEngineCommands";
 import type { ManagedEngineIdV1 } from "./onboardingTypes";
 
+/** Engines whose binary can be resolved from the bundled toolchain manifest. */
+export type ManagedToolchainEngineIdV1 = ManagedEngineIdV1 | "kimi";
+
+/** Maps the vendor-facing engine ids to the managed toolchain ids. */
+export function resolveManagedToolchainEngineIdV1(
+  engineId: string,
+): ManagedToolchainEngineIdV1 | null {
+  if (engineId === "claude") return "claude-code";
+  if (engineId === "codex" || engineId === "kimi") return engineId;
+  return null;
+}
+
 export type ManagedEngineToolchainChoiceV1 = "bundled" | "external";
 
 export type ManagedEngineToolchainViewV1 = {
-  readonly engineId: ManagedEngineIdV1;
+  readonly engineId: ManagedToolchainEngineIdV1;
   readonly status: "ready" | "choiceRequired";
   readonly bundledVersion: string;
   readonly externalVersion: string | null;
@@ -16,9 +28,11 @@ export type ManagedEngineToolchainResultV1 =
   | { readonly ok: false; readonly error: { readonly code: string } };
 
 export type ManagedEngineToolchainClientV1 = {
-  readonly inspect: (engineId: ManagedEngineIdV1) => Promise<ManagedEngineToolchainResultV1>;
+  readonly inspect: (
+    engineId: ManagedToolchainEngineIdV1,
+  ) => Promise<ManagedEngineToolchainResultV1>;
   readonly choose: (
-    engineId: ManagedEngineIdV1,
+    engineId: ManagedToolchainEngineIdV1,
     choice: ManagedEngineToolchainChoiceV1,
     versions: Pick<ManagedEngineToolchainViewV1, "bundledVersion" | "externalVersion">,
   ) => Promise<ManagedEngineToolchainResultV1>;
@@ -26,7 +40,7 @@ export type ManagedEngineToolchainClientV1 = {
 
 type ToolchainDependenciesV1 = {
   readonly resolve: (
-    engineId: ManagedEngineIdV1,
+    engineId: ManagedToolchainEngineIdV1,
     choice: ManagedEngineToolchainChoiceV1 | null,
   ) => Promise<unknown>;
   readonly storage: Pick<Storage, "getItem" | "setItem"> | null;
@@ -41,7 +55,7 @@ export function createManagedEngineToolchainClientV1(
   dependencies: ToolchainDependenciesV1 = defaultDependencies,
 ): ManagedEngineToolchainClientV1 {
   const resolveToolchain = async (
-    engineId: ManagedEngineIdV1,
+    engineId: ManagedToolchainEngineIdV1,
     choice: ManagedEngineToolchainChoiceV1 | null,
   ) => parseToolchainResultV1(await dependencies.resolve(engineId, choice));
 
@@ -96,7 +110,7 @@ function parseToolchainResultV1(value: unknown): ManagedEngineToolchainResultV1 
 }
 
 function preferenceKey(
-  engineId: ManagedEngineIdV1,
+  engineId: ManagedToolchainEngineIdV1,
   versions: Pick<ManagedEngineToolchainViewV1, "bundledVersion" | "externalVersion">,
 ) {
   return `doge.account.toolchain-choice.v1:${engineId}:${versions.externalVersion ?? "none"}:${versions.bundledVersion}`;
@@ -104,7 +118,7 @@ function preferenceKey(
 
 function readRememberedChoice(
   storage: ToolchainDependenciesV1["storage"],
-  engineId: ManagedEngineIdV1,
+  engineId: ManagedToolchainEngineIdV1,
   versions: Pick<ManagedEngineToolchainViewV1, "bundledVersion" | "externalVersion">,
 ): ManagedEngineToolchainChoiceV1 | null {
   try {
@@ -117,7 +131,7 @@ function readRememberedChoice(
 
 function rememberChoice(
   storage: ToolchainDependenciesV1["storage"],
-  engineId: ManagedEngineIdV1,
+  engineId: ManagedToolchainEngineIdV1,
   versions: Pick<ManagedEngineToolchainViewV1, "bundledVersion" | "externalVersion">,
   choice: ManagedEngineToolchainChoiceV1,
 ) {
@@ -134,8 +148,8 @@ function asObject(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-function isManagedEngineId(value: unknown): value is ManagedEngineIdV1 {
-  return value === "codex" || value === "claude-code";
+function isManagedEngineId(value: unknown): value is ManagedToolchainEngineIdV1 {
+  return value === "codex" || value === "claude-code" || value === "kimi";
 }
 
 function protocolFailure(): ManagedEngineToolchainResultV1 {

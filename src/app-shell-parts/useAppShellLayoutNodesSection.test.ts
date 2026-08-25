@@ -12,7 +12,18 @@ import {
 } from "./threadEditorPreservation";
 import { pushErrorToast } from "../services/toasts";
 import { useAppShellLayoutNodesSection } from "./useAppShellLayoutNodesSection";
-import { publishAccountEngineReadyV1 } from "../features/account/runtime/engineSwitchSignal";
+import {
+  publishAccountEngineReadyV1,
+  requestAccountEngineSwitchV1,
+} from "../features/account/runtime/engineSwitchSignal";
+
+const { activateAccountEngineMock } = vi.hoisted(() => ({
+  activateAccountEngineMock: vi.fn(),
+}));
+
+vi.mock("../services/accountEngineCommands", () => ({
+  activateAccountEngineV1: activateAccountEngineMock,
+}));
 
 const pushErrorToastMock = vi.mocked(pushErrorToast);
 
@@ -534,6 +545,23 @@ describe("useAppShellLayoutNodesSection quick switcher wrapper behavior", () => 
     }));
 
     await waitFor(() => expect(fixture.setActiveEngine).toHaveBeenCalledWith("claude"));
+    expect(fixture.closeSettings).toHaveBeenCalled();
+    expect(fixture.handleOpenHomeChat).toHaveBeenCalled();
+  });
+
+  it("activates a requested Codex engine before publishing the ready switch", async () => {
+    activateAccountEngineMock.mockResolvedValue(undefined);
+    const fixture = createQuickSwitcherWrapperFixture();
+    renderHook(() => useAppShellLayoutNodesSection(fixture.input));
+
+    act(() => requestAccountEngineSwitchV1({
+      source: "enginePicker",
+      targetEngineId: "codex",
+      openNewConversation: true,
+    }));
+
+    await waitFor(() => expect(activateAccountEngineMock).toHaveBeenCalledWith("codex"));
+    await waitFor(() => expect(fixture.setActiveEngine).toHaveBeenCalledWith("codex"));
     expect(fixture.closeSettings).toHaveBeenCalled();
     expect(fixture.handleOpenHomeChat).toHaveBeenCalled();
   });
