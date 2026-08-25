@@ -1879,3 +1879,36 @@ PR #24 Windows integration 越过两个已修 blocker 后暴露 Settings CSS exa
 ### Next Steps
 
 - None - task complete
+
+
+## Session 56: 稳定 ProjectMap Windows batched test latency
+
+**Date**: 2026-08-25
+**Task**: 稳定 ProjectMap Windows batched test latency
+**Branch**: `codex/fix-project-map-windows-timeout`
+
+### Summary
+
+将 path association disclosure 回归从完整 ProjectMapPanel 下沉到 ProjectMapNavigationPanel leaf harness，复用真实 navigation helpers，不提高 timeout；focused 57/57、ESLint、typecheck、OpenSpec/docs/diff gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c3942ce9f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
