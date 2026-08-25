@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 52
+- **Total Sessions**: 53
 - **Last Active**: 2026-08-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1782 | Active |
+| `journal-1.md` | ~1815 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 53 | 2026-08-24 | 修复 Windows provenance path CI 误报 | `150ecf9ca` | `codex/fix-messages-boundary-regressions` |
 | 52 | 2026-08-24 | 修复 Messages 边界回归并恢复 CI | `c3785467a` | `codex/fix-messages-boundary-regressions` |
 | 51 | 2026-08-24 | 同步主分支并解决续接 PR 冲突 | `f1f38451e` | `codex/fix-cross-engine-claude-continuation` |
 | 50 | 2026-08-24 | 修复跨引擎 Claude 续接目标水合 | `2f4f03839` | `codex/fix-cross-engine-claude-continuation` |

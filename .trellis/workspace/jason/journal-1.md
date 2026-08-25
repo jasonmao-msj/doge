@@ -1780,3 +1780,36 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 53: 修复 Windows provenance path CI 误报
+
+**Date**: 2026-08-24
+**Task**: 修复 Windows provenance path CI 误报
+**Branch**: `codex/fix-messages-boundary-regressions`
+
+### Summary
+
+PR #24 手动 CI 解除 Messages boundary 阻断后暴露 Windows path separator 误报；统一将 repository-relative path 归一为 slash 再匹配 developer provenance allowlist，新增 Windows-style regression，local focused test、branding、OpenSpec/docs gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `150ecf9ca` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
