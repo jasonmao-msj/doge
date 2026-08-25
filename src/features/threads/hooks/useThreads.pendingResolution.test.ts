@@ -334,4 +334,63 @@ describe("resolvePendingThreadIdForTurn", () => {
 
     expect(resolved).toBe("claude-fork:parent-session:local-1");
   });
+
+  it("matches an engine-tagged unprefixed Product Home provisional thread by exact turn", () => {
+    const resolved = resolvePendingThreadIdForTurn({
+      workspaceId,
+      engine: "kimi",
+      turnId: "kimi-turn-target",
+      threadsByWorkspace: {
+        "ws-1": [
+          { id: "01a-product-provisional", engineSource: "kimi" },
+          { id: "01a-unrelated-codex", engineSource: "codex" },
+        ],
+      },
+      activeThreadIdByWorkspace: { "ws-1": "01a-product-provisional" },
+      activeTurnIdByThread: {
+        "01a-product-provisional": "kimi-turn-target",
+        "01a-unrelated-codex": "kimi-turn-target",
+      },
+    });
+
+    expect(resolved).toBe("01a-product-provisional");
+  });
+
+  it("rejects an engine-tagged provisional thread when its turn does not match", () => {
+    const resolved = resolvePendingThreadIdForTurn({
+      workspaceId,
+      engine: "kimi",
+      turnId: "kimi-turn-target",
+      threadsByWorkspace: {
+        "ws-1": [{ id: "01a-product-provisional", engineSource: "kimi" }],
+      },
+      activeThreadIdByWorkspace: { "ws-1": "01a-product-provisional" },
+      activeTurnIdByThread: {
+        "01a-product-provisional": "kimi-turn-other",
+      },
+    });
+
+    expect(resolved).toBeNull();
+  });
+
+  it("uses the active exact-turn owner when multiple unprefixed provisional threads match", () => {
+    const resolved = resolvePendingThreadIdForTurn({
+      workspaceId,
+      engine: "kimi",
+      turnId: "kimi-turn-shared",
+      threadsByWorkspace: {
+        "ws-1": [
+          { id: "01a-provisional-a", engineSource: "kimi" },
+          { id: "01a-provisional-b", engineSource: "kimi" },
+        ],
+      },
+      activeThreadIdByWorkspace: { "ws-1": "01a-provisional-b" },
+      activeTurnIdByThread: {
+        "01a-provisional-a": "kimi-turn-shared",
+        "01a-provisional-b": "kimi-turn-shared",
+      },
+    });
+
+    expect(resolved).toBe("01a-provisional-b");
+  });
 });

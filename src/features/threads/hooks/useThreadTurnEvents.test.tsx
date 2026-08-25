@@ -1375,6 +1375,57 @@ describe("useThreadTurnEvents", () => {
     );
   });
 
+  it("promotes and settles an unprefixed Kimi provisional owner in the same tick", () => {
+    const provisionalThreadId = "01a-product-provisional";
+    const canonicalThreadId = "kimi:session-xyz";
+    const turnId = "kimi-turn-target";
+    const {
+      result,
+      dispatch,
+      markProcessing,
+      setActiveTurnId,
+      resolvePendingThreadForTurn,
+      renamePendingMemoryCaptureKey,
+    } = makeOptions({
+      activeThreadId: provisionalThreadId,
+      activeTurnIdByThread: {
+        [provisionalThreadId]: turnId,
+      },
+    });
+    resolvePendingThreadForTurn.mockImplementation(
+      (_workspaceId, engine, candidateTurnId) =>
+        engine === "kimi" && candidateTurnId === turnId
+          ? provisionalThreadId
+          : null,
+    );
+
+    act(() => {
+      result.current.onThreadSessionIdUpdated(
+        "ws-1",
+        provisionalThreadId,
+        "session-xyz",
+        "kimi",
+        turnId,
+      );
+      result.current.onTurnCompleted("ws-1", canonicalThreadId, turnId);
+    });
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "renameThreadId",
+      workspaceId: "ws-1",
+      oldThreadId: provisionalThreadId,
+      newThreadId: canonicalThreadId,
+    });
+    expect(renamePendingMemoryCaptureKey).toHaveBeenCalledWith(
+      provisionalThreadId,
+      canonicalThreadId,
+    );
+    expect(markProcessing).toHaveBeenCalledWith(canonicalThreadId, false);
+    expect(markProcessing).toHaveBeenCalledWith(provisionalThreadId, false);
+    expect(setActiveTurnId).toHaveBeenCalledWith(canonicalThreadId, null);
+    expect(setActiveTurnId).toHaveBeenCalledWith(provisionalThreadId, null);
+  });
+
   it("renames Claude fork thread when realtime session id is finalized", () => {
     const forkThreadId = "claude-fork:parent-session:local-1";
     const {
