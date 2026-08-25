@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/messages-streaming-render-contract.md", "reason": "terminal settlement 不能由正文推断"}
+{"file": "docs/research/mossx-multi-cli-provider-session-foundation-design.md", "reason": "native/provisional/canonical identity 基石契约"}
+{"file": "openspec/changes/fix-product-provisional-thread-terminal-settlement/design.md", "reason": "本 change 技术设计"}

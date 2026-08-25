@@ -302,6 +302,10 @@ export function useThreadTurnEvents({
         ? "opencode"
         : threadId.startsWith("gemini:")
           ? "gemini"
+        : threadId.startsWith("grok:")
+          ? "grok"
+        : threadId.startsWith("kimi:")
+          ? "kimi"
         : threadId.startsWith("claude:")
           ? "claude"
           : null;
@@ -1225,7 +1229,7 @@ export function useThreadTurnEvents({
           : enginePrefix === "kimi"
             ? pendingKimi
             : pendingClaude;
-        if (isPendingThreadForEngine(enginePrefix, turnBoundPendingThreadId)) {
+        if (turnBoundPendingThreadId && turnBoundPendingThreadId !== newThreadId) {
           sourceThreadId = turnBoundPendingThreadId;
         } else if (
           !newThreadIsEstablished
@@ -1266,12 +1270,11 @@ export function useThreadTurnEvents({
           : enginePrefix === "kimi"
             ? pendingKimi
           : pendingClaude;
-        // Safety boundary: for non-prefixed thread ids, only bind to the
-        // currently active pending thread unless a turn-bound mapping exists.
-        // Turn-bound matches are safe to rebind even when the user has already
-        // switched selection, because the turn identity is more precise than
-        // workspace-level active-thread heuristics.
-        if (isPendingThreadForEngine(enginePrefix, turnBoundPendingThreadId)) {
+        // Safety boundary: an exact engine+turn resolver result may be an
+        // engine-prefixed pending id or a Product Home provisional UUID.
+        // Workspace-level fallback still requires the conventional pending
+        // prefix so active selection alone cannot steal another session.
+        if (turnBoundPendingThreadId && turnBoundPendingThreadId !== newThreadId) {
           sourceThreadId = turnBoundPendingThreadId;
         } else if (
           !newThreadIsEstablished
