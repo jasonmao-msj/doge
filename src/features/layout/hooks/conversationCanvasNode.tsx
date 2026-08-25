@@ -1,10 +1,13 @@
-import type { ComponentProps, ReactNode } from "react";
+import { useCallback, type ComponentProps, type ReactNode } from "react";
 
 import {
   MessageForkConfirmDialog,
   Messages,
   type MessagesProps,
 } from "../../messages";
+import { PromptDistillDialog } from "../../prompt-distill/components/PromptDistillDialog";
+import { usePromptDistillation } from "../../prompt-distill/hooks/usePromptDistillation";
+import { MultiAgentHistoryFoldTimelineRow } from "../../multi-agent/components/HistoryFoldCard";
 import {
   shallowEqual,
   useActiveCanvasSelector,
@@ -74,8 +77,49 @@ function ActiveCanvasMessages({
     selectActiveCanvasMessagesProps,
     shallowEqual,
   );
+  const promptDistillation = usePromptDistillation({
+    workspaceId:
+      activeCanvasMessagesProps.workspaceId ?? messagesProps.workspaceId ?? null,
+  });
+  const onSaveAsPrompt =
+    messagesProps.onSaveAsPrompt ?? promptDistillation.start;
+  const historyFoldWorkspaceId =
+    activeCanvasMessagesProps.workspaceId ?? messagesProps.workspaceId ?? null;
+  const historyFoldThreadId =
+    activeCanvasMessagesProps.threadId ?? messagesProps.threadId ?? null;
+  const renderHistoryFold = useCallback(
+    (itemId: string) => (
+      <MultiAgentHistoryFoldTimelineRow
+        itemId={itemId}
+        workspaceId={historyFoldWorkspaceId}
+        threadId={historyFoldThreadId}
+      />
+    ),
+    [historyFoldThreadId, historyFoldWorkspaceId],
+  );
 
-  return <Messages {...messagesProps} {...activeCanvasMessagesProps} />;
+  return (
+    <>
+      <Messages
+        {...messagesProps}
+        {...activeCanvasMessagesProps}
+        onSaveAsPrompt={onSaveAsPrompt}
+        renderHistoryFold={messagesProps.renderHistoryFold ?? renderHistoryFold}
+      />
+      <PromptDistillDialog
+        isOpen={promptDistillation.isOpen}
+        phase={promptDistillation.phase}
+        name={promptDistillation.name}
+        content={promptDistillation.content}
+        error={promptDistillation.error}
+        distillingEngine={promptDistillation.distillingEngine}
+        onNameChange={promptDistillation.setName}
+        onContentChange={promptDistillation.setContent}
+        onSave={() => void promptDistillation.save()}
+        onClose={promptDistillation.close}
+      />
+    </>
+  );
 }
 
 export function buildConversationCanvasNode({

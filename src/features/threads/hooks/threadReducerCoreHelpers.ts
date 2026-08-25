@@ -1,5 +1,5 @@
 import type { ConversationItem, ThreadTokenUsage } from "../../../types";
-import { isIncrementalDerivationEnabled } from "../utils/realtimePerfFlags";
+import { isIncrementalDerivationEnabled } from "@/conversation-presentation/realtimePerfFlags";
 import { isLocalCliReasoningThread } from "./threadReducerReasoningGuards";
 import type { ThreadActivityStatus, ThreadState } from "./threadReducerTypes";
 

@@ -3,7 +3,7 @@ import type { TFunction } from "i18next";
 import type { GitRepositorySummary } from "../../../types";
 import Globe from "lucide-react/dist/esm/icons/globe";
 import Plus from "lucide-react/dist/esm/icons/plus";
-import { getFileTreeIconSvg } from "../utils/fileTreeIcons";
+import { getFileTreeIconSvg } from "@/utils/fileTreeIcons";
 import { isHtmlFilePath } from "../utils/openHtmlInBrowser";
 import {
   gitRepositoryStatusItems,

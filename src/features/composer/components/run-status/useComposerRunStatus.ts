@@ -6,7 +6,7 @@ import {
   filterTurnFileChangesSummary,
   type FileChangeSignatureMap,
   type TurnFileChangesSummary,
-} from "../../../messages/utils/turnFileChanges";
+} from "@/features/messages";
 import { resolvePlanStepStatusForDisplay } from "../../../threads/utils/threadNormalize";
 import type { RunStatusSection } from "./types";
 

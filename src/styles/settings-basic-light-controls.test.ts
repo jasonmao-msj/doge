@@ -1,9 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { normalizeSourceText } from "@/test/sourceText";
 
-const settingsPart3Css = readFileSync(
-  new URL("./settings.part3.css", import.meta.url),
-  "utf8",
+const settingsPart3Css = normalizeSourceText(
+  readFileSync(
+    new URL("./settings.part3.css", import.meta.url),
+    "utf8",
+  ),
 );
 
 describe("settings basic light controls", () => {

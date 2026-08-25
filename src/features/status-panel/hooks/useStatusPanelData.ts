@@ -24,7 +24,7 @@ import {
   isCollabLifecycleTool,
   isCollabSpawnTool,
   isSubagentTool,
-} from "../../subagent-ui/utils/isSubagentTool";
+} from "@/utils/isSubagentTool";
 
 interface StatusPanelData {
   todos: TodoItem[];

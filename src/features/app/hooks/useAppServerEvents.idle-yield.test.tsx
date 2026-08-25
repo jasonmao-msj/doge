@@ -19,10 +19,10 @@ vi.mock("../../../services/events", async (importOriginal) => {
   };
 });
 
-vi.mock("../../threads/utils/realtimePerfFlags", async (importOriginal) => {
+vi.mock("@/conversation-presentation/realtimePerfFlags", async (importOriginal) => {
   const actual =
     await importOriginal<
-      typeof import("../../threads/utils/realtimePerfFlags")
+      typeof import("@/conversation-presentation/realtimePerfFlags")
     >();
   return {
     ...actual,

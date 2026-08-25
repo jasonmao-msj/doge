@@ -62,7 +62,7 @@ import type {
   AgentStageBinding,
 } from "../types";
 import { isTerminalAgentStatus } from "../types";
-import { buildCollabSummarySendText } from "../utils/collabPrompt";
+import { buildCollabSummarySendText } from "@/conversation-presentation/multi-agent/collabPrompt";
 import { maT } from "../utils/i18n";
 
 const ATTEMPT_TIMEOUT_MS = 30 * 60 * 1_000;

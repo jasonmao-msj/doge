@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { ConversationItem } from "../../../types";
 import type { ThreadAction, ThreadState } from "../hooks/useThreadsReducer";
-import { __resetRealtimePerfFlagCacheForTests } from "../utils/realtimePerfFlags";
+import { __resetRealtimePerfFlagCacheForTests } from "@/conversation-presentation/realtimePerfFlags";
 import { inferEngineFromLegacyThreadId as inferEngineFromThreadId } from "./engineRuntimeIdentity";
 import type { ReplayProfile, RealtimeReplayEvent } from "./realtimeReplayTypes";
 

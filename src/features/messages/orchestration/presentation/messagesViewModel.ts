@@ -15,7 +15,7 @@ import {
   isExplicitReasoningSegmentId,
   parseReasoning,
 } from "../../presentation/messagesReasoning";
-import { filterMultiAgentCanvasItems } from "../../../multi-agent/utils/canvasItems";
+import { filterMultiAgentCanvasItems } from "@/conversation-presentation/multi-agent/canvasItems";
 export type MessageActionTargets = {
   targetByAssistantId: Map<string, string>;
   copyTextByAssistantId: Map<string, string>;

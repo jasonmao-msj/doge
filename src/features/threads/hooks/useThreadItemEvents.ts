@@ -12,11 +12,11 @@ import {
 import { asString } from "../utils/threadNormalize";
 import type { ConversationItem, DebugEntry } from "../../../types";
 import type { ThreadAction } from "./useThreadsReducer";
-import { isRealtimeBatchingEnabled, readStreamingScheduleTier } from "../utils/realtimePerfFlags";
+import { isRealtimeBatchingEnabled, readStreamingScheduleTier } from "@/conversation-presentation/realtimePerfFlags";
 import {
   resolveDispatchSubmitMode,
   type DispatchSubmitMode,
-} from "../utils/renderSchedulingPolicy";
+} from "@/conversation-presentation/renderSchedulingPolicy";
 import {
   buildToolOutputKey,
   createToolOutputTailGate,
@@ -39,8 +39,8 @@ import {
   peekLiveAssistantText,
   resolveLiveAssistantSettlementText,
   updateLiveAssistantTextSnapshot,
-} from "../utils/liveAssistantTextChannel";
-import { isLiveTextExternalizationEnabled } from "../utils/realtimePerfFlags";
+} from "@/conversation-presentation/liveAssistantTextChannel";
+import { isLiveTextExternalizationEnabled } from "@/conversation-presentation/realtimePerfFlags";
 import {
   noteRealtimeCoalescedFlush,
   noteThreadReducerWorkMeasured,

@@ -4,7 +4,7 @@ import type { TaskRunRecord, TaskRunStatus } from "../types";
 import {
   OPEN_TASK_RUN_EVENT,
   readOpenTaskRunEvent,
-} from "../utils/taskRunNavigationEvents";
+} from "@/services/taskRunNavigationEvents";
 import {
   compareTaskRunSurfacePriority,
   describeTaskRunSurface,

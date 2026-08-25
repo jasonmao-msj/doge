@@ -1,5 +1,5 @@
 import type { ThreadTokenUsage } from "../../../types";
-import type { AgentTaskNotification } from "../contracts/agentTaskNotification";
+import type { AgentTaskNotification } from "@/contracts/agentTaskNotification";
 import type {
   EngineTaskOutputEngine,
   EngineTaskOutputSnapshot,

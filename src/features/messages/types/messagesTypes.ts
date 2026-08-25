@@ -18,7 +18,7 @@ import type { RuntimeReconnectRecoveryCallbackResult } from "../../../runtime-re
 import type { AgentTaskScrollRequest } from "../types";
 import type { TaskRunRecord } from "../../tasks/types";
 import type { NoteCaptureDraft } from "../../note-cards/types";
-import type { HistoryLoadingProgress } from "../../threads/utils/historyLoadingProgress";
+import type { HistoryLoadingProgress } from "@/conversation-presentation/historyLoadingProgress";
 
 export type LastVisibleTextReport = {
   itemId: string | null;
@@ -114,8 +114,10 @@ export type MessagesProps = {
   /**
    * 时间线尾部 slot（落在 messages.scrollable 内、时间线之后）。
    * 用于协作终态 HistoryFold 等需随主幕布滚动的 UI，勿放 sticky 区。
-   */
+  */
   timelineTrailingNode?: ReactNode;
+  /** Host-owned renderer for peer feature history-fold rows. */
+  renderHistoryFold?: (itemId: string) => ReactNode;
   /** Catalog authoritative origin；仅用于 Provider Continuation presentation gate。 */
   isProviderContinuation?: boolean;
 };

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { readStreamingScheduleTier } from "../../threads/utils/realtimePerfFlags";
+import { readStreamingScheduleTier } from "@/conversation-presentation/realtimePerfFlags";
 
 // 2026-06-24-harden-realtime-interaction-jank-during-tool-call
 // Accumulates an arbitrary value across N rendering frames before exposing

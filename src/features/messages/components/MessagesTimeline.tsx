@@ -7,7 +7,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { MessagesOutlineFloater } from "./conversation/MessagesOutlineFloater";
-import { parseAgentTaskNotification } from "../../engine-task-output/contracts/agentTaskNotification";
+import { parseAgentTaskNotification } from "@/contracts/agentTaskNotification";
 import { appendRendererDiagnostic } from "../../../services/rendererDiagnostics";
 import {
   buildTimelineProjectionRows,

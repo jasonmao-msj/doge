@@ -96,7 +96,7 @@ vi.mock("../utils/claudeMcpRuntimeSnapshot", () => ({
   captureClaudeMcpRuntimeSnapshotFromRaw: vi.fn(() => null),
 }));
 
-vi.mock("../utils/realtimePerfFlags", () => ({
+vi.mock("@/conversation-presentation/realtimePerfFlags", () => ({
   isDebugLightPathEnabled: vi.fn(() => false),
 }));
 

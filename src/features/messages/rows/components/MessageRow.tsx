@@ -14,7 +14,7 @@ import { trackHotspot } from "../../../../services/perfBaseline/hotspotTracker";
 import { useRenderHotspot } from "../../../../services/perfBaseline/useRenderHotspot";
 import type { ConversationItem } from "../../../../types";
 import { useLiveAssistantText } from "../../../threads/hooks/useLiveAssistantText";
-import { isLiveTextExternalizationEnabled } from "../../../threads/utils/realtimePerfFlags";
+import { isLiveTextExternalizationEnabled } from "@/conversation-presentation/realtimePerfFlags";
 import {
   noteThreadLiveRowRenderMeasured,
 } from "../../../threads/utils/streamLatencyDiagnostics";

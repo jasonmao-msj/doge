@@ -1747,3 +1747,135 @@ token2api PR #44/#45 已合并并发布 production image 1b6bae8eb；补齐 Doge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 52: 修复 Messages 边界回归并恢复 CI
+
+**Date**: 2026-08-24
+**Task**: 修复 Messages 边界回归并恢复 CI
+**Branch**: `codex/fix-messages-boundary-regressions`
+
+### Summary
+
+偿还 35 条新增 Messages dependency edge，将 conversation/runtime/file/task/shared primitives 迁至 canonical neutral owners，并通过 host composition 保留 Prompt Distill 与 History Fold；boundary 恢复 inbound=0、outbound=40/40、new=0，L3 focused tests、lint、typecheck、doctor、docs、branding、runtime contracts 与 OpenSpec strict 均通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c3785467a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 53: 修复 Windows provenance path CI 误报
+
+**Date**: 2026-08-24
+**Task**: 修复 Windows provenance path CI 误报
+**Branch**: `codex/fix-messages-boundary-regressions`
+
+### Summary
+
+PR #24 手动 CI 解除 Messages boundary 阻断后暴露 Windows path separator 误报；统一将 repository-relative path 归一为 slash 再匹配 developer provenance allowlist，新增 Windows-style regression，local focused test、branding、OpenSpec/docs gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `150ecf9ca` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 54: 修复 Windows CSS source 换行误报
+
+**Date**: 2026-08-24
+**Task**: 修复 Windows CSS source 换行误报
+**Branch**: `codex/fix-messages-boundary-regressions`
+
+### Summary
+
+PR #24 Windows integration 越过 provenance blocker 后暴露 CSS exact-source assertion 对 CRLF 不兼容；读取 selectors.css 时统一 CRLF/CR 为 LF，新增显式 Windows line-ending regression，focused 8/8、lint、OpenSpec/docs gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8c521ee6d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 55: 统一跨平台 source-text 测试换行
+
+**Date**: 2026-08-25
+**Task**: 统一跨平台 source-text 测试换行
+**Branch**: `codex/fix-messages-boundary-regressions`
+
+### Summary
+
+PR #24 Windows integration 越过两个已修 blocker 后暴露 Settings CSS exact assertion 的 CRLF 误报；抽取 src/test/sourceText.ts normalizeSourceText，统一 CRLF/CR 为 LF，并接入 Composer/Settings static source tests；focused 9/9、lint、OpenSpec/docs gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8b96f39b9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

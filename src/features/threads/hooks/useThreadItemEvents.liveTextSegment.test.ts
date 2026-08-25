@@ -14,7 +14,7 @@ import {
   LIVE_ASSISTANT_TEXT_PUBLISH_INTERVAL_MS,
   peekLiveAssistantText,
   resetLiveAssistantTextChannelForTests,
-} from "../utils/liveAssistantTextChannel";
+} from "@/conversation-presentation/liveAssistantTextChannel";
 import { useThreadItemEvents } from "./useThreadItemEvents";
 
 vi.mock("../../../utils/threadItems", () => ({
@@ -23,9 +23,9 @@ vi.mock("../../../utils/threadItems", () => ({
 
 // 该 flag 的 testDefaultValue 为 false；本文件专门验证它开启后的行为。
 // useThreadItemEvents 在模块加载时读取一次，故必须在 import 前用 mock 覆盖。
-vi.mock("../utils/realtimePerfFlags", async (importOriginal) => {
+vi.mock("@/conversation-presentation/realtimePerfFlags", async (importOriginal) => {
   const actual = await importOriginal<
-    typeof import("../utils/realtimePerfFlags")
+    typeof import("@/conversation-presentation/realtimePerfFlags")
   >();
   return { ...actual, isLiveTextExternalizationEnabled: () => true };
 });

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   isSubagentStyleAgentTaskNotification,
   parseAgentTaskNotification,
-} from "./agentTaskNotification";
+} from "@/contracts/agentTaskNotification";
 
 describe("isSubagentStyleAgentTaskNotification", () => {
   it("recognizes Agent quoted summary", () => {

@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import FileText from 'lucide-react/dist/esm/icons/file-text';
 import type { ConversationItem } from '../../../../types';
 import { cn } from '@/lib/utils';
-import { isImagePath } from '../../../files/utils/fileRenderProfile';
+import { isImagePath } from '@/utils/fileRenderProfile';
 import {
   asRecord,
   extractToolName,

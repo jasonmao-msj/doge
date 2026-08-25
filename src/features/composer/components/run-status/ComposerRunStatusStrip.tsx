@@ -9,10 +9,10 @@ import PanelTopClose from "lucide-react/dist/esm/icons/panel-top-close";
 import type { LucideIcon } from "lucide-react";
 import type { TurnPlan } from "../../../../types";
 import type { SubagentInfo, TodoItem } from "../../../status-panel/types";
-import type { TurnFileChangesSummary } from "../../../messages/utils/turnFileChanges";
+import type { TurnFileChangesSummary } from "@/features/messages";
 import { TodoList } from "../../../status-panel/components/TodoList";
 import { PlanList } from "../../../status-panel/components/PlanList";
-import { TurnFilesChangedCard } from "../../../messages/components/conversation/TurnFilesChangedCard";
+import { TurnFilesChangedCard } from "@/features/messages";
 import { RunStatusSubagentRows } from "./RunStatusSubagentRows";
 import { RollingStat } from "./RollingStat";
 import {

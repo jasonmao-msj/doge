@@ -1,10 +1,13 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { normalizeSourceText } from "@/test/sourceText";
 
-const selectorsCss = readFileSync(
-  fileURLToPath(new URL("./selectors.css", import.meta.url)),
-  "utf8",
+const selectorsCss = normalizeSourceText(
+  readFileSync(
+    fileURLToPath(new URL("./selectors.css", import.meta.url)),
+    "utf8",
+  ),
 );
 
 describe("selector light desktop theme guards", () => {

@@ -6,7 +6,7 @@ import {
 } from "../../../utils/toolSemantics";
 import type { EngineTaskOutputSource } from "../../engine-task-output/types";
 import type { SubagentInfo } from "../../status-panel/types";
-import { isCollabSpawnTool, isGrokSpawnSubagentTool } from "./isSubagentTool";
+import { isCollabSpawnTool, isGrokSpawnSubagentTool } from "@/utils/isSubagentTool";
 
 /** 卡片固定展示名（UI 用 i18n `subagentUi.defaultName` 覆盖） */
 export const FIXED_SUBAGENT_DISPLAY_NAME = "Subagent";

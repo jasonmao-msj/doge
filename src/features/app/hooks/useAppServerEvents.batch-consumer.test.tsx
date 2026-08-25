@@ -28,7 +28,7 @@ import {
   dispatchAppServerEvent,
   useAppServerEvents,
 } from "./useAppServerEvents";
-import { isAppServerEventBatchConsumerEnabled } from "../../threads/utils/realtimePerfFlags";
+import { isAppServerEventBatchConsumerEnabled } from "@/conversation-presentation/realtimePerfFlags";
 
 vi.mock("../../../services/events", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../../services/events")>();
@@ -39,10 +39,10 @@ vi.mock("../../../services/events", async (importOriginal) => {
   };
 });
 
-vi.mock("../../threads/utils/realtimePerfFlags", async (importOriginal) => {
+vi.mock("@/conversation-presentation/realtimePerfFlags", async (importOriginal) => {
   const actual =
     await importOriginal<
-      typeof import("../../threads/utils/realtimePerfFlags")
+      typeof import("@/conversation-presentation/realtimePerfFlags")
     >();
   return {
     ...actual,

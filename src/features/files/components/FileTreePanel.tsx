@@ -68,7 +68,7 @@ import {
   resolveGitRootWorkspacePrefix,
   resolveGitStatusPathCandidates,
 } from "../../../utils/workspacePaths";
-import { createFileDocumentSnapshot } from "../utils/fileDocumentSnapshot";
+import { createFileDocumentSnapshot } from "@/utils/fileDocumentSnapshot";
 import { resolveFileGitScope } from "../utils/fileGitScope";
 import type { FileHistoryTarget } from "../../git-history/types";
 import {

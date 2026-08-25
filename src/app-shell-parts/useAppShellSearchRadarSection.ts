@@ -33,7 +33,7 @@ import type {
 // DISABLED: disable-session-activity-and-solo-mode — empty stub only (radar stays live)
 import { DISABLED_WORKSPACE_SESSION_ACTIVITY } from "../features/session-activity/adapters/buildWorkspaceSessionActivity";
 import { useSessionRadarFeed } from "../features/session-activity/hooks/useSessionRadarFeed";
-import { isBackgroundRenderGatingEnabled } from "../features/threads/utils/realtimePerfFlags";
+import { isBackgroundRenderGatingEnabled } from "@/conversation-presentation/realtimePerfFlags";
 import {
   RADAR_STORE_NAME,
   SESSION_RADAR_DISMISSED_COMPLETED_AT_BY_ID_KEY,

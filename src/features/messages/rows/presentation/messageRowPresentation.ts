@@ -2,7 +2,7 @@ import type { ConversationItem } from "../../../../types";
 import {
   isSubagentStyleAgentTaskNotification,
   parseAgentTaskNotification,
-} from "../../../engine-task-output/contracts/agentTaskNotification";
+} from "@/contracts/agentTaskNotification";
 import {
   buildMessagePresentationMetadata,
   getPresentationContext,

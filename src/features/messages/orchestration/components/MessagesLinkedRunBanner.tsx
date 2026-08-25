@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { dispatchOpenTaskRunEvent } from "../../../tasks/utils/taskRunNavigationEvents";
+import { dispatchOpenTaskRunEvent } from "@/services/taskRunNavigationEvents";
 import {
   compareTaskRunSurfacePriority,
   describeTaskRunSurface,

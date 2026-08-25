@@ -67,7 +67,7 @@ import {
   THREAD_RECOVERY_MAX_PAGES,
 } from "./useThreadActions.threadList";
 import { type UseThreadActionsOptions } from "./useThreadActions.types";
-import type { HistoryLoadingProgress } from "../utils/historyLoadingProgress";
+import type { HistoryLoadingProgress } from "@/conversation-presentation/historyLoadingProgress";
 
 export type ResumeThreadForWorkspaceOptions = {
   preferLocalCodexHistory?: boolean;

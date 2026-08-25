@@ -3,7 +3,7 @@ import { parseIntentCanvasContextSummaries } from "../features/intent-canvas/uti
 import {
   isMultiAgentHistFoldItemId,
   resolveMultiAgentHistFoldInsertIndex,
-} from "../features/multi-agent/utils/canvasItems";
+} from "@/conversation-presentation/multi-agent/canvasItems";
 import {
   findEquivalentReasoningObservationIndex,
   withMessagePresentationMetadata,

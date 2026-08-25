@@ -38,9 +38,9 @@ import { noteThreadAppServerEventReceived } from "../../threads/utils/streamLate
 import {
   isAppServerEventBatchConsumerEnabled,
   readStreamingScheduleTier,
-} from "../../threads/utils/realtimePerfFlags";
+} from "@/conversation-presentation/realtimePerfFlags";
 import { useRenderScheduler } from "../../../hooks/useRenderScheduler";
-import { resolveDispatchSchedule } from "../../threads/utils/renderSchedulingPolicy";
+import { resolveDispatchSchedule } from "@/conversation-presentation/renderSchedulingPolicy";
 import {
   classifyCodexEventRisk,
   resolveCodexEventOwnership,

@@ -3,7 +3,7 @@ import {
   getLiveAssistantTextSnapshot,
   subscribeLiveAssistantText,
   type LiveAssistantTextEntry,
-} from "../utils/liveAssistantTextChannel";
+} from "@/conversation-presentation/liveAssistantTextChannel";
 
 const noopSubscribe = () => () => {};
 

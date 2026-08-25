@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ConversationItem } from "../../../types/conversation";
+import type { ConversationItem } from "../../types/conversation";
 import {
   filterMultiAgentCanvasItems,
   isMultiAgentSettledSummaryItemId,
@@ -8,11 +8,11 @@ import {
   parseMultiAgentUserRunId,
   relocateMultiAgentHistFolds,
   resolveMultiAgentHistFoldInsertIndex,
-} from "./canvasItems";
+} from "@/conversation-presentation/multi-agent/canvasItems";
 import {
   buildCollabBriefingSendText,
   stripCollabInternalPrompt,
-} from "./collabPrompt";
+} from "@/conversation-presentation/multi-agent/collabPrompt";
 
 function user(
   id: string,

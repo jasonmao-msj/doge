@@ -4,8 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   __resetRealtimePerfFlagCacheForTests,
   resetRealtimePerfFlags,
-} from "../utils/realtimePerfFlags";
-import { RENDER_TIER_FLAG_KEY } from "../utils/renderSchedulingPolicy";
+} from "@/conversation-presentation/realtimePerfFlags";
+import { RENDER_TIER_FLAG_KEY } from "@/conversation-presentation/renderSchedulingPolicy";
 import { useThreadItemEvents } from "./useThreadItemEvents";
 
 const flushIdleAndMicrotasks = async () => {

@@ -1,4 +1,4 @@
-import { parseAgentTaskNotification } from "../../../engine-task-output/contracts/agentTaskNotification";
+import { parseAgentTaskNotification } from "@/contracts/agentTaskNotification";
 import type { GroupedEntry } from "../../utils/groupToolItems";
 
 export type TimelineProjectionRow =

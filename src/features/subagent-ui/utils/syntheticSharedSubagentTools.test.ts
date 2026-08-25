@@ -5,8 +5,8 @@ import {
   injectSyntheticSubagentToolsIfNeeded,
   shouldInjectChildSubagentSynthetic,
 } from "./syntheticSharedSubagentTools";
-import { resolveCollapsedTimelineItems } from "../../messages/orchestration/presentation/messagesViewModel";
-import { isSubagentTool } from "./isSubagentTool";
+import { resolveCollapsedTimelineItems } from "@/features/messages";
+import { isSubagentTool } from "@/utils/isSubagentTool";
 import {
   buildSubagentCardsFromToolItems,
   dedupeSubagentSquadCards,

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ConversationItem, ThreadSummary, WorkspaceInfo } from "../../../types";
 import { resolveLockLivePreview } from "../../../app-shell-parts/utils";
 import { getClientStoreSync, writeClientStoreValue } from "../../../services/clientStorage";
-import { isIncrementalDerivationEnabled } from "../../threads/utils/realtimePerfFlags";
+import { isIncrementalDerivationEnabled } from "@/conversation-presentation/realtimePerfFlags";
 import {
   RADAR_RECENT_GLOBAL_LIMIT,
   RADAR_RECENT_TTL_MS,

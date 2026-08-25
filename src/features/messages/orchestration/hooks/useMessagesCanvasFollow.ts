@@ -14,7 +14,7 @@ import {
   useRef,
   type MutableRefObject,
 } from "react";
-import { subscribeLiveAssistantText } from "../../../threads/utils/liveAssistantTextChannel";
+import { subscribeLiveAssistantText } from "@/conversation-presentation/liveAssistantTextChannel";
 
 /** 距底阈值(px)。与 jetbrains BOTTOM_THRESHOLD_PX=100 一致。 */
 export const CANVAS_BOTTOM_THRESHOLD_PX = 100;

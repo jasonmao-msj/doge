@@ -58,6 +58,7 @@ export type MessagesPresentationInput = Pick<
   | "agentTaskScrollRequest"
   | "timelineLeadingNode"
   | "timelineTrailingNode"
+  | "renderHistoryFold"
   | "isProviderContinuation"
 >;
 
@@ -159,6 +160,7 @@ export function adaptLegacyMessagesProps(props: MessagesProps): MessagesCoreProp
       agentTaskScrollRequest: props.agentTaskScrollRequest ?? null,
       timelineLeadingNode: props.timelineLeadingNode ?? null,
       timelineTrailingNode: props.timelineTrailingNode ?? null,
+      renderHistoryFold: props.renderHistoryFold,
       isProviderContinuation: props.isProviderContinuation ?? false,
     },
   };

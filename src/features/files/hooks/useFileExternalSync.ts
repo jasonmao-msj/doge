@@ -9,7 +9,7 @@ import {
   subscribeDetachedExternalFileChangeBatch,
   subscribeDetachedExternalFileChanges,
 } from "../../../services/events";
-import { isAppServerEventBatchConsumerEnabled } from "../../threads/utils/realtimePerfFlags";
+import { isAppServerEventBatchConsumerEnabled } from "@/conversation-presentation/realtimePerfFlags";
 import { readWorkspaceFile } from "../../../services/tauri";
 import { pushErrorToast } from "../../../services/toasts";
 import {

@@ -6,7 +6,7 @@ import {
   isSearchTool,
   isWebTool,
 } from "./toolSemantics";
-import { classifyToolCategory } from "../features/messages/components/toolBlocks/toolConstants";
+import { classifyToolCategory } from "@/features/messages";
 
 describe("agent multi-cli tool polish names", () => {
   it("classifies Grok/Kimi/OpenCode read variants", () => {

@@ -5,14 +5,14 @@ import {
   appendLiveAssistantText,
   LIVE_ASSISTANT_TEXT_PUBLISH_INTERVAL_MS,
   resetLiveAssistantTextChannelForTests,
-} from "../../../threads/utils/liveAssistantTextChannel";
+} from "@/conversation-presentation/liveAssistantTextChannel";
 import { MessageRow } from "./MessageRow";
 
 const markdownCalls = vi.hoisted(() => [] as string[]);
 
-vi.mock("../../../threads/utils/realtimePerfFlags", async (importOriginal) => {
+vi.mock("@/conversation-presentation/realtimePerfFlags", async (importOriginal) => {
   const actual = await importOriginal<
-    typeof import("../../../threads/utils/realtimePerfFlags")
+    typeof import("@/conversation-presentation/realtimePerfFlags")
   >();
   return {
     ...actual,

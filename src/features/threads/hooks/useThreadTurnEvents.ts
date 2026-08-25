@@ -34,7 +34,7 @@ import { isCodexPrewarmThreadStart } from "../utils/codexPendingPrewarm";
 import {
   drainLiveAssistantTextTail,
   renameLiveAssistantTextThread,
-} from "../utils/liveAssistantTextChannel";
+} from "@/conversation-presentation/liveAssistantTextChannel";
 import { resolveCodexSubagentIdentity } from "../utils/codexSubagentIdentity";
 import {
   inferEngineFromLegacyThreadId,

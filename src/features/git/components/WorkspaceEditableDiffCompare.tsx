@@ -18,7 +18,7 @@ import {
   buildFocusedFileCompareRanges,
   computeFileCompareDiff,
 } from "../../files/utils/fileCompareDiff";
-import { resolveFileRenderProfile } from "../../files/utils/fileRenderProfile";
+import { resolveFileRenderProfile } from "@/utils/fileRenderProfile";
 import {
   CompareEditorColumn,
   type CompareColumnDraft,

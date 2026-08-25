@@ -2,7 +2,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { subscribeAppServerEvents } from "../../../services/events";
-import { resetRealtimePerfFlags } from "../../threads/utils/realtimePerfFlags";
+import { resetRealtimePerfFlags } from "@/conversation-presentation/realtimePerfFlags";
 import {
   type AppServerEventHandlers,
 } from "./useAppServerEvents";

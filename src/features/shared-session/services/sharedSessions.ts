@@ -3,7 +3,7 @@ import type { EngineType } from "../../../types";
 import type {
   SharedProjectionItem,
   SharedProjectionMismatchReport,
-} from "../../messages/presentation/sharedProjection/types";
+} from "@/features/shared-session/presentation/sharedProjection/types";
 import type {
   CanonicalProviderProfileSource,
   ExecutionTarget,

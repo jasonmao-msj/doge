@@ -16,7 +16,7 @@ import Undo2 from "lucide-react/dist/esm/icons/undo-2";
 import { Badge } from "@/components/ui/badge";
 import { FloatingTooltipButton } from "@/components/ui/floating-tooltip-button";
 import type { GitFileStatus } from "../../../types";
-import { getFileTreeIconSvg } from "../../files/utils/fileTreeIcons";
+import { getFileTreeIconSvg } from "@/utils/fileTreeIcons";
 import { isHtmlFilePath } from "../../files/utils/openHtmlInBrowser";
 import { GitDiffPanelSectionActions } from "./GitDiffPanelSectionActions";
 import {

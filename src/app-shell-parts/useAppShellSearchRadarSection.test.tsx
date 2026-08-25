@@ -58,7 +58,7 @@ vi.mock("../features/project-map/utils/relationshipDashboardModel", () => ({
   }),
 }));
 
-vi.mock("../features/threads/utils/realtimePerfFlags", () => ({
+vi.mock("@/conversation-presentation/realtimePerfFlags", () => ({
   isBackgroundRenderGatingEnabled: isBackgroundRenderGatingEnabledMock,
 }));
 

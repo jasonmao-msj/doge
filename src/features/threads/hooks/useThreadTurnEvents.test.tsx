@@ -22,7 +22,7 @@ import {
   appendLiveAssistantText,
   getLiveAssistantTextSnapshot,
   resetLiveAssistantTextChannelForTests,
-} from "../utils/liveAssistantTextChannel";
+} from "@/conversation-presentation/liveAssistantTextChannel";
 import { useThreadTurnEvents } from "./useThreadTurnEvents";
 import { initialState, threadReducer } from "./useThreadsReducer";
 import type { ThreadAction, ThreadState } from "./useThreadsReducer";

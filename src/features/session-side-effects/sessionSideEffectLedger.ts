@@ -9,11 +9,11 @@
  * 持久化：localStorage（会话级）；删会话可 GC。
  */
 import type { ConversationItem } from "../../types";
-import type { TurnFileChange, TurnFileChangesSummary } from "../messages/utils/turnFileChanges";
+import type { TurnFileChange, TurnFileChangesSummary } from "@/features/messages";
 import {
   buildTurnFileChangesByBoundaryId,
   mergeTurnFileChangesSummaries,
-} from "../messages/utils/turnFileChanges";
+} from "@/features/messages";
 import { collectRunStatusSourceItems } from "../composer/components/run-status/collectRunStatusSourceItems";
 
 const STORAGE_KEY = "doge.sessionSideEffectLedger.v1";

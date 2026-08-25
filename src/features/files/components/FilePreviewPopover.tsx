@@ -5,7 +5,7 @@ import X from "lucide-react/dist/esm/icons/x";
 import { highlightLine, languageFromPath } from "../../../utils/syntax";
 import { OpenAppMenu } from "../../app/components/OpenAppMenu";
 import type { OpenAppTarget } from "../../../types";
-import { createFileDocumentSnapshot } from "../utils/fileDocumentSnapshot";
+import { createFileDocumentSnapshot } from "@/utils/fileDocumentSnapshot";
 
 type FilePreviewPopoverProps = {
   path: string;

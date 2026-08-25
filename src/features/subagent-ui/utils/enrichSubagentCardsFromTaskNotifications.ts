@@ -3,7 +3,7 @@ import {
   isSubagentStyleAgentTaskNotification,
   parseAgentTaskNotification,
   type AgentTaskNotification,
-} from "../../engine-task-output/contracts/agentTaskNotification";
+} from "@/contracts/agentTaskNotification";
 import type { SubagentCardStatus, SubagentCardViewModel } from "./subagentViewModel";
 
 function mapNotificationStatus(

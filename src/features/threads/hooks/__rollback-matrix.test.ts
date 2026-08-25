@@ -3,13 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetRealtimePerfFlagCacheForTests,
   resetRealtimePerfFlags,
-} from "../utils/realtimePerfFlags";
+} from "@/conversation-presentation/realtimePerfFlags";
 import {
   buildToolOutputKey,
   createToolOutputTailGate,
 } from "./useToolOutputTailGate";
-import { RENDER_TIER_FLAG_KEY } from "../utils/renderSchedulingPolicy";
-import { TOOL_OUTPUT_TAIL_GATE_FLAG_KEY } from "../utils/realtimePerfFlags";
+import { RENDER_TIER_FLAG_KEY } from "@/conversation-presentation/renderSchedulingPolicy";
+import { TOOL_OUTPUT_TAIL_GATE_FLAG_KEY } from "@/conversation-presentation/realtimePerfFlags";
 
 describe("§11.3 rollback matrix", () => {
   beforeEach(() => {
@@ -105,7 +105,7 @@ describe("§11.3 path 4: appServerEventBatch=off", () => {
     // §11.3 path 4: when appServerEventBatch=off, webview 端 batch consumer 不生效,
     // 走 v1 single-event dispatch path. 直接验证 flag reader 行为.
     const { isAppServerEventBatchConsumerEnabled } = await import(
-      "../utils/realtimePerfFlags"
+      "@/conversation-presentation/realtimePerfFlags"
     );
     // test mode 下 default = false
     expect(isAppServerEventBatchConsumerEnabled()).toBe(false);

@@ -17,7 +17,7 @@ import {
   loadSharedProjection as loadSharedProjectionService,
   loadSharedSession as loadSharedSessionService,
 } from "../../shared-session/services/sharedSessions";
-import type { HistoryLoadingProgressListener } from "../utils/historyLoadingProgress";
+import type { HistoryLoadingProgressListener } from "@/conversation-presentation/historyLoadingProgress";
 
 export function createThreadHistoryLoaderForThread({
   targetThreadId,

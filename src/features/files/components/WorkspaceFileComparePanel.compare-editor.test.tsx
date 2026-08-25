@@ -12,7 +12,7 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-vi.mock("../utils/fileRenderProfile", () => ({
+vi.mock("@/utils/fileRenderProfile", () => ({
   resolveFileRenderProfile: () => ({ editorLanguage: null }),
 }));
 

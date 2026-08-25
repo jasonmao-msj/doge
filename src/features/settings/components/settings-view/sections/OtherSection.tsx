@@ -21,18 +21,18 @@ import type { SessionRadarHistoryDeleteResult } from "../../../../session-activi
 import {
   readStreamingScheduleTier,
   resetRealtimePerfFlags,
-} from "../../../../threads/utils/realtimePerfFlags";
+} from "@/conversation-presentation/realtimePerfFlags";
 import {
   RENDER_TIER_FLAG_KEY,
   RENDER_SCHEDULE_TIER_VALUES,
   type RenderScheduleTier,
-} from "../../../../threads/utils/renderSchedulingPolicy";
+} from "@/conversation-presentation/renderSchedulingPolicy";
 import { CostBudgetSettingsSection } from "./CostBudgetSettingsSection";
 import { PerfJankLivePanel } from "./PerfJankLivePanel";
 import {
   isSharedProjectionDataSourceEnabled,
   setSharedProjectionTestOverrideEnabled,
-} from "../../../../messages/presentation/sharedProjection/dataSource";
+} from "@/features/shared-session/presentation/sharedProjection/dataSource";
 import {
   isStartupGateOverlayTestEnabled,
   setStartupGateOverlayTestEnabled,

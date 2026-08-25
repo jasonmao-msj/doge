@@ -16,7 +16,7 @@ import {
   type FileCompareCollapsedRange,
   type FileCompareLineGap,
 } from "../utils/fileCompareDiff";
-import { resolveFileRenderProfile } from "../utils/fileRenderProfile";
+import { resolveFileRenderProfile } from "@/utils/fileRenderProfile";
 import { loadCodeMirrorExtensionsForEditorLanguage } from "../utils/codemirrorLanguageExtensions";
 import { resolveFileReadTarget } from "../../../utils/workspacePaths";
 import { loadFileViewStyles } from "../../../styles/featureStyleLoaders";

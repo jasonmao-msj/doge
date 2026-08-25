@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import type { Dispatch, MutableRefObject } from "react";
 import type { DebugEntry, ThreadSummary } from "../../../types";
 import { isPendingThreadId } from "./useThreadActions.helpers";
-import { clearLiveAssistantText } from "../utils/liveAssistantTextChannel";
+import { clearLiveAssistantText } from "@/conversation-presentation/liveAssistantTextChannel";
 import type { ArchivedSessionMapResult } from "./useThreadActionsSessionCatalog";
 import type { ThreadAction, ThreadState } from "./useThreadsReducer";
 

@@ -26,7 +26,7 @@ import {
 } from "../../shared-session/runtime/sharedSessionSummaries";
 import { getCollabWorkerNativeHideIds } from "../../multi-agent/runtime/collabNativeHideRegistry";
 import { asString } from "../utils/threadNormalize";
-import { clearLiveAssistantText } from "../utils/liveAssistantTextChannel";
+import { clearLiveAssistantText } from "@/conversation-presentation/liveAssistantTextChannel";
 import { resolveCodexSubagentIdentity } from "../utils/codexSubagentIdentity";
 import { saveThreadActivity } from "../utils/threadStorage";
 import {

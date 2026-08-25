@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
-import type { HistoryLoadingProgress } from "../utils/historyLoadingProgress";
-import { normalizeHistoryLoadingProgress } from "../utils/historyLoadingProgress";
+import type { HistoryLoadingProgress } from "@/conversation-presentation/historyLoadingProgress";
+import { normalizeHistoryLoadingProgress } from "@/conversation-presentation/historyLoadingProgress";
 
 export type ThreadHistoryLoadState = true | "failed";
 

@@ -115,7 +115,7 @@ import {
   resolveProductManagedExecutionTargetV1,
 } from "../../account/runtime/productExecutionTarget";
 import { productModelMatchesIdentityV1 } from "../../account/runtime/productModelCompatibility";
-import { overlaySessionFileChangesWithGitStats } from "../../messages/utils/turnFileChanges";
+import { overlaySessionFileChangesWithGitStats } from "@/features/messages";
 import {
   ingestFileEditsFromConversationItems,
   removeFileEditPaths,

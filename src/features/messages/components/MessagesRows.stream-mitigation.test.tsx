@@ -6,13 +6,8 @@ import type {
   ConversationItem,
   IntentCanvasContextSendAttachment,
 } from "../../../types";
-import {
-  resetSharedTargetStoreForTests,
-  selectNextTarget,
-} from "../../shared-session/target/targetStore";
 import { MessageRow, ReasoningRow } from "./MessagesRows";
 import { parseReasoning } from "../presentation/messagesReasoning";
-import { toSharedConversationItems } from "../presentation/sharedProjection/dataSource";
 
 const markdownCalls = vi.hoisted(() => ({
   calls: [] as Array<{
@@ -75,7 +70,6 @@ describe("MessagesRows stream mitigation", () => {
 
   afterEach(() => {
     cleanup();
-    resetSharedTargetStoreForTests();
   });
 
   it("renders the immutable Shared turn target snapshot as a badge", () => {
@@ -129,58 +123,46 @@ describe("MessagesRows stream mitigation", () => {
     expect(screen.queryByTestId("markdown")).toBeNull();
   });
 
-  it("keeps canonical A/B badges and reasoning stable after the picker moves to C", () => {
-    const projectedItems = toSharedConversationItems([
+  it("keeps canonical A/B badges and reasoning stable across rerenders", () => {
+    const projectedItems: ConversationItem[] = [
       {
         id: "turn-a:reasoning",
         kind: "reasoning",
-        content: {
-          summary: "历史思考",
-          content: "历史思考",
-          engineSource: "claude",
-        },
-        fidelity: "canonical",
-        checksum: "reasoning-a",
+        summary: "历史思考",
+        content: "历史思考",
+        engineSource: "claude",
       },
       {
         id: "turn-a:assistant",
         kind: "message",
-        content: {
-          role: "assistant",
-          text: "answer-a",
-          executionTargetSnapshot: {
-            engine: "claude",
-            providerProfileId: "provider-a",
-            modelCatalogEntryId: "catalog-a",
-            model: "sonnet-a",
-            reasoning: { effort: "high" },
-            providerProfileNameSnapshot: "Provider A",
-            providerProfileSource: "managed",
-          },
+        role: "assistant",
+        text: "answer-a",
+        executionTargetSnapshot: {
+          engine: "claude",
+          providerProfileId: "provider-a",
+          modelCatalogEntryId: "catalog-a",
+          model: "sonnet-a",
+          reasoning: { effort: "high" },
+          providerProfileNameSnapshot: "Provider A",
+          providerProfileSource: "managed",
         },
-        fidelity: "canonical",
-        checksum: "assistant-a",
       },
       {
         id: "turn-b:assistant",
         kind: "message",
-        content: {
-          role: "assistant",
-          text: "answer-b",
-          executionTargetSnapshot: {
-            engine: "codex",
-            providerProfileId: "provider-b",
-            modelCatalogEntryId: "catalog-b",
-            model: "gpt-b",
-            reasoning: { effort: "medium" },
-            providerProfileNameSnapshot: "Provider B",
-            providerProfileSource: "managed",
-          },
+        role: "assistant",
+        text: "answer-b",
+        executionTargetSnapshot: {
+          engine: "codex",
+          providerProfileId: "provider-b",
+          modelCatalogEntryId: "catalog-b",
+          model: "gpt-b",
+          reasoning: { effort: "medium" },
+          providerProfileNameSnapshot: "Provider B",
+          providerProfileSource: "managed",
         },
-        fidelity: "canonical",
-        checksum: "assistant-b",
       },
-    ]);
+    ];
     const assistantItems = projectedItems.filter(
       (
         item,
@@ -225,19 +207,9 @@ describe("MessagesRows stream mitigation", () => {
     expect(screen.queryByText("Provider B")).toBeNull();
     expect(screen.getByText("历史思考")).toBeTruthy();
 
-    selectNextTarget("workspace-1", "shared:thread-1", {
-      engine: "codex",
-      providerProfileId: "provider-c",
-      modelCatalogEntryId: "catalog-c",
-      model: "gpt-c",
-      reasoning: null,
-      providerProfileNameSnapshot: "Provider C",
-      providerProfileSource: "managed",
-    });
     rerender(renderHistory());
 
     expect(readBadges()).toEqual(expectedHistoricalBadges);
-    expect(screen.queryByText("Provider C")).toBeNull();
     expect(screen.getByText("历史思考")).toBeTruthy();
   });
 

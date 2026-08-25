@@ -77,7 +77,7 @@ import {
   resolveWorkspacePathCandidates,
 } from "../../../utils/workspacePaths";
 import { reorderTabPathsAtTarget } from "../utils/fileTabOrder";
-import { getFileTreeIconSvg } from "../utils/fileTreeIcons";
+import { getFileTreeIconSvg } from "@/utils/fileTreeIcons";
 import { FILE_CONTEXT_MENU_SHORTCUTS } from "../utils/fileContextMenuShortcuts";
 import {
   buildCodeSelectionChatSnippet,
@@ -89,8 +89,8 @@ import {
   openHtmlInBrowser,
 } from "../utils/openHtmlInBrowser";
 import { reduceExternalChangeSyncState } from "../externalChangeStateMachine";
-import { resolveFileRenderProfile } from "../utils/fileRenderProfile";
-import { getFileDocumentSnapshotMetrics } from "../utils/fileDocumentSnapshot";
+import { resolveFileRenderProfile } from "@/utils/fileRenderProfile";
+import { getFileDocumentSnapshotMetrics } from "@/utils/fileDocumentSnapshot";
 import {
   createFileEditorTypingDiagnosticsSession,
   type FileEditorTypingDiagnosticsSession,
