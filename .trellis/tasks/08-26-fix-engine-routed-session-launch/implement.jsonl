@@ -1,0 +1,10 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "新建/续借异步 engine switch、effect 与 callback contract"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "active engine、per-thread Composer selection 与 runtime state owner"}
+{"file": ".trellis/spec/frontend/codex-provider-session-ui.md", "reason": "Codex provider selector、创建 payload 与展示 authority"}
+{"file": ".trellis/spec/backend/native-provider-continuation-contract.md", "reason": "Provider Continuation target 与跨 provider 续借 contract"}
+{"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "provider-scoped model catalog 与 target model mapping"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "React -> service -> Tauri/native engine routing 边界"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "复用 engine authority helper，避免多套 switch 逻辑"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 verification 选择与 focused tests"}

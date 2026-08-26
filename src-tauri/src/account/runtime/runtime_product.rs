@@ -393,6 +393,12 @@ impl AccountRuntime {
                 Ok(models) => models,
                 Err(()) => return product_failure(protocol_failure("productModels")),
             },
+            Err(error) if error.safe.code == "rateLimited" => {
+                log::warn!(
+                    "[account] product engines prepared but model catalog is rate limited; continuing with empty catalog"
+                );
+                Vec::new()
+            }
             Err(error) => return product_failure(authority_failure(error, "productModels")),
         };
         if let Some((account_link_id, checkpoint_device_id)) =

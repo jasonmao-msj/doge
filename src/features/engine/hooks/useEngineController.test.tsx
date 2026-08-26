@@ -14,6 +14,7 @@ import {
   getClientStoreSync,
   writeClientStoreValue,
 } from "../../../services/clientStorage";
+import { activateAccountEngineV1 } from "../../../services/accountEngineCommands";
 import type { DebugEntry, EngineStatus } from "../../../types";
 import { STORAGE_KEYS as MODEL_STORAGE_KEYS } from "../../models/constants";
 import { STORAGE_KEYS as PROVIDER_STORAGE_KEYS } from "../../composer/types/provider";
@@ -40,6 +41,9 @@ vi.mock("../../../services/clientStorage", () => ({
   getClientStoreSync: vi.fn(),
   writeClientStoreValue: vi.fn(),
 }));
+vi.mock("../../../services/accountEngineCommands", () => ({
+  activateAccountEngineV1: vi.fn(),
+}));
 
 const detectEnginesMock = vi.mocked(detectEngines);
 const getActiveEngineMock = vi.mocked(getActiveEngine);
@@ -49,6 +53,7 @@ const runCodexDoctorMock = vi.mocked(runCodexDoctor);
 const switchEngineMock = vi.mocked(switchEngine);
 const getClientStoreSyncMock = vi.mocked(getClientStoreSync);
 const writeClientStoreValueMock = vi.mocked(writeClientStoreValue);
+const activateAccountEngineMock = vi.mocked(activateAccountEngineV1);
 
 const { inspectManagedCodexMock } = vi.hoisted(() => ({
   inspectManagedCodexMock: vi.fn(),
@@ -101,6 +106,8 @@ describe("useEngineController", () => {
     });
     getClientStoreSyncMock.mockReturnValue(undefined);
     writeClientStoreValueMock.mockReset();
+    activateAccountEngineMock.mockReset();
+    activateAccountEngineMock.mockResolvedValue(undefined);
     inspectManagedCodexMock.mockResolvedValue({
       ok: false,
       error: { code: "managed-toolchain-unavailable" },
@@ -726,7 +733,7 @@ describe("useEngineController", () => {
     expect(result.current.activeEngine).toBe("opencode");
   });
 
-  it("initializes activeEngine from persisted selection before detect settles", async () => {
+  it("initializes one-shot activeEngine from persisted selection without native switching", async () => {
     getClientStoreSyncMock.mockReturnValue("grok");
     const detectDeferred = createDeferred<EngineStatus[]>();
     const activeEngineDeferred = createDeferred<"claude">();
@@ -749,7 +756,7 @@ describe("useEngineController", () => {
 
     await waitFor(() => expect(result.current.isInitialized).toBe(true));
     expect(result.current.activeEngine).toBe("grok");
-    expect(switchEngineMock).toHaveBeenCalledWith("grok");
+    expect(switchEngineMock).not.toHaveBeenCalledWith("grok");
   });
 
   it("ignores a legacy persisted Gemini execution selection", async () => {
@@ -800,7 +807,7 @@ describe("useEngineController", () => {
     expect(getEngineModelsMock).not.toHaveBeenCalledWith("gemini");
   });
 
-  it("switches a legacy active Gemini runtime back to a supported engine", async () => {
+  it("falls back from a legacy active Gemini runtime without native switching", async () => {
     detectEnginesMock.mockResolvedValue([
       createEngineStatus("claude", true),
       createEngineStatus("gemini", true),
@@ -815,7 +822,7 @@ describe("useEngineController", () => {
     await waitFor(() => expect(result.current.isInitialized).toBe(true));
 
     expect(result.current.activeEngine).toBe("claude");
-    expect(switchEngineMock).toHaveBeenCalledWith("claude");
+    expect(switchEngineMock).not.toHaveBeenCalledWith("claude");
     expect(switchEngineMock).not.toHaveBeenCalledWith("gemini");
     expect(getEngineModelsMock).not.toHaveBeenCalledWith("gemini");
   });
@@ -1713,6 +1720,146 @@ describe("useEngineController", () => {
     expect(switchEngineMock).toHaveBeenCalledWith("codex");
     expect(runCodexDoctorMock).not.toHaveBeenCalled();
     expect(result.current.activeEngine).toBe("codex");
+  });
+
+  it("rechecks native runtime when React already displays Codex", async () => {
+    const codexModels: EngineStatus["models"] = [
+      {
+        id: "gpt-5",
+        displayName: "GPT-5",
+        description: "default",
+        isDefault: true,
+      },
+    ];
+    getClientStoreSyncMock.mockReturnValue("codex");
+    detectEnginesMock.mockResolvedValue([
+      createEngineStatus("claude", true),
+      createEngineStatus("codex", true, codexModels),
+    ]);
+    getActiveEngineMock
+      .mockResolvedValueOnce("claude")
+      .mockResolvedValueOnce("claude");
+    getEngineModelsMock.mockResolvedValue(codexModels);
+
+    const { result } = renderHook(() =>
+      useEngineController({ activeWorkspace: null }),
+    );
+
+    await waitFor(() => expect(result.current.isInitialized).toBe(true));
+    expect(result.current.activeEngine).toBe("codex");
+
+    let activated = false;
+    await act(async () => {
+      activated = await result.current.setActiveEngine("codex", {
+        ensureRuntime: true,
+      });
+    });
+
+    expect(activated).toBe(true);
+    expect(switchEngineMock).toHaveBeenCalledWith("codex");
+    expect(switchEngineMock).toHaveBeenCalledTimes(2);
+    expect(result.current.activeEngine).toBe("codex");
+  });
+
+  it("returns false when native engine switching fails", async () => {
+    detectEnginesMock.mockResolvedValue([
+      createEngineStatus("claude", true),
+      createEngineStatus("codex", true),
+    ]);
+    getActiveEngineMock.mockResolvedValue("claude");
+    getEngineModelsMock.mockResolvedValue([]);
+    switchEngineMock.mockRejectedValueOnce(new Error("switch unavailable"));
+
+    const { result } = renderHook(() =>
+      useEngineController({ activeWorkspace: null }),
+    );
+    await waitFor(() => expect(result.current.isInitialized).toBe(true));
+
+    let activated = true;
+    await act(async () => {
+      activated = await result.current.setActiveEngine("codex");
+    });
+
+    expect(activated).toBe(false);
+    expect(result.current.activeEngine).toBe("claude");
+  });
+
+  it("activates one-shot Kimi for the UI without native installation gating", async () => {
+    detectEnginesMock.mockResolvedValue([
+      createEngineStatus("claude", true),
+      createEngineStatus("kimi", false),
+    ]);
+    getActiveEngineMock.mockResolvedValue("claude");
+    getEngineModelsMock.mockResolvedValue([]);
+
+    const { result } = renderHook(() =>
+      useEngineController({ activeWorkspace: null }),
+    );
+    await waitFor(() => expect(result.current.isInitialized).toBe(true));
+
+    let activated = false;
+    await act(async () => {
+      activated = await result.current.setActiveEngine("kimi");
+    });
+
+    expect(activated).toBe(true);
+    expect(result.current.activeEngine).toBe("kimi");
+    expect(switchEngineMock).not.toHaveBeenCalledWith("kimi");
+    expect(runCodexDoctorMock).not.toHaveBeenCalled();
+  });
+
+  it("treats verified managed Codex activation as the switch boundary", async () => {
+    detectEnginesMock.mockResolvedValue([
+      createEngineStatus("claude", true),
+      createEngineStatus("codex", false),
+    ]);
+    getActiveEngineMock.mockResolvedValue("claude");
+    getEngineModelsMock.mockResolvedValue([]);
+    switchEngineMock.mockRejectedValueOnce(new Error("global Codex CLI unavailable"));
+
+    const { result } = renderHook(() =>
+      useEngineController({ activeWorkspace: null }),
+    );
+    await waitFor(() => expect(result.current.isInitialized).toBe(true));
+
+    let activated = false;
+    await act(async () => {
+      activated = await result.current.setActiveEngine("codex", {
+        ensureRuntime: true,
+        providerProfileId: "doge-token-matrix",
+      });
+    });
+
+    expect(activated).toBe(true);
+    expect(activateAccountEngineMock).toHaveBeenCalledWith("codex");
+    expect(switchEngineMock).not.toHaveBeenCalledWith("codex");
+    expect(result.current.activeEngine).toBe("codex");
+  });
+
+  it("keeps managed Claude activation ahead of one-shot UI routing", async () => {
+    detectEnginesMock.mockResolvedValue([
+      createEngineStatus("claude", false),
+      createEngineStatus("codex", true),
+    ]);
+    getActiveEngineMock.mockResolvedValue("codex");
+    getEngineModelsMock.mockResolvedValue([]);
+
+    const { result } = renderHook(() =>
+      useEngineController({ activeWorkspace: null }),
+    );
+    await waitFor(() => expect(result.current.isInitialized).toBe(true));
+
+    let activated = false;
+    await act(async () => {
+      activated = await result.current.setActiveEngine("claude", {
+        ensureRuntime: true,
+        providerProfileId: "doge-token-matrix",
+      });
+    });
+
+    expect(activated).toBe(true);
+    expect(activateAccountEngineMock).toHaveBeenCalledWith("claude-code");
+    expect(result.current.activeEngine).toBe("claude");
   });
 
   it("exposes bundled Codex in the selector when the generic probe misses it", async () => {

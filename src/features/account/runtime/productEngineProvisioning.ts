@@ -37,7 +37,7 @@ const defaultDependencies: ProductEngineProvisioningDependenciesV1 = {
     managedToolchain.choose(engineId, "bundled", inspected),
 };
 
-/** Kimi no longer auto-installs over npm; it resolves from the bundled manifest. */
+/** Product onboarding always selects verified bundled binaries. */
 const PROVISIONED_ENGINE_IDS: readonly ManagedToolchainEngineIdV1[] = [
   "codex",
   "claude-code",
@@ -57,7 +57,7 @@ export async function prepareProductEngineProvisioningV1(
       options.onEngine?.(engineId);
       const inspected = await dependencies.inspectManaged(engineId);
       if (!inspected.ok) return failure(engineId, inspected.error.code);
-      const resolved = inspected.value.status === "choiceRequired"
+      const resolved = inspected.value.selectedSource !== "bundled"
         ? await dependencies.chooseBundled(engineId, inspected.value)
         : inspected;
       if (!resolved.ok) return failure(engineId, resolved.error.code);

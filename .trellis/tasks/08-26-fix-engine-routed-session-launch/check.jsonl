@@ -1,0 +1,7 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "检查 hooks、state、tests 与 render 约束"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "检查 boolean switch contract 的类型边界"}
+{"file": ".trellis/spec/backend/native-provider-continuation-contract.md", "reason": "检查 continuation exact target 与 failure matrix"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "检查跨层 payload/routing contract"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "检查 L3 命令与未覆盖范围"}

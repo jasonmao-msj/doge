@@ -1,4 +1,9 @@
-import type { EngineModelInfo, EngineType } from "../types";
+import type {
+  EngineModelInfo,
+  EngineType,
+  SetActiveEngine,
+} from "../types";
+import { resolveSessionEngineActivation } from "../features/engine/utils/engineSessionRouting";
 
 export type ProviderContinuationTargetHydrationInput = {
   workspaceId: string;
@@ -11,7 +16,7 @@ export type ProviderContinuationTargetHydrationInput = {
 };
 
 type ProviderContinuationTargetHydrationDependencies = {
-  setActiveEngine: (engine: EngineType) => Promise<void> | void;
+  setActiveEngine: SetActiveEngine;
   getEngineModels: (
     engine: EngineType,
     options: { providerProfileId: string | null; forceRefresh: true },
@@ -61,7 +66,13 @@ export async function hydrateProviderContinuationTarget(
   // Catalog reload and thread selection can settle in one React batch. The
   // approved destination snapshot is authoritative; do not infer its engine
   // from a possibly stale threadsByWorkspace closure.
-  await dependencies.setActiveEngine(engine);
+  const activationPlan = resolveSessionEngineActivation(engine, providerProfileId);
+  const engineActivated = activationPlan.options
+    ? await dependencies.setActiveEngine(engine, activationPlan.options)
+    : await dependencies.setActiveEngine(engine);
+  if (activationPlan.requireSuccess && engineActivated === false) {
+    throw new Error(`provider continuation engine activation failed: ${engine}`);
+  }
 
   try {
     const models = await dependencies.getEngineModels(engine, {

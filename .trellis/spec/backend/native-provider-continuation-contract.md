@@ -372,6 +372,15 @@ hydrateProviderContinuationTarget(input, {
   persistComposerSelectionForThread,
   onCatalogError,
 }): Promise<void>
+
+type SetActiveEngineOptions = {
+  ensureRuntime?: boolean;
+}
+
+setActiveEngine(
+  engine: EngineType,
+  options?: SetActiveEngineOptions,
+): Promise<boolean>
 ```
 
 ### 3. Contracts
@@ -380,6 +389,19 @@ hydrateProviderContinuationTarget(input, {
 - Target hydration MUST use payload `workspaceId + threadId` as write owner，显式 publish destination engine，并把 normalized model/effort 写入该 target 的 per-thread Composer selection。
 - Destination engine MUST come from frozen continuation snapshot；MUST NOT 只从同一 React batch 内可能 stale 的 `threadsByWorkspace` closure 推断。
 - Target 尚未 active 时 MUST NOT 调用 source/current-thread-scoped `handleSelectModel`、`setSelectedEffort` 或等价 setter。
+- `hydrateProviderContinuationTarget` MUST use the shared session activation plan. Persistent
+  destinations and managed Codex/Claude MUST call `setActiveEngine(destination, { ensureRuntime:
+  true, ... })`；Kimi and other one-shot destinations MAY call `setActiveEngine(destination,
+  { providerProfileId })`, but a generic active-engine failure MUST NOT block provider continuation.
+  For persistent/managed targets, only result 为 `true`（或 legacy void-compatible adapter 未显式返回
+  `false`）时才可继续 catalog hydration。
+- 新建 Session 的 `start_thread` 前也 MUST 使用同一 activation plan；persistent Codex 与 managed
+  Codex/Claude activation 返回 `false` 时 MUST fail closed，不得调用 `start_thread` 或持久化目标
+  选择。Kimi 等 one-shot provider 必须继续使用显式 provider/session runtime，不得被 global
+  active-engine switching 不可用阻断。Native runtime 与 React `activeEngine` 不一致时，persistent
+  target 的 `ensureRuntime` MUST 先重新确认并调用 native `switch_engine`；成功的 switch response
+  是 mutation boundary 的确认，禁止因同值 short-circuit 而信任 stale React state，也禁止用一次
+  可能滞后的立即 read-back 否决成功切换。
 - Provider-scoped catalog 成功时按 `catalog id -> runtime model -> default/first` 解析；失败时 MAY 保留 non-empty frozen model id/runtime fallback，但 MUST 记录 diagnostic，MUST NOT 重试 target creation。
 - Active target 的同 engine + same Provider binding model change MUST 走普通 per-thread model update；只有 Engine/Provider binding 真实变化才打开新的 Continuation Dialog。
 
@@ -391,6 +413,9 @@ hydrateProviderContinuationTarget(input, {
 | catalog reload state 尚未 rerender | frozen destination engine 仍生效 | 使用来源 activeEngine |
 | provider model catalog 读取失败 | 保留 frozen non-empty model + diagnostic | 清空模型、blind retry target |
 | target 尚未 active | 只写 exact target selection | 覆盖 source selection |
+| React 与 native engine 不一致 | ensure native target 后再 hydration/导航 | 同值 short-circuit 后继续使用旧 engine |
+| engine activation 返回 `false` | persistent/managed target 停止 hydration 与创建，保留错误 surface | 继续 catalog、persist 或 `start_thread` |
+| Kimi one-shot activation 返回 `false` | 继续 Kimi catalog/continuation，使用显式 provider route | 把 global active-engine failure 当作 Kimi session failure |
 | Claude+Doge target 内换 Claude model | in-place model persistence | Claude → Claude second Continuation |
 | hydration Promise pending | Dialog 保持 running，target 不选择 | Canvas 先打开 stale target |
 
@@ -405,6 +430,10 @@ hydrateProviderContinuationTarget(input, {
 
 - `useSidebarMenus.test.tsx` MUST 使用 deferred hydration Promise，断言 resolve 前 `onSelectThread` 零调用，resolve 后 exact target 只选择一次。
 - `providerContinuationTargetHydration.test.ts` MUST 断言 destination engine → catalog load/publish → exact target persistence 的顺序；catalog failure 保留 frozen model 并记录 error。
+- `providerContinuationTargetHydration.test.ts` MUST 断言 persistent/managed target 调用
+  `setActiveEngine(engine, { ensureRuntime: true })` 且 activation 返回 `false` 时 catalog、persist
+  与 target navigation 均为零调用；另需覆盖 Kimi one-shot 的 `false` 结果仍可 hydration。
+- `useWorkspaceActions.test.tsx` MUST 断言 `setActiveEngine(target, { ensureRuntime: true })` 返回 `false` 时 `startThreadForWorkspace` 为零调用。
 - Composer regression MUST 覆盖 active Claude+Doge same-profile model click：调用 `onSelectModel`，不发布 Provider Continuation request。
 - Hot Desktop MUST 覆盖 Codex source → Claude target → ordinary send；target footer 首帧为 Claude，且不会出现第二个 Continuation Dialog。
 
@@ -422,4 +451,26 @@ void onProviderContinuationTargetReady?.(targetSnapshot);
 ```ts
 await onProviderContinuationTargetReady?.(targetSnapshot);
 onSelectThread(workspaceId, targetThreadId);
+```
+
+#### Wrong: trust the React engine label
+
+```ts
+if (targetEngine === activeEngine) {
+  return;
+}
+await startThreadForWorkspace(workspaceId, { engine: targetEngine });
+```
+
+#### Correct: confirm native authority before side effects
+
+```ts
+const plan = resolveSessionEngineActivation(targetEngine, providerProfileId);
+const activated = plan.options
+  ? await setActiveEngine(targetEngine, plan.options)
+  : await setActiveEngine(targetEngine);
+if (plan.requireSuccess && activated === false) {
+  throw new Error("engine activation failed");
+}
+await startThreadForWorkspace(workspaceId, { engine: targetEngine });
 ```

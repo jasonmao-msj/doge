@@ -9,7 +9,10 @@ import { GIT_GRAPH_TAB_ID } from "../features/git-history/types";
 import { WorkspaceAliasPrompt } from "../features/workspaces/components/WorkspaceAliasPrompt";
 import { useClientUiVisibility } from "../features/client-ui-visibility/hooks/useClientUiVisibility";
 import { isAccountConvenienceV1Enabled } from "../features/account/runtime/featureFlag";
-import { managedEngineIdForRuntimeV1 } from "../features/account/runtime/engineEntitlementStore";
+import {
+  managedEngineIdForRuntimeV1,
+  MANAGED_PROVIDER_PROFILE_ID_V1,
+} from "../features/account/runtime/engineEntitlementStore";
 import {
   requestAccountEngineSwitchV1,
   publishAccountEngineReadyV1,
@@ -848,8 +851,11 @@ export function useAppShellLayoutNodesSection(
     const unsubscribe = subscribeAccountEngineReadyV1((intent) => {
       void (async () => {
         const engine = intent.engineId === "claude-code" ? "claude" : "codex";
-        await setActiveEngine(engine);
-        if (disposed || !intent.openNewConversation) return;
+        const engineActivated = await setActiveEngine(engine, {
+          ensureRuntime: true,
+          providerProfileId: MANAGED_PROVIDER_PROFILE_ID_V1,
+        });
+        if (disposed || engineActivated === false || !intent.openNewConversation) return;
         closeSettings();
         handleOpenHomeChat();
       })();
