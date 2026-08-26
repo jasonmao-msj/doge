@@ -98,7 +98,7 @@ export type AppSettings = {
   codexBin: string | null;
   codexArgs: string | null;
   terminalShellPath: string | null;
-  /** 用户在「引擎管理」停用的 supported CLI engine id 列表；默认 [] = 全部启用 */
+  /** Legacy CLI visibility blacklist; product-managed Claude/Codex/Kimi are always enabled. */
   disabledCliEngines: string[];
   sessionAttributionMode?: WorkspaceSessionAttributionMode;
   backendMode: BackendMode;

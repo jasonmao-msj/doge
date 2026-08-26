@@ -25,7 +25,9 @@ import type {
   SubscriptionPlanViewV1,
   EngineOnboardingFailureV1,
 } from "../runtime/onboardingTypes";
+import { prepareProductWithBoundedRetryV1 } from "../runtime/productPrepareRetry";
 import { openAccountExternalUrl } from "../../../services/accountExternalLinks";
+import { appendRendererDiagnostic } from "../../../services/rendererDiagnostics";
 import { AccountAuthPanel } from "./AccountExperience";
 import {
   CheckoutQrCode,
@@ -118,7 +120,22 @@ export function ProductAccountAppGate({
         recordFailure(provisioned?.error);
         return;
       }
-      const result = await client.prepare().catch(() => null);
+      setPreparingEngine(null);
+      const result = await prepareProductWithBoundedRetryV1(
+        client.prepare,
+        {
+          isCurrent: () => requestGeneration === generation.current,
+          onAttemptFailure: ({ error, attempt, maxAttempts, retryDelayMs }) => {
+            appendRendererDiagnostic("account/product-prepare-attempt-failed", {
+              code: error.code,
+              stage: error.stage ?? "unknown",
+              attempt,
+              maxAttempts,
+              retryDelayMs,
+            });
+          },
+        },
+      );
       if (requestGeneration !== generation.current) return;
       if (!result?.ok) {
         recordFailure(result?.error);

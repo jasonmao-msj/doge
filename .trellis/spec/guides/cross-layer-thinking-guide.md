@@ -101,6 +101,14 @@ React Component
     history scanner 只负责 recovery evidence，不能替代前台终态。process exit/EOF 仍只属于 cleanup。
 30. 异步 mutation 创建新 Session/Entity 后若立即导航，必须先以 exact target identity 完成 destination state hydration，再选择目标。禁止先导航再 fire-and-forget 补写，也禁止用仍绑定 source active owner 的 setter 写 target；catalog/reducer dispatch 完成不等于 React closure 已看到新 row。
 31. feature dependency boundary gate 报新增 edge 时，先按 ownership 分类再修：多 feature 共享的 pure/runtime/presentation capability 迁到 canonical neutral owner；peer UI integration 由更高层 host callback/slot 组合；确属 feature-owned 的稳定能力只走 public index。禁止用 re-export shim 隐藏 peer dependency，也禁止把新 edge 加入 exact debt baseline。owner move 后必须同时迁移 tests/mocks/import-type、收缩 stale baseline，并枚举所有 production entry，避免主入口修好但嵌套入口丢能力。
+32. Native mutation 的成功 response 是 mutation boundary 的 authority。若切换命令本身已经完成状态写入，禁止用紧随其后的单次 read-back 否决成功结果；read-back 只用于 mutation 前发现 stale state，除非 runtime 明确提供了带版本/operation identity 的一致性确认。
+33. Session creation/continuation 的 engine activation gate 必须按 engine registry 的
+    `executionModel` 与 provider runtime contract 分流：persistent engine（当前 Codex）及
+    managed Codex/Claude 必须在 session side effect 前确认 activation；Kimi 等 one-shot engine
+    通过显式 `engine/providerProfileId` 路由每个 turn，不能把 global active-engine read-back 或
+    `switch_engine` 失败误报为 one-shot session 创建/续接失败。共享 helper 必须同时返回
+    activation options 与是否必须 fail closed，禁止各 caller 自行猜测。
+34. External installer/config/remote-create mutation 的 side effect 与 response settlement 必须分域。Promise reject、IPC 丢失、malformed success 或首个 status snapshot stale 不能证明 mutation 未发生；先用 bounded authoritative convergence（binary/version/file/deterministic remote identity）判真，再映射 failure。若 remote create 有稳定 business identity，reconcile 必须在 Native/service owner 内 authoritative re-list + exact match + secure handoff，禁止把“再点一次 Retry 才看见已提交副作用”设计成 UI recovery。后续 remote prepare 必须切换 UI stage owner，避免把 Authority failure 继续归因到最后一个 local engine。自动 retry 只允许幂等 mutation、bounded budget、cooldown aware，并受 exact generation guard 约束。
 
 ## 常见失败模式
 
@@ -108,6 +116,8 @@ React Component
 - optional 字段被当 required 使用。
 - `undefined` 与显式空集合（如 `[]`）被错误地当成同一语义，导致 fallback 误吃全量数据。
 - retry 流程非 idempotent，触发重复副作用。
+- installer 已落下 package/bin，但 response reject 被直接映射 `serviceUnavailable`；用户手工 retry 后成功，形成一次不必要的 terminal error。或 toolchain 已完成后 UI 仍显示最后一个 engine name，把 remote prepare failure 误报为本地安装失败。
+- remote create 已提交 deterministic entity，但 response decode/validation 返回 `protocolMismatch`；UI 先展示 terminal error，用户 Retry 后 list 命中刚创建的 entity 并成功。正确 owner 应在首次 mutation 内完成 authoritative reconcile。
 - 只隐藏主 UI，却遗漏 Prompt Enhancer、Project Map、Task Center recovery 或 legacy config replay 等 sibling execution surface。
 - disabled/stale guard 放在 local/success 分支，remote forwarding、timeout/error fallback 仍先产生副作用。
 - retry budget 放在 selection caller，其他 caller 再次调用 shared resume 时预算被隐式重置。
@@ -199,6 +209,7 @@ React Component
 - managed Provider transition 至少覆盖：同 engine local/manual → managed、renderer
   `prepared` stale 但 native credential 缺失、prepare 失败时零 Session/Continuation side
   effect、prepare ready 后才建立新的 durable Provider binding。
+- installer/prepare convergence 至少覆盖：side effect success + response reject、首个 post-install snapshot stale、bounded attempts exhausted、remote idempotent retry success/continuous failure、server cooldown、generation stale；真实 smoke 必须观察可执行 binary、managed config 与 AppShell mount，不能只信 mock RPC。
 - runtime error parity 至少覆盖：同一 Provider rejection 的 live wire 与 persisted history 两种 fixture、
   camel/snake field 兼容、error result fallback、stdout 持有不退出；断言 exactly-one terminal、
   no completed、exact process owner 释放、UI caller Promise bounded settlement。

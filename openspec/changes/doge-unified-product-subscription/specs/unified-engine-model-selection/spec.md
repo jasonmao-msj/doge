@@ -147,13 +147,13 @@ When the Doge product entitlement is ready, provider configuration MUST be an in
 - **THEN** that process SHALL continue to read the user's own global CLI configuration
 - **AND** Doge SHALL NOT persist its managed endpoint or credential into the user's global CLI home
 
-#### Scenario: Product-ready settings show local configuration
+#### Scenario: Product-ready settings hide engine management
 
 - **GIVEN** the Doge product entitlement is ready
-- **WHEN** the user opens Engine Management for Codex, Claude or Kimi
-- **THEN** local/official activation SHALL be visibly locked and SHALL NOT expose a use/cancel action
-- **AND** editing the user's global local file MAY remain available for terminal direct usage
-- **AND** editing that file SHALL NOT change the managed product execution target
+- **WHEN** the user opens Settings, the model menu, or a legacy `providers/vendors/permissions` deep link
+- **THEN** Doge SHALL NOT render an Engine Management navigation item, footer action, CLI enable/disable control, local/official activation, or global-file editor
+- **AND** a legacy deep link SHALL fall back to Basic Settings rather than mounting the hidden provider surface
+- **AND** the managed product execution target SHALL remain `doge-token-matrix`
 
 #### Scenario: User switches engine or model
 
@@ -181,9 +181,10 @@ When the Doge product entitlement is ready, provider configuration MUST be an in
 #### Scenario: A product engine was disabled in Local Mode
 
 - **GIVEN** local CLI visibility settings disabled Claude, Codex or Kimi before product preparation
-- **WHEN** the product entitlement becomes ready and the Sidebar new-session menu opens
+- **WHEN** the authenticated product session loads settings and the Sidebar new-session menu opens
 - **THEN** all three product engines SHALL remain visible as direct managed actions
-- **AND** the Local Mode blacklist SHALL continue to apply when the product entitlement is not ready
+- **AND** Rust and renderer normalization SHALL remove `claude`, `codex`, and `kimi` from the effective `disabledCliEngines` blacklist
+- **AND** the Local Mode blacklist MAY continue to apply only to non-product engines
 
 #### Scenario: Shared conversation renders a turn target label
 

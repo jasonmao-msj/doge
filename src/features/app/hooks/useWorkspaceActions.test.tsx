@@ -81,7 +81,7 @@ function makeOptions(overrides?: Partial<Parameters<typeof useWorkspaceActions>[
     isCompact: false,
     activeEngine: "claude" as const,
     newAgentShortcut: null,
-    setActiveEngine: vi.fn(async () => undefined),
+    setActiveEngine: vi.fn(async () => true),
     addWorkspace: vi.fn(async () => null),
     addWorkspaceFromPath: vi.fn(async () => null),
     connectWorkspace: vi.fn(async () => undefined),
@@ -124,7 +124,9 @@ describe("useWorkspaceActions", () => {
 
     expect(options.selectWorkspace).toHaveBeenCalledWith("ws-1");
     expect(options.connectWorkspace).toHaveBeenCalledWith(workspace);
-    expect(options.setActiveEngine).toHaveBeenCalledWith("codex");
+    expect(options.setActiveEngine).toHaveBeenCalledWith("codex", {
+      ensureRuntime: true,
+    });
     expect(options.startThreadForWorkspace).toHaveBeenCalledWith("ws-1", {
       engine: "codex",
     });
@@ -133,6 +135,36 @@ describe("useWorkspaceActions", () => {
       message: "create:workspace.engineCodex:Workspace",
     });
     expect(options.hideLoadingProgressDialog).toHaveBeenCalledWith("loading-1");
+  });
+
+  it("passes a managed provider to engine activation before creating", async () => {
+    const options = makeOptions({ activeEngine: "kimi" });
+    const { result } = renderHook(() => useWorkspaceActions(options));
+
+    await act(async () => {
+      await result.current.handleAddAgent(baseWorkspace, "codex", {
+        providerProfileId: "doge-token-matrix",
+        providerProfile: {
+          id: "doge-token-matrix",
+          name: "Doge",
+          source: "managed",
+        },
+      });
+    });
+
+    expect(options.setActiveEngine).toHaveBeenCalledWith("codex", {
+      ensureRuntime: true,
+      providerProfileId: "doge-token-matrix",
+    });
+    expect(options.startThreadForWorkspace).toHaveBeenCalledWith("ws-1", {
+      engine: "codex",
+      providerProfileId: "doge-token-matrix",
+      providerProfile: {
+        id: "doge-token-matrix",
+        name: "Doge",
+        source: "managed",
+      },
+    });
   });
 
   it("creates a session with the active OpenCode engine when no explicit engine is provided", async () => {
@@ -146,10 +178,69 @@ describe("useWorkspaceActions", () => {
     });
 
     expect(threadId).toBe("thread-1");
-    expect(options.setActiveEngine).not.toHaveBeenCalled();
+    expect(options.setActiveEngine).toHaveBeenCalledWith("opencode");
     expect(options.startThreadForWorkspace).toHaveBeenCalledWith("ws-1", {
       engine: "opencode",
     });
+  });
+
+  it("keeps Kimi one-shot creation independent from native active-engine confirmation", async () => {
+    const options = makeOptions({
+      activeEngine: "kimi",
+      setActiveEngine: vi.fn(async () => false),
+    });
+    const { result } = renderHook(() => useWorkspaceActions(options));
+
+    let threadId: string | null = null;
+    await act(async () => {
+      threadId = await result.current.handleAddAgent(baseWorkspace, "kimi", {
+        providerProfileId: "provider-kimi",
+      });
+    });
+
+    expect(threadId).toBe("thread-1");
+    expect(options.setActiveEngine).toHaveBeenCalledWith("kimi", {
+      providerProfileId: "provider-kimi",
+    });
+    expect(options.startThreadForWorkspace).toHaveBeenCalledWith("ws-1", {
+      engine: "kimi",
+      providerProfileId: "provider-kimi",
+    });
+    expect(pushErrorToast).not.toHaveBeenCalled();
+  });
+
+  it("does not start a session when the requested engine cannot be activated", async () => {
+    const options = makeOptions({
+      activeEngine: "codex",
+      setActiveEngine: vi.fn(async () => false),
+    });
+    const { result } = renderHook(() => useWorkspaceActions(options));
+
+    await act(async () => {
+      const threadId = await result.current.handleAddAgent(baseWorkspace, "codex");
+      expect(threadId).toBeNull();
+    });
+
+    expect(options.setActiveEngine).toHaveBeenCalledWith("codex", {
+      ensureRuntime: true,
+    });
+    expect(options.startThreadForWorkspace).not.toHaveBeenCalled();
+    expect(options.onDebug).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: "workspace/create-session error",
+        payload: expect.objectContaining({
+          engine: "codex",
+          error: "ENGINE_SWITCH_FAILED:codex",
+        }),
+      }),
+    );
+    expect(pushErrorToast).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "errors.failedToCreateSession",
+        message: "errors.failedToCreateSession",
+        sticky: true,
+      }),
+    );
   });
 
   it("rejects Gemini session creation before switching or starting a thread", async () => {

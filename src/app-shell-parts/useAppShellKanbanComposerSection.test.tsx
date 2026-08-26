@@ -82,7 +82,10 @@ describe("useAppShellKanbanComposerSection Home target creation", () => {
       );
     });
 
-    expect(context.setActiveEngine).toHaveBeenCalledWith("codex");
+    expect(context.setActiveEngine).toHaveBeenCalledWith("codex", {
+      ensureRuntime: true,
+      providerProfileId: "provider-b",
+    });
     expect(context.startThreadForWorkspace).toHaveBeenCalledWith(
       "workspace-1",
       {
@@ -120,5 +123,75 @@ describe("useAppShellKanbanComposerSection Home target creation", () => {
     expect(forwardedOptions.createSessionTarget).toEqual(
       options.createSessionTarget,
     );
+  });
+
+  it("does not create a session when target engine activation fails", async () => {
+    const context = createContext({
+      setActiveEngine: vi.fn().mockResolvedValue(false),
+    });
+    const { result } = renderHook(() =>
+      useAppShellKanbanComposerSection(context as never),
+    );
+
+    await act(async () => {
+      await result.current.handleComposerSendWithEditorFallback("hello", [], {
+        createSessionTarget: {
+          engine: "codex",
+          providerProfileId: "doge-token-matrix",
+          providerProfileName: "Doge",
+          providerProfileSource: "managed",
+          modelCatalogEntryId: "catalog-model",
+          model: "runtime-model",
+          effort: "high",
+        },
+      });
+    });
+
+    expect(context.setActiveEngine).toHaveBeenCalledWith("codex", {
+      ensureRuntime: true,
+      providerProfileId: "doge-token-matrix",
+    });
+    expect(context.startThreadForWorkspace).not.toHaveBeenCalled();
+  });
+
+  it("creates a Kimi target without requiring native active-engine confirmation", async () => {
+    const context = createContext({
+      setActiveEngine: vi.fn().mockResolvedValue(false),
+    });
+    const { result } = renderHook(() =>
+      useAppShellKanbanComposerSection(context as never),
+    );
+
+    await act(async () => {
+      await result.current.handleComposerSendWithEditorFallback("hello", [], {
+        createSessionTarget: {
+          engine: "kimi",
+          providerProfileId: "provider-kimi",
+          providerProfileName: "Kimi",
+          providerProfileSource: "managed",
+          modelCatalogEntryId: "kimi-k2",
+          model: "kimi-k2",
+          effort: null,
+        },
+      });
+    });
+
+    expect(context.setActiveEngine).toHaveBeenCalledWith("kimi", {
+      providerProfileId: "provider-kimi",
+    });
+    expect(context.startThreadForWorkspace).toHaveBeenCalledWith(
+      "workspace-1",
+      {
+        engine: "kimi",
+        activate: true,
+        providerProfileId: "provider-kimi",
+        providerProfile: {
+          id: "provider-kimi",
+          name: "Kimi",
+          source: "managed",
+        },
+      },
+    );
+    expect(context.sendUserMessageToThread).toHaveBeenCalled();
   });
 });

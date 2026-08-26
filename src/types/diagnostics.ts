@@ -33,8 +33,20 @@ export type CodexDoctorResult = {
   pathEnvUsed?: string | null;
   proxyEnvSnapshot?: Record<string, string | null>;
   nodeOk: boolean;
+  nodeRequired?: boolean;
   nodeVersion: string | null;
   nodeDetails: string | null;
+  kimiShell?: {
+    ok: boolean;
+    category?: string;
+    source?: "bundled" | "external";
+    shellPath?: string;
+    shellVersion?: string | null;
+    gitVersion?: string | null;
+    cwdProbeOk?: boolean;
+    message?: string;
+    details?: unknown;
+  } | null;
   resolvedBinaryPath?: string | null;
   wrapperKind?: string | null;
   fallbackRetried?: boolean;

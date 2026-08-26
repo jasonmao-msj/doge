@@ -18,8 +18,10 @@ import {
   productCheckoutPollDelayMs,
   productFulfillmentPollDelayMs,
 } from "./ProductAccountAppGate";
+import { productPrepareRetryDelaysMs } from "../runtime/productPrepareRetry";
 
 const refreshModels = vi.hoisted(() => vi.fn().mockResolvedValue(true));
+const appendDiagnostic = vi.hoisted(() => vi.fn());
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({ i18n: { resolvedLanguage: "zh-CN" } }),
@@ -33,8 +35,13 @@ vi.mock("../runtime/productModelCatalogRefresh", () => ({
   refreshProductModelsV1: refreshModels,
 }));
 
+vi.mock("../../../services/rendererDiagnostics", () => ({
+  appendRendererDiagnostic: appendDiagnostic,
+}));
+
 afterEach(() => {
   refreshModels.mockClear();
+  appendDiagnostic.mockClear();
   vi.useRealTimers();
   act(() => clearProductEntitlementV1());
 });
@@ -179,6 +186,70 @@ describe("ProductAccountAppGate lifecycle", () => {
     });
 
     expect(refreshModels).toHaveBeenCalledTimes(1);
+  });
+
+  it("absorbs one transient product prepare failure without showing service unavailable", async () => {
+    vi.useFakeTimers();
+    const client = productClient();
+    vi.mocked(client.catalog).mockResolvedValue({
+      ok: true,
+      value: activeCatalog(),
+    });
+    vi.mocked(client.prepare)
+      .mockResolvedValueOnce({
+        ok: false,
+        error: { code: "serviceUnavailable", stage: "productPrepare" },
+      })
+      .mockResolvedValueOnce({ ok: true, value: readyView() });
+
+    renderGate(client);
+    await act(async () => flushMicrotasks());
+    expect(screen.queryByText("服务暂时不可用")).toBeNull();
+    expect(appendDiagnostic).toHaveBeenCalledWith(
+      "account/product-prepare-attempt-failed",
+      expect.objectContaining({
+        code: "serviceUnavailable",
+        stage: "productPrepare",
+        attempt: 1,
+        maxAttempts: productPrepareRetryDelaysMs().length,
+      }),
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(productPrepareRetryDelaysMs()[1] ?? 0);
+      await flushMicrotasks();
+    });
+
+    expect(screen.getByText("主应用已挂载")).toBeTruthy();
+    expect(client.prepare).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText("服务暂时不可用")).toBeNull();
+  });
+
+  it("shows Doge rather than Kimi while remote product preparation is pending", async () => {
+    let resolvePrepare: ((value: { ok: true; value: ProductReadyViewV1 }) => void) | null = null;
+    const client = productClient();
+    vi.mocked(client.catalog).mockResolvedValue({
+      ok: true,
+      value: activeCatalog(),
+    });
+    vi.mocked(client.prepare).mockReturnValue(new Promise((resolve) => {
+      resolvePrepare = resolve;
+    }));
+
+    renderGate(client, async ({ onEngine } = {}) => {
+      onEngine?.("kimi");
+      return { ok: true };
+    });
+    await act(async () => flushMicrotasks());
+
+    expect(screen.getByRole("heading", { name: "正在准备 Doge" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "正在准备 Kimi CLI" })).toBeNull();
+
+    await act(async () => {
+      resolvePrepare?.({ ok: true, value: readyView() });
+      await flushMicrotasks();
+    });
+    expect(screen.getByText("主应用已挂载")).toBeTruthy();
   });
 
   it("does not configure providers when automatic engine provisioning fails", async () => {

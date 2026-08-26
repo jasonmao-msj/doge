@@ -716,9 +716,7 @@ impl EngineManager {
         let mut config =
             kimi_engine_config_with_home(self.get_engine_config(EngineType::Kimi).await, home_dir);
         if let Some(binary) = bin_override.filter(|value| !value.trim().is_empty()) {
-            config
-                .get_or_insert_with(EngineConfig::default)
-                .bin_path = Some(binary.to_string());
+            config.get_or_insert_with(EngineConfig::default).bin_path = Some(binary.to_string());
         }
         let session = Arc::new(KimiSession::new(
             workspace_id.to_string(),

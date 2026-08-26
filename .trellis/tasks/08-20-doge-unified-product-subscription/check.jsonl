@@ -6,3 +6,10 @@
 {"file": "openspec/changes/doge-unified-product-subscription/specs/account-product-subscription-center/spec.md", "reason": "Account detail acceptance contract"}
 {"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "Verify catalog/runtime identity parity"}
 {"file": "openspec/changes/doge-unified-product-subscription/specs/unified-engine-model-selection/spec.md", "reason": "Verify refresh and display/runtime behavior"}
+{"file": "openspec/specs/cli-engine-visibility/spec.md", "reason": "Legacy visibility behavior superseded by product policy"}
+{"file": "src/features/account/runtime/productEngineProvisioning.test.ts", "reason": "Three-engine bundled/no-npm provisioning regression"}
+{"file": "src/features/account/components/ProductAccountAppGate.lifecycle.test.tsx", "reason": "Transient prepare failure lifecycle regression"}
+{"file": "src/features/account/runtime/productPrepareRetry.test.ts", "reason": "Retry budget/cooldown/stale regression"}
+{"file": "src-tauri/src/account/runtime/runtime_product_tests.rs", "reason": "Managed-key create outcome reconcile exact-identity regression"}
+{"file": ".trellis/spec/backend/account-convenience-native-contract.md", "reason": "Verify outcome-unknown mutation and same-prepare reconcile contract"}
+{"file": "src-tauri/src/account/runtime/runtime_product_keys.rs", "reason": "Review bounded create reconcile and secret-safe handoff boundary"}

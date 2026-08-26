@@ -893,11 +893,7 @@ fn default_opencode_enabled() -> bool {
 }
 
 fn default_disabled_cli_engines() -> Vec<String> {
-    vec![
-        "grok".to_string(),
-        "kimi".to_string(),
-        "opencode".to_string(),
-    ]
+    vec!["grok".to_string(), "opencode".to_string()]
 }
 
 fn default_email_sender_smtp_port() -> u16 {
@@ -2397,11 +2393,7 @@ mod tests {
         assert!(settings.opencode_enabled);
         assert_eq!(
             settings.disabled_cli_engines,
-            vec![
-                "grok".to_string(),
-                "kimi".to_string(),
-                "opencode".to_string(),
-            ]
+            vec!["grok".to_string(), "opencode".to_string()]
         );
         assert_eq!(
             settings.session_attribution_mode,

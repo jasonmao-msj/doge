@@ -129,7 +129,6 @@ describe("useAppSettings", () => {
     expect(result.current.settings.remoteBackendHost).toBe("example:1234");
     expect(result.current.settings.disabledCliEngines).toEqual([
       "grok",
-      "kimi",
       "opencode",
     ]);
     expect(result.current.settings.claudeBin).toBeNull();
@@ -196,17 +195,22 @@ describe("useAppSettings", () => {
 
   it("normalizes persisted disabled CLI engines", async () => {
     getAppSettingsMock.mockResolvedValue({
-      disabledCliEngines: ["opencode", " opencode ", "", 42, "kimi"],
+      disabledCliEngines: [
+        "opencode",
+        " opencode ",
+        "",
+        42,
+        "claude",
+        "codex",
+        "kimi",
+      ],
     } as unknown as AppSettings);
 
     const { result } = renderHook(() => useAppSettings());
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(result.current.settings.disabledCliEngines).toEqual([
-      "opencode",
-      "kimi",
-    ]);
+    expect(result.current.settings.disabledCliEngines).toEqual(["opencode"]);
   });
 
   it("surfaces a toast and keeps defaults when loading settings fails", async () => {
@@ -623,7 +627,6 @@ describe("useAppSettings", () => {
     expect(result.current.settings.backendMode).toBe("local");
     expect(result.current.settings.disabledCliEngines).toEqual([
       "grok",
-      "kimi",
       "opencode",
     ]);
     expect(result.current.settings.dictationModelId).toBe("base");

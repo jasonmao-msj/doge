@@ -53,6 +53,7 @@ export type CheckoutViewV1 = {
 
 export type EngineOnboardingFailureV1 = {
   readonly code: string;
+  readonly stage?: string;
   readonly retryAfterMs?: number;
 };
 

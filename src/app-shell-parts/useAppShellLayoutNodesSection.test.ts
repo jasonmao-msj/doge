@@ -544,7 +544,10 @@ describe("useAppShellLayoutNodesSection quick switcher wrapper behavior", () => 
       openNewConversation: true,
     }));
 
-    await waitFor(() => expect(fixture.setActiveEngine).toHaveBeenCalledWith("claude"));
+    await waitFor(() => expect(fixture.setActiveEngine).toHaveBeenCalledWith("claude", {
+      ensureRuntime: true,
+      providerProfileId: "doge-token-matrix",
+    }));
     expect(fixture.closeSettings).toHaveBeenCalled();
     expect(fixture.handleOpenHomeChat).toHaveBeenCalled();
   });
@@ -561,7 +564,10 @@ describe("useAppShellLayoutNodesSection quick switcher wrapper behavior", () => 
     }));
 
     await waitFor(() => expect(activateAccountEngineMock).toHaveBeenCalledWith("codex"));
-    await waitFor(() => expect(fixture.setActiveEngine).toHaveBeenCalledWith("codex"));
+    await waitFor(() => expect(fixture.setActiveEngine).toHaveBeenCalledWith("codex", {
+      ensureRuntime: true,
+      providerProfileId: "doge-token-matrix",
+    }));
     expect(fixture.closeSettings).toHaveBeenCalled();
     expect(fixture.handleOpenHomeChat).toHaveBeenCalled();
   });

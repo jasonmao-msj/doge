@@ -42,6 +42,7 @@ const DARK_THEME_PRESET_NORD: &str = "vscode-nord";
 const DARK_THEME_PRESET_CATPPUCCIN_MOCHA: &str = "vscode-catppuccin-mocha";
 const DARK_THEME_PRESET_TOKYO_NIGHT: &str = "vscode-tokyo-night";
 const DARK_THEME_PRESET_ROSE_PINE: &str = "vscode-rose-pine";
+const PRODUCT_MANAGED_ENGINE_IDS: [&str; 3] = ["claude", "codex", "kimi"];
 
 fn sanitize_ui_scale(scale: f64) -> f64 {
     if !scale.is_finite() || scale < UI_SCALE_MIN || scale > UI_SCALE_MAX {
@@ -202,6 +203,24 @@ fn sanitize_enabled_builtin_agent_ids(settings: &mut AppSettings) {
     );
 }
 
+fn sanitize_disabled_cli_engines(settings: &mut AppSettings) {
+    let mut seen = HashSet::new();
+    settings.disabled_cli_engines = settings
+        .disabled_cli_engines
+        .iter()
+        .filter_map(|engine_id| {
+            let normalized = engine_id.trim();
+            if normalized.is_empty()
+                || PRODUCT_MANAGED_ENGINE_IDS.contains(&normalized)
+                || !seen.insert(normalized.to_string())
+            {
+                return None;
+            }
+            Some(normalized.to_string())
+        })
+        .collect();
+}
+
 pub(crate) fn resolve_window_theme_preference(settings: &AppSettings) -> String {
     if settings.theme == THEME_CUSTOM {
         return resolve_theme_preset_appearance(&settings.custom_theme_preset_id).to_string();
@@ -230,6 +249,7 @@ pub(crate) async fn get_app_settings_core(app_settings: &Mutex<AppSettings>) -> 
     settings.normalize_unified_exec_policy();
     settings.sanitize_runtime_pool_settings();
     settings.sanitize_engine_gates();
+    sanitize_disabled_cli_engines(&mut settings);
     sanitize_terminal_shell_path(&mut settings);
     sanitize_web_service_token(&mut settings);
     sanitize_custom_skill_directories(&mut settings);
@@ -283,6 +303,7 @@ pub(crate) async fn update_app_settings_core(
     normalized.experimental_collab_enabled = false;
     normalized.sanitize_runtime_pool_settings();
     normalized.sanitize_engine_gates();
+    sanitize_disabled_cli_engines(&mut normalized);
     sanitize_terminal_shell_path(&mut normalized);
     sanitize_web_service_token(&mut normalized);
     sanitize_custom_skill_directories(&mut normalized);
@@ -307,6 +328,7 @@ pub(crate) async fn restore_app_settings_core(
     normalized.normalize_unified_exec_policy();
     normalized.experimental_collab_enabled = false;
     normalized.sanitize_engine_gates();
+    sanitize_disabled_cli_engines(&mut normalized);
     sanitize_terminal_shell_path(&mut normalized);
     sanitize_web_service_token(&mut normalized);
     sanitize_custom_skill_directories(&mut normalized);
@@ -413,19 +435,19 @@ mod tests {
     use super::{
         app_settings_change_requires_codex_restart, get_app_settings_core,
         get_codex_unified_exec_external_status_core, resolve_window_theme_preference,
-        restore_codex_unified_exec_official_default_core, sanitize_canvas_width_mode,
-        sanitize_dark_theme_preset_id, sanitize_layout_mode, sanitize_light_theme_preset_id,
-        sanitize_theme, sanitize_theme_preset_id, sanitize_ui_scale,
-        set_codex_unified_exec_official_override_core, take_settings_recovery_notice_core,
-        take_workspaces_recovery_notice_core, update_app_settings_core, validate_ui_scale,
-        SettingsRecoveryNotice, WorkspacesRecoveryNotice, DARK_THEME_PRESET_CATPPUCCIN_MOCHA,
-        DARK_THEME_PRESET_DRACULA, DARK_THEME_PRESET_GITHUB, DARK_THEME_PRESET_GITHUB_DIMMED,
-        DARK_THEME_PRESET_MODERN, DARK_THEME_PRESET_MONOKAI, DARK_THEME_PRESET_NORD,
-        DARK_THEME_PRESET_ONE_DARK_PRO, DARK_THEME_PRESET_PLUS, DARK_THEME_PRESET_ROSE_PINE,
-        DARK_THEME_PRESET_SOLARIZED, DARK_THEME_PRESET_TOKYO_NIGHT, LIGHT_THEME_PRESET_AYU,
-        LIGHT_THEME_PRESET_CATPPUCCIN_LATTE, LIGHT_THEME_PRESET_EVERFOREST,
-        LIGHT_THEME_PRESET_GITHUB, LIGHT_THEME_PRESET_MODERN, LIGHT_THEME_PRESET_PLUS,
-        LIGHT_THEME_PRESET_ROSE_PINE_DAWN, LIGHT_THEME_PRESET_SOLARIZED,
+        restore_app_settings_core, restore_codex_unified_exec_official_default_core,
+        sanitize_canvas_width_mode, sanitize_dark_theme_preset_id, sanitize_layout_mode,
+        sanitize_light_theme_preset_id, sanitize_theme, sanitize_theme_preset_id,
+        sanitize_ui_scale, set_codex_unified_exec_official_override_core,
+        take_settings_recovery_notice_core, take_workspaces_recovery_notice_core,
+        update_app_settings_core, validate_ui_scale, SettingsRecoveryNotice,
+        WorkspacesRecoveryNotice, DARK_THEME_PRESET_CATPPUCCIN_MOCHA, DARK_THEME_PRESET_DRACULA,
+        DARK_THEME_PRESET_GITHUB, DARK_THEME_PRESET_GITHUB_DIMMED, DARK_THEME_PRESET_MODERN,
+        DARK_THEME_PRESET_MONOKAI, DARK_THEME_PRESET_NORD, DARK_THEME_PRESET_ONE_DARK_PRO,
+        DARK_THEME_PRESET_PLUS, DARK_THEME_PRESET_ROSE_PINE, DARK_THEME_PRESET_SOLARIZED,
+        DARK_THEME_PRESET_TOKYO_NIGHT, LIGHT_THEME_PRESET_AYU, LIGHT_THEME_PRESET_CATPPUCCIN_LATTE,
+        LIGHT_THEME_PRESET_EVERFOREST, LIGHT_THEME_PRESET_GITHUB, LIGHT_THEME_PRESET_MODERN,
+        LIGHT_THEME_PRESET_PLUS, LIGHT_THEME_PRESET_ROSE_PINE_DAWN, LIGHT_THEME_PRESET_SOLARIZED,
         LIGHT_THEME_PRESET_TOKYO_DAY, UI_SCALE_DEFAULT,
     };
     use crate::types::{AppSettings, CodexUnifiedExecPolicy};
@@ -822,6 +844,59 @@ mod tests {
             sanitized.enabled_curated_skill_ids,
             vec!["lazy-senior-dev".to_string(), "review2".to_string()]
         );
+    }
+
+    #[tokio::test]
+    async fn settings_core_forces_product_managed_engines_visible() {
+        let test_root = env::temp_dir().join(format!(
+            "doge-product-engine-visibility-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&test_root);
+        fs::create_dir_all(&test_root).unwrap();
+        let settings_path = test_root.join("settings.json");
+
+        let mut legacy = AppSettings::default();
+        legacy.disabled_cli_engines = vec![
+            "claude".to_string(),
+            "codex".to_string(),
+            "kimi".to_string(),
+            " grok ".to_string(),
+            "grok".to_string(),
+            "opencode".to_string(),
+        ];
+
+        let read = get_app_settings_core(&Mutex::new(legacy.clone())).await;
+        assert_eq!(
+            read.disabled_cli_engines,
+            vec!["grok".to_string(), "opencode".to_string()]
+        );
+
+        let current = Mutex::new(AppSettings::default());
+        let updated = update_app_settings_core(legacy.clone(), &current, &settings_path)
+            .await
+            .unwrap();
+        assert_eq!(
+            updated.disabled_cli_engines,
+            vec!["grok".to_string(), "opencode".to_string()]
+        );
+
+        restore_app_settings_core(&legacy, &current, &settings_path)
+            .await
+            .unwrap();
+        let restored = get_app_settings_core(&current).await;
+        assert_eq!(
+            restored.disabled_cli_engines,
+            vec!["grok".to_string(), "opencode".to_string()]
+        );
+
+        let persisted: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&settings_path).unwrap()).unwrap();
+        assert_eq!(
+            persisted.get("disabledCliEngines"),
+            Some(&serde_json::json!(["grok", "opencode"]))
+        );
+        let _ = fs::remove_dir_all(&test_root);
     }
 
     #[tokio::test]

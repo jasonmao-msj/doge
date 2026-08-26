@@ -293,15 +293,13 @@ impl KimiSession {
     }
 
     fn build_command(&self, params: &SendMessageParams) -> Result<Command, String> {
-        let bin = if let Some(ref custom) = self.bin_path {
-            custom.clone()
-        } else {
-            crate::backend::app_server::find_cli_binary("kimi", None)
-                .map(|p| p.to_string_lossy().to_string())
-                .unwrap_or_else(|| "kimi".to_string())
-        };
-
+        let launch = crate::engine::kimi_launch::resolve_kimi_launch_context(
+            self.bin_path.as_deref(),
+            self.home_dir.as_deref().map(std::path::Path::new),
+        )?;
+        let bin = launch.binary.to_string_lossy().to_string();
         let mut cmd = crate::backend::app_server::build_command_for_binary(&bin);
+        launch.apply_environment(&mut cmd);
         cmd.current_dir(&self.workspace_path);
         cmd.arg("--output-format");
         cmd.arg("stream-json");
@@ -349,10 +347,6 @@ impl KimiSession {
         };
         cmd.arg("--prompt");
         cmd.arg(&safe_text);
-
-        if let Some(home) = self.home_dir.as_ref() {
-            cmd.env("KIMI_CODE_HOME", home);
-        }
 
         cmd.stdin(Stdio::null());
         cmd.stdout(Stdio::piped());

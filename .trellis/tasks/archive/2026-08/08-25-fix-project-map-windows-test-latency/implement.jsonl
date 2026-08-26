@@ -1,0 +1,4 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "测试 scope 与 Windows batch 稳定性"}
+{"file": "openspec/changes/stabilize-project-map-windows-test-latency/design.md", "reason": "leaf-owned test design"}
