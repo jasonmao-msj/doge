@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 3
+- **Total Sessions**: 4
 - **Last Active**: 2026-08-26
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~103 | Active |
+| `journal-1.md` | ~136 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 4 | 2026-08-26 | 收口 doge 更新版本记录 | `c360482a7` | `codex/enable-doge-updater` |
 | 3 | 2026-08-26 | 启用 doge 远端更新并归档 OpenSpec | `09692cd2f`, `dd3bf2e32` | `codex/enable-doge-updater` |
 | 2 | 2026-08-25 | Fix Codex managed CLI routing | `c661f0162` | `codex/fix-codex-managed-routing` |
 | 1 | 2026-08-19 | 修复本地开发内置引擎资源 | `0386e1de1`, `f2f1e264e` | `codex/fix-local-dev-managed-engine-resources` |

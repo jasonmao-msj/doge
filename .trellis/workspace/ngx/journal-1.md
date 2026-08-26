@@ -101,3 +101,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 收口 doge 更新版本记录
+
+**Date**: 2026-08-26
+**Task**: 收口 doge 更新版本记录
+**Branch**: `codex/enable-doge-updater`
+
+### Summary
+
+恢复版本号到 0.1.0，删除一次性发布 workflow，保留 updater 60 秒检查超时并补充慢速网络回归测试；精简 CHANGELOG.md 为单条 doge v0.1.0 记录。验证通过 focused Vitest 25 tests、targeted ESLint、npm run typecheck、npm run check:branding、git diff --check。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c360482a7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
