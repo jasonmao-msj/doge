@@ -21,7 +21,7 @@ jobs:
     name: Publish existing Windows artifact
     runs-on: ubuntu-latest
     steps:
-      - name: Resolve and verify source release run
+      - name: Resolve and verify source Windows job
         id: source
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -35,17 +35,21 @@ jobs:
             exit 1
           fi
 
-          CONCLUSION=$(gh api \
+          RUN_CONCLUSION=$(gh api \
             "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" \
             --jq '.conclusion')
-          if [ "$CONCLUSION" != "success" ]; then
-            echo "Source release.yml run is not successful: $CONCLUSION" >&2
+          WINDOWS_CONCLUSION=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}/jobs?per_page=100" \
+            --jq '[.jobs[] | select(.name == "doge windows (x64)") | .conclusion] | if length == 1 then .[0] else "" end')
+          if [ "$WINDOWS_CONCLUSION" != "success" ]; then
+            echo "Source formal build_windows job is not successful: ${WINDOWS_CONCLUSION:-missing} (run conclusion: ${RUN_CONCLUSION:-unknown})" >&2
             exit 1
           fi
 
           SOURCE_SHA=$(gh api \
             "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" \
             --jq '.head_sha')
+          echo "run_conclusion=$RUN_CONCLUSION" >> "$GITHUB_OUTPUT"
           echo "head_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Download Windows artifact from release.yml
