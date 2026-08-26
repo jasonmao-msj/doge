@@ -627,6 +627,7 @@ mod runtime_oauth;
 mod runtime_operations;
 mod runtime_product;
 mod runtime_product_details;
+mod runtime_product_keys;
 mod runtime_product_models;
 #[cfg(test)]
 mod runtime_product_tests;

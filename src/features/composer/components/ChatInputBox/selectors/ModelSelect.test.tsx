@@ -633,7 +633,7 @@ describe("ModelSelect", () => {
     expect(onAddModel).toHaveBeenCalledWith("codex");
   });
 
-  it("renders a root footer action that opens CLI settings", async () => {
+  it("hides the legacy CLI settings footer from the product model menu", async () => {
     const user = userEvent.setup({ pointerEventsCheck: 0 });
     const onOpenCliSettings = vi.fn();
 
@@ -670,13 +670,10 @@ describe("ModelSelect", () => {
 
     await user.click(screen.getByRole("button", { name: "chat.currentModel:Opus 4.8" }));
 
-    const cliSettingsItem = await screen.findByRole("menuitem", {
-      name: "models.openCliSettings",
-    });
-    expect(cliSettingsItem).toBeTruthy();
-
-    fireEvent.click(cliSettingsItem);
-    expect(onOpenCliSettings).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("menuitem", { name: "models.openCliSettings" }),
+    ).toBeNull();
+    expect(onOpenCliSettings).not.toHaveBeenCalled();
   });
 
   it("prefers active localStorage mapping over parent-provided tier labels", () => {

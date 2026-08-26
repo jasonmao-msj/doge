@@ -24,6 +24,7 @@
 - Public settings 只代表业务开关，不是 execution authority。每个 remote operation 必须同时通过 closed `token2api-account-authority/1.0.0` descriptor 的 capability bit 与该 operation 所需 guarantee set；descriptor缺失、unknown key/guarantee、duplicate guarantee、unsupported version 或 hard-expired cache一律只关闭Account action，Local Mode不变。
 - Authority descriptor exact production route 已冻结为 `GET /api/v1/desktop/v1/authority`，token2api handler owner 为 `backend/internal/handler/setting_handler.go::GetAccountAuthorityDescriptor`，Doge consumer 为 `src-tauri/src/account/authority.rs::ACCOUNT_AUTHORITY_DESCRIPTOR_PATH`。不得由renderer/env/localStorage注入或覆盖 path，也不得以current public settings替代descriptor；route缺失、schema漂移或guarantee不足必须fail closed。
 - Existing-key Desktop surface 已冻结为 `GET /api/v1/desktop/v1/api-keys` 与 `POST /api/v1/desktop/v1/api-keys/:id/handoffs`。handoff request exact fields=`audience, device_id, recipe_id, recipe_version`，还必须携带 `Authorization: Bearer …` 与 `Idempotency-Key`；response中的raw `secret`只能由Native HTTP adapter消费并立即写入OS vault。
+- Product managed-key create 是 outcome-unknown mutation：`POST /api/v1/keys` 若返回 `protocolMismatch`、transport `serviceUnavailable` 或 success envelope 但 `id/group_id/one-time secret` 不可信，Native MUST 在同一次 `account_product_v1_prepare` 内 bounded re-list `GET /api/v1/keys?group_id=…`，只接受 exact deterministic name + group + active + positive id，再经 owner-authorized Desktop handoff 取 secret。reconcile miss 才返回原 create failure；禁止 renderer 通过第二次 Retry 才观察已提交的 side effect。
 - Durable metadata：`account-v1.sqlite3`；durable secrets：Release 为 OS credential vault，`cfg(all(debug_assertions,target_os="macos"))` 适用下文 development file vault；access token：Rust memory only。
 - Codex child credential：仅当 `providerProfileId=doge-token-matrix` 时向该子进程注入 `OPENAI_API_KEY`。
 
@@ -61,6 +62,7 @@
 | vault locked/unavailable | account capability disabled，`vaultUnavailable` | 完整可用 |
 | mutation epoch/fingerprint mismatch | native boundary reject before side effect | 完整可用 |
 | duplicate semantic intent | reuse已有operation/reconcile，不重复dispatch | 完整可用 |
+| product key create 已提交但 response 不可信 | exact authoritative re-list + Desktop handoff；同一次 prepare 继续 | 不展示中间 terminal error |
 | logout A → login B | managed key仅按authority/account/device三元组恢复 | 不跨账号注入 |
 | config concurrent edit | `concurrentEdit` + replan | 原文件不覆盖 |
 | N-file write failure | rollback；失败则 `rollbackIncomplete` | 非账号功能可用 |
@@ -96,6 +98,7 @@
 - Frontend product navigation：signed-out exact visible tabs=`login/register`；recovery只由login内button进入；authenticated exact tabs=`overview/usage/security`；M0 Settings页面不存在scenario selector/raw scenario id/preview label。
 - Frontend dialog/bubble：configuration dialog初始focus落在安全普通关闭action，禁止落在help trigger并自动展开tooltip；M0与Real均覆盖ordinary close/ack→App-level bubble→reopen same task→bubble `×` hard dismiss。
 - Rust：origin fixed；descriptor frozen production path、closed schema、operation→guarantee inventory、missing guarantee；existing-key list/handoff exact path/body/idempotency、renderer response secret scan与vault commit；vault purpose allowlist；loopback wrong state/host/path/oversize/timeout/cancel-late/replay/binding matrix；Authority begin/exchange field whitelist + stable idempotency retry；SQLite v1→v7 migration/external-flow secret scan/restart expiry/terminal conflict；isolation tuple；semantic retry；epoch/fingerprint correlation；config preserves unrelated data；semantic detail no path/secret；journal crash recovery/verification；local logout key preservation。
+- Rust product prepare：create valid response direct success；create `protocolMismatch`/invalid-success/transport-unknown 后 exact re-list + handoff；wrong group/name/status/id不得被 reconcile 选中；re-list/handoff failure保留 typed safe stage且不写 vault/config。
 - Feature-off：focused frontend test证明build off不可被storage覆盖；`cargo test --no-default-features`证明Native account-off binary仍编译，startup测试证明不创建`account-v1.sqlite3`。
 - Cross-layer：`command_registry.rs` exact command mapping、`src/services/tauri/account.ts` payload camelCase、production Settings composition uses Real gateway、wakeup event passes validator then authoritative read。
 - Required commands：focused Vitest、`cargo test --manifest-path src-tauri/Cargo.toml account:: --lib`、`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`。
@@ -870,7 +873,7 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 
 ### 1. Scope / Trigger
 
-- Trigger：修改 `ProductAccountAppGate`、product checkout checkpoint、product catalog cache、`AccountRuntime::product_prepare`、Kimi managed provider merge 或 `verify_applied_plan`。
+- Trigger：修改 `ProductAccountAppGate`、product checkout checkpoint、product catalog cache、`AccountRuntime::product_prepare`、`runtime_product_keys.rs`、Kimi managed provider merge 或 `verify_applied_plan`。
 - 目标：支付订单先进入 `paid`、Composite subscription 后置生效时，App 必须等待权威 entitlement 并自动继续 prepare；Kimi JSON registry 必须按自身 schema 验证，不能误走 Codex TOML verifier。
 
 ### 2. Signatures
@@ -879,6 +882,7 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 - Catalog read：`AccountProductOnboardingClientV1.catalog({ forceRefresh?: boolean })`；`forceRefresh=true` MUST bypass process cache。
 - Native checkpoint：`product_checkout_checkpoint(status, expires_at, updated_at) -> Option<(status, expires_at)>`；`paid` 投影为 credential-free `processing` checkpoint，expiry 至少为 `updated_at + PRODUCT_FULFILLMENT_GRACE_SECONDS`。
 - Remote credential identity：`managed_product_key_name(group_id, device_id) -> "Doge Managed <group_id> <sha256-prefix>"`；Authority list 已按 authenticated account scope，name 只能使用 stable `group_id + hashed device_id`，不得包含 raw device id 或 mutable plan copy。
+- Create reconcile owner：`runtime_product_keys.rs::resolve_product_key_secret(authority, access, group_id, key_name, device_id, operation_id) -> Result<String, Value>`；selector `active_product_key_id(&ProductApiKeyListWire, group_id, key_name) -> Option<i64>` 只接受 positive id、exact group、exact deterministic name 与 case-insensitive `active` status。
 - Checkout polling：`productCheckoutPollDelayMs(attempt) -> 2s..15s`；同一 `checkoutId + pending|processing + expiresAt` 由一个 effect 持有 attempt，`retryAfterMs` 可延长但不得缩短 delay。
 - Kimi registry target：`~/.doge/config.json#/kimi/providers/doge-token-matrix`，owner fields 为 `source="doge-account"`、`baseUrl="https://token-matrix.com/v1"`、`providerType="openai"`，且 `/kimi/current="doge-token-matrix"`。
 - Kimi verifier：`verify_applied_plan(plan)` 的 `file.label == "Doge Kimi provider registry"` 分支 MUST 使用 `serde_json::from_str`；只有其他 Codex TOML target 才使用 `toml::from_str`。
@@ -890,6 +894,7 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 - recoverable `readCheckout` failure MUST 保留 checkout surface，按 `max(backoff, retryAfterMs)` 继续 authoritative read；成功后清 scoped retry feedback。禁止一次 network failure 永久停止 reconciliation。
 - same-session paid 与 restart 恢复的 paid checkout MUST 共用同一 fulfillment path。Native checkpoint 只能保存 checkout id/status/expiry/isolation tuple；不得保存 plan 文案、payment action、secret 或 entitlement truth。
 - product managed key MUST 在 authenticated account scope 内按 `Composite group + device fingerprint` 复用。plan name/description/price/validity 变化不得改变 credential identity；另一 device 必须得到不同 canonical key name，避免 raw credential、rotation 或 revoke 跨设备耦合。
+- `POST /api/v1/keys` 是 outcome-unknown mutation。valid `id + group_id + one-time secret` 可直接继续；`protocolMismatch`、transport `serviceUnavailable` 或 success envelope 缺少可信字段时，Native MUST 在同一次 `product_prepare` 内做一次 authoritative re-list。exact active key命中后 MUST 走 Desktop handoff并继续；list miss 返回原 create failure，list/handoff typed failure返回 `stage=productPrepareReconcile`。reconcile 前不得写 vault/config，且不得由 renderer 自动/手工第二次 prepare 才观察已提交副作用。
 - fulfillment 达到 bounded deadline、catalog fail 或 prepare fail 时，Gate MUST 保留 fulfillment recovery surface 与明确 retry；retry 继续权威 reconciliation，不得隐式重新 checkout。
 - entitlement active 后 `product_prepare` MUST 对 Codex、Claude、Kimi 逐引擎写入同一个 account/device scoped secret owner，再应用各自 provider config；全部配置、model catalog 与 ready projection成功后才清 product checkpoint。
 - Kimi managed merge MUST replace entire `doge-token-matrix` provider entry，并移除大小写/分隔符归一化后等价于 `apiKey`、`token`、`secret` 的 legacy secret fields。`config.json` 不得持久化 secret；launch-only owner `KIMI_CODE_HOME/config.toml` 可由 Native 从 vault 生成 owner-only `api_key`。
@@ -909,6 +914,8 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 | entitlement 在 backoff 内 active | prepare 三引擎；成功后清 checkpoint | 自动进入 AppShell |
 | restart 时 paid checkpoint 存在 | authoritative order read；恢复 paid truth | 直接进入 `fulfilling`，不回套餐 |
 | fulfillment deadline 到达 | checkpoint 保留到 server grace expiry | 显示 delayed + retry，不重复购买 |
+| managed key create 已提交、response 为 `protocolMismatch` | exact re-list 命中后 Desktop handoff；同一次 prepare 继续 | 不出现 terminal error，不要求 Retry |
+| create reconcile 返回 wrong group/name/status 或 miss | 不选择该 key；返回原 typed create failure | Gate 保留恢复面，零 vault/config 假 ready |
 | Kimi registry 含 legacy `api_key` | managed merge 删除 secret field | JSON verifier通过；secret只在 vault/runtime home |
 | Kimi current/baseUrl/providerType 漂移 | verifier reject + transaction rollback | `productPrepare` typed retry failure |
 | Kimi JSON 被 Codex TOML verifier处理 | 禁止；regression test必须失败定位 | 不得把正确 JSON 回滚 |
@@ -918,11 +925,13 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 
 - Good：payment poll 先读到 `paid`，两次 forced catalog 后 subscription active，三引擎 prepare 完成并自动进入 AppShell；checkpoint 随成功清除。
 - Good：same account/device/group 重复 prepare 复用同一 hashed-device key name；同 group 的第二 device 使用不同 name；plan copy 变化不创建新 identity。
+- Good：create 已在 token2api 提交，但 response 不能反序列化；Native 的同请求 re-list 命中 exact active key、handoff secret并继续配置，renderer只观察 preparing → ready。
 - Base：首次 catalog 已有 active entitlement，跳过 checkout/fulfillment 并直接 prepare。
 - Base：poll 第一次返回 pending、第二次 network failure、第三次 paid；attempt 依次使用 2s/3s/4s cadence 且不离开 checkout surface。
 - Bad：`paid -> loadCatalog()` 命中 30 秒 cache，看到 inactive 后 `setPhase("subscription")`，让用户以为需要再次购买。
 - Bad：把 `refunded` 映射为 `paid`，或让 `setCheckout({...snapshot})` 触发 effect cleanup 后把 attempt 重置为零。
 - Bad：以 plan display name 查找 remote key，导致 plan rename 创建新 key，或不同 device handoff 同一个 canonical product key。
+- Bad：create `protocolMismatch` 直接返回 renderer，依赖用户点 Retry 后第二次 prepare 才从 list 发现刚创建的 key。
 - Bad：paid checkpoint 立即清除，App restart 丢失“已经付款、等待履约”的真实状态。
 - Bad：Kimi JSON registry 落到 default TOML branch，或 merge 只覆盖非 secret 字段而保留旧 `apiKey`。
 
@@ -932,6 +941,7 @@ file backend 与 OS backend 是互斥 owner；调用方只依赖同一 `DurableA
 - React checkout lifecycle MUST 使用 fake timers 证明：pending snapshot 不重置 attempt、transient failure 后按下一档 delay 自动重试、paid 进入 fulfillment、absolute expiry 后零 additional Authority reads。
 - React visual contract MUST 锁定 product stylesheet owner、structured plan card（plan/price/validity/engine/feature/CTA）与 bounded logo；narrow CSS breakpoint 不得把字段拼成一行。
 - Rust checkout tests MUST 锁定 `paid -> processing` grace checkpoint、`refunded/partially_refunded -> failed`、restart read 与 prepare success cleanup；managed key name 对 same device stable、cross-device/group distinct 且不含 raw device/plan copy；secret scan断言 checkpoint无 payment/plan/credential字段。
+- Rust product-key tests MUST 锁定 create response exact group/secret validation与 reconcile selector；wrong group/name/status/non-positive id全部拒绝。fake Authority integration SHOULD 覆盖 create side effect committed + malformed response → same prepare re-list + handoff，断言 exactly one create、零 renderer secret、ready 前才写 vault/config。
 - Rust configuration tests MUST 构造 legacy Kimi secret aliases，断言 merge 后 serialized JSON 不含 secret，并直接调用 `verify_applied_plan` 证明 Kimi-specific JSON branch成功；current/base URL/provider type 漂移分别 fail closed。
 - Required commands：focused Vitest、`cargo test --manifest-path src-tauri/Cargo.toml --lib account::`、`cargo check --manifest-path src-tauri/Cargo.toml --lib`、`npm run typecheck`、target ESLint、`npm run check:runtime-contracts`、OpenSpec strict validation。
 
@@ -951,6 +961,11 @@ if (checkout.status === "paid") {
 let parsed: toml::Value = toml::from_str(&content)?;
 ```
 
+```rust
+// The server may already have committed the deterministic key.
+Err(error) => return product_failure(authority_failure(error, "productPrepare")),
+```
+
 #### Correct
 
 ```ts
@@ -963,6 +978,27 @@ if (catalog.entitlement.status === "active") await prepare(generation);
 if file.label == "Doge Kimi provider registry" {
     let root: serde_json::Value = serde_json::from_str(&content)?;
     verify_kimi_owner_and_secret_absence(&root)?;
+}
+```
+
+```rust
+match authority.create_product_api_key(&access, group_id, &key_name, operation_id).await {
+    Ok(created) if valid_created_product_key(&created, group_id) => created.secret,
+    outcome => {
+        let create_failure = match outcome {
+            Ok(_) => protocol_failure("productPrepare"),
+            Err(error) if matches!(error.safe.code.as_str(),
+                "protocolMismatch" | "serviceUnavailable") => {
+                authority_failure(error, "productPrepare")
+            }
+            Err(error) => return product_failure(authority_failure(error, "productPrepare")),
+        };
+        let listed = authority.product_api_keys(&access, group_id).await?;
+        let Some(key_id) = active_product_key_id(&listed, group_id, &key_name) else {
+            return product_failure(create_failure);
+        };
+        authority.handoff_api_key(&access, key_id, device_id, operation_id).await?.secret
+    }
 }
 ```
 
@@ -989,6 +1025,8 @@ if file.label == "Doge Kimi provider registry" {
 - Read-only refresh command：`account_product_v1_models() -> { ok, value: { models[], fetched_at } }`；必须限制 main window、读取当前 account scope 的 managed key、网络请求前释放 account state lock。
 - Frontend refresh owner：`refreshProductModelsV1({ force? })`；30s freshness、same-subscription single in-flight、last-known-good、focus/visibility + 60s visible fallback。
 - Product toolchain owner：`prepareProductEngineProvisioningV1({ onEngine? })`；Codex/Claude Code/Kimi 复用 `account_engine_v1_toolchain`（Kimi bundled 产物来自 MoonshotAI/kimi-code GitHub release zip）。
+- Product prepare convergence：`prepareProductWithBoundedRetryV1(client.prepare, { isCurrent, wait?, onAttemptFailure? })`；schedule=`[0, 1000, 2000, 4000, 8000, 15000]`，最多 6 次。只重试无 cooldown 的 `serviceUnavailable`/thrown bridge result；generation stale、server cooldown、non-retryable error 或 attempts exhausted 停止。
+- Product visibility owner：`PRODUCT_RUNTIME_ENGINE_IDS_V1 = ["codex", "claude", "kimi"]`；Rust `sanitize_disabled_cli_engines(&mut AppSettings)` 与 TypeScript `normalizeDisabledCliEngines(unknown)` MUST 使用同一 closed set 语义，read/update/restore 后 effective blacklist 均不得含 product ids。
 - Compatibility evidence：`engine × product model × real CLI payload`，至少覆盖 Codex Responses Agent payload、Claude Code Messages payload、Kimi stream-json Chat payload。
 - Current OpenAI price allowlist：`gpt-5.6-luna + gpt-5.6-sol + gpt-5.6-terra` 共享 `Doge 统一定价` GPT rule；三者保留 exact requested model identity。
 
@@ -996,6 +1034,7 @@ if file.label == "Doge Kimi provider registry" {
 
 - Home create-session、Shared Next Turn、Existing Native Session 的修改入口与 Account Center MUST 从同一个 refreshable product snapshot 读取 entitlement catalog，并复用同一个 compatibility helper 求 selected engine rows。product-ready 普通会话不得回落 legacy `ModelSelect` 的 Grok/OpenCode/provider/channel UI。
 - `ProductAccountAppGate.prepare` MUST 先完成 toolchain owner 再调用 `account_product_v1_prepare`。Codex/Claude/Kimi `choiceRequired` 在产品自动准备中选择 bundled；Kimi 与 Codex/Claude 一样从 bundled-engines manifest 解析（external 缺失选 bundled、external 更新静默复用），缺失时不得回退 npm 在线安装。任一失败不得写 provider config 或进入 ready。
+- toolchain success 后 Gate MUST 清除 specific `preparingEngine`，remote `account_product_v1_prepare` 只显示 Doge owner。无 `retryAfterMs` 的 `serviceUnavailable`/bridge failure MAY 按固定 schedule 最多 6 次自动幂等 convergence；连续失败、cooldown、generation stale MUST stop，禁止无限 retry 或旧 lifecycle side effect。每次失败通过 `appendRendererDiagnostic("account/product-prepare-attempt-failed", { code, stage, attempt, maxAttempts, retryDelayMs })` 记录 safe evidence。
 - Native MUST preserve upstream order and separate catalog `id`、user `display_name`、callable `model`。`model/runtime_model` 缺失时回退公开 `id`；禁止从 display name 或 admin-only account mapping 猜调用名。
 - `compatible_engines` 缺失时使用 stable family fallback：GPT/OpenAI→Codex、Claude/Anthropic→Claude Code、Kimi/Moonshot/K3→Kimi CLI、豆包/Ark Coding→三种 managed adapter；unknown family fail closed。显式空/unknown-only集合时 row 不可选。`capabilities` 有 positive conversation value 时优先；image/audio/realtime/embedding-only row必须过滤，legacy catalog用 bounded negative heuristic。
 - 目录刷新 pending/error MUST 保留 last-known-good；成功刷新删除当前 model 时，在下一次发送前按同一 target repair contract 原子收敛。
@@ -1008,7 +1047,7 @@ if file.label == "Doge Kimi provider registry" {
 - UI selected target、readiness/accessibility projection、persisted `modelCatalogEntryId` 与 dispatched runtime `model` MUST 同源；不得出现 trigger 正确但 readiness/global model 仍旧的 split truth。
 - Native product picker 的 `nativeAtomicSelection` 只负责保留 display/catalog identity；`onSelectModel` MUST 持久化 callable runtime model。managed Kimi active thread MUST 允许 catalog 外 Composite alias（当前“豆包”），禁止 `getEffectiveSelectedModelId` 因 local CLI catalog 未收录而 repair 回 `gpt-5.5`。
 - Runtime/provider failure MUST 保留 exact selection 并 fail closed；禁止 silent engine/model/provider fallback。
-- product-ready Engine Management 的 Codex/Claude/Kimi local/official activation MUST locked/disabled，不得产生 switch callback；允许保留 raw global file edit，仅用于 terminal direct launch，不能改变 product target。
+- shipping product MUST 隐藏 Engine Management 的 Settings navigation、model-menu footer 与 legacy deep link；Codex/Claude/Kimi 的 local/official activation、CLI 启停和 raw global file editor 都不得成为用户可达 surface。Rust 与 renderer settings normalization MUST 从 effective `disabledCliEngines` 移除三者，旧 blacklist 不能隐藏 product engines。
 - `/v1/models` 只证明 catalog entitlement；三种 endpoint 的 minimal 200 只证明 protocol adapter basic reachability。只有真实 CLI 发出的 system/tools/stream/client headers payload 完成 terminal response，才可标记对应组合 E2E ready。
 - token2api production `allow_messages_dispatch`、`claude_code_only/fallback`、model routing/account pool 均是 Release prerequisites；Doge 不得通过伪造/隐藏 client identity 绕过 server policy。
 
@@ -1020,7 +1059,7 @@ if file.label == "Doge Kimi provider registry" {
 | product-ready Native conversation 打开 picker | 与 Home 相同的右侧 panel，只显示 Codex/Claude/Kimi；选择固定 managed target | existing binding 仍走 continuation/new session |
 | 旧 Doge same-id entry 无 `managedRevision`/revision 过期 | readiness fail closed；authenticated prepare 完整替换 managed entry | local/custom sibling providers 保留，legacy secret 被清理 |
 | 用户在 terminal 直接运行 Codex/Claude/Kimi | 读取用户 global CLI config | Doge isolated home/private settings 不写入 global home |
-| product-ready Settings local row | 置灰锁定，无 use/cancel；edit 可保留 | edit 仅影响 terminal-owned file，不改变 product target |
+| product-ready Settings / model menu | 不渲染 Engine Management entry/footer；legacy deep link 回退 Basic Settings | 三 product engines 继续固定 managed target |
 | product model catalog ready | 不渲染固定 footer，模型列表占满剩余高度 | refreshing/stale 才显示 transient status |
 | Account 可用模型 collapsed/expanded | collapsed 只显示 vendor + count；click/keyboard 展开真实 display names，再次操作收起 | 不把所有 model name 拼成截断单行 |
 | billing 无 invoice capability | 只显示 order row，不出现 invoice/download copy | 不用 unsupported 提示暴露未提供功能 |
@@ -1028,8 +1067,10 @@ if file.label == "Doge Kimi provider registry" {
 | Kimi + 豆包 Native send | UI/per-thread/runtime/config alias/`--model`=`豆包`；token2api account 内部再映射 `ark-code-latest` | UI 显示豆包但请求 `gpt-5.5`，或直发 private model 导致 Composite 400 |
 | upstream 新增 `claude-opus-4-8` | bounded refresh 后进入同一 snapshot | 不修改 Doge exact-id manifest |
 | refresh pending / failure | 保留 rows，显示 refreshing/stale + retry | 不清空 Composer / Account Center |
-| fresh device 缺 Kimi | typed install + post-install version verify | 完成后才继续 provider prepare |
-| Kimi 已安装 | 零 installer mutation | 直接继续 provider prepare |
+| fresh device 无本地 Kimi | inspect managed Kimi + select verified bundled binary | 不发 npm install/update mutation |
+| bundled Kimi 缺失或校验失败 | typed bundle failure，停止在 Gate | 回退 PATH/npm 或假 ready |
+| remote product prepare 前若干次 `serviceUnavailable`、后续 success | 按 1/2/4/8/15s backoff，任一次 success 同一操作进入 AppShell | 过早展示 terminal error 再靠用户点击 |
+| remote product prepare 连续失败或 lifecycle stale | 最多 6 次/约30s；连续失败显示 recoverable error，stale 不发下一次 | 无限 retry / logout 后旧请求继续 mutation |
 | generic `/v1/messages` 为 200、Claude Code payload 400 | 保留 exact target typed failure并记录E2E阻塞 | NOT compatible；检查 client-sensitive routing |
 | minimal Responses 200、Codex Agent 两分钟无首包 | 保留 exact target typed failure并记录E2E阻塞 | NOT compatible；检查 tools/stream/Agent payload |
 | Kimi stream-json 返回 typed final | 正常 settle、runtime model evidence匹配 | compatible for that pair |
@@ -1039,6 +1080,7 @@ if file.label == "Doge Kimi provider registry" {
 
 - Good：production `/v1/models` 新增一个 valid text row 后，Native 保留 `display_name/model`，刷新 owner 一次发布给 panel、Composer 与 Account Center；选择与发送使用同一 target identity。
 - Good：product-ready Native 会话打开与 Home 相同的 panel；点击 Kimi model 生成 `providerProfileId="doge-token-matrix"` 且由既有 continuation/new-session owner 执行。
+- Good：fresh device 的 PATH 没有 Kimi；Product Gate 从 bundled-engines manifest 解析并验证 Kimi，与 Codex/Claude 一样选择 bundled 后才进入 remote prepare，整个流程零 npm mutation。
 - Good：Kimi Native 会话点选豆包后，Composer 保留 `modelCatalogEntryId="豆包"`，per-thread selection 与 command payload 同样使用公开别名“豆包”，hydrate 生成 bare + `doge/` alias。
 - Base：三个 engine 共享 upstream entitlement catalog 与 helper；上游可用 `compatible_engines` 收窄 subset，不需要客户端列举 id。
 - Base：Account vendor row 默认只显示数量，用户展开后才 mount 该 vendor 的 model list。
@@ -1046,6 +1088,7 @@ if file.label == "Doge Kimi provider registry" {
 - Bad：为获得 200 在 Doge 本地伪造非 Claude-Code User-Agent，绕过 token2api `ClaudeCodeOnly` policy。
 - Bad：某组合失败后自动改成 engine 默认 model，让用户看到的 Target 与计费/usage/runtime 不一致。
 - Bad：product-ready Native 会话仍渲染 Grok/OpenCode 或 provider profile picker；这会重新引入用户不需要理解的 local/expert channel。
+- Bad：bundled Kimi 不可用时静默回退 npm/PATH；或 remote product prepare 时仍保留 `preparingEngine="kimi"`，把 Authority 瞬时失败伪装成 Kimi toolchain failure。
 - Bad：只改 UI local state，不调用 `onSelectModel("豆包")`；AppShell/Kimi send 会从 local catalog/default 解析成 `gpt-5.5`。另一错误是把 account 内部 `ark-code-latest` 直接发给 Composite，服务会返回 400。
 
 ### 6. Tests Required
@@ -1054,18 +1097,30 @@ if file.label == "Doge Kimi provider registry" {
 - Account component：billing source/copy 无 invoice；vendor summary count 默认可见，model detail 初始不 mount，pointer/keyboard 展开后出现、再次点击消失。
 - Brand icon：`resolveProviderBrandIcon` 对 `豆包`、`doubao-entry`、`ark-code-latest` 全部返回本地 `doubao.png`；`ProviderBrandIconImg` 与 Product trigger component tests 断言 intrinsic + inline size、wrapper `overflow:hidden`，覆盖 consumer CSS `img { width:100%; height:100% }`。
 - Refresh coordinator：same-subscription coalescing、freshness skip、pending保留rows、success原子发布、failure stale、logout/account-switch stale settle不覆盖。
-- Product provisioning：Codex/Claude ready/choiceRequired/bundle failure；Kimi installed/missing plan blocked/install failed/post-verify failed；断言 provider prepare 只在 provisioning success 后调用。
+- Product provisioning：Codex/Claude/Kimi 均覆盖 bundled ready、external selected→bundled override、bundle failure 与 bridge reject；断言零 npm installer dependency，provider prepare 只在三者 provisioning success 后调用。
+- Product Gate lifecycle MUST 追加：多次 `serviceUnavailable` 后 ready 不渲染 error、delay schedule exact；连续失败最多 6 次；cooldown 只有 1 次；generation stale 不发下一次；diagnostic 保留 stage/attempt；remote prepare pending heading 为 Doge 而非 Kimi。
 - Composer regression：Home dynamic product mode；Shared removed-model selection 自动 repair并持久化 managed target；readiness/display/runtime identity 跟随 `selectedAtomicTarget`。
 - Native Kimi regression：product picker 点豆包调用 `onSelectModel("豆包")`；managed Kimi hook 保留 catalog 外 alias；local/unmanaged Kimi 仍遵循 CLI catalog repair。
 - Rust unit：display/runtime/engine metadata、upstream order/dedupe、non-conversation filtering、main-window IPC、managed product Claude Unicode model、Kimi Unicode bare+`doge/` alias。
 - Managed config regression：legacy same-id Codex/Claude/Kimi entry（stale revision、旧 endpoint、legacy secret）经三次 builder 后全部升级到 current revision；unrelated/local provider rows 保留；Claude/Kimi registry 不含 secret；Codex isolated TOML 必须 exact match current recipe。
-- Settings regression：product snapshot `ready` 时三种 local card 收到 managed lock；use/cancel 不渲染且 switch callback 不触发，edit 仍可用。product snapshot 非 ready 时保留 legacy Local Mode 行为。
+- Settings regression：sidebar 与 model menu 不渲染 Engine Management，`providers/vendors/permissions` deep link 回退 Basic Settings 且不 mount `VendorSettingsPanel`；fresh/legacy `disabledCliEngines` 都不能隐藏 Claude/Codex/Kimi。
 - Real E2E：当前 selectable catalog 对三 CLI 的 exact model/terminal evidence；失败不得被 minimal endpoint probe覆盖，并必须记录 upstream/config prerequisite。
 - Required commands（用户本次 L4）：全量 Vitest/Rust tests、full ESLint/typecheck、Rust check/build、runtime/engine contracts、OpenSpec strict、hot-dev visual/E2E。
 
 ### 7. Wrong vs Correct
 
 #### Wrong
+
+```ts
+// 只在某个 sidebar consumer 忽略 Kimi：其他 picker 与持久化仍把它视为 disabled。
+const visible = rows.filter((row) => row.id !== "kimi" || productReady);
+```
+
+```ts
+if (engineId === "kimi" && !isKimiOnPath()) {
+  await installKimiWithNpm();
+}
+```
 
 ```ts
 const models = STATIC_RELEASE_MODEL_IDS[selectedEngine];
@@ -1079,6 +1134,24 @@ POST /v1/messages minimal probe = 200
 ```
 
 #### Correct
+
+```ts
+const normalizedDisabledIds = persistedDisabledIds.filter(
+  (engineId) => !isProductManagedEngineId(engineId),
+);
+// Rust read/update/restore 执行等价 normalization；所有 consumer 只读 normalized settings。
+```
+
+```ts
+for (const engineId of ["codex", "claude-code", "kimi"] as const) {
+  const inspected = await managedToolchain.inspect(engineId);
+  if (!inspected.ok) return bundleFailure(engineId);
+  const resolved = inspected.value.selectedSource === "bundled"
+    ? inspected
+    : await managedToolchain.choose(engineId, "bundled", inspected.value);
+  if (!resolved.ok || resolved.value.status !== "ready") return bundleFailure(engineId);
+}
+```
 
 ```ts
 const catalog = productEntitlement.models; // refreshed upstream rows

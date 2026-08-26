@@ -25,6 +25,7 @@ import {
   readManagedEngineEntitlementsV1,
   subscribeManagedEngineEntitlementsV1,
 } from '../../../../account/runtime/engineEntitlementStore';
+import { PRODUCT_ENGINE_MANAGEMENT_USER_VISIBLE } from '../../../../account/runtime/productManagedEnginePolicy';
 import { ProviderBrandIconImg } from '../../../../vendors/components/ProviderBrandIconImg';
 import {
   PROVIDER_BRAND_ICON_SRC,
@@ -1459,7 +1460,7 @@ export const ModelSelect = memo(({
             )}
           </>
         )}
-        {onOpenCliSettings && (
+        {PRODUCT_ENGINE_MANAGEMENT_USER_VISIBLE && onOpenCliSettings && (
           <>
             <DropdownMenuSeparator />
             <div className="p-1.5 pt-1">

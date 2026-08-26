@@ -13,6 +13,8 @@ Doge 当前按 engine 展示权益、套餐和托管凭据，用户需要先理�
 - 将 composer 的 nested engine submenu 改为 Doge 原生右侧 engine + model 组合面板：engine 来自本地 registry，model entitlement、显示名与调用名来自上游统一 catalog；目录在 ready 后持续增量刷新，不再维护具体 model id 白名单。
 - 将账号中心收敛为一张 product subscription 卡与 product/model 用量，同时保留现有显示名称、修改密码、安全状态、身份绑定和退出登录。
 - 将账号中心进一步收敛为原型信息层级的单页账户详情：profile/entitlement 立即渲染，usage 与 billing 独立渐进加载；可选时间范围的 summary、model usage table 与 subscription orders 只使用 token2api authoritative user routes。
+- 登录或恢复 product entitlement 后强制保持 Codex、Claude、Kimi 三个 product engines 可见，并继续由 authenticated `productPrepare` 幂等写入 Doge managed configuration；旧本地 visibility blacklist 不得隐藏三者。
+- shipping UI 完整隐藏“引擎管理”导航、model menu footer 与 legacy deep link，不再向用户提供 CLI 启停或 local/official activation 功能；底层诊断实现保留为内部维护面。
 - 修复验收发现的 product plan wire/parser mismatch 与 Kimi 非默认 runtime model alias 缺口，确保“catalog 可见”与“runtime 可启动”一致。
 - macOS 日常 debug build 使用 repo 外、owner-only 的 local development vault，消除 `npm run tauri:dev:hot` 的 Keychain 交互授权；Release 与其他非目标 build 继续 fail-closed 使用 OS credential vault。
 

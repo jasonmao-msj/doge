@@ -50,6 +50,7 @@ import {
   sanitizeDockIconId,
 } from "../../theme/utils/dockIcon";
 import { traceStartupCommand } from "../../startup-orchestration/utils/startupTrace";
+import { isProductManagedEngineId } from "../../account/runtime/productManagedEnginePolicy";
 
 const allowedThemes = new Set(["system", "light", "dark", "dim", "custom"]);
 const allowedCanvasWidthModes = new Set(["narrow", "wide"]);
@@ -67,7 +68,7 @@ const ALLOWED_NOTIFICATION_SOUND_IDS = new Set([
 const allowedEmailSenderProviders = new Set(["126", "163", "qq", "custom"]);
 const allowedEmailSenderSecurity = new Set(["ssl_tls", "start_tls", "none"]);
 const DEFAULT_ENABLED_CURATED_SKILL_IDS = ["lazy-senior-dev", "caveman"];
-const DEFAULT_DISABLED_CLI_ENGINES = ["grok", "kimi", "opencode"];
+const DEFAULT_DISABLED_CLI_ENGINES = ["grok", "opencode"];
 
 function defaultEnabledCuratedSkillIds(): string[] {
   return [...DEFAULT_ENABLED_CURATED_SKILL_IDS];
@@ -210,7 +211,11 @@ function normalizeDisabledCliEngines(value: unknown): string[] {
       continue;
     }
     const normalized = item.trim();
-    if (!normalized || seen.has(normalized)) {
+    if (
+      !normalized ||
+      isProductManagedEngineId(normalized) ||
+      seen.has(normalized)
+    ) {
       continue;
     }
     seen.add(normalized);
