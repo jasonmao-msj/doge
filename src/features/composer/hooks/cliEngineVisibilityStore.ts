@@ -1,6 +1,7 @@
-// supported CLI 前台可见性(用户启停开关)的模块级外部 store。
+// legacy CLI 前台可见性的模块级外部 store。
 //
-// 事实源是 AppSettings.disabledCliEngines(黑名单,默认 [] = 全部启用)。
+// 事实源是 normalized AppSettings.disabledCliEngines；product-managed
+// Claude/Codex/Kimi 已在 Rust/TypeScript settings boundary 被移出黑名单。
 // 若沿 providerAvailability 的路径做 prop drilling,需要穿透 Composer →
 // ChatInputBoxAdapter → ChatInputBox → Footer → ButtonArea 五层;改为与
 // composerEnginePrefsStore 同构的外部 store 后,只有订阅可见性的 ProviderSelect

@@ -42,6 +42,8 @@
 - Gate 主标题下不重复展示套餐卖点；套餐说明仅由卡片中的上游 `description` 承载。
 - 支付成功后自动开通套餐包含的全部模型能力。
 - product prepare 必须先确保 Codex、Claude Code、Kimi CLI 可执行：三者均优先使用已验证 external 或内置 bundle（2026-08-25 起 Kimi 不再走 npm 在线自动安装）；验证失败不得进入 ready。
+- toolchain success 后 MUST 清除 `preparingEngine=Kimi` 的 UI attribution，再进入 product authority prepare；远端无 cooldown 的 `serviceUnavailable`/bridge failure 使用 `[0, 1s, 2s, 4s, 8s, 15s]` 最多 6 次、约 30 秒 bounded idempotent convergence。任一次成功即进入 AppShell；连续失败、server cooldown 或 stale generation 立即停止，禁止无限重试或假装 ready。
+- managed key create 若已产生 server-side side effect 但响应为 `protocolMismatch` 或缺少可信 secret，Native MUST 在同一次 prepare 内按 deterministic `group + hashed device` identity re-list exact active key并走 Desktop handoff；不得先展示 terminal error、再依赖用户点击 retry 完成 reconcile。
 - Account Gate 从 engine-scoped entitlement 升级为 product-scoped entitlement；启动主链不再要求用户先选择引擎。
 - 对话框点击当前模型入口后，右侧滑出 engine/model 组合选择面板。
 - 组合面板采用 Doge 原生右侧栏视觉，不使用悬浮卡片；打开时占据固定右侧区域，主内容同步让位。
@@ -55,6 +57,9 @@
 - Doge 的 engine、model、provider route 三者仍保持独立 identity；Home/Shared/Account Center 必须消费同一个可刷新 catalog snapshot，不得复制静态模型表。
 - Product-ready Home / Shared SHALL 以同一上游 catalog 为 entitlement ceiling，并按 selected engine 展示 released subset。切换 engine 时 current model 兼容则保留，否则原子 fallback；切换 model 仍不得改变 engine。
 - Product flow SHALL 使用独立右侧 engine/model panel，隐藏 provider/channel/configuration/Add model/Refresh config 等 expert controls；trigger 同时展示 engine icon 与 model icon/name。
+- 用户登录或恢复 authenticated product session 后，Codex、Claude、Kimi MUST 始终作为 Doge product engines 可见；旧 `AppSettings.disabledCliEngines` 中残留的三引擎 id 必须在 Rust/TypeScript settings normalization 中被忽略，默认值也不得再停用 Kimi。
+- authenticated startup MUST 继续在 AppShell 挂载前对 Codex、Claude、Kimi 执行唯一的 idempotent `productPrepare`，以 `~/.doge/config.json` 的 `doge-token-matrix` managed projection 作为 provider authority；不得新增 frontend 配置写入或第二套 recipe。
+- shipping UI MUST 隐藏 Settings 侧栏与 model menu 中的“引擎管理”入口；旧 `providers/vendors` 以及历史上转发到 provider surface 的 `permissions` deep link 必须安全回退到基础设置。底层 provider/config diagnostics 可以保留为内部实现，但用户不能进入启停或 local/official activation surface。
 - Product model `catalog entry id`、用户 `display name` 与 CLI/API `runtime model` 必须分域；UI 只把 display name 作为主标签，Kimi fallback namespace 等 presentation identity 不能覆盖 raw runtime model。
 - model catalog refresh 使用 30 秒 freshness、single in-flight、60 秒 visible fallback 与 focus/visibility event；pending/failure 保留 last-known-good，不清空对话或 Account Center。
 - 已创建 Native Session 继续遵守固定 engine/provider binding；跨 engine 选择创建新会话/Continuation，不在原 Native Session 内热切 Runtime。Shared Session 可按既有 durable target contract 在下一 Turn 切换。
@@ -113,6 +118,9 @@
 - [ ] model display name 与 runtime model 分域；若上游显式返回 `display_name=豆包, model=ark-code-latest`，UI 只显示豆包且 Runtime 发送 ark；若只返回公开 `id=豆包`，Doge 发送豆包并由 token2api 处理私有 mapping。
 - [ ] 当前动态目录中的每个可选 engine/model 组合都有真实 CLI typed terminal evidence；minimal endpoint probe、账号白名单或 catalog presence 不单独构成 ready。
 - [ ] Product picker 不出现 provider/channel/configuration 入口；实际 dispatch receipt/wire history 可证明 selected runtime model 未回退全局默认。
+- [x] Windows/macOS 登录后 Codex、Claude、Kimi 均不会被默认值或旧 `disabledCliEngines` 隐藏，且三者 managed registry 均由同一次 product prepare 幂等写入/校验。
+- [x] Settings 与 model menu 不渲染“引擎管理”，`providers/vendors/permissions` deep link 回退基础设置。
+- [x] fresh device 无本地 Kimi 时，单次登录流程完成 bundled Kimi toolchain verification、managed-key create outcome reconcile 与 product prepare；用户不点击 retry 也会自动进入，期间不闪现“服务不可用”；连续失败仍停留在可恢复 Gate并留下 exact stage/attempt diagnostics。
 
 ## Definition of Done (team quality bar)
 

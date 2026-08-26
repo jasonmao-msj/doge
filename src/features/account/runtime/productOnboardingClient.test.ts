@@ -130,6 +130,23 @@ describe("product onboarding contract", () => {
     });
   });
 
+  it("preserves safe backend failure stage for prepare diagnostics", () => {
+    expect(parseProductReady({
+      ok: false,
+      error: {
+        code: "serviceUnavailable",
+        stage: "productModels",
+        recovery: { action: "retry", afterMs: null },
+      },
+    })).toEqual({
+      ok: false,
+      error: {
+        code: "serviceUnavailable",
+        stage: "productModels",
+      },
+    });
+  });
+
   it("parses refresh payloads with separate display and runtime model identity", () => {
     expect(parseProductModels({
       ok: true,

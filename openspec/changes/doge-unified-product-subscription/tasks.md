@@ -159,3 +159,5 @@
 - [x] 16.39 重构 Product Gate checkout polling owner：same-status snapshot 不重置 attempt，transient failure 按 bounded backoff/retryAfter 自动续读，authoritative expiry 后停止 network read。
 - [x] 16.40 product-ready Sidebar 的 Claude/Codex/Kimi direct actions 忽略 Local Mode visibility blacklist；非产品状态继续遵守原设置。
 - [x] 16.41 Product picker model commit 保持 panel 打开，仅 Escape/scrim/显式 close 退出；同步 OpenSpec、Trellis executable contract 与 focused tests。
+- [x] 16.42 登录后强制收敛 Codex/Claude/Kimi visibility 与现有三引擎 Doge managed prepare；隐藏 Settings/model menu/legacy deep link 的 Engine Management surface，并补 Rust/React focused regression。
+- [x] 16.43 修复 fresh-device 首次 prepare 的伪 terminal failure：三引擎 bundled toolchain、engine/remote prepare UI attribution 分离、最多 6 次/约 30 秒 idempotent product prepare backoff、safe stage diagnostics；对 managed key create 的 `protocolMismatch`/invalid success 先按 deterministic key identity authoritative re-list + handoff，吸收“服务端副作用成功、响应不可确认”，并完成无需点击的真实冷启动回归。

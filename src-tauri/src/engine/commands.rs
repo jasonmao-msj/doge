@@ -2673,17 +2673,16 @@ pub async fn engine_send_message(
                     )
                     .await?;
             }
-            let managed_kimi_bin =
-                if effective_provider_profile_id.as_deref()
-                    == Some(crate::account::configuration::ACCOUNT_KIMI_PROVIDER_ID)
-                {
-                    state
-                        .account_runtime
-                        .managed_engine_binary_for_launch("kimi")
-                        .await
-                } else {
-                    None
-                };
+            let managed_kimi_bin = if effective_provider_profile_id.as_deref()
+                == Some(crate::account::configuration::ACCOUNT_KIMI_PROVIDER_ID)
+            {
+                state
+                    .account_runtime
+                    .managed_engine_binary_for_launch("kimi")
+                    .await
+            } else {
+                None
+            };
             let session = manager
                 .get_or_create_kimi_session_for_runtime(
                     &workspace_id,
@@ -3591,17 +3590,16 @@ pub async fn engine_send_message_sync(
                     )
                     .await?;
             }
-            let managed_kimi_bin =
-                if effective_provider_profile_id.as_deref()
-                    == Some(crate::account::configuration::ACCOUNT_KIMI_PROVIDER_ID)
-                {
-                    state
-                        .account_runtime
-                        .managed_engine_binary_for_launch("kimi")
-                        .await
-                } else {
-                    None
-                };
+            let managed_kimi_bin = if effective_provider_profile_id.as_deref()
+                == Some(crate::account::configuration::ACCOUNT_KIMI_PROVIDER_ID)
+            {
+                state
+                    .account_runtime
+                    .managed_engine_binary_for_launch("kimi")
+                    .await
+            } else {
+                None
+            };
             let session = manager
                 .get_or_create_kimi_session_for_runtime(
                     &workspace_id,

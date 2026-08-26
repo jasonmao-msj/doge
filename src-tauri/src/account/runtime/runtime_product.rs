@@ -1,7 +1,8 @@
+use super::runtime_product_keys::{managed_product_key_name, resolve_product_key_secret};
 use super::runtime_product_models::safe_product_models;
 use super::*;
 use crate::account::authority::{
-    ProductApiKeyCreatedWire, ProductOrderCreatedWire, ProductOrderWire, ProductPaymentMethodWire,
+    ProductOrderCreatedWire, ProductOrderWire, ProductPaymentMethodWire,
     ProductSubscriptionPlanWire,
 };
 use crate::account::configuration::ApplyError;
@@ -303,42 +304,18 @@ impl AccountRuntime {
             ));
         };
         let key_name = managed_product_key_name(plan.group_id, device_id);
-        let listed = match authority.product_api_keys(&access, plan.group_id).await {
-            Ok(value) => value,
-            Err(error) => {
-                return product_failure(authority_failure(error, "productPrepare"));
-            }
-        };
-        let existing = listed.items.into_iter().find(|key| {
-            key.group_id == Some(plan.group_id)
-                && key.name == key_name
-                && key.status.eq_ignore_ascii_case("active")
-                && key.id > 0
-        });
-        let secret = if let Some(existing) = existing {
-            match authority
-                .handoff_api_key(&access, existing.id, device_id, operation_id)
-                .await
-            {
-                Ok(value) if value.id == existing.id && !value.secret.trim().is_empty() => {
-                    value.secret
-                }
-                Ok(_) => return product_failure(protocol_failure("productPrepare")),
-                Err(error) => {
-                    return product_failure(authority_failure(error, "productPrepare"));
-                }
-            }
-        } else {
-            match authority
-                .create_product_api_key(&access, plan.group_id, &key_name, operation_id)
-                .await
-            {
-                Ok(created) if valid_created_product_key(&created, plan.group_id) => created.secret,
-                Ok(_) => return product_failure(protocol_failure("productPrepare")),
-                Err(error) => {
-                    return product_failure(authority_failure(error, "productPrepare"));
-                }
-            }
+        let secret = match resolve_product_key_secret(
+            authority,
+            &access,
+            plan.group_id,
+            &key_name,
+            device_id,
+            operation_id,
+        )
+        .await
+        {
+            Ok(secret) => secret,
+            Err(error) => return product_failure(error),
         };
         for (engine_id, _) in PRODUCT_ENGINES {
             if self
@@ -723,22 +700,6 @@ pub(super) fn safe_payment_url(value: &str) -> Option<&str> {
 
 fn valid_qr_payload(value: &str) -> bool {
     !value.trim().is_empty() && value.len() <= 4_096 && !value.chars().any(char::is_control)
-}
-
-pub(super) fn managed_product_key_name(group_id: i64, device_id: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(b"doge-product-managed-key-v1\0");
-    hasher.update(group_id.to_be_bytes());
-    hasher.update(device_id.as_bytes());
-    let fingerprint = format!("{:x}", hasher.finalize());
-    format!("Doge Managed {group_id} {}", &fingerprint[..24])
-}
-
-fn valid_created_product_key(value: &ProductApiKeyCreatedWire, group_id: i64) -> bool {
-    value.id > 0
-        && value.group_id == Some(group_id)
-        && !value.secret.trim().is_empty()
-        && value.secret.len() <= 4_096
 }
 
 fn product_configuration_rejection_code(reason: &str) -> &'static str {

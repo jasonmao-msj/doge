@@ -14,3 +14,12 @@
 {"file": ".trellis/spec/frontend/type-safety.md", "reason": "Unknown upstream payload validation"}
 {"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Single shared compatibility and refresh owner"}
 {"file": "openspec/changes/doge-unified-product-subscription/specs/unified-engine-model-selection/spec.md", "reason": "Dynamic catalog behavior contract"}
+{"file": "src/features/settings/hooks/useAppSettings.ts", "reason": "Product-managed engine visibility normalization"}
+{"file": "src-tauri/src/shared/settings_core.rs", "reason": "Authoritative persisted settings normalization"}
+{"file": "src/features/settings/components/SettingsView.tsx", "reason": "Hide Engine Management navigation and deep link"}
+{"file": "src/features/composer/components/ChatInputBox/selectors/ModelSelect.tsx", "reason": "Hide Engine Management footer entry"}
+{"file": "src/features/account/runtime/productEngineProvisioning.ts", "reason": "Three-engine bundled toolchain owner and engine-specific failure"}
+{"file": "src/features/account/components/ProductAccountAppGate.tsx", "reason": "Bounded product prepare retry and stage projection"}
+{"file": "src/features/account/runtime/productPrepareRetry.ts", "reason": "Bounded idempotent product prepare retry owner"}
+{"file": "src-tauri/src/account/runtime/runtime_product.rs", "reason": "Same-prepare authoritative reconcile for uncertain managed-key create outcome"}
+{"file": "src-tauri/src/account/runtime/runtime_product_keys.rs", "reason": "Deterministic managed-key identity, exact selector, create reconcile and handoff owner"}
