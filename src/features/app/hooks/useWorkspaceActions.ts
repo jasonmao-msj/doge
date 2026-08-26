@@ -13,8 +13,14 @@ import {
   pickWorkspacePath,
 } from "../../../services/tauri";
 import { pushErrorToast } from "../../../services/toasts";
-import type { DebugEntry, EngineType, WorkspaceInfo } from "../../../types";
+import type {
+  DebugEntry,
+  EngineType,
+  SetActiveEngine,
+  WorkspaceInfo,
+} from "../../../types";
 import { isEngineExecutionEnabled } from "../../../utils/engineExecutionPolicy";
+import { resolveSessionEngineActivation } from "../../engine/utils/engineSessionRouting";
 import type { EngineProviderProfileSelection } from "../../threads/constants/codexProviderProfiles";
 import { CODEX_DISK_PROVIDER_PROFILE_ID } from "../../threads/constants/codexProviderProfiles";
 
@@ -33,6 +39,7 @@ const CREATE_SESSION_RECOVERY_TOAST_ID_PREFIX = "create-session-recovery";
 const CREATE_SESSION_RECOVERY_PROGRESS_TOAST_ID_PREFIX =
   "create-session-recovery-progress";
 const CREATE_SESSION_FAILURE_TOAST_ID_PREFIX = "create-session-failure";
+const ENGINE_SWITCH_FAILED_PREFIX = "ENGINE_SWITCH_FAILED:";
 
 function isDiskProviderSelection(options?: SessionCreationOptions) {
   const providerProfileId =
@@ -92,7 +99,7 @@ type Params = {
   isCompact: boolean;
   activeEngine: EngineType;
   newAgentShortcut: string | null;
-  setActiveEngine?: (engine: EngineType) => Promise<void> | void;
+  setActiveEngine?: SetActiveEngine;
   addWorkspace: () => Promise<WorkspaceInfo | null>;
   addWorkspaceFromPath: (path: string) => Promise<WorkspaceInfo | null>;
   connectWorkspace: (workspace: WorkspaceInfo) => Promise<void>;
@@ -192,6 +199,9 @@ export function useWorkspaceActions({
 
   const localizeSessionCreationErrorMessage = useCallback(
     (message: string): string => {
+      if (message.startsWith(ENGINE_SWITCH_FAILED_PREFIX)) {
+        return t("errors.failedToCreateSession");
+      }
       if (message.startsWith(CODEX_PROVIDER_CONFIG_INVALID_ERROR_PREFIX)) {
         return t("errors.codexProviderConfigInvalid");
       }
@@ -251,17 +261,20 @@ export function useWorkspaceActions({
           if (!workspace.connected) {
             await connectWorkspace(workspace);
           }
-          if (targetEngine !== activeEngine) {
-            try {
-              await setActiveEngine?.(targetEngine);
-            } catch (error) {
-              onDebug({
-                id: `${Date.now()}-client-switch-engine-before-new-thread-error`,
-                timestamp: Date.now(),
-                source: "error",
-                label: "workspace/switch engine before new thread error",
-                payload: error instanceof Error ? error.message : String(error),
-              });
+          if (setActiveEngine) {
+            const providerProfileId =
+              options?.providerProfileId?.trim() ||
+              options?.providerProfile?.id?.trim() ||
+              null;
+            const activationPlan = resolveSessionEngineActivation(
+              targetEngine,
+              providerProfileId,
+            );
+            const engineActivated = activationPlan.options
+              ? await setActiveEngine(targetEngine, activationPlan.options)
+              : await setActiveEngine(targetEngine);
+            if (activationPlan.requireSuccess && engineActivated === false) {
+              throw new Error(`${ENGINE_SWITCH_FAILED_PREFIX}${targetEngine}`);
             }
           }
           const creationOptions = {
@@ -287,7 +300,6 @@ export function useWorkspaceActions({
       );
     },
     [
-      activeEngine,
       composerInputRef,
       connectWorkspace,
       exitDiffView,

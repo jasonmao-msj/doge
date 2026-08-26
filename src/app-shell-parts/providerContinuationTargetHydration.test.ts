@@ -35,8 +35,13 @@ describe("hydrateProviderContinuationTarget", () => {
         effort: "high",
       },
       {
-        setActiveEngine: async (engine) => {
+        setActiveEngine: async (engine, options) => {
           order.push(`engine:${engine}`);
+          expect(options).toEqual({
+            ensureRuntime: true,
+            providerProfileId: "doge-token-matrix",
+          });
+          return true;
         },
         getEngineModels: async () => {
           order.push("load-catalog");
@@ -122,5 +127,76 @@ describe("hydrateProviderContinuationTarget", () => {
     ).rejects.toThrow("unsupported provider continuation engine: gemini");
     expect(setActiveEngine).not.toHaveBeenCalled();
     expect(persistComposerSelectionForThread).not.toHaveBeenCalled();
+  });
+
+  it("does not persist or hydrate a continuation when its engine is not activated", async () => {
+    const setActiveEngine = vi.fn(async () => false);
+    const getEngineModels = vi.fn();
+    const refreshEngineModels = vi.fn();
+    const persistComposerSelectionForThread = vi.fn();
+
+    await expect(
+      hydrateProviderContinuationTarget(
+        {
+          workspaceId: "ws-1",
+          threadId: "codex:target-1",
+          engine: "codex",
+          providerProfileId: "provider-a",
+          modelId: "gpt-5",
+          effort: "high",
+        },
+        {
+          setActiveEngine,
+          getEngineModels,
+          refreshEngineModels,
+          persistComposerSelectionForThread,
+        },
+      ),
+    ).rejects.toThrow("provider continuation engine activation failed: codex");
+
+    expect(setActiveEngine).toHaveBeenCalledWith("codex", {
+      ensureRuntime: true,
+      providerProfileId: "provider-a",
+    });
+    expect(getEngineModels).not.toHaveBeenCalled();
+    expect(refreshEngineModels).not.toHaveBeenCalled();
+    expect(persistComposerSelectionForThread).not.toHaveBeenCalled();
+  });
+
+  it("keeps Kimi continuation hydration when native active-engine switching is unavailable", async () => {
+    const setActiveEngine = vi.fn(async () => false);
+    const getEngineModels = vi.fn(async () => [model("kimi-k2", "kimi-k2", true)]);
+    const refreshEngineModels = vi.fn();
+    const persistComposerSelectionForThread = vi.fn();
+
+    await hydrateProviderContinuationTarget(
+      {
+        workspaceId: "ws-1",
+        threadId: "kimi:target-1",
+        engine: "kimi",
+        providerProfileId: "provider-kimi",
+        modelId: "kimi-k2",
+        effort: null,
+      },
+      {
+        setActiveEngine,
+        getEngineModels,
+        refreshEngineModels,
+        persistComposerSelectionForThread,
+      },
+    );
+
+    expect(setActiveEngine).toHaveBeenCalledWith("kimi", {
+      providerProfileId: "provider-kimi",
+    });
+    expect(getEngineModels).toHaveBeenCalledWith("kimi", {
+      providerProfileId: "provider-kimi",
+      forceRefresh: true,
+    });
+    expect(persistComposerSelectionForThread).toHaveBeenCalledWith(
+      "ws-1",
+      "kimi:target-1",
+      { modelId: "kimi-k2", effort: null },
+    );
   });
 });

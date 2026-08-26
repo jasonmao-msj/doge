@@ -101,6 +101,13 @@ React Component
     history scanner 只负责 recovery evidence，不能替代前台终态。process exit/EOF 仍只属于 cleanup。
 30. 异步 mutation 创建新 Session/Entity 后若立即导航，必须先以 exact target identity 完成 destination state hydration，再选择目标。禁止先导航再 fire-and-forget 补写，也禁止用仍绑定 source active owner 的 setter 写 target；catalog/reducer dispatch 完成不等于 React closure 已看到新 row。
 31. feature dependency boundary gate 报新增 edge 时，先按 ownership 分类再修：多 feature 共享的 pure/runtime/presentation capability 迁到 canonical neutral owner；peer UI integration 由更高层 host callback/slot 组合；确属 feature-owned 的稳定能力只走 public index。禁止用 re-export shim 隐藏 peer dependency，也禁止把新 edge 加入 exact debt baseline。owner move 后必须同时迁移 tests/mocks/import-type、收缩 stale baseline，并枚举所有 production entry，避免主入口修好但嵌套入口丢能力。
+32. Native mutation 的成功 response 是 mutation boundary 的 authority。若切换命令本身已经完成状态写入，禁止用紧随其后的单次 read-back 否决成功结果；read-back 只用于 mutation 前发现 stale state，除非 runtime 明确提供了带版本/operation identity 的一致性确认。
+33. Session creation/continuation 的 engine activation gate 必须按 engine registry 的
+    `executionModel` 与 provider runtime contract 分流：persistent engine（当前 Codex）及
+    managed Codex/Claude 必须在 session side effect 前确认 activation；Kimi 等 one-shot engine
+    通过显式 `engine/providerProfileId` 路由每个 turn，不能把 global active-engine read-back 或
+    `switch_engine` 失败误报为 one-shot session 创建/续接失败。共享 helper 必须同时返回
+    activation options 与是否必须 fail closed，禁止各 caller 自行猜测。
 
 ## 常见失败模式
 

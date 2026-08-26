@@ -5,6 +5,7 @@ import type {
   EngineModelInfo,
   EngineStatus,
   EngineType,
+  SetActiveEngineOptions,
   WorkspaceInfo,
 } from "../../../types";
 import {
@@ -15,6 +16,7 @@ import {
   runCodexDoctor,
   switchEngine,
 } from "../../../services/tauri";
+import { activateAccountEngineV1 } from "../../../services/accountEngineCommands";
 import { startupOrchestrator } from "../../startup-orchestration/utils/startupOrchestrator";
 import {
   buildAvailableEngines,
@@ -38,9 +40,13 @@ import {
   WEB_RUNTIME_DEFAULT_ENGINE,
   WEB_RUNTIME_INITIAL_STATUSES,
 } from "./engineControllerWebRuntime";
+import { engineUsesNativeActiveEngineAuthority } from "../engineRegistry";
 import { useEngineRuntimeNotices } from "./useEngineRuntimeNotices";
 import { useEngineCatalogRevision } from "./useEngineCatalogRevision";
-import { isManagedProviderProfileIdV1 } from "../../account/runtime/engineEntitlementStore";
+import {
+  isManagedProviderProfileIdV1,
+  managedEngineIdForRuntimeV1,
+} from "../../account/runtime/engineEntitlementStore";
 import {
   createManagedEngineToolchainClientV1,
   type ManagedEngineToolchainResultV1,
@@ -305,20 +311,24 @@ export function useEngineController({
           persistedEngineInstalled &&
           persistedEngine !== detectedEngine
         ) {
-          try {
-            await switchEngine(persistedEngine);
+          if (engineUsesNativeActiveEngineAuthority(persistedEngine)) {
+            try {
+              await switchEngine(persistedEngine);
+              nextActiveEngine = persistedEngine;
+            } catch (error) {
+              onDebug?.({
+                id: `${Date.now()}-engine-restore-selection-error`,
+                timestamp: Date.now(),
+                source: "error",
+                label: "engine/restore persisted selection error",
+                payload: {
+                  engine: persistedEngine,
+                  error: error instanceof Error ? error.message : String(error),
+                },
+              });
+            }
+          } else {
             nextActiveEngine = persistedEngine;
-          } catch (error) {
-            onDebug?.({
-              id: `${Date.now()}-engine-restore-selection-error`,
-              timestamp: Date.now(),
-              source: "error",
-              label: "engine/restore persisted selection error",
-              payload: {
-                engine: persistedEngine,
-                error: error instanceof Error ? error.message : String(error),
-              },
-            });
           }
         }
         const nextActiveEngineInstalled = Boolean(
@@ -327,7 +337,8 @@ export function useEngineController({
         if (
           nextActiveEngine !== detectedEngine &&
           nextActiveEngineInstalled &&
-          persistedEngine !== nextActiveEngine
+          persistedEngine !== nextActiveEngine &&
+          engineUsesNativeActiveEngineAuthority(nextActiveEngine)
         ) {
           try {
             await switchEngine(nextActiveEngine);
@@ -402,7 +413,10 @@ export function useEngineController({
    * Switch to a different engine
    */
   const setActiveEngine = useCallback(
-    async (engineType: EngineType) => {
+    async (
+      engineType: EngineType,
+      options: SetActiveEngineOptions = {},
+    ): Promise<boolean> => {
       const enabled = enabledEngineTypes.includes(engineType);
       if (!enabled) {
         onDebug?.({
@@ -412,10 +426,71 @@ export function useEngineController({
           label: "engine/switch error",
           payload: `Engine ${engineType} is disabled`,
         });
-        return;
+        return false;
       }
-      if (engineType === activeEngine) {
-        return;
+
+      const managedEngineId =
+        isManagedProviderProfileIdV1(options.providerProfileId)
+          ? managedEngineIdForRuntimeV1(engineType)
+          : null;
+
+      if (!engineUsesNativeActiveEngineAuthority(engineType) && !managedEngineId) {
+        const targetStatus =
+          engineStatuses.find((status) => status.engineType === engineType) ??
+          null;
+        setActiveEngineState(engineType);
+        persistEngineSelection(engineType);
+        setEngineModels(
+          (targetStatus?.models ?? []).map((model) =>
+            normalizeEngineModelEntry(model),
+          ),
+        );
+        await refreshEngineModels(
+          engineType,
+          options.providerProfileId?.trim()
+            ? { providerProfileId: options.providerProfileId }
+            : undefined,
+        );
+        return true;
+      }
+
+      let managedRuntimeActivated = false;
+      if (managedEngineId) {
+        try {
+          await activateAccountEngineV1(managedEngineId);
+          managedRuntimeActivated = true;
+        } catch (error) {
+          onDebug?.({
+            id: `${Date.now()}-managed-engine-activation-error`,
+            timestamp: Date.now(),
+            source: "error",
+            label: "engine/managed activation error",
+            payload: {
+              engine: engineType,
+              providerProfileId: options.providerProfileId,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          });
+          return false;
+        }
+      }
+
+      // Managed activation verifies the provider-scoped binary and commits the
+      // native active engine. The generic switch command only knows about the
+      // user's global CLI configuration, so calling it after managed activation
+      // would reject a valid bundled toolchain as "not installed".
+      if (managedRuntimeActivated) {
+        setActiveEngineState(engineType);
+        persistEngineSelection(engineType);
+        setEngineModels([]);
+        onDebug?.({
+          id: `${Date.now()}-managed-engine-activation-success`,
+          timestamp: Date.now(),
+          source: "server",
+          label: "engine/managed activation success",
+          payload: { engine: engineType, providerProfileId: options.providerProfileId },
+        });
+        return true;
       }
 
       let targetStatus =
@@ -445,7 +520,7 @@ export function useEngineController({
         }
       }
 
-      if (!targetStatus?.installed && engineType === "codex") {
+      if (!targetStatus?.installed && engineType === "codex" && !managedRuntimeActivated) {
         let doctorResult: CodexDoctorResult | null = null;
         let doctorError: unknown = null;
         try {
@@ -460,10 +535,10 @@ export function useEngineController({
           label: "engine/switch error",
           payload: buildCodexSwitchUnavailablePayload(doctorResult, doctorError),
         });
-        return;
+        return false;
       }
 
-      if (!targetStatus?.installed) {
+      if (!targetStatus?.installed && !managedRuntimeActivated) {
         onDebug?.({
           id: `${Date.now()}-engine-switch-error`,
           timestamp: Date.now(),
@@ -471,7 +546,26 @@ export function useEngineController({
           label: "engine/switch error",
           payload: `Engine ${engineType} is not installed`,
         });
-        return;
+        return false;
+      }
+
+      if (engineType === activeEngine) {
+        if (!options.ensureRuntime) {
+          return true;
+        }
+        try {
+          if ((await getActiveEngine()) === engineType) {
+            return true;
+          }
+        } catch (error) {
+          onDebug?.({
+            id: `${Date.now()}-engine-runtime-confirmation-error`,
+            timestamp: Date.now(),
+            source: "error",
+            label: "engine/runtime confirmation error",
+            payload: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
 
       onDebug?.({
@@ -484,13 +578,16 @@ export function useEngineController({
 
       try {
         await switchEngine(engineType);
+        // switch_engine is the native mutation boundary. A successful response
+        // is authoritative; an immediate get_active_engine read can still return
+        // the previous value while the runtime finishes publishing the switch.
         setActiveEngineState(engineType);
         persistEngineSelection(engineType);
         // Immediately switch visible model list to target engine snapshot to avoid
         // showing stale models from previous engine while CLI refresh is in flight.
         setEngineModels(
-          targetStatus.models.length > 0
-            ? targetStatus.models.map((model) => normalizeEngineModelEntry(model))
+          (targetStatus?.models ?? []).length > 0
+            ? (targetStatus?.models ?? []).map((model) => normalizeEngineModelEntry(model))
             : [],
         );
 
@@ -502,8 +599,9 @@ export function useEngineController({
           timestamp: Date.now(),
           source: "server",
           label: "engine/switch success",
-          payload: { engine: engineType, models: targetStatus.models },
+          payload: { engine: engineType, models: targetStatus?.models ?? [] },
         });
+        return true;
       } catch (error) {
         onDebug?.({
           id: `${Date.now()}-engine-switch-error`,
@@ -512,6 +610,7 @@ export function useEngineController({
           label: "engine/switch error",
           payload: error instanceof Error ? error.message : String(error),
         });
+        return false;
       }
     },
     [activeEngine, enabledEngineTypes, engineStatuses, onDebug, refreshEngineModels],

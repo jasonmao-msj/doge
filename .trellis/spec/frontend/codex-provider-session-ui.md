@@ -16,6 +16,7 @@
 - Service bridge: `forkThread(workspaceId, threadId, messageId?, { providerProfileId?, targetUserTurnIndex?, targetUserMessageText?, targetUserMessageOccurrence?, localUserMessageCount? })`。
 - Thread metadata fields: `providerProfileId`, `providerProfileSource`, `providerProfileName`, `providerAvailability`, `sourceLabel`。
 - Runtime hooks/helpers: `startThreadForWorkspace(..., { providerProfileId?, providerProfile? })`, `forkThreadForWorkspace(..., { providerProfileId?, providerProfile? })`, `extractProviderBindingFromStartedThread`, `providerBindingFromSelectedProfile`。
+- Engine authority: `setActiveEngine(engine, { ensureRuntime?, providerProfileId? }) -> Promise<boolean>`. When the exact managed product provider `doge-token-matrix` is selected for Codex/Claude, it MUST activate the verified managed toolchain before generic engine status/switch checks.
 - Display helper: `resolveCodexProviderLabel(thread: ThreadSummary) -> string | null`。
 
 ### 3. Contracts
@@ -48,6 +49,7 @@
 | thread metadata 更新 | provider resolver 读到最新 metadata 且函数身份稳定 | 因 resolver identity 抖动触发 AppShell/context update loop |
 | fork 选择不同 provider | 发送 selected provider + native anchor hints，parent 保持可见 | hide/rename parent 或 seed transcript |
 | provider unavailable | label/status 可区分 unavailable | 静默显示为 disk |
+| product-managed Codex create/continuation | 先激活 verified managed toolchain，再确认 native engine | 只信 generic CLI detection，因 bundled binary 未被探测而中止 |
 
 ### 5. Good / Base / Bad Cases
 
@@ -67,6 +69,7 @@
 - Vitest for `useCodexMessageRecovery` provider inheritance: fresh continuation and fork continuation pass non-empty `providerProfileId`, while blank ids are omitted.
 - Vitest for `resolveCodexProviderLabel`, sidebar/thread list/pinned list badges, and composer provider tag rendering.
 - Vitest for provider-selected fork preserving parent metadata and producing child provider binding.
+- Vitest for managed Codex direct creation/continuation passing `providerProfileId="doge-token-matrix"` to engine authority and activating `account_engine_v1_activate("codex")` before session side effects.
 
 ### 7. Wrong vs Correct
 

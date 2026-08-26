@@ -193,7 +193,7 @@ export function parseProductReady(
   const entitlement = parseEntitlement(root.entitlement);
   const models = root.models.map(parseModel);
   const engines = root.engines.map(parseEngine);
-  if (!entitlement || entitlement.status !== "active" || models.length === 0 ||
+  if (!entitlement || entitlement.status !== "active" ||
     models.some((item) => item === null) || engines.some((item) => item === null)) {
     return protocolFailure();
   }

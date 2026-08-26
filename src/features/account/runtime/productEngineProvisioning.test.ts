@@ -39,6 +39,36 @@ describe("prepareProductEngineProvisioningV1", () => {
     expect(chooseBundled).toHaveBeenCalledTimes(3);
   });
 
+  it("overrides an externally selected engine with the bundled toolchain", async () => {
+    const inspectManaged = vi.fn(async (engineId: ManagedToolchainEngineIdV1) => ({
+      ok: true as const,
+      value: {
+        engineId,
+        status: "ready" as const,
+        bundledVersion: "1.0.0",
+        externalVersion: "2.0.0",
+        selectedSource: "external" as const,
+      },
+    }));
+    const chooseBundled = vi.fn(async (engineId: ManagedToolchainEngineIdV1) => ({
+      ok: true as const,
+      value: {
+        engineId,
+        status: "ready" as const,
+        bundledVersion: "1.0.0",
+        externalVersion: "2.0.0",
+        selectedSource: "bundled" as const,
+      },
+    }));
+
+    await expect(prepareProductEngineProvisioningV1(
+      {},
+      { inspectManaged, chooseBundled },
+    )).resolves.toEqual({ ok: true });
+    expect(chooseBundled).toHaveBeenCalledTimes(3);
+    expect(chooseBundled).toHaveBeenNthCalledWith(1, "codex", expect.anything());
+  });
+
   it("keeps an already-ready Kimi toolchain inspection without re-choosing", async () => {
     const chooseBundled = vi.fn();
     const dependencies: ProductEngineProvisioningDependenciesV1 = {

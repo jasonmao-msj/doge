@@ -84,6 +84,16 @@ export function getEngineRegistryEntry(engineId: string): EngineRegistryEntry | 
   return BUILTIN_ENGINE_REGISTRY[engineId as EngineType] ?? null;
 }
 
+/**
+ * Persistent engines use the native active-engine slot as their launch
+ * authority. One-shot engines route the provider explicitly for each turn.
+ */
+export function engineUsesNativeActiveEngineAuthority(
+  engine: EngineType,
+): boolean {
+  return getEngineRegistryEntry(engine)?.executionModel === "persistent";
+}
+
 export function registerExternalEngine(input: {
   id: string;
   displayName: string;

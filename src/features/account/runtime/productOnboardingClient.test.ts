@@ -106,6 +106,30 @@ describe("product onboarding contract", () => {
     })).toEqual({ ok: false, error: { code: "protocolMismatch" } });
   });
 
+  it("accepts ready state while the model catalog is temporarily unavailable", () => {
+    expect(parseProductReady({
+      ok: true,
+      value: {
+        status: "ready",
+        entitlement: activeEntitlement(),
+        engines: engines(),
+        models: [],
+      },
+    })).toMatchObject({
+      ok: true,
+      value: {
+        status: "ready",
+        entitlement: { status: "active" },
+        engines: [
+          { id: "codex", displayName: "Codex" },
+          { id: "claude-code", displayName: "Claude" },
+          { id: "kimi", displayName: "Kimi" },
+        ],
+        models: [],
+      },
+    });
+  });
+
   it("parses refresh payloads with separate display and runtime model identity", () => {
     expect(parseProductModels({
       ok: true,
