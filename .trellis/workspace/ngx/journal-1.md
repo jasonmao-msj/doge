@@ -134,3 +134,37 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: 合并远端更新并移除一次性 workflow
+
+**Date**: 2026-08-26
+**Task**: 合并远端更新并移除一次性 workflow
+**Branch**: `codex/enable-doge-updater`
+
+### Summary
+
+安全合并 GitHub 同名分支，保留远端已有提交并删除 GitHub 创建的一次性 update_test.yml；解决 Trellis ngx 索引冲突时保留本地 session 4 记录。未使用强推。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `71db4b825` | (see git log) |
+| `c360482a7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
