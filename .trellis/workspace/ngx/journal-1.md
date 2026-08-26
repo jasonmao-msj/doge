@@ -168,3 +168,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: 移除 macOS 系统签名校验
+
+**Date**: 2026-08-26
+**Task**: 移除 macOS 系统签名校验
+**Branch**: `codex/enable-doge-updater`
+
+### Summary
+
+修改 .github/workflows/release.yml，移除 Apple certificate、Developer ID signing、notarization 和 stapler，改用 ad-hoc signing，同时保留 Tauri updater .app.tar.gz.sig 签名。新增 release workflow contract test；YAML、workflow contract 和 macOS focused contract 通过，完整 build-platform contract 有一个既有 marker 失败。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c8d47a420` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
