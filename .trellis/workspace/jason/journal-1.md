@@ -1879,3 +1879,69 @@ PR #24 Windows integration 越过两个已修 blocker 后暴露 Settings CSS exa
 ### Next Steps
 
 - None - task complete
+
+
+## Session 56: 稳定 ProjectMap Windows batched test latency
+
+**Date**: 2026-08-25
+**Task**: 稳定 ProjectMap Windows batched test latency
+**Branch**: `codex/fix-project-map-windows-timeout`
+
+### Summary
+
+将 path association disclosure 回归从完整 ProjectMapPanel 下沉到 ProjectMapNavigationPanel leaf harness，复用真实 navigation helpers，不提高 timeout；focused 57/57、ESLint、typecheck、OpenSpec/docs/diff gates 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c3942ce9f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 57: 交付 ProjectMap 修复与双端 release artifacts
+
+**Date**: 2026-08-25
+**Task**: 交付 ProjectMap 修复与双端 release artifacts
+**Branch**: `codex/fix-project-map-windows-timeout`
+
+### Summary
+
+PR #26 记录 release run 32835675677 全绿；下载并校验 Windows x64 unsigned NSIS、macOS aarch64/x86_64 ad-hoc DMG，三份 SHA-256 通过且两份 DMG hdiutil verify VALID，产物放入 Downloads/doge-release-32835675677。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `976718b2e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

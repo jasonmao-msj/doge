@@ -55,6 +55,7 @@ npm run check:docs                      # docs governance 命中时
 ## 扩围与失败处理
 
 - Focused test 失败：先修复并重跑同一层；若失败暴露 adjacent owner/consumer，再升一级扩大测试。
+- Platform batched test timeout：先核对 assertion owner 与 mounted tree。若 leaf behavior 可由 child component + real pure helpers 表达，必须先收窄 harness；只有确有 platform I/O/runtime latency contract 时才提高 timeout，并记录量测证据。
 - 找不到现有测试：对行为修复优先补最小 regression；纯视觉/平台行为允许记录 manual evidence。
 - L0–L3 无需因未运行全量 suite 而阻塞；交付时必须明确写出等级、已运行命令和未覆盖范围。
 - 若主动运行全量 suite 遇到与本改动无关的 baseline failure，不应冒充本次变更失败；记录 failing suite 与隔离证据，交给对应 owner。
@@ -82,5 +83,7 @@ Not run:
 ## Good / Base / Bad
 
 - **Good**：Composer leaf regression 只跑 Composer focused tests；provider/vault transition 按 L3 跑 Composer + AccountGate + runtime contract，而非 1100+ 个无关 test files。
+- **Good**：Project Map disclosure 由 `ProjectMapNavigationPanel` focused test 覆盖，path algorithm 留在 pure helper test；不为 leaf assertion 挂载完整 graph parent。
 - **Base**：共享 TS type 改动跑 affected suites + full typecheck，但不跑全量 Vitest。
 - **Bad**：改一行 copy 后跑 30–60 分钟全量测试；或修改 IPC/schema 只跑一个 snapshot test。
+- **Bad**：Windows batch 下 parent harness 超过 5s 后直接把单测 timeout 改成 15s，却不检查 assertion 是否属于 leaf component。
