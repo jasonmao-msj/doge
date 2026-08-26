@@ -101,3 +101,136 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: 收口 doge 更新版本记录
+
+**Date**: 2026-08-26
+**Task**: 收口 doge 更新版本记录
+**Branch**: `codex/enable-doge-updater`
+
+### Summary
+
+恢复版本号到 0.1.0，删除一次性发布 workflow，保留 updater 60 秒检查超时并补充慢速网络回归测试；精简 CHANGELOG.md 为单条 doge v0.1.0 记录。验证通过 focused Vitest 25 tests、targeted ESLint、npm run typecheck、npm run check:branding、git diff --check。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c360482a7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 5: 合并远端更新并移除一次性 workflow
+
+**Date**: 2026-08-26
+**Task**: 合并远端更新并移除一次性 workflow
+**Branch**: `codex/enable-doge-updater`
+
+### Summary
+
+安全合并 GitHub 同名分支，保留远端已有提交并删除 GitHub 创建的一次性 update_test.yml；解决 Trellis ngx 索引冲突时保留本地 session 4 记录。未使用强推。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `71db4b825` | (see git log) |
+| `c360482a7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 6: 移除 macOS 系统签名校验
+
+**Date**: 2026-08-26
+**Task**: 移除 macOS 系统签名校验
+**Branch**: `codex/enable-doge-updater`
+
+### Summary
+
+修改 .github/workflows/release.yml，移除 Apple certificate、Developer ID signing、notarization 和 stapler，改用 ad-hoc signing，同时保留 Tauri updater .app.tar.gz.sig 签名。新增 release workflow contract test；YAML、workflow contract 和 macOS focused contract 通过，完整 build-platform contract 有一个既有 marker 失败。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c8d47a420` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 7: 解决 PR 合并冲突
+
+**Date**: 2026-08-26
+**Task**: 解决 PR 合并冲突
+**Branch**: `codex/enable-doge-updater`
+
+### Summary
+
+合并最新 origin/main 到 codex/enable-doge-updater，保留删除一次性 update_test workflow 的意图，完成 release.yml 三方结果核对。release workflow contract test 和 YAML parse 通过，准备推送更新 PR #31。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3569a6039` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

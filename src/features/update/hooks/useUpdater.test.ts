@@ -105,6 +105,35 @@ describe("useUpdater", () => {
     );
   });
 
+  it("allows a slow GitHub feed to resolve before timing out", async () => {
+    vi.useFakeTimers();
+    const pendingCheck = createDeferred<Update | null>();
+    checkMock.mockReturnValue(pendingCheck.promise);
+    const availableUpdate = createMockUpdate("0.4.14");
+    getVersionMock.mockResolvedValue("0.4.13");
+    const { result } = renderHook(() => useUpdater({}));
+
+    let checkPromise: Promise<void> | undefined;
+    act(() => {
+      checkPromise = result.current.checkForUpdates({
+        interactive: true,
+      });
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(59_999);
+      await Promise.resolve();
+    });
+    expect(result.current.state.stage).toBe("checking");
+
+    await act(async () => {
+      pendingCheck.resolve(availableUpdate);
+      await checkPromise;
+    });
+    expect(result.current.state.stage).toBe("available");
+    expect(result.current.state.version).toBe("0.4.14");
+  });
+
   it("announces when start update finds no update", async () => {
     vi.useFakeTimers();
     checkMock.mockResolvedValue(null);

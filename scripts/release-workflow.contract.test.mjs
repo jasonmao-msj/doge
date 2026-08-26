@@ -148,6 +148,20 @@ test("macOS artifact-only dispatch is ad-hoc signed, verified, and cannot publis
   );
 });
 
+test("shipping macOS build does not require Apple system signing", () => {
+  const workflow = read(".github/workflows/release.yml");
+  const macosJob = workflowJob(workflow, "build_macos");
+
+  assert.match(macosJob, /SKIP_CODESIGN=1/);
+  assert.match(macosJob, /TAURI_SIGNING_PRIVATE_KEY_B64/);
+  assert.match(macosJob, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
+  assert.match(macosJob, /doge_\$\{ARCH\}\.app\.tar\.gz\.sig/);
+  assert.doesNotMatch(
+    macosJob,
+    /APPLE_CERTIFICATE|APPLE_API_|APPLE_SIGNING_IDENTITY|CODESIGN_IDENTITY|notarytool|stapler|security import/,
+  );
+});
+
 test("shipping updater config uses the doge public key and canonical feed", () => {
   const config = JSON.parse(read("src-tauri/tauri.conf.json"));
   const windowsConfig = JSON.parse(read("src-tauri/tauri.windows.conf.json"));
