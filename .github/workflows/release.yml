@@ -107,7 +107,15 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: |
           $ErrorActionPreference = "Stop"
-          npm run tauri -- build --config src-tauri/tauri.windows.conf.json --bundles nsis
+          $config = Get-Content src-tauri/tauri.windows.conf.json -Raw | ConvertFrom-Json
+          $config.bundle.createUpdaterArtifacts = $false
+          $artifactConfigPath = Join-Path $env:RUNNER_TEMP "doge-windows-artifact-only.conf.json"
+          [System.IO.File]::WriteAllText(
+            $artifactConfigPath,
+            ($config | ConvertTo-Json -Depth 100),
+            [System.Text.Encoding]::UTF8
+          )
+          npm run tauri -- build --config $artifactConfigPath --bundles nsis
 
       - name: Verify standard-user configuration replacement contract
         shell: pwsh
@@ -243,7 +251,7 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=8192"
         run: |
           set -euo pipefail
-          npm run "${{ matrix.build_script }}" -- --skip-sign --skip-notarize
+          npm run "${{ matrix.build_script }}" -- --skip-sign --skip-notarize --skip-updater-artifacts
 
       - name: Verify and stage artifact
         run: |

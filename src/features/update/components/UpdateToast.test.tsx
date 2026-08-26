@@ -137,4 +137,21 @@ describe("UpdateToast", () => {
     );
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
+
+  it("does not dismiss while download or install is active", () => {
+    const onDismiss = vi.fn();
+
+    render(
+      <UpdateToast
+        state={{ stage: "downloading" }}
+        onUpdate={vi.fn()}
+        onDismiss={onDismiss}
+      />,
+    );
+
+    const dismiss = screen.getByRole("button", { name: "Dismiss" });
+    expect((dismiss as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(dismiss);
+    expect(onDismiss).not.toHaveBeenCalled();
+  });
 });

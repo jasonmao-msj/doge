@@ -125,9 +125,12 @@ describe("doge external-service contracts", () => {
     );
 
     const tauriConfig = json<TauriConfig>("src-tauri/tauri.conf.json");
-    expect(brand.updater.enabled).toBe(false);
-    expect(tauriConfig.bundle?.createUpdaterArtifacts).toBe(false);
-    expect(tauriConfig.plugins?.updater).toEqual({ endpoints: [], pubkey: "" });
-    expect(tauriConfig.plugins?.updater?.active).not.toBe(true);
+    expect(brand.updater.enabled).toBe(true);
+    expect(tauriConfig.bundle?.createUpdaterArtifacts).toBe(true);
+    expect(tauriConfig.plugins?.updater?.active).toBe(true);
+    expect(tauriConfig.plugins?.updater?.pubkey).toBeTruthy();
+    expect(tauriConfig.plugins?.updater?.endpoints).toEqual([
+      expectedUpdater,
+    ]);
   });
 });

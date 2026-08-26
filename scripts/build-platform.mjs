@@ -20,7 +20,7 @@
  */
 
 import { execSync, spawn } from "child_process";
-import { existsSync, mkdirSync, rmSync, readFileSync } from "fs";
+import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
@@ -108,9 +108,28 @@ function ensureReleaseDir() {
   }
 }
 
+function createBuildConfigOverride(skipUpdaterArtifacts) {
+  if (!skipUpdaterArtifacts) {
+    return null;
+  }
+
+  ensureReleaseDir();
+  const configPath = join(RELEASE_DIR, "tauri-artifact-only.conf.json");
+  writeFileSync(
+    configPath,
+    JSON.stringify({ bundle: { createUpdaterArtifacts: false } }, null, 2) + "\n",
+    "utf8",
+  );
+  return configPath;
+}
+
 // Build macOS app
 async function buildMacOS(arch, options = {}) {
-  const { skipSign = false, skipNotarize = false } = options;
+  const {
+    skipSign = false,
+    skipNotarize = false,
+    skipUpdaterArtifacts = false,
+  } = options;
   const version = getVersion();
 
   if (!skipSign && !CONFIG.codesignIdentity) {
@@ -204,22 +223,32 @@ async function buildMacOS(arch, options = {}) {
   // Build the app
   const buildEnv = arch === "arm64" ? "" : `X86_64_APPLE_DARWIN_OPENSSL_DIR=${CONFIG.openssl.x64} `;
   const bundledEngineEnv = { DOGE_BUNDLED_ENGINE_TARGET: target };
-  exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app`, {
-    env: bundledEngineEnv,
-  });
-
-  // For universal builds, merge daemon binary
-  if (arch === "universal") {
-    console.log("\nMerging daemon binary for universal build...");
-    exec(`lipo -create \\
-      ${TAURI_DIR}/target/aarch64-apple-darwin/release/doge_daemon \\
-      ${TAURI_DIR}/target/x86_64-apple-darwin/release/doge_daemon \\
-      -output ${TAURI_DIR}/target/universal-apple-darwin/release/doge_daemon`);
-
-    // Rebuild bundle
-    exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app`, {
+  const configOverridePath = createBuildConfigOverride(skipUpdaterArtifacts);
+  const configOverride = configOverridePath
+    ? ` --config "${configOverridePath}"`
+    : "";
+  try {
+    exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app${configOverride}`, {
       env: bundledEngineEnv,
     });
+
+    // For universal builds, merge daemon binary
+    if (arch === "universal") {
+      console.log("\nMerging daemon binary... ");
+      exec(`lipo -create \\
+        ${TAURI_DIR}/target/aarch64-apple-darwin/release/doge_daemon \\
+        ${TAURI_DIR}/target/x86_64-apple-darwin/release/doge_daemon \\
+        -output ${TAURI_DIR}/target/universal-apple-darwin/release/doge_daemon`);
+
+      // Rebuild bundle
+      exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app${configOverride}`, {
+        env: bundledEngineEnv,
+      });
+    }
+  } finally {
+    if (configOverridePath) {
+      rmSync(configOverridePath, { force: true });
+    }
   }
 
   // Bundle OpenSSL for both formal and artifact-only builds. `--skip-sign`
@@ -428,6 +457,7 @@ const platform = args[0];
 const options = {
   skipSign: args.includes("--skip-sign"),
   skipNotarize: args.includes("--skip-notarize"),
+  skipUpdaterArtifacts: args.includes("--skip-updater-artifacts"),
 };
 
 if (!platform) {
@@ -449,6 +479,7 @@ Platforms:
 Options:
   --skip-sign      - Skip Developer ID signing; apply verified ad-hoc signing (macOS only)
   --skip-notarize  - Skip notarization (macOS only)
+  --skip-updater-artifacts - Disable updater artifacts for non-publishing test builds
 
 Examples:
   npm run build:mac-arm64

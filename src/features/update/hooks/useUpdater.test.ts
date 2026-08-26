@@ -432,6 +432,69 @@ describe("useUpdater", () => {
     expect(relaunchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("does not relaunch when an active download is invalidated", async () => {
+    const download = createDeferred<void>();
+    const close = vi.fn();
+    const downloadAndInstall = vi.fn(() => download.promise);
+    const update = createMockUpdate("1.3.0");
+    update.downloadAndInstall = downloadAndInstall;
+    update.close = close;
+    checkMock.mockResolvedValue(update);
+    const { result } = renderHook(() => useUpdater({}));
+
+    await act(async () => {
+      await result.current.startUpdate();
+    });
+
+    let updatePromise: Promise<void> | undefined;
+    act(() => {
+      updatePromise = result.current.startUpdate();
+    });
+    expect(result.current.state.stage).toBe("downloading");
+
+    await act(async () => {
+      await result.current.dismiss();
+    });
+
+    await act(async () => {
+      download.resolve();
+      await updatePromise;
+    });
+
+    expect(result.current.state.stage).toBe("idle");
+    expect(relaunchMock).not.toHaveBeenCalled();
+    expect(downloadAndInstall).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores repeated update actions while download is active", async () => {
+    const download = createDeferred<void>();
+    const downloadAndInstall = vi.fn(() => download.promise);
+    const update = createMockUpdate("1.4.0");
+    update.downloadAndInstall = downloadAndInstall;
+    checkMock.mockResolvedValue(update);
+    const { result } = renderHook(() => useUpdater({}));
+
+    await act(async () => {
+      await result.current.startUpdate();
+    });
+
+    let firstUpdatePromise: Promise<void> | undefined;
+    let secondUpdatePromise: Promise<void> | undefined;
+    act(() => {
+      firstUpdatePromise = result.current.startUpdate();
+      secondUpdatePromise = result.current.startUpdate();
+    });
+
+    expect(downloadAndInstall).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      download.resolve();
+      await Promise.all([firstUpdatePromise, secondUpdatePromise]);
+    });
+
+    expect(relaunchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("resets to idle and closes update on dismiss", async () => {
     const close = vi.fn();
     checkMock.mockResolvedValue({

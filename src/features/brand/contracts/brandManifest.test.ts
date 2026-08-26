@@ -44,7 +44,7 @@ describe("canonical doge brand manifest", () => {
           aiTeal: "#2B9A92",
         },
       },
-      updater: { enabled: false },
+      updater: { enabled: true },
     });
   });
 
