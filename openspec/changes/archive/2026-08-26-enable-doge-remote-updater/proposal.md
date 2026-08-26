@@ -1,10 +1,10 @@
 # Enable doge Remote Updater
 
-## Goal
+## Why
 
 启用 doge desktop app 的 signed remote update。Windows 与 macOS release 必须从 canonical doge GitHub release feed 检查更新，并通过 Tauri updater 的 public key 验证更新包；用户提供的 public key 只进入可公开分发的配置，private key 继续由 GitHub Actions secret 管理。
 
-## Requirements
+## What Changes
 
 - 开启 doge updater plugin、updater artifacts 与 canonical endpoint。
 - 将提供的 minisign public key 固化到 Tauri shipping config。
