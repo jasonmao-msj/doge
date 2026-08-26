@@ -170,12 +170,26 @@ function DoctorResultCard({
               .join(" · ")}
           </div>
         ) : null}
-        <div>
-          {t("settings.nodeLabel")}{" "}
-          {state.result.nodeOk
-            ? `${t("settings.statusOk")} (${state.result.nodeVersion ?? t("git.unknown")})`
-            : t("settings.statusMissing")}
-        </div>
+        {state.result.nodeRequired !== false ? (
+          <div>
+            {t("settings.nodeLabel")} {" "}
+            {state.result.nodeOk
+              ? `${t("settings.statusOk")} (${state.result.nodeVersion ?? t("git.unknown")})`
+              : t("settings.statusMissing")}
+          </div>
+        ) : null}
+        {state.result.kimiShell ? (
+          <div>
+            <strong>{t("settings.doctorEnvironmentDiagnosis")}:</strong>{" "}
+            {state.result.kimiShell.category ??
+              (state.result.kimiShell.ok
+                ? t("settings.statusOk")
+                : t("settings.statusFailed"))}
+            {state.result.kimiShell.shellPath
+              ? ` · ${state.result.kimiShell.shellPath}`
+              : ""}
+          </div>
+        ) : null}
         {state.result.details ? <div>{state.result.details}</div> : null}
         {state.result.nodeDetails ? (
           <div>{state.result.nodeDetails}</div>

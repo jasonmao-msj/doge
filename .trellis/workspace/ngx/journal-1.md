@@ -49,3 +49,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: 内置 Kimi 跨平台 shell runtime
+
+**Date**: 2026-08-26
+**Task**: 内置 Kimi 跨平台 shell runtime
+**Branch**: `codex/bundle-kimi-windows-shell-runtime`
+
+### Summary
+
+完成 bundle-kimi-windows-shell-runtime：Windows 内置 PortableGit/Bash 并隔离注入 Kimi child PATH，macOS 使用系统 shell；统一 Kimi launch context、doctor/status/toolchain 诊断与 frontend 映射；增强 bundled artifact 下载校验、7z SFX 解析、路径安全、staging 原子替换及回归测试。验证通过 bundled-engine tests 10/10、prepare:bundled-engines、typecheck、runtime contracts、cargo/Tauri dev smoke；修复开发模式 watcher 对 staging 目录的重复重建。正式 installer、签名、clean-machine 与 macOS 实机 smoke 仍属 release gate。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cc43ae94c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
