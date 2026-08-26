@@ -1945,3 +1945,36 @@ PR #26 记录 release run 32835675677 全绿；下载并校验 Windows x64 unsig
 ### Next Steps
 
 - None - task complete
+
+
+## Session 58: 固化产品引擎与首次准备恢复
+
+**Date**: 2026-08-26
+**Task**: 固化产品引擎与首次准备恢复
+**Branch**: `codex/product-managed-engine-onboarding`
+
+### Summary
+
+强制 Codex/Claude/Kimi 使用产品 managed policy，隐藏 Engine Management；修复 managed-key create 响应不可信时的同请求 authoritative reconcile，并完成 fresh-device 无点击目视验收与 L3 验证。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `051292191` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
