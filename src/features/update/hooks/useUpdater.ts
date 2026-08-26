@@ -75,6 +75,8 @@ export function useUpdater({ enabled = true, onDebug }: UseUpdaterOptions) {
   const updateRef = useRef<Update | null>(null);
   const latestTimeoutRef = useRef<number | null>(null);
   const checkRequestIdRef = useRef(0);
+  const updateOperationIdRef = useRef(0);
+  const activeUpdateOperationRef = useRef<number | null>(null);
   const onDebugRef = useRef(onDebug);
   const appVersionRef = useRef<string | null | undefined>(undefined);
   const appVersionRequestRef = useRef<Promise<string | null> | null>(null);
@@ -91,6 +93,11 @@ export function useUpdater({ enabled = true, onDebug }: UseUpdaterOptions) {
 
   const invalidatePendingChecks = useCallback(() => {
     checkRequestIdRef.current += 1;
+  }, []);
+
+  const invalidateUpdateOperation = useCallback(() => {
+    updateOperationIdRef.current += 1;
+    activeUpdateOperationRef.current = null;
   }, []);
 
   const closeUpdateHandle = useCallback(async (update: Update | null | undefined) => {
@@ -142,15 +149,25 @@ export function useUpdater({ enabled = true, onDebug }: UseUpdaterOptions) {
 
   const resetToIdle = useCallback(async () => {
     invalidatePendingChecks();
+    invalidateUpdateOperation();
     clearLatestTimeout();
     const update = updateRef.current;
     updateRef.current = null;
     setState({ stage: "idle" });
     await closeUpdateHandle(update);
-  }, [clearLatestTimeout, closeUpdateHandle, invalidatePendingChecks]);
+  }, [
+    clearLatestTimeout,
+    closeUpdateHandle,
+    invalidatePendingChecks,
+    invalidateUpdateOperation,
+  ]);
 
   const checkForUpdates = useCallback(
     async (options?: CheckForUpdatesOptions) => {
+      if (activeUpdateOperationRef.current !== null) {
+        return;
+      }
+
       const requestId = checkRequestIdRef.current + 1;
       checkRequestIdRef.current = requestId;
       const isStaleRequest = () => checkRequestIdRef.current !== requestId;
@@ -246,11 +263,20 @@ export function useUpdater({ enabled = true, onDebug }: UseUpdaterOptions) {
   );
 
   const startUpdate = useCallback(async () => {
+    if (activeUpdateOperationRef.current !== null) {
+      return;
+    }
+
     const update = updateRef.current;
     if (!update) {
       await checkForUpdates({ announceNoUpdate: true, interactive: true });
       return;
     }
+
+    const operationId = updateOperationIdRef.current + 1;
+    updateOperationIdRef.current = operationId;
+    activeUpdateOperationRef.current = operationId;
+    const isStaleOperation = () => updateOperationIdRef.current !== operationId;
 
     setState((prev) => ({
       ...prev,
@@ -261,6 +287,10 @@ export function useUpdater({ enabled = true, onDebug }: UseUpdaterOptions) {
 
     try {
       await update.downloadAndInstall((event: DownloadEvent) => {
+        if (isStaleOperation()) {
+          return;
+        }
+
         if (event.event === "Started") {
           setState((prev) => ({
             ...prev,
@@ -292,12 +322,20 @@ export function useUpdater({ enabled = true, onDebug }: UseUpdaterOptions) {
         }
       });
 
+      if (isStaleOperation()) {
+        return;
+      }
+
       setState((prev) => ({
         ...prev,
         stage: "restarting",
       }));
       await relaunch();
     } catch (error) {
+      if (isStaleOperation()) {
+        return;
+      }
+
       const message = describeError(error);
       onDebug?.({
         id: `${Date.now()}-client-updater-error`,
@@ -311,6 +349,10 @@ export function useUpdater({ enabled = true, onDebug }: UseUpdaterOptions) {
         stage: "error",
         error: message,
       }));
+    } finally {
+      if (activeUpdateOperationRef.current === operationId) {
+        activeUpdateOperationRef.current = null;
+      }
     }
   }, [checkForUpdates, onDebug]);
 
@@ -324,12 +366,18 @@ export function useUpdater({ enabled = true, onDebug }: UseUpdaterOptions) {
   useEffect(() => {
     return () => {
       invalidatePendingChecks();
+      invalidateUpdateOperation();
       clearLatestTimeout();
       const update = updateRef.current;
       updateRef.current = null;
       void closeUpdateHandle(update);
     };
-  }, [clearLatestTimeout, closeUpdateHandle, invalidatePendingChecks]);
+  }, [
+    clearLatestTimeout,
+    closeUpdateHandle,
+    invalidatePendingChecks,
+    invalidateUpdateOperation,
+  ]);
 
   return {
     state,

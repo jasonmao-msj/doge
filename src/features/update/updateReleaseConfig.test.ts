@@ -7,7 +7,7 @@ function readWorkspaceFile(relativePath: string): string {
 }
 
 describe("update release configuration", () => {
-  it("keeps updater artifacts and trust config disabled until doge signing is ready", () => {
+  it("ships the doge updater artifacts and trust config", () => {
     const config = JSON.parse(readWorkspaceFile("src-tauri/tauri.conf.json")) as {
       bundle?: { createUpdaterArtifacts?: boolean };
       plugins?: {
@@ -18,10 +18,16 @@ describe("update release configuration", () => {
       readWorkspaceFile("src-tauri/tauri.windows.conf.json"),
     ) as { bundle?: { createUpdaterArtifacts?: boolean } };
 
-    expect(config.bundle?.createUpdaterArtifacts).toBe(false);
-    expect(windowsConfig.bundle?.createUpdaterArtifacts).toBe(false);
-    expect(config.plugins?.updater).toEqual({ endpoints: [], pubkey: "" });
-    expect(config.plugins?.updater?.active).not.toBe(true);
+    expect(config.bundle?.createUpdaterArtifacts).toBe(true);
+    expect(windowsConfig.bundle?.createUpdaterArtifacts).toBe(true);
+    expect(config.plugins?.updater).toEqual({
+      active: true,
+      pubkey:
+        "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA4QjcxRkFFN0Q5NzgxQUYKUldTdmdaZDlyaCszQ0k2NGVoTG1LRnVoN2F3SVZjNFVzeTZlc2VNcUJhdlhmTko4WkY2QU9UQmMK",
+      endpoints: [
+        "https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json",
+      ],
+    });
   });
 
   it("generates release asset URLs from the doge repo", () => {

@@ -51,25 +51,44 @@
 - None - task complete
 
 
-## Session 3: 内置 Kimi 跨平台 shell runtime
+## Session 3: 启用 doge 远端更新并归档 OpenSpec
 
 **Date**: 2026-08-26
-**Task**: 内置 Kimi 跨平台 shell runtime
-**Branch**: `codex/bundle-kimi-windows-shell-runtime`
+**Task**: 启用 doge 远端更新并归档 OpenSpec
+**Branch**: `codex/enable-doge-updater`
 
 ### Summary
 
-完成 bundle-kimi-windows-shell-runtime：Windows 内置 PortableGit/Bash 并隔离注入 Kimi child PATH，macOS 使用系统 shell；统一 Kimi launch context、doctor/status/toolchain 诊断与 frontend 映射；增强 bundled artifact 下载校验、7z SFX 解析、路径安全、staging 原子替换及回归测试。验证通过 bundled-engine tests 10/10、prepare:bundled-engines、typecheck、runtime contracts、cargo/Tauri dev smoke；修复开发模式 watcher 对 staging 目录的重复重建。正式 installer、签名、clean-machine 与 macOS 实机 smoke 仍属 release gate。
+(Add summary)
 
 ### Main Changes
 
-(Add details)
+本次完成 doge Tauri 远端更新能力，并归档对应 OpenSpec change。
+
+**代码提交**:
+- `09692cd2f feat(updater): 启用 doge 远端更新`
+- `dd3bf2e32 chore(openspec): 归档远端更新变更`
+
+**实现内容**:
+- 启用 Tauri updater，配置 canonical feed：`https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json`
+- 固化用户提供的 updater public key；signing private key 与 password 仅通过 GitHub Actions secrets 注入，不进入仓库。
+- release workflow 增加 signing preflight、Windows/macOS updater artifact 签名及 `latest.json` 校验。
+- artifact-only workflow 自动关闭 updater artifacts，避免没有 signing secret 时误失败。
+- 增加 updater focused tests，并修复 Windows CRLF 下 release contract test 误报。
+- 修复更新下载期间 dismiss、重复点击和 stale continuation 行为。
+
+**验证**:
+- L3 verification passed：35 个 focused Vitest tests、targeted ESLint、`npm run typecheck`、`cargo check --manifest-path src-tauri/Cargo.toml --lib`、release workflow contract tests、branding check、OpenSpec strict validation、`git diff --check`。
+- 全量 `openspec validate --specs` 仍有 4 个既有无关失败：`app-shortcuts`、`composer-note-card`、`spec-hub-workbench-ui`、`workspace-note-card-pool`。
+- 真实 Windows/macOS 两版本 update smoke test 仍待发布者执行，未伪造完成状态；artifact-only workflow 不等于正式 updater release。
+
 
 ### Git Commits
 
 | Hash | Message |
 |------|---------|
-| `cc43ae94c` | (see git log) |
+| `09692cd2f` | (see git log) |
+| `dd3bf2e32` | (see git log) |
 
 ### Testing
 

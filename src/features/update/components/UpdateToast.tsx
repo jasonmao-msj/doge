@@ -21,6 +21,8 @@ function formatBytes(value: number) {
   return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
+const BUSY_UPDATE_STAGES = new Set(["downloading", "installing", "restarting"]);
+
 export function UpdateToast({ state, onUpdate, onDismiss }: UpdateToastProps) {
   const { t } = useTranslation();
 
@@ -34,6 +36,7 @@ export function UpdateToast({ state, onUpdate, onDismiss }: UpdateToastProps) {
     totalBytes && totalBytes > 0
       ? Math.min(100, (downloadedBytes / totalBytes) * 100)
       : null;
+  const updateBusy = BUSY_UPDATE_STAGES.has(state.stage);
 
   return (
     <div className="update-toasts" role="region" aria-live="polite">
@@ -48,6 +51,7 @@ export function UpdateToast({ state, onUpdate, onDismiss }: UpdateToastProps) {
               type="button"
               className="update-toast-dismiss"
               onClick={onDismiss}
+              disabled={updateBusy}
               aria-label={t("common.dismiss")}
               title={t("common.dismiss")}
             >

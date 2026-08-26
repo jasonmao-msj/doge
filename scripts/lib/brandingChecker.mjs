@@ -259,6 +259,7 @@ export function verifyCanonicalIdentity(root) {
   const packageJson = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   const packageLock = JSON.parse(readFileSync(join(root, "package-lock.json"), "utf8"));
   const tauri = JSON.parse(readFileSync(join(root, "src-tauri/tauri.conf.json"), "utf8"));
+  const windowsTauri = JSON.parse(readFileSync(join(root, "src-tauri/tauri.windows.conf.json"), "utf8"));
   const cargo = readFileSync(join(root, "src-tauri/Cargo.toml"), "utf8");
 
   expectEqual(packageJson.name, brand.runtime.npmPackage, "package.json name", failures);
@@ -269,10 +270,16 @@ export function verifyCanonicalIdentity(root) {
   expectEqual(tauri.version, brand.version, "Tauri version", failures);
   expectEqual(tauri.identifier, brand.bundle.productionIdentifier, "Tauri identifier", failures);
   expectEqual(tauri.bundle?.createUpdaterArtifacts, brand.updater.enabled, "Tauri updater artifact state", failures);
+  expectEqual(windowsTauri.bundle?.createUpdaterArtifacts, brand.updater.enabled, "Windows Tauri updater artifact state", failures);
   if (brand.updater.enabled === false) {
     expectEqual(tauri.plugins?.updater?.pubkey, "", "Disabled Tauri updater public key", failures);
     expectEqual(tauri.plugins?.updater?.endpoints?.length, 0, "Disabled Tauri updater endpoints", failures);
     expectEqual(tauri.plugins?.updater?.active === true, false, "Disabled Tauri updater activation", failures);
+  } else {
+    expectEqual(tauri.plugins?.updater?.active, true, "Enabled Tauri updater activation", failures);
+    expectEqual(tauri.plugins?.updater?.pubkey?.trim().length > 0, true, "Enabled Tauri updater public key", failures);
+    expectEqual(tauri.plugins?.updater?.endpoints?.length, 1, "Enabled Tauri updater endpoint count", failures);
+    expectEqual(tauri.plugins?.updater?.endpoints?.[0], brand.updater.endpoint, "Enabled Tauri updater endpoint", failures);
   }
 
   const cargoExpectations = [

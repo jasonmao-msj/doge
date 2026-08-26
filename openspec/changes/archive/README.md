@@ -2,13 +2,17 @@
 
 本页为 `mossx` 已归档 OpenSpec proposal 的完整可点击索引。目录名中的日期是 archive date，不代表 proposal 首次创建时间。
 
-- Updated At: `2026-08-08`
-- Indexed proposals: `849+`
+- Updated At: `2026-08-26`
+- Indexed proposals: `850+`
 - Source of truth: `openspec/changes/archive/<archive-date>-<change-id>/proposal.md`
 - Back to current changes: [`../README.md`](../README.md)
 - Back to workspace overview: [`../../project.md`](../../project.md)
 
 ## 2026-08
+
+### 2026-08-26
+
+- [`2026-08-26-enable-doge-remote-updater`](2026-08-26-enable-doge-remote-updater/proposal.md) — doge signed remote updater 已实现并同步 `doge-release-updater`；L3 focused gates 通过，真实两版本 Windows/macOS update smoke 保留为发布者验收项
 
 ### 2026-08-08
 

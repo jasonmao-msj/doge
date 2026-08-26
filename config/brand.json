@@ -35,6 +35,6 @@
   },
   "updater": {
     "endpoint": "https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json",
-    "enabled": false
+    "enabled": true
   }
 }

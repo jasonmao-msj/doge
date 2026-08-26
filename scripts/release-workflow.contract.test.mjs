@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 function read(relativePath) {
-  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8");
+  return readFileSync(new URL(`../${relativePath}`, import.meta.url), "utf8").replace(
+    /\r\n/g,
+    "\n",
+  );
 }
 
 function workflowJob(workflow, jobName) {
@@ -90,8 +93,10 @@ test("Windows artifact-only dispatch cannot publish or access release secrets", 
   assert.match(artifactJob, /permissions:\n\s+contents: read/);
   assert.match(
     artifactJob,
-    /build --config src-tauri\/tauri\.windows\.conf\.json --bundles nsis/,
+    /createUpdaterArtifacts = \$false/,
   );
+  assert.match(artifactJob, /RUNNER_TEMP.*doge-windows-artifact-only\.conf\.json/);
+  assert.match(artifactJob, /build --config \$artifactConfigPath --bundles nsis/);
   assert.match(artifactJob, /doge_\*-setup\.exe/);
   assert.match(artifactJob, /Get-FileHash -Algorithm SHA256/);
   assert.match(artifactJob, /Smoke Windows application startup/);
@@ -125,6 +130,7 @@ test("macOS artifact-only dispatch is ad-hoc signed, verified, and cannot publis
   assert.match(artifactJob, /build:mac-arm64/);
   assert.match(artifactJob, /build:mac-x64/);
   assert.match(artifactJob, /--skip-sign --skip-notarize/);
+  assert.match(artifactJob, /--skip-updater-artifacts/);
   assert.match(artifactJob, /hdiutil verify/);
   assert.match(
     artifactJob,
@@ -142,14 +148,20 @@ test("macOS artifact-only dispatch is ad-hoc signed, verified, and cannot publis
   );
 });
 
-test("shipping updater config remains disabled without a doge public key", () => {
+test("shipping updater config uses the doge public key and canonical feed", () => {
   const config = JSON.parse(read("src-tauri/tauri.conf.json"));
   const windowsConfig = JSON.parse(read("src-tauri/tauri.windows.conf.json"));
 
-  assert.equal(config.bundle?.createUpdaterArtifacts, false);
-  assert.equal(windowsConfig.bundle?.createUpdaterArtifacts, false);
-  assert.deepEqual(config.plugins?.updater, { endpoints: [], pubkey: "" });
-  assert.notEqual(config.plugins?.updater?.active, true);
+  assert.equal(config.bundle?.createUpdaterArtifacts, true);
+  assert.equal(windowsConfig.bundle?.createUpdaterArtifacts, true);
+  assert.equal(config.plugins?.updater?.active, true);
+  assert.equal(
+    config.plugins?.updater?.pubkey,
+    "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA4QjcxRkFFN0Q5NzgxQUYKUldTdmdaZDlyaCszQ0k2NGVoTG1LRnVoN2F3SVZjNFVzeTZlc2VNcUJhdlhmTko4WkY2QU9UQmMK",
+  );
+  assert.deepEqual(config.plugins?.updater?.endpoints, [
+    "https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json",
+  ]);
 });
 
 test("release/build surfaces use doge artifacts and never swallow build failures", () => {

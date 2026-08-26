@@ -1,0 +1,143 @@
+name: doge Windows Release (reuse existing artifact)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Source release.yml run ID, for example 123456789
+        required: true
+        type: string
+      version:
+        description: Version inside the source artifact, for example 0.0.9
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  release_windows:
+    name: Publish existing Windows artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve and verify source release run
+        id: source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "source_run_id must be a numeric GitHub Actions run ID." >&2
+            exit 1
+          fi
+
+          CONCLUSION=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" \
+            --jq '.conclusion')
+          if [ "$CONCLUSION" != "success" ]; then
+            echo "Source release.yml run is not successful: $CONCLUSION" >&2
+            exit 1
+          fi
+
+          SOURCE_SHA=$(gh api \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${SOURCE_RUN_ID}" \
+            --jq '.head_sha')
+          echo "head_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Download Windows artifact from release.yml
+        uses: actions/download-artifact@v4
+        with:
+          name: doge-windows-x64
+          path: release-artifacts
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.source_run_id }}
+
+      - name: Verify existing Windows artifact
+        env:
+          VERSION: ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "version must use MAJOR.MINOR.PATCH format." >&2
+            exit 1
+          fi
+
+          EXES=(release-artifacts/doge_*-setup.exe)
+          SIGS=(release-artifacts/doge_*-setup.exe.sig)
+          if [ "${#EXES[@]}" -ne 1 ] || [ "${#SIGS[@]}" -ne 1 ]; then
+            echo "Expected exactly one signed Windows installer artifact." >&2
+            exit 1
+          fi
+
+          EXE_NAME="$(basename "${EXES[0]}")"
+          SIG_NAME="$(basename "${SIGS[0]}")"
+          if [ "$SIG_NAME" != "${EXE_NAME}.sig" ]; then
+            echo "Windows installer and signature names do not match." >&2
+            exit 1
+          fi
+          case "$EXE_NAME" in
+            *"_${VERSION}_"*) ;;
+            *) echo "Installer filename does not contain version ${VERSION}: ${EXE_NAME}" >&2; exit 1 ;;
+          esac
+
+          SIGNATURE=$(cat "${SIGS[0]}")
+          if [ -z "$SIGNATURE" ]; then
+            echo "Windows installer signature is empty." >&2
+            exit 1
+          fi
+
+          HASH=$(sha256sum "${EXES[0]}" | awk '{print $1}')
+          printf '%s  %s\n' "$HASH" "$EXE_NAME" > "release-artifacts/${EXE_NAME}.sha256"
+          export EXE_NAME SIGNATURE
+
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          version = os.environ["VERSION"]
+          exe_name = os.environ["EXE_NAME"]
+          signature = os.environ["SIGNATURE"]
+          payload = {
+              "version": version,
+              "notes": "Windows x64 release",
+              "pub_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "platforms": {
+                  "windows-x86_64": {
+                      "url": f"https://github.com/jasonmao-msj/doge/releases/download/v{version}/{exe_name}",
+                      "signature": signature,
+                  }
+              },
+          }
+          Path("release-artifacts/latest.json").write_text(
+              json.dumps(payload, indent=2) + "\n"
+          )
+          PY
+
+      - name: Publish Windows GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+          SOURCE_SHA: ${{ steps.source.outputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s\n' "## Windows" "" "- doge Windows x64 installer" > release-artifacts/release-notes.md
+
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes-file release-artifacts/release-notes.md \
+            --target "$SOURCE_SHA" \
+            release-artifacts/doge_*-setup.exe \
+            release-artifacts/doge_*-setup.exe.sig \
+            release-artifacts/doge_*-setup.exe.sha256 \
+            release-artifacts/latest.json

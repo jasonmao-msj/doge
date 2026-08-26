@@ -93,7 +93,7 @@ describe("upstream service isolation", () => {
     ).toEqual([]);
   });
 
-  it("keeps the updater fail-closed until doge signing is configured", () => {
+  it("keeps the updater trust chain on the canonical doge release", () => {
     const config = JSON.parse(
       readFileSync(join(repoRoot, "src-tauri/tauri.conf.json"), "utf8"),
     ) as {
@@ -106,9 +106,12 @@ describe("upstream service isolation", () => {
       readFileSync(join(repoRoot, "src-tauri/tauri.windows.conf.json"), "utf8"),
     ) as { bundle?: { createUpdaterArtifacts?: boolean } };
 
-    expect(config.bundle?.createUpdaterArtifacts).toBe(false);
-    expect(windowsConfig.bundle?.createUpdaterArtifacts).toBe(false);
-    expect(config.plugins?.updater).toEqual({ endpoints: [], pubkey: "" });
-    expect(config.plugins?.updater?.active).not.toBe(true);
+    expect(config.bundle?.createUpdaterArtifacts).toBe(true);
+    expect(windowsConfig.bundle?.createUpdaterArtifacts).toBe(true);
+    expect(config.plugins?.updater?.active).toBe(true);
+    expect(config.plugins?.updater?.pubkey).toBeTruthy();
+    expect(config.plugins?.updater?.endpoints).toEqual([
+      "https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json",
+    ]);
   });
 });
