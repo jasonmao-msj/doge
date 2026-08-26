@@ -1,5 +1,29 @@
 {
   "schemaVersion": 1,
+  "runtimes": {
+    "kimi-windows-shell": {
+      "version": "2.51.0.windows.1",
+      "source": "https://github.com/git-for-windows/git/releases/tag/v2.51.0.windows.1",
+      "license": "GNU GPL v2 with additional permissions; see Git for Windows distribution notices",
+      "variants": {
+        "x86_64-pc-windows-msvc": {
+          "url": "https://github.com/git-for-windows/git/releases/download/v2.51.0.windows.1/PortableGit-2.51.0-64-bit.7z.exe",
+          "sha256": "a09b275d51ed3e829128e04cf4168fb54896cf6234bb30fecb8dc96a2bd321fa",
+          "archive": "7z",
+          "root": ".",
+          "executable": "bin/bash.exe",
+          "requiredFiles": [
+            "bin/bash.exe",
+            "bin/sh.exe",
+            "cmd/git.exe",
+            "usr/bin/bash.exe",
+            "usr/bin/msys-2.0.dll",
+            "etc/bash.bashrc"
+          ]
+        }
+      }
+    }
+  },
   "engines": {
     "codex": {
       "version": "0.147.0",

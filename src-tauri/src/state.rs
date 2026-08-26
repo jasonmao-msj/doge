@@ -112,6 +112,16 @@ impl AppState {
                 },
             )
             .await;
+
+        self.engine_manager
+            .set_engine_config(
+                EngineType::Kimi,
+                EngineConfig {
+                    bin_path: settings.kimi_bin.clone(),
+                    ..Default::default()
+                },
+            )
+            .await;
     }
 
     pub(crate) fn load(app: &AppHandle) -> Self {

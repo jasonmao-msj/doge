@@ -37,6 +37,7 @@ pub mod grok_history;
 pub(crate) mod grok_provider_profile;
 pub mod kimi;
 pub mod kimi_history;
+pub(crate) mod kimi_launch;
 pub(crate) mod kimi_provider_profile;
 pub mod manager;
 pub mod opencode;
