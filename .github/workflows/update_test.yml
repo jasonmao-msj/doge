@@ -52,6 +52,12 @@ jobs:
           echo "run_conclusion=$RUN_CONCLUSION" >> "$GITHUB_OUTPUT"
           echo "head_sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
 
+      - name: Checkout source release commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.head_sha }}
+          fetch-depth: 1
+
       - name: Download Windows artifact from release.yml
         uses: actions/download-artifact@v4
         with:
