@@ -1092,34 +1092,29 @@ impl TokenMatrixAuthority {
             .await
             .map_err(|_| authority_error("serviceUnavailable", None))?;
         let status = response.status();
+        let retry_after_ms = retry_after_ms(response.headers().get("retry-after"));
         if response
             .content_length()
             .is_some_and(|length| length > MAX_AUTHORITY_RESPONSE_BYTES as u64)
         {
-            return Err(authority_error("protocolMismatch", None));
+            return Err(authority_error("protocolMismatch", retry_after_ms));
         }
         let mut bytes = Vec::new();
         while let Some(chunk) = response
             .chunk()
             .await
-            .map_err(|_| authority_error("protocolMismatch", None))?
+            .map_err(|_| authority_error("protocolMismatch", retry_after_ms))?
         {
             if bytes.len().saturating_add(chunk.len()) > MAX_AUTHORITY_RESPONSE_BYTES {
-                return Err(authority_error("protocolMismatch", None));
+                return Err(authority_error("protocolMismatch", retry_after_ms));
             }
             bytes.extend_from_slice(&chunk);
         }
         if !status.is_success() {
-            return Err(authority_error(
-                if status.is_server_error() {
-                    "serviceUnavailable"
-                } else {
-                    "protocolMismatch"
-                },
-                None,
-            ));
+            return Err(authority_error(map_reason(status, ""), retry_after_ms));
         }
-        serde_json::from_slice(&bytes).map_err(|_| authority_error("protocolMismatch", None))
+        serde_json::from_slice(&bytes)
+            .map_err(|_| authority_error("protocolMismatch", retry_after_ms))
     }
 
     pub(crate) async fn logout(&self, refresh_token: &str) -> Result<Value, AuthorityError> {
@@ -1508,6 +1503,19 @@ mod tests {
                         Json(json!({ "code": 429, "reason": "UNTRUSTED_SERVER_TEXT" })),
                     )
                 }),
+            )
+            .route(
+                "/v1/models",
+                get(|| async {
+                    (
+                        StatusCode::TOO_MANY_REQUESTS,
+                        [("retry-after", "9")],
+                        Json(json!({
+                            "code": 429,
+                            "reason": "DAILY_LIMIT_EXCEEDED"
+                        })),
+                    )
+                }),
             );
         let origin = spawn_protocol_server(app).await;
         let authority = TokenMatrixAuthority::new_for_protocol_test(origin, None);
@@ -1523,6 +1531,12 @@ mod tests {
             .expect_err("rate limited");
         assert_eq!(limited.safe.code, "rateLimited");
         assert_eq!(limited.safe.retry_after_ms, Some(9_000));
+        let models_limited = authority
+            .product_models("synthetic-key")
+            .await
+            .expect_err("model catalog rate limited");
+        assert_eq!(models_limited.safe.code, "rateLimited");
+        assert_eq!(models_limited.safe.retry_after_ms, Some(9_000));
     }
 
     #[tokio::test]

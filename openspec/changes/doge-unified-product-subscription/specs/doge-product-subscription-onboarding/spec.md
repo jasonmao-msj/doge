@@ -76,6 +76,25 @@ Doge MUST scope managed product access to account, device and Composite group, a
 - **THEN** Native SHALL reuse or safely refresh the same managed binding
 - **AND** repeated calls MUST NOT create an unbounded number of API keys or remote requests
 
+#### Scenario: Managed key create side effect succeeds before its response is trusted
+
+- **GIVEN** Native found no exact active managed key and submitted the deterministic create mutation
+- **WHEN** the create response is `protocolMismatch` or a successful envelope lacks a valid id/group/one-time secret
+- **THEN** Native SHALL authoritative re-list the exact deterministic managed key identity before exposing a terminal failure
+- **AND** if the exact active key exists, Native SHALL obtain its secret through the owner-authorized Desktop handoff and continue the same product prepare operation
+- **AND** renderer SHALL NOT see an intermediate failure or require a manual retry
+- **AND** reconcile SHALL remain bounded and SHALL NOT select a key with another group, name, status or owner scope
+
+#### Scenario: Product prepare is transiently unavailable during convergence
+
+- **GIVEN** local Codex/Claude/Kimi toolchains have converged
+- **WHEN** one or more idempotent product prepare attempts return `serviceUnavailable` without a server cooldown
+- **THEN** the Gate SHALL use at most 6 attempts over the bounded `[0, 1s, 2s, 4s, 8s, 15s]` schedule without showing a terminal failure surface between attempts
+- **AND** any successful result SHALL enter AppShell in the same user operation without requiring a click
+- **AND** attempts exhausted SHALL expose the recoverable error
+- **AND** each failed attempt SHALL record safe `code/stage/attempt/maxAttempts/retryDelayMs` diagnostics
+- **AND** server cooldown or stale generation SHALL stop further automatic attempts
+
 #### Scenario: Product credential identity survives plan copy changes and device fan-out
 
 - **WHEN** the same account/device/Composite group prepares after plan name, description or price changes
@@ -135,10 +154,25 @@ For an active prepared product entitlement, Doge SHALL consume the refreshable u
 #### Scenario: Product preparation starts on a fresh device
 
 - **WHEN** the account has an active Doge subscription but one or more product engines are not yet executable
-- **THEN** Doge SHALL resolve Codex and Claude Code through the verified account toolchain
-- **AND** it SHALL install Kimi CLI through the existing typed installer only when Kimi is absent
+- **THEN** Doge SHALL resolve Codex、Claude Code and Kimi through the verified managed toolchain
+- **AND** all three engines SHALL select verified bundled binaries for product onboarding
+- **AND** missing local Kimi SHALL NOT trigger npm install/update
 - **AND** provider configuration and AppShell ready MUST wait for post-provision verification
-- **AND** an install/toolchain failure SHALL remain on the recoverable preparation surface
+- **AND** a bundle/toolchain failure SHALL remain on the recoverable preparation surface
+
+#### Scenario: Fresh device has no local Kimi
+
+- **GIVEN** Kimi was absent when product preparation started
+- **WHEN** Product Gate inspects the managed Kimi toolchain
+- **THEN** Doge SHALL select and verify the bundled Kimi binary
+- **AND** it SHALL NOT depend on PATH or run npm installer side effects
+- **AND** persistent bundle absence/verification failure SHALL return an engine-specific toolchain failure
+
+#### Scenario: Product authority preparation follows Kimi provisioning
+
+- **WHEN** Kimi toolchain provisioning has succeeded and Doge starts remote product preparation
+- **THEN** the visible preparation owner SHALL be Doge rather than Kimi CLI
+- **AND** a remote authority failure SHALL NOT be presented as a Kimi bundled-toolchain failure
 
 #### Scenario: Product picker opens on Home
 

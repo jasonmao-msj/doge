@@ -626,23 +626,23 @@ describe("SettingsView Display", () => {
     ).toBeNull();
 
     fireEvent.click(
-      screen.getByRole("button", { name: "settings.sidebarProviders" }),
+      screen.getByRole("button", { name: "Shortcuts" }),
     );
 
-    // The providers page shares the same centered-column page head as every
-    // other section; only the title and description swap.
-    const providersHead = document.querySelector(
+    const shortcutsHead = document.querySelector(
       ".settings-page-head",
     ) as HTMLElement | null;
-    if (!providersHead) {
-      throw new Error("Expected providers page head");
+    if (!shortcutsHead) {
+      throw new Error("Expected shortcuts page head");
     }
-    const providersHeadQueries = within(providersHead);
+    const shortcutsHeadQueries = within(shortcutsHead);
     expect(
-      providersHeadQueries.getByText("settings.sidebarProviders"),
+      shortcutsHeadQueries.getByText("Shortcuts"),
     ).toBeTruthy();
     expect(
-      providersHeadQueries.getByText("settings.vendorsDescription"),
+      shortcutsHeadQueries.getByText(
+        "Customize keyboard shortcuts for file actions, composer, panels, and navigation.",
+      ),
     ).toBeTruthy();
   });
 
@@ -658,10 +658,10 @@ describe("SettingsView Display", () => {
     const sidebarQueries = within(sidebar);
 
     expect(
-      sidebarQueries.getByRole("button", {
+      sidebarQueries.queryByRole("button", {
         name: "settings.sidebarProviders",
-      }).className,
-    ).not.toContain("active");
+      }),
+    ).toBeNull();
     expect(
       sidebarQueries.getByRole("button", { name: "Basic Settings" }).className,
     ).toContain("active");
@@ -706,21 +706,11 @@ describe("SettingsView Display", () => {
     expect(
       sidebarQueries.queryByRole("button", { name: "CLI Validation" }),
     ).toBeNull();
-    const providersEntry = sidebarQueries.getByRole("button", {
-      name: "settings.sidebarProviders",
-    });
-    const basicEntry = sidebarQueries.getByRole("button", {
-      name: "Basic Settings",
-    });
     expect(
-      Array.from(sidebar.querySelectorAll(".settings-nav")).indexOf(
-        basicEntry,
-      ),
-    ).toBeLessThan(
-      Array.from(sidebar.querySelectorAll(".settings-nav")).indexOf(
-        providersEntry,
-      ),
-    );
+      sidebarQueries.queryByRole("button", {
+        name: "settings.sidebarProviders",
+      }),
+    ).toBeNull();
     expect(
       sidebarQueries.getByRole("button", { name: "Project Management" }),
     ).toBeTruthy();
@@ -753,6 +743,22 @@ describe("SettingsView Display", () => {
       sidebarQueries.queryByRole("button", { name: "Experimental" }),
     ).toBeNull();
   });
+
+  it.each(["providers", "vendors", "permissions"] as const)(
+    "falls back to basic settings for the legacy %s engine-management deep link",
+    async (initialSection) => {
+      renderDisplaySection({ initialSection });
+      await flushSettingsViewEffects();
+
+      expect(screen.queryByTestId("vendor-settings-panel")).toBeNull();
+      expect(
+        screen.queryByRole("button", { name: "settings.sidebarProviders" }),
+      ).toBeNull();
+      expect(
+        screen.getByRole("button", { name: "Basic Settings" }).className,
+      ).toContain("active");
+    },
+  );
 
   it("removes the dead multi-agent toggle and no longer shows background terminal in experimental", async () => {
     cleanup();

@@ -10,6 +10,9 @@ use crate::backend::app_server::{
 };
 use crate::backend::app_server_cli::resolve_safe_opencode_binary;
 use crate::codex::launch_profile::resolve_global_codex_launch_profile;
+use crate::engine::kimi_launch::{
+    probe_kimi_shell_runtime, probe_kimi_version, resolve_kimi_launch_context,
+};
 use crate::types::AppSettings;
 
 async fn probe_node_runtime(path_env: Option<&String>) -> (bool, Option<String>, Option<String>) {
@@ -214,50 +217,6 @@ pub(crate) async fn run_claude_doctor_with_settings(
     }))
 }
 
-/// Run `kimi doctor` (config/auth self-check, exit 0 = healthy) best-effort.
-async fn probe_kimi_cli_doctor(binary: &str, path_env: Option<&String>) -> Value {
-    let mut command = crate::utils::async_command(binary);
-    if let Some(path_env) = path_env {
-        command.env("PATH", path_env);
-    }
-    command.arg("doctor");
-    command.stdout(std::process::Stdio::piped());
-    command.stderr(std::process::Stdio::piped());
-    match timeout(Duration::from_secs(15), command.output()).await {
-        Ok(Ok(output)) => {
-            let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-            let combined = if stdout.is_empty() {
-                stderr
-            } else if stderr.is_empty() {
-                stdout
-            } else {
-                format!("{stdout}\n{stderr}")
-            };
-            let summary = if combined.chars().count() > 2_000 {
-                format!("{}…", combined.chars().take(2_000).collect::<String>())
-            } else {
-                combined
-            };
-            json!({
-                "ok": output.status.success(),
-                "exitCode": output.status.code(),
-                "output": summary,
-            })
-        }
-        Ok(Err(error)) => json!({
-            "ok": false,
-            "exitCode": Value::Null,
-            "output": format!("failed to run `kimi doctor`: {error}"),
-        }),
-        Err(_) => json!({
-            "ok": false,
-            "exitCode": Value::Null,
-            "output": "`kimi doctor` timed out",
-        }),
-    }
-}
-
 pub(crate) async fn run_kimi_doctor_with_settings(
     kimi_bin: Option<String>,
     settings: &AppSettings,
@@ -267,37 +226,49 @@ pub(crate) async fn run_kimi_doctor_with_settings(
         .clone()
         .filter(|value| !value.trim().is_empty())
         .or(default_bin);
-    let requested_bin = resolved
-        .clone()
-        .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| "kimi".to_string());
-    let path_env = build_codex_path_env(Some(requested_bin.as_str()));
-    let debug_info = get_cli_debug_info(Some(requested_bin.as_str()));
-    let version_result = check_cli_binary(&requested_bin, path_env.clone()).await;
-    let (version, cli_error, fallback_retried) = match version_result {
-        Ok(Some(version)) => (Some(version), None, false),
-        Ok(None) => (Some("unknown".to_string()), None, true),
-        Err(error) => (None, Some(error), false),
+    let requested_bin = resolved.clone().filter(|value| !value.trim().is_empty());
+    let requested_bin_text = requested_bin.as_deref().unwrap_or("kimi");
+    let debug_info = get_cli_debug_info(requested_bin.as_deref());
+    let kimi_home = std::env::var_os("KIMI_CODE_HOME").map(std::path::PathBuf::from);
+    let launch = resolve_kimi_launch_context(requested_bin.as_deref(), kimi_home.as_deref());
+    let (version, cli_error, shell_diagnosis, path_env, resolved_binary_path) = match launch {
+        Ok(context) => {
+            let version_result = probe_kimi_version(&context).await;
+            let shell_diagnosis = probe_kimi_shell_runtime(&context).await;
+            let version_error = version_result.as_ref().err().cloned();
+            (
+                version_result.ok(),
+                version_error,
+                shell_diagnosis,
+                Some(context.path_env.clone()),
+                Some(context.binary.to_string_lossy().to_string()),
+            )
+        }
+        Err(error) => (
+            None,
+            Some(error.clone()),
+            json!({
+                "ok": false,
+                "category": kimi_diagnostic_category(&error),
+                "message": safe_kimi_diagnostic_message(&error),
+            }),
+            None,
+            None,
+        ),
     };
-    let launch_context = resolve_codex_launch_context(Some(requested_bin.as_str()));
-
-    let (node_ok, node_version, node_details) = probe_node_runtime(path_env.as_ref()).await;
-    let cli_doctor = if version.is_some() {
-        probe_kimi_cli_doctor(&requested_bin, path_env.as_ref()).await
-    } else {
-        Value::Null
-    };
-    let cli_doctor_ok = cli_doctor
+    let shell_ok = shell_diagnosis
         .get("ok")
         .and_then(|value| value.as_bool())
         .unwrap_or(false);
+    let (node_ok, node_version, node_details) = (true, None::<String>, None::<String>);
+    let cli_doctor = Value::Null;
     let environment_diagnosis =
-        build_engine_environment_diagnosis("kimi", Some(requested_bin.as_str()), &debug_info);
+        build_engine_environment_diagnosis("kimi", Some(requested_bin_text), &debug_info);
     let proxy_diagnosis = debug_info
         .get("proxyDiagnosis")
         .cloned()
         .unwrap_or(Value::Null);
-    let network_diagnosis = if version.is_some() {
+    let network_diagnosis = if version.is_some() && shell_ok {
         Value::Null
     } else {
         json!({
@@ -307,27 +278,54 @@ pub(crate) async fn run_kimi_doctor_with_settings(
     };
 
     Ok(json!({
-        "ok": version.is_some() && (cli_doctor.is_null() || cli_doctor_ok),
+        "ok": version.is_some() && shell_ok,
         "codexBin": resolved,
         "version": version,
         "appServerOk": false,
         "details": cli_error,
         "path": path_env,
         "nodeOk": node_ok,
+        "nodeRequired": false,
         "nodeVersion": node_version,
         "nodeDetails": node_details,
-        "resolvedBinaryPath": launch_context.resolved_bin,
-        "wrapperKind": launch_context.wrapper_kind,
-        "pathEnvUsed": launch_context.path_env,
+        "resolvedBinaryPath": resolved_binary_path,
+        "wrapperKind": "direct",
+        "pathEnvUsed": path_env,
         "proxyEnvSnapshot": debug_info.get("proxyEnvSnapshot").cloned().unwrap_or(Value::Null),
         "appServerProbeStatus": Value::Null,
-        "fallbackRetried": fallback_retried,
+        "fallbackRetried": false,
         "environmentDiagnosis": environment_diagnosis,
         "proxyDiagnosis": proxy_diagnosis,
         "networkDiagnosis": network_diagnosis,
         "kimiDoctor": cli_doctor,
+        "kimiShell": shell_diagnosis,
         "debug": debug_info,
     }))
+}
+
+fn kimi_diagnostic_category(error: &str) -> &'static str {
+    if error.contains("KIMI_BINARY_MISSING") || error.contains("KIMI_SHELL_MISSING") {
+        "missing"
+    } else if error.contains("KIMI_SHELL_UNSUPPORTED_PLATFORM") {
+        "unsupported-platform"
+    } else if error.contains("KIMI_SHELL_CHECKSUM_MISMATCH") {
+        "checksum-mismatch"
+    } else if error.contains("KIMI_SHELL_PERMISSION_DENIED") {
+        "permission-denied"
+    } else if error.contains("KIMI_SHELL_INVALID") {
+        "invalid"
+    } else if error.contains("KIMI_PROBE_TIMEOUT") || error.contains("KIMI_PROBE_FAILED") {
+        "probe-failed"
+    } else {
+        "invalid"
+    }
+}
+
+fn safe_kimi_diagnostic_message(error: &str) -> String {
+    error
+        .split_once(']')
+        .map(|(_, message)| message.trim().to_string())
+        .unwrap_or_else(|| "Kimi runtime is unavailable".to_string())
 }
 
 /// Run `grok doctor` (terminal/config self-check, exit 0 = healthy) best-effort.
@@ -651,9 +649,10 @@ pub(crate) async fn run_opencode_doctor_with_settings(
 #[cfg(test)]
 mod tests {
     use super::{
-        opencode_default_model_probe_from_document, run_claude_doctor_with_settings,
-        run_grok_doctor_with_settings, run_kimi_doctor_with_settings,
-        run_opencode_doctor_with_settings,
+        kimi_diagnostic_category, opencode_default_model_probe_from_document,
+        run_claude_doctor_with_settings, run_grok_doctor_with_settings,
+        run_kimi_doctor_with_settings, run_opencode_doctor_with_settings,
+        safe_kimi_diagnostic_message,
     };
     use crate::types::AppSettings;
     use serde_json::{json, Value};
@@ -676,6 +675,7 @@ mod tests {
             "environmentDiagnosis",
             "networkDiagnosis",
             "kimiDoctor",
+            "kimiShell",
             "debug",
         ] {
             assert!(
@@ -686,8 +686,28 @@ mod tests {
 
         assert_eq!(diagnostics["codexBin"], "/definitely/missing/kimi");
         assert_eq!(diagnostics["ok"], false);
+        assert_eq!(diagnostics["kimiShell"]["category"], "missing");
         assert!(diagnostics["kimiDoctor"].is_null());
         assert!(diagnostics["debug"].is_object());
+    }
+
+    #[test]
+    fn kimi_diagnostic_categories_are_stable_and_frontend_safe() {
+        assert_eq!(kimi_diagnostic_category("[KIMI_BINARY_MISSING] missing"), "missing");
+        assert_eq!(
+            kimi_diagnostic_category("[KIMI_SHELL_CHECKSUM_MISMATCH] mismatch"),
+            "checksum-mismatch"
+        );
+        assert_eq!(
+            kimi_diagnostic_category("[KIMI_SHELL_PERMISSION_DENIED] denied"),
+            "permission-denied"
+        );
+        assert_eq!(
+            kimi_diagnostic_category("[KIMI_SHELL_UNSUPPORTED_PLATFORM] unsupported"),
+            "unsupported-platform"
+        );
+        assert_eq!(kimi_diagnostic_category("[KIMI_PROBE_FAILED] failed"), "probe-failed");
+        assert_eq!(safe_kimi_diagnostic_message("[KIMI_PROBE_FAILED] secret-free detail"), "secret-free detail");
     }
 
     #[tokio::test]

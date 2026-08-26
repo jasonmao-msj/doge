@@ -1,7 +1,9 @@
 use super::runtime_product::*;
+use super::runtime_product_keys::*;
 use super::runtime_product_models::*;
 use crate::account::authority::{
-    ProductModelWire, ProductPaymentMethodWire, ProductSubscriptionPlanWire,
+    ProductApiKeyCreatedWire, ProductApiKeyListItemWire, ProductApiKeyListWire, ProductModelWire,
+    ProductPaymentMethodWire, ProductSubscriptionPlanWire,
 };
 use serde_json::json;
 
@@ -56,6 +58,85 @@ fn managed_product_key_identity_is_stable_per_group_and_device() {
     assert!(first.starts_with("Doge Managed 11 "));
     assert!(!first.contains("device-primary"));
     assert!(!first.contains(&product_plan().name));
+}
+
+#[test]
+fn product_key_create_requires_exact_group_and_usable_secret() {
+    let valid = ProductApiKeyCreatedWire {
+        id: 17,
+        group_id: Some(11),
+        secret: "sk-product-secret".into(),
+    };
+    assert!(valid_created_product_key(&valid, 11));
+    assert!(!valid_created_product_key(
+        &ProductApiKeyCreatedWire {
+            group_id: Some(12),
+            ..valid.clone()
+        },
+        11
+    ));
+    assert!(!valid_created_product_key(
+        &ProductApiKeyCreatedWire {
+            secret: String::new(),
+            ..valid
+        },
+        11
+    ));
+    assert!(!valid_created_product_key(
+        &ProductApiKeyCreatedWire {
+            id: 0,
+            group_id: Some(11),
+            secret: "sk-product-secret".into(),
+        },
+        11
+    ));
+}
+
+#[test]
+fn product_key_reconcile_selects_only_exact_active_identity() {
+    let listed = ProductApiKeyListWire {
+        items: vec![
+            ProductApiKeyListItemWire {
+                id: 1,
+                name: "Doge Managed 11 wrong-device".into(),
+                group_id: Some(11),
+                status: "active".into(),
+            },
+            ProductApiKeyListItemWire {
+                id: 2,
+                name: "Doge Managed 11 exact".into(),
+                group_id: Some(12),
+                status: "active".into(),
+            },
+            ProductApiKeyListItemWire {
+                id: 3,
+                name: "Doge Managed 11 exact".into(),
+                group_id: Some(11),
+                status: "inactive".into(),
+            },
+            ProductApiKeyListItemWire {
+                id: 0,
+                name: "Doge Managed 11 exact".into(),
+                group_id: Some(11),
+                status: "active".into(),
+            },
+            ProductApiKeyListItemWire {
+                id: 4,
+                name: "Doge Managed 11 exact".into(),
+                group_id: Some(11),
+                status: "ACTIVE".into(),
+            },
+        ],
+    };
+
+    assert_eq!(
+        active_product_key_id(&listed, 11, "Doge Managed 11 exact"),
+        Some(4)
+    );
+    assert_eq!(
+        active_product_key_id(&listed, 11, "Doge Managed 11 absent"),
+        None
+    );
 }
 
 #[test]

@@ -8,7 +8,7 @@
 2. Native 从 subscription summary 判断该账号是否存在与 product plan `group_id` 匹配的 active subscription。
 3. 无 entitlement 时，Gate 直接消费上游 plan/payment 字段完成 checkout；有 entitlement 时进入 idempotent preparation。
 4. preparation 先完成 product engine provisioning：Codex/Claude/Kimi 通过现有 Account toolchain resolver 选择已验证 external 或 bundled binary（2026-08-25 起 Kimi bundled 产物进入 bundled-engines manifest，不再走 npm 在线自动安装），旧 external 版本的 choice 自动选择 bundled；任一失败保持 Gate 与 retry，不能先写 provider config 假装 ready。
-5. preparation 查找或创建绑定该 Composite group 的 Doge managed key，OS vault 是 secret 的持久化事实源；renderer 不接触 secret。Kimi CLI 运行时若无法通过 env 接收 key，由 Native 在隔离的 `KIMI_CODE_HOME` 生成 `0600` runtime config。
+5. preparation 查找或创建绑定该 Composite group 的 Doge managed key，OS vault 是 secret 的持久化事实源；renderer 不接触 secret。create 是可能已经提交 server-side side effect、但响应解析为 `protocolMismatch` 或缺少可信 secret 的 mutation：Native 必须先用 deterministic `group + hashed device` key name authoritative re-list，命中 exact active key 后走 owner-authorized handoff 并在同一次 prepare 继续；只有 reconcile 也无法证明 usable key 时才返回原始失败。Kimi CLI 运行时若无法通过 env 接收 key，由 Native 在隔离的 `KIMI_CODE_HOME` 生成 `0600` runtime config。
    - Kimi 的 Doge registry target 是 JSON，不得落入 Codex TOML verifier；managed merge 必须替换旧 provider entry 并移除 `apiKey/api_key/token/secret` 等 legacy 明文字段，再由 launch adapter 注入。
 6. Native 用该 credential 读取 `/v1/models`，输出去重后的 product model catalog，并向已支持的本地 engine 投影 Token Matrix provider configuration。
 
@@ -33,7 +33,9 @@ credential business identity 为 `account + device + composite group`。ensure o
 
 managed provider projection 采用 stable id `doge-token-matrix` + integer `managedRevision`。每次 authenticated product startup 都必须执行 idempotent `prepare`；同 id 的旧 Doge entry 缺失/低于 current revision 时 fail closed，并由 builder 完整替换为当前 Codex/Claude/Kimi managed entry，同时保留其他 local/custom provider rows。Codex 只向 Doge-spawned child 注入隔离 `CODEX_HOME`，Kimi 只向 child 注入隔离 `KIMI_CODE_HOME`，Claude 每 turn 使用 owner-only private `--settings`；不得改写用户的 `~/.codex`、`~/.claude/settings.json` 或 `~/.kimi-code`，因此用户在 terminal 直接运行 CLI 仍使用自己的本地配置。
 
-product entitlement ready 时，Settings 的 Codex/Claude/Kimi local/official activation control 必须以 locked/disabled 状态展示并解释 Doge managed authority，不允许切回 local；raw local config 的 edit 入口可以保留，因为它只服务 terminal direct usage，不能改变任何 product execution target。
+product entitlement ready 时，shipping UI 不再挂载 Engine Management：Settings sidebar、model menu footer、`providers/vendors` legacy deep link，以及历史上转发到 provider surface 的 `permissions` deep link 都必须隐藏或回退基础设置。Codex/Claude/Kimi 的 local/official activation、CLI 启停和 raw global file edit 不再提供给产品用户；底层 provider/config diagnostics 只作为内部实现保留，不能改变任何 product execution target。
+
+`AppSettings.disabledCliEngines` 继续作为 legacy Local Mode compatibility field，但 Rust settings owner 与 TypeScript boundary normalization 都必须移除 `claude/codex/kimi`。默认 blacklist 只保留非产品引擎；因此旧安装即使曾停用 Kimi，authenticated AppShell mount 后也会看到完整三引擎 product surface。该 visibility convergence 不替代 configuration readiness：每次 authenticated startup 仍由唯一的 `account_product_v1_prepare` owner 顺序 apply/verify 三个 `doge-token-matrix` projection，任何一项失败都停留在 Gate。
 
 ### 2.3 Model catalog
 
@@ -62,6 +64,7 @@ canonical dev/release 共用 bundle identifier 也意味着 macOS single-instanc
 - checkout 先返回 `paid`、subscription summary 尚未 active 时进入独立 `fulfilling` phase：保留 credential-free paid checkpoint，以 forced catalog refresh + bounded backoff 等待 entitlement；不得退回套餐页诱导重复购买。App restart 可从同一 checkpoint 继续 reconciliation，只有 entitlement active + prepare success 后才清 checkpoint。
 - ready：catalog 与 credential 都可用后才 mount AppShell。
 - active subscription 但 model catalog 暂时失败：展示可恢复错误与 retry，不得退回 local provider 或空模型假成功。
+- toolchain success 后 UI MUST 结束具体 engine attribution，再执行 product authority prepare；无 `retryAfterMs` 的 `serviceUnavailable`/bridge failure SHALL 在同一 Gate operation 内按 `[0, 1s, 2s, 4s, 8s, 15s]` 最多 6 次 bounded idempotent convergence。任一次成功直接进入 AppShell；attempts exhausted 才投影错误。server cooldown 不自动重试，generation stale 立即停止；禁止无限 retry，也禁止把 remote prepare failure 继续显示成“正在准备 Kimi CLI”。每次失败必须以 safe renderer diagnostic 记录 `code/stage/attempt/maxAttempts/retryDelayMs`。
 
 ## 4. Engine and Model Selection
 

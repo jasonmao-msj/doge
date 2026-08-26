@@ -127,6 +127,7 @@ import { useSystemProxySettings } from "./settings-view/hooks/useSystemProxySett
 import { AccountSettingsSection } from "../../account/components/AccountSettingsSection";
 import { isAccountConvenienceV1Enabled } from "../../account/runtime/featureFlag";
 import { ACCOUNT_UI_PREVIEW_V1_ENABLED } from "../../account/runtime/uiPreviewFlag";
+import { PRODUCT_ENGINE_MANAGEMENT_USER_VISIBLE } from "../../account/runtime/productManagedEnginePolicy";
 
 const accountConvenienceV1Enabled = isAccountConvenienceV1Enabled();
 const AccountPreviewSettingsSection = ACCOUNT_UI_PREVIEW_V1_ENABLED
@@ -851,6 +852,17 @@ export function SettingsView({
 
   useEffect(() => {
     if (initialSection) {
+      if (
+        !PRODUCT_ENGINE_MANAGEMENT_USER_VISIBLE &&
+        (
+          initialSection === "providers" ||
+          initialSection === "vendors" ||
+          TEMPORARILY_DISABLED_SIDEBAR_SECTIONS.has(initialSection)
+        )
+      ) {
+        setActiveSection("basic");
+        return;
+      }
       // 「内置精选」已并入其他设置；遗留 mcp 深链统一落到 other。
       if (initialSection === "mcp") {
         setActiveSection("other");
@@ -1845,18 +1857,20 @@ export function SettingsView({
             <Settings aria-hidden />
             <span className="settings-nav-label">{t("settings.sidebarBasic")}</span>
           </button>
-          <button
-            type="button"
-            className={`settings-nav ${activeSection === "providers" || activeSection === "vendors" ? "active" : ""}`}
-            onClick={() => setActiveSection("providers")}
-            aria-label={t("settings.sidebarProviders")}
-            title={t("settings.sidebarProviders")}
-          >
-            <span className="codicon codicon-vm-connect" aria-hidden />
-            <span className="settings-nav-label">
-              {t("settings.sidebarProviders")}
-            </span>
-          </button>
+          {PRODUCT_ENGINE_MANAGEMENT_USER_VISIBLE ? (
+            <button
+              type="button"
+              className={`settings-nav ${activeSection === "providers" || activeSection === "vendors" ? "active" : ""}`}
+              onClick={() => setActiveSection("providers")}
+              aria-label={t("settings.sidebarProviders")}
+              title={t("settings.sidebarProviders")}
+            >
+              <span className="codicon codicon-vm-connect" aria-hidden />
+              <span className="settings-nav-label">
+                {t("settings.sidebarProviders")}
+              </span>
+            </button>
+          ) : null}
           <button
             type="button"
             className={`settings-nav ${activeSection === "shortcuts" ? "active" : ""}`}
@@ -2214,15 +2228,16 @@ export function SettingsView({
               )}
             </section>
           )}
-          {activeSection === "providers" && (
-            <VendorSettingsPanel
-              appSettings={appSettings}
-              codexReloadStatus={codexRuntimeReloadState.status}
-              codexReloadMessage={codexRuntimeReloadState.message}
-              handleReloadCodexRuntimeConfig={handleReloadCodexRuntimeConfig}
-              onUpdateAppSettings={onUpdateAppSettings}
-            />
-          )}
+          {PRODUCT_ENGINE_MANAGEMENT_USER_VISIBLE &&
+            activeSection === "providers" && (
+              <VendorSettingsPanel
+                appSettings={appSettings}
+                codexReloadStatus={codexRuntimeReloadState.status}
+                codexReloadMessage={codexRuntimeReloadState.message}
+                handleReloadCodexRuntimeConfig={handleReloadCodexRuntimeConfig}
+                onUpdateAppSettings={onUpdateAppSettings}
+              />
+            )}
           {activeSection === "commit" && (
             <CommitSection
               commitPrompt={commitPrompt}

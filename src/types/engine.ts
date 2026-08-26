@@ -5,6 +5,18 @@
  */
 export type EngineType = "claude" | "codex" | "gemini" | "grok" | "kimi" | "opencode";
 
+/** Options for coordinating the selected engine with the native runtime. */
+export type SetActiveEngineOptions = {
+  ensureRuntime?: boolean;
+  /** Managed product provider that must activate its verified native toolchain first. */
+  providerProfileId?: string | null;
+};
+
+export type SetActiveEngine = (
+  engine: EngineType,
+  options?: SetActiveEngineOptions,
+) => Promise<boolean> | void;
+
 /**
  * Feature capabilities for each engine
  */

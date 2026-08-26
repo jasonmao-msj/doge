@@ -960,17 +960,41 @@ pub async fn detect_gemini_status(custom_bin: Option<&str>) -> EngineStatus {
 
 /// Detect Kimi CLI installation status
 pub async fn detect_kimi_status(custom_bin: Option<&str>) -> EngineStatus {
-    let bin_path = resolve_bin_path("kimi", custom_bin);
-    let bin = bin_path
-        .as_ref()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| "kimi".to_string());
-    let path_env = build_codex_path_env(custom_bin);
-
-    let (installed, version, error) = probe_cli_version(&bin, "kimi", path_env.as_ref()).await;
-
-    if !installed {
-        return not_installed_status(EngineType::Kimi, error);
+    let home_dir = get_kimi_home_dir();
+    let launch = match crate::engine::kimi_launch::resolve_kimi_launch_context(
+        custom_bin,
+        home_dir.as_deref(),
+    ) {
+        Ok(value) => value,
+        Err(error) => return not_installed_status(EngineType::Kimi, Some(error)),
+    };
+    let bin = launch.binary.to_string_lossy().to_string();
+    let version = match crate::engine::kimi_launch::probe_kimi_version(&launch).await {
+        Ok(version) => version,
+        Err(error) => return not_installed_status(EngineType::Kimi, Some(error)),
+    };
+    let shell_diagnosis = crate::engine::kimi_launch::probe_kimi_shell_runtime(&launch).await;
+    if !shell_diagnosis
+        .get("ok")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        let category = shell_diagnosis
+            .get("category")
+            .and_then(Value::as_str)
+            .unwrap_or("invalid");
+        let code = match category {
+            "missing" => "KIMI_SHELL_MISSING",
+            "invalid" => "KIMI_SHELL_INVALID",
+            "checksum-mismatch" => "KIMI_SHELL_CHECKSUM_MISMATCH",
+            "permission-denied" => "KIMI_SHELL_PERMISSION_DENIED",
+            "unsupported-platform" => "KIMI_SHELL_UNSUPPORTED_PLATFORM",
+            _ => "KIMI_PROBE_FAILED",
+        };
+        return not_installed_status(
+            EngineType::Kimi,
+            Some(format!("[{code}] Kimi shell runtime is not ready")),
+        );
     }
 
     let home_dir = get_kimi_home_dir();
@@ -980,8 +1004,8 @@ pub async fn detect_kimi_status(custom_bin: Option<&str>) -> EngineStatus {
     EngineStatus {
         engine_type: EngineType::Kimi,
         installed: true,
-        version,
-        bin_path: Some(bin.to_string()),
+        version: Some(version),
+        bin_path: Some(bin),
         home_dir: home_dir.map(|p| p.to_string_lossy().to_string()),
         models,
         default_model,

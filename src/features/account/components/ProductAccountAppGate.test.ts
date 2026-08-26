@@ -46,4 +46,5 @@ describe("ProductAccountAppGate checkout reconciliation", () => {
 
     expect(mergeProductCheckoutRefreshV1(current, refreshed).action).toBeNull();
   });
+
 });

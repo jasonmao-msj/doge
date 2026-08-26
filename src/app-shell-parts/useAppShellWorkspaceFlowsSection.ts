@@ -24,6 +24,7 @@ import type {
   AppSettings,
   DebugEntry,
   EngineType,
+  SetActiveEngine,
   WorkspaceInfo,
   WorkspaceSettings,
 } from "../types";
@@ -100,7 +101,7 @@ export type WorkspaceShellBoundary = {
   ) => Promise<void>;
   resetWorkspaceThreads: (workspaceId: string) => void;
   selectWorkspace: (workspaceId: string) => void;
-  setActiveEngine: (engine: EngineType) => Promise<void> | void;
+  setActiveEngine: SetActiveEngine;
   setActiveTab: Dispatch<SetStateAction<WorkspaceShellTab>>;
   setActiveThreadId: (threadId: string, workspaceId: string) => void;
   setAgentTaskScrollRequest: Dispatch<SetStateAction<AgentTaskScrollRequest | null>>;

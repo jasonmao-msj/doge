@@ -14,11 +14,17 @@ import type {
   PaymentMethodViewV1,
   SubscriptionPlanViewV1,
 } from "./onboardingTypes";
+import {
+  PRODUCT_RUNTIME_ENGINE_IDS_V1,
+  type ProductRuntimeEngineIdV1,
+} from "./productManagedEnginePolicy";
+export {
+  PRODUCT_RUNTIME_ENGINE_IDS_V1,
+  type ProductRuntimeEngineIdV1,
+} from "./productManagedEnginePolicy";
 
 export const PRODUCT_ENGINE_IDS_V1 = ["codex", "claude-code", "kimi"] as const;
 export type ProductEngineIdV1 = (typeof PRODUCT_ENGINE_IDS_V1)[number];
-export const PRODUCT_RUNTIME_ENGINE_IDS_V1 = ["codex", "claude", "kimi"] as const;
-export type ProductRuntimeEngineIdV1 = (typeof PRODUCT_RUNTIME_ENGINE_IDS_V1)[number];
 
 export type ProductEntitlementV1 = {
   readonly status: "active" | "required";
@@ -193,7 +199,7 @@ export function parseProductReady(
   const entitlement = parseEntitlement(root.entitlement);
   const models = root.models.map(parseModel);
   const engines = root.engines.map(parseEngine);
-  if (!entitlement || entitlement.status !== "active" || models.length === 0 ||
+  if (!entitlement || entitlement.status !== "active" ||
     models.some((item) => item === null) || engines.some((item) => item === null)) {
     return protocolFailure();
   }
@@ -404,6 +410,7 @@ function readEnvelope(value: unknown): EngineOnboardingResultV1<unknown> {
     ok: false,
     error: {
       code: typeof error?.code === "string" ? error.code : "serviceUnavailable",
+      ...(typeof error?.stage === "string" ? { stage: error.stage } : {}),
       ...(typeof recovery?.afterMs === "number" ? { retryAfterMs: recovery.afterMs } : {}),
     } as EngineOnboardingFailureV1,
   };

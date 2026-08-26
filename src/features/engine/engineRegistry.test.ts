@@ -3,6 +3,7 @@ import {
   BUILTIN_ENGINE_TYPES,
   asEngineId,
   createEngineAvailabilityRegistry,
+  engineUsesNativeActiveEngineAuthority,
   getEngineRegistryEntry,
   isSupportedEngineType,
   registerExternalEngine,
@@ -91,5 +92,10 @@ describe("engineRegistry", () => {
       observedAtMs: 1,
     });
     expect(getEngineRegistryEntry("codex")?.source.kind).toBe("builtin");
+  });
+
+  it("distinguishes persistent native routing from one-shot provider routing", () => {
+    expect(engineUsesNativeActiveEngineAuthority("codex")).toBe(true);
+    expect(engineUsesNativeActiveEngineAuthority("kimi")).toBe(false);
   });
 });

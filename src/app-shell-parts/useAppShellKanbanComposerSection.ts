@@ -16,6 +16,7 @@ import type { KanbanPanel } from "../features/kanban/types";
 import type { KanbanContextMode } from "../features/kanban/utils/contextMode";
 import { stripComposerKanbanTagsPreserveFormatting } from "./useAppShellSections.kanbanHelpers";
 import type { UseAppShellSectionsContext } from "./useAppShellSectionsTypes";
+import { resolveSessionEngineActivation } from "../features/engine/utils/engineSessionRouting";
 
 type ComposerKanbanPanelOption = Pick<
   KanbanPanel,
@@ -298,7 +299,19 @@ export function useAppShellKanbanComposerSection(
         if (!workspace.connected) {
           await connectWorkspace(workspace);
         }
-        await setActiveEngine(createSessionTarget.engine);
+        const activationPlan = resolveSessionEngineActivation(
+          createSessionTarget.engine,
+          createSessionTarget.providerProfileId,
+        );
+        const engineActivated = activationPlan.options
+          ? await setActiveEngine(
+              createSessionTarget.engine,
+              activationPlan.options,
+            )
+          : await setActiveEngine(createSessionTarget.engine);
+        if (activationPlan.requireSuccess && engineActivated === false) {
+          return;
+        }
         const threadId = await startThreadForWorkspace(workspace.id, {
           engine: createSessionTarget.engine,
           activate: true,

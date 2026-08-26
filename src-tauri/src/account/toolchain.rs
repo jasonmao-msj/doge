@@ -1,4 +1,5 @@
 use crate::backend::app_server::{build_cli_path_env, find_cli_binary};
+use crate::engine::kimi_launch::{probe_kimi_version, resolve_kimi_launch_context};
 use crate::types::AppSettings;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -119,7 +120,7 @@ pub(super) async fn resolve(
         return Err(ToolchainError::BundleInvalid);
     }
     let bundled_binary = safe_bundled_executable(&bundle_root, &bundled.executable)?;
-    let bundled_version_text = verify_binary(&bundled_binary)
+    let bundled_version_text = verify_binary(&bundled_binary, engine_id)
         .await
         .map_err(|_| ToolchainError::BundleVerificationFailed)?;
     if parse_semver(&bundled_version_text) != parse_semver(&bundled.version) {
@@ -128,7 +129,7 @@ pub(super) async fn resolve(
 
     let external_binary = external_binary(engine_id, settings);
     let external_verified = match external_binary {
-        Some(path) => verify_binary(&path)
+        Some(path) => verify_binary(&path, engine_id)
             .await
             .ok()
             .map(|version| (path, version)),
@@ -194,8 +195,12 @@ fn external_binary(engine_id: &str, settings: &AppSettings) -> Option<PathBuf> {
     }
 }
 
-async fn verify_binary(path: &Path) -> Result<String, ()> {
+async fn verify_binary(path: &Path, engine_id: &str) -> Result<String, ()> {
     let raw = path.to_string_lossy().to_string();
+    if engine_id == "kimi" {
+        let context = resolve_kimi_launch_context(Some(&raw), None).map_err(|_| ())?;
+        return probe_kimi_version(&context).await.map_err(|_| ());
+    }
     let path_env = build_cli_path_env(Some(&raw));
     crate::engine::status::probe_engine_version_text(&raw, path_env.as_ref())
         .await

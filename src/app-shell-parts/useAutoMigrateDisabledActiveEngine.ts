@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { EngineType } from "../types";
+import type { EngineType, SetActiveEngine } from "../types";
 import { resolveFallbackEngineWhenDisabled } from "../features/engine/utils/resolveFallbackEngineWhenDisabled";
 
 type EngineCandidate = {
@@ -14,7 +14,7 @@ type UseAutoMigrateDisabledActiveEngineInput = {
   appSettingsLoading: boolean;
   disabledCliEngineIds: readonly string[] | undefined;
   installedEngines: readonly EngineCandidate[];
-  setActiveEngine: (engine: EngineType) => void | Promise<void>;
+  setActiveEngine: SetActiveEngine;
 };
 
 /**
