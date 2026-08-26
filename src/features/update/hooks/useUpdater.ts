@@ -40,7 +40,7 @@ type CheckForUpdatesOptions = {
 };
 
 const AUTO_UPDATE_ENABLED = true;
-const UPDATE_CHECK_TIMEOUT_MS = 15_000;
+const UPDATE_CHECK_TIMEOUT_MS = 60_000;
 
 function normalizeUpdateVersion(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
