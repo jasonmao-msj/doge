@@ -37,6 +37,17 @@ test("Cargo and platform builds only produce current doge binaries and artifacts
   assert.doesNotMatch(build, /cc-gui|cc_gui_daemon|ccgui|moss[_-]?x/i);
 });
 
+test("daemon engine bridge registers every shared Kimi launch module", () => {
+  const engine = read("src-tauri/src/engine/mod.rs");
+  const daemonBridge = read("src-tauri/src/bin/doge_daemon/engine_bridge.rs");
+
+  assert.match(engine, /pub\(crate\) mod kimi_launch;/);
+  assert.match(
+    daemonBridge,
+    /#\[path = "\.\.\/\.\.\/engine\/kimi_launch\.rs"\]\s*pub\(crate\) mod kimi_launch;/,
+  );
+});
+
 test("macOS and Linux daemon discovery is current-first with legacy read fallback", () => {
   const bootstrap = read("src-tauri/src/web_service/daemon_bootstrap.rs");
   const names = sourceSection(

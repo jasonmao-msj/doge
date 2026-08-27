@@ -39,6 +39,8 @@ pub(crate) mod grok_provider_profile;
 pub mod kimi;
 #[path = "../../engine/kimi_history.rs"]
 pub mod kimi_history;
+#[path = "../../engine/kimi_launch.rs"]
+pub(crate) mod kimi_launch;
 #[path = "../../engine/kimi_provider_profile.rs"]
 pub(crate) mod kimi_provider_profile;
 #[allow(dead_code)]
