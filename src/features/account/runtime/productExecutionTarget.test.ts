@@ -14,13 +14,21 @@ const engines = [
   { id: "kimi" as const, displayName: "Kimi" },
 ];
 const models: ProductModelViewV1[] = [
-  productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["openai"]),
-  productModel("claude-sonnet-4-8", "Claude Sonnet 4.8", ["anthropic"]),
-  productModel("kimi-for-coding", "Kimi for Coding", ["openai"]),
+  productModel("gpt-5.6-sol", "GPT-5.6 Sol", [
+    "openai-responses",
+    "openai-chat-completions",
+  ]),
+  productModel("claude-sonnet-4-8", "Claude Sonnet 4.8", [
+    "anthropic-messages",
+  ]),
+  productModel("kimi-for-coding", "Kimi for Coding", [
+    "openai-responses",
+    "openai-chat-completions",
+  ]),
   productModel(
     "doubao-entry",
     "豆包",
-    ["openai", "anthropic"],
+    ["openai-responses", "openai-chat-completions", "anthropic-messages"],
     "ark-code-latest",
   ),
 ];
@@ -32,9 +40,11 @@ describe("resolveProductManagedExecutionTargetV1", () => {
         preferredEngine: "codex",
         engines: [engines[1], engines[2], engines[0]],
         models: [
-          productModel("claude-opus-4-8", "Claude Opus 4.8", ["anthropic"]),
-          productModel("gpt-5.6-luna", "GPT-5.6 Luna", ["openai"]),
-          productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["openai"]),
+          productModel("claude-opus-4-8", "Claude Opus 4.8", [
+            "anthropic-messages",
+          ]),
+          productModel("gpt-5.6-luna", "GPT-5.6 Luna", ["openai-responses"]),
+          productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["openai-responses"]),
         ],
       }),
     ).toMatchObject({
@@ -111,8 +121,11 @@ describe("resolveProductManagedExecutionTargetV1", () => {
         },
         engines,
         models: [
-          productModel("gpt-5.5", "gpt-5.5", ["openai"]),
-          productModel("kimi-for-coding", "Kimi for Coding", ["openai"]),
+          productModel("gpt-5.5", "gpt-5.5", ["openai-chat-completions"]),
+          productModel("kimi-for-coding", "Kimi for Coding", [
+            "openai-responses",
+            "openai-chat-completions",
+          ]),
         ],
       }),
     ).toMatchObject({
@@ -145,7 +158,9 @@ describe("resolveProductManagedExecutionTargetV1", () => {
       resolveProductManagedExecutionTargetV1({
         preferredEngine: "claude",
         engines: engines.filter((engine) => engine.id === "claude-code"),
-        models: [productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["openai"])],
+        models: [
+          productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["openai-responses"]),
+        ],
       }),
     ).toBeNull();
   });

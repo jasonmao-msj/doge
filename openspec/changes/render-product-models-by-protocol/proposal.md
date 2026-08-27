@@ -2,10 +2,11 @@
 
 ## Why
 
-当前 Product catalog 在 Native 层把上游 `/v1/models` 的每一行直接归成
-`compatible_engines`。当上游没有显式 compatibility metadata 时，fallback 会把 GPT
-只分给 Codex、Kimi 只分给 Kimi，导致两个都走 OpenAI-compatible API family 的 managed
-engine 显示不同模型列表；例如用户无法在 Codex 中选择 `kimi-for-coding`。
+当前 Product catalog 在 Native 层把 Responses 与 Chat Completions 都归成粗粒度
+`openai` protocol。上游 `/v1/models` 当前不携带 protocol metadata，无法表达同一模型在
+不同 endpoint 上的可调用性。K3 最初在 Codex Responses 返回
+`Model is not supported by composite groups`，根因是 production Composite 缺少
+Kimi/K3 的 Responses routes；补齐 route 后同一模型可同时经 Responses 与 Chat Completions 调用。
 
 Engine 是本地执行 runtime，API protocol 是 managed Provider 接收请求的 wire family，二者
 不能混为同一字段。模型可见性应先由上游 catalog 给出的 API protocol compatibility 决定，
@@ -15,11 +16,13 @@ Engine 是本地执行 runtime，API protocol 是 managed Provider 接收请求�
 
 - Product model wire 接受并规范化上游 `api_protocols` / `supported_protocols` / `protocols`；
   legacy `compatible_engines` 只作为 protocol evidence 兼容读取。
-- Native 输出 canonical `api_protocols`，Renderer 按 engine 的 API protocol capability 过滤：
-  Codex 与 Kimi 共享 OpenAI-compatible catalog，Claude 消费 Anthropic Messages catalog。
+- Native 输出 endpoint-level canonical `api_protocols`，Renderer 按 engine 的 API protocol
+  capability 过滤：Codex=`openai-responses`、Kimi=`openai-chat-completions`、
+  Claude=`anthropic-messages`。
 - 缺少 metadata 时保留已知 family fallback，但 fallback 先归一为 API protocol；unknown family
   继续 fail closed，不从本地 presentation metadata 创造 entitlement。
-- 更新默认 target repair、Picker/search 与回归测试，明确 Codex 可选择 Kimi family model。
+- 更新默认 target repair、Picker/search 与回归测试；K3/Kimi 与 GPT family 按已验证的
+  Responses + Chat Completions capability 同时显示在 Codex 与 Kimi。
 
 ## Scope
 
@@ -28,8 +31,9 @@ Engine 是本地执行 runtime，API protocol 是 managed Provider 接收请求�
 - Product engine/model picker 的现有 consumer 与 focused fixtures。
 - OpenSpec/Trellis executable contract 与 foundation ADR 校准。
 
-不修改 CLI stdout protocol registry、Provider credential、pricing、session binding 或 token2api
-服务端配置。
+不修改 CLI stdout protocol registry、Provider credential、pricing 或 session binding。
+production token2api `Doge APP` Composite 已通过管理 UI 补齐 `kimi*` / `k3*` Responses routes，
+作为本 change 的 endpoint E2E prerequisite。
 
 ## Verification
 

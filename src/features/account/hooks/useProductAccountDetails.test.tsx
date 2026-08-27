@@ -155,7 +155,7 @@ function publishReady(subscriptionId: number): void {
       id: "gpt-5.6-sol",
       displayName: "gpt-5.6-sol",
       model: "gpt-5.6-sol",
-      apiProtocols: ["openai"],
+      apiProtocols: ["openai-responses"],
       capabilities: ["chat"],
     }],
   });

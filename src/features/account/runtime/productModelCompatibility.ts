@@ -12,9 +12,9 @@ const KIMI_CATALOG_MODEL_PREFIX = "kimi-code/";
 const PRODUCT_ENGINE_API_PROTOCOLS_V1: Readonly<
   Record<ProductRuntimeEngineIdV1, readonly ProductModelApiProtocolV1[]>
 > = {
-  codex: ["openai"],
-  kimi: ["openai"],
-  claude: ["anthropic"],
+  codex: ["openai-responses"],
+  kimi: ["openai-chat-completions"],
+  claude: ["anthropic-messages"],
 };
 
 export function normalizeProductModelIdentityV1(

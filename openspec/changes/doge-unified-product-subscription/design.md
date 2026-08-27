@@ -69,12 +69,13 @@ canonical dev/release 共用 bundle identifier 也意味着 macOS single-instanc
 ## 4. Engine and Model Selection
 
 - engine list 只来自 Doge local engine registry，首期产品面展示 Codex、Claude、Kimi。
-- Product Home 每次进入新会话态都以 `Codex + 当前上游目录中第一条 OpenAI-compatible model` 作为确定性初始 Target；不得继承 global/local 上次 engine 或 model。用户在当前 Home 明确点选后，local creation target 保留到该 Session 创建完成。
+- Product Home 每次进入新会话态都以 `Codex + 当前上游目录中第一条 Responses-compatible model` 作为确定性初始 Target；不得继承 global/local 上次 engine 或 model。用户在当前 Home 明确点选后，local creation target 保留到该 Session 创建完成。
 - product catalog 继续是商业 entitlement 的上限；Doge 不再维护具体 model id allowlist。Native 安全投影保留上游顺序与 display/runtime identity，并拒绝 malformed、重复、超量以及明确的 image/audio/realtime/embedding-only rows。
-- 上游模型 compatibility 先归一为 managed Provider API protocol：explicit `api_protocols|supported_protocols|protocols` 是 authority；legacy `compatible_engines` 只作为 protocol evidence（Codex/Kimi→OpenAI、Claude→Anthropic）；缺失时按稳定 family fallback 投影，unknown family fail closed。API protocol 不等于 CLI process/stdout `protocolFamily`。
-- model list 按当前 engine 的 API protocol capability 过滤后，再按 presentation vendor 分组并支持搜索；Codex/Kimi 共享 OpenAI-compatible rows 与顺序，Claude 消费 Anthropic rows，双协议 row 可进入三者。`/v1/models` 是 entitlement/catalog evidence，exact CLI Agent payload typed terminal 是发布 E2E evidence；两者不能互相替代。
+- 上游模型 compatibility 先归一为 endpoint-level managed Provider API protocol：`openai-responses`、`openai-chat-completions`、`anthropic-messages`。explicit `api_protocols|supported_protocols|protocols` 是 authority；legacy `compatible_engines` 只作为对应 endpoint evidence；缺失时按实测 family fallback 投影，unknown family fail closed。API protocol 不等于 CLI process/stdout `protocolFamily`。
+- model list 按当前 engine 的 exact endpoint protocol capability 过滤后，再按 presentation vendor 分组并支持搜索；Codex 消费 Responses rows、Kimi 消费 Chat Completions rows、Claude 消费 Anthropic Messages rows，多 endpoint row 才可跨 engine。`/v1/models` 是 entitlement/catalog evidence，exact CLI Agent payload typed terminal 是发布 E2E evidence；两者不能互相替代。
+- 2026-08-27 production `Doge APP` Composite 已补齐 `kimi*` / `k3*` → Kimi / Responses routes；managed-key probes 证明 `k3`、`k3-256k`、`kimi-for-coding` 在 Responses 均返回 200，因此 Kimi-family fallback 是 Responses + Chat Completions，Codex 与 Kimi 都应展示。
 - engine 使用无独立 card container 的紧凑单选行，完整展示 display name，不以窄卡片 ellipsis 隐藏名称。
-- model 选择不改变 engine。Codex/Kimi 间切换时 OpenAI-compatible model 保留；切到不同 API protocol family 时，若当前 model 不兼容则原子切换到该 engine 在上游 catalog 中的第一个 compatible model。下一 engine 没有 compatible model 时不得生成 partial target 或回退 local/default。
+- model 选择不改变 engine。Codex/Kimi 间切换时只有同时支持 Responses + Chat Completions 的 model 可以保留；否则原子切换到目标 engine 在上游 catalog 中的第一个 compatible model。下一 engine 没有 compatible model 时不得生成 partial target 或回退 local/default。
 - 选择立即写入当前/new-session target，面板保持打开；关闭后 composer 展示 engine icon + model brand icon + display name。
 - product ready 后，`engine + model + managed provider profile` 共同组成唯一合法的 ExecutionTarget；新会话初始化、Shared target repair、engine/model 切换与发送边界都必须显式绑定 `doge-token-matrix`，不得继承旧 local/disk profile。
 - product flow 不展示 provider/configuration selector。用户只选择 engine 与该 engine 已验收的 model；Doge 注入的 managed provider configuration 是产品级 runtime contract，不是第三个用户选项。

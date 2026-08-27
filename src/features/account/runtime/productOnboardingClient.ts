@@ -49,7 +49,11 @@ export type ProductEngineViewV1 = {
   readonly displayName: string;
 };
 
-export const PRODUCT_MODEL_API_PROTOCOLS_V1 = ["openai", "anthropic"] as const;
+export const PRODUCT_MODEL_API_PROTOCOLS_V1 = [
+  "openai-responses",
+  "openai-chat-completions",
+  "anthropic-messages",
+] as const;
 export type ProductModelApiProtocolV1 =
   (typeof PRODUCT_MODEL_API_PROTOCOLS_V1)[number];
 

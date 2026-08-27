@@ -4,7 +4,11 @@ use serde_json::{json, Value};
 
 use crate::account::authority::ProductModelWire;
 
-const PRODUCT_MODEL_API_PROTOCOLS: &[&str] = &["openai", "anthropic"];
+const PRODUCT_MODEL_API_PROTOCOLS: &[&str] = &[
+    "openai-responses",
+    "openai-chat-completions",
+    "anthropic-messages",
+];
 
 pub(super) fn safe_product_models(values: Vec<ProductModelWire>) -> Result<Vec<Value>, ()> {
     let mut seen = HashSet::new();
@@ -89,9 +93,9 @@ fn compatible_product_api_protocols(value: &ProductModelWire) -> Vec<&'static st
             .iter()
             .copied()
             .filter(|protocol| {
-                (*protocol == "openai"
-                    && (requested.contains("codex") || requested.contains("kimi")))
-                    || (*protocol == "anthropic"
+                (*protocol == "openai-responses" && requested.contains("codex"))
+                    || (*protocol == "openai-chat-completions" && requested.contains("kimi"))
+                    || (*protocol == "anthropic-messages"
                         && (requested.contains("claude") || requested.contains("claude-code")))
             })
             .collect();
@@ -108,7 +112,7 @@ fn compatible_product_api_protocols(value: &ProductModelWire) -> Vec<&'static st
         return PRODUCT_MODEL_API_PROTOCOLS.to_vec();
     }
     if identity.contains("claude") || identity.contains("anthropic") {
-        return vec!["anthropic"];
+        return vec!["anthropic-messages"];
     }
     if identity.contains("kimi")
         || identity.contains("moonshot")
@@ -116,7 +120,7 @@ fn compatible_product_api_protocols(value: &ProductModelWire) -> Vec<&'static st
             .split_whitespace()
             .any(|part| part == "k3" || part.starts_with("k3-"))
     {
-        return vec!["openai"];
+        return vec!["openai-responses", "openai-chat-completions"];
     }
     if identity.contains("gpt")
         || identity.contains("openai")
@@ -127,17 +131,18 @@ fn compatible_product_api_protocols(value: &ProductModelWire) -> Vec<&'static st
                 || part.starts_with("o4-")
         })
     {
-        return vec!["openai"];
+        return vec!["openai-responses", "openai-chat-completions"];
     }
     Vec::new()
 }
 
 fn normalize_product_api_protocol(value: &str) -> Option<&'static str> {
     match value.trim().to_ascii_lowercase().as_str() {
-        "openai" | "openai-compatible" | "openai_compatible" | "responses" | "chat-completions"
-        | "chat_completions" => Some("openai"),
+        "responses" | "openai-responses" | "openai_responses" => Some("openai-responses"),
+        "openai" | "openai-compatible" | "openai_compatible" | "chat-completions"
+        | "chat_completions" => Some("openai-chat-completions"),
         "anthropic" | "anthropic-messages" | "anthropic_messages" | "messages" | "claude"
-        | "claude-code" => Some("anthropic"),
+        | "claude-code" => Some("anthropic-messages"),
         _ => None,
     }
 }

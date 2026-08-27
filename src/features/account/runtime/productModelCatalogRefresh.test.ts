@@ -92,7 +92,11 @@ function publishReady() {
       id: "gpt-5.6",
       displayName: "GPT-5.6",
       model: "gpt-5.6",
-      apiProtocols: ["openai", "anthropic"],
+      apiProtocols: [
+        "openai-responses",
+        "openai-chat-completions",
+        "anthropic-messages",
+      ],
       capabilities: ["chat"],
     }],
   });
@@ -107,7 +111,11 @@ function modelsEnvelope(id: string, displayName: string) {
         id,
         display_name: displayName,
         model: id,
-        api_protocols: ["openai", "anthropic"],
+        api_protocols: [
+          "openai-responses",
+          "openai-chat-completions",
+          "anthropic-messages",
+        ],
         capabilities: ["chat"],
       }],
     },

@@ -8,11 +8,15 @@ import {
 } from "./productModelCompatibility";
 
 const models: ProductModelViewV1[] = [
-  model("gpt-5.6-sol", ["openai"]),
-  model("claude-sonnet-4-8", ["anthropic"]),
-  model("kimi-for-coding", ["openai"]),
+  model("gpt-5.6-sol", ["openai-responses", "openai-chat-completions"]),
+  model("claude-sonnet-4-8", ["anthropic-messages"]),
+  model("kimi-for-coding", ["openai-responses", "openai-chat-completions"]),
   {
-    ...model("doubao-entry", ["openai", "anthropic"]),
+    ...model("doubao-entry", [
+      "openai-responses",
+      "openai-chat-completions",
+      "anthropic-messages",
+    ]),
     displayName: "豆包",
     model: "ark-code-latest",
   },

@@ -4,21 +4,21 @@
 
 ### Requirement: Product Model Selection SHALL Be API-Protocol-Compatible
 
-Doge MUST source engines from its local registry, treat the active product's upstream catalog as the entitlement ceiling, normalize model rows to canonical managed Provider API protocols, and derive each engine's rows from engine-to-protocol capability. It MUST NOT require a Doge release to enumerate every model id, and MUST NOT confuse managed Provider API protocol with CLI process/stdout protocol.
+Doge MUST source engines from its local registry, treat the active product's upstream catalog as the entitlement ceiling, normalize model rows to endpoint-level managed Provider API protocols, and derive each engine's rows from engine-to-protocol capability. It MUST NOT require a Doge release to enumerate every model id, and MUST NOT confuse managed Provider API protocol with CLI process/stdout protocol.
 
 #### Scenario: Product Home initializes its first target
 
 - **WHEN** a ready user opens Home before making a picker selection
 - **THEN** the target engine SHALL be Codex
-- **AND** the target model SHALL be the first OpenAI-compatible upstream row
+- **AND** the target model SHALL be the first Responses-compatible upstream row
 - **AND** user selection during that Home lifecycle SHALL replace the initial target without changing provider authority
 
 #### Scenario: User switches engine
 
 - **WHEN** the user selects another installed Doge engine
 - **THEN** Doge SHALL filter the current upstream catalog through each row's canonical API protocol set
-- **AND** Codex and Kimi SHALL expose the same OpenAI-compatible rows in upstream order
-- **AND** the selected OpenAI-compatible model SHALL remain unchanged when switching between Codex and Kimi
+- **AND** Codex SHALL consume `openai-responses` rows while Kimi consumes `openai-chat-completions` rows
+- **AND** the selected model SHALL remain unchanged between Codex and Kimi only when it supports both endpoints
 - **AND** otherwise Doge SHALL atomically select the first compatible upstream model for that engine
 - **AND** it SHALL NOT produce a partial target or silently fall back to a local/default model when the intersection is empty
 
@@ -36,19 +36,20 @@ Doge MUST source engines from its local registry, treat the active product's ups
 - **AND** legacy `compatible_engines` SHALL be mapped to API protocol evidence
 - **AND** absent compatibility metadata SHALL use the documented protocol-family fallback for GPT/Claude/Kimi/Doubao while unknown families fail closed
 
-#### Scenario: User selects a Kimi model in Codex
+#### Scenario: K3 is available through both OpenAI endpoints
 
-- **GIVEN** the upstream Kimi model row supports the OpenAI-compatible protocol
-- **WHEN** the user selects that row under Codex
-- **THEN** Doge SHALL commit `engine=codex`
-- **AND** SHALL preserve and send the row's exact runtime model id
+- **GIVEN** the upstream K3/Kimi model row lacks explicit protocol metadata
+- **AND** production Composite routes target K3/Kimi through both Responses and Chat Completions
+- **AND** current managed-key probes prove both endpoints succeed
+- **WHEN** Doge renders Product model choices
+- **THEN** the row SHALL appear under both Codex and Kimi
 
 #### Scenario: Claude model protocol is available upstream
 
 - **GIVEN** an upstream row supports the Anthropic Messages protocol
 - **WHEN** Doge renders Claude
 - **THEN** the row SHALL appear under Claude
-- **AND** SHALL appear under Codex/Kimi only if it also supports the OpenAI-compatible protocol
+- **AND** SHALL appear under Codex/Kimi only if it also supports the corresponding exact endpoint protocol
 
 #### Scenario: Administrator narrows the product model visibility upstream
 

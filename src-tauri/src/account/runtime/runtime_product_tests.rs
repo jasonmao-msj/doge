@@ -172,8 +172,29 @@ fn product_models_preserve_dynamic_display_runtime_and_protocol_metadata() {
     assert_eq!(models[0]["id"], "doubao-entry");
     assert_eq!(models[0]["display_name"], "豆包");
     assert_eq!(models[0]["model"], "ark-code-latest");
-    assert_eq!(models[0]["api_protocols"], json!(["openai", "anthropic"]));
-    assert_eq!(models[1]["api_protocols"], json!(["anthropic"]));
+    assert_eq!(
+        models[0]["api_protocols"],
+        json!(["openai-responses", "anthropic-messages"])
+    );
+    assert_eq!(models[1]["api_protocols"], json!(["anthropic-messages"]));
+}
+
+#[test]
+fn explicit_openai_alias_is_chat_completions_not_responses() {
+    let models = safe_product_models(vec![ProductModelWire {
+        id: "custom-openai-compatible".into(),
+        display_name: None,
+        model: None,
+        compatible_engines: None,
+        api_protocols: Some(vec!["openai".into()]),
+        capabilities: Some(vec!["chat".into()]),
+    }])
+    .expect("safe explicit OpenAI-compatible model");
+
+    assert_eq!(
+        models[0]["api_protocols"],
+        json!(["openai-chat-completions"])
+    );
 }
 
 #[test]
@@ -187,9 +208,25 @@ fn product_models_follow_new_ids_within_known_engine_families() {
     .expect("known dynamic families remain");
 
     assert_eq!(models.len(), 3);
-    assert_eq!(models[0]["api_protocols"], json!(["openai"]));
-    assert_eq!(models[1]["api_protocols"], json!(["anthropic"]));
-    assert_eq!(models[2]["api_protocols"], json!(["openai"]));
+    assert_eq!(
+        models[0]["api_protocols"],
+        json!(["openai-responses", "openai-chat-completions"])
+    );
+    assert_eq!(models[1]["api_protocols"], json!(["anthropic-messages"]));
+    assert_eq!(
+        models[2]["api_protocols"],
+        json!(["openai-responses", "openai-chat-completions"])
+    );
+}
+
+#[test]
+fn k3_family_fallback_supports_both_openai_endpoints() {
+    let models = safe_product_models(vec![product_model("k3-256k")]).expect("safe K3 model");
+
+    assert_eq!(
+        models[0]["api_protocols"],
+        json!(["openai-responses", "openai-chat-completions"])
+    );
 }
 
 #[test]
@@ -214,8 +251,11 @@ fn legacy_engine_metadata_maps_to_api_protocol_families() {
     ])
     .expect("legacy metadata maps to protocols");
 
-    assert_eq!(models[0]["api_protocols"], json!(["openai"]));
-    assert_eq!(models[1]["api_protocols"], json!(["anthropic"]));
+    assert_eq!(
+        models[0]["api_protocols"],
+        json!(["openai-chat-completions"])
+    );
+    assert_eq!(models[1]["api_protocols"], json!(["anthropic-messages"]));
 }
 
 #[test]

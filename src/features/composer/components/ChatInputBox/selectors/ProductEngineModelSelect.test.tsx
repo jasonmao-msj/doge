@@ -30,15 +30,25 @@ const catalog: ProductTargetCatalogV1 = {
     { id: "kimi", displayName: "Kimi CLI" },
   ],
   models: [
-    productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["openai"]),
-    productModel("gpt-5.5", "GPT-5.5", ["openai"]),
-    productModel("claude-sonnet-4-8", "Claude Sonnet 4.8", ["anthropic"]),
-    productModel("kimi-for-coding", "Kimi For Coding", ["openai"]),
-    productModel(
-      "kimi-for-coding-highspeed",
-      "Kimi For Coding Highspeed",
-      ["openai"],
-    ),
+    productModel("gpt-5.6-sol", "GPT-5.6 Sol", [
+      "openai-responses",
+      "openai-chat-completions",
+    ]),
+    productModel("gpt-5.5", "GPT-5.5", [
+      "openai-responses",
+      "openai-chat-completions",
+    ]),
+    productModel("claude-sonnet-4-8", "Claude Sonnet 4.8", [
+      "anthropic-messages",
+    ]),
+    productModel("kimi-for-coding", "Kimi For Coding", [
+      "openai-responses",
+      "openai-chat-completions",
+    ]),
+    productModel("kimi-for-coding-highspeed", "Kimi For Coding Highspeed", [
+      "openai-responses",
+      "openai-chat-completions",
+    ]),
   ],
   modelsStatus: "ready",
   modelsUpdatedAt: 1_893_456_000_000,
@@ -111,7 +121,11 @@ describe("ProductEngineModelSelect", () => {
 
   it("does not bridge a Kimi source model while choosing Codex Sol", () => {
     const onExecutionTargetChange = vi.fn();
-    const doubao = productModel("豆包", "豆包", ["openai", "anthropic"]);
+    const doubao = productModel("豆包", "豆包", [
+      "openai-responses",
+      "openai-chat-completions",
+      "anthropic-messages",
+    ]);
     render(
       <ProductEngineModelSelect
         catalog={{ ...catalog, models: [doubao, ...catalog.models] }}
@@ -144,7 +158,7 @@ describe("ProductEngineModelSelect", () => {
     );
   });
 
-  it("commits a Kimi-family runtime model under the Codex engine", () => {
+  it("keeps Kimi-family models available in Codex and Kimi", () => {
     const onExecutionTargetChange = vi.fn();
     render(
       <ProductEngineModelSelect
@@ -156,10 +170,21 @@ describe("ProductEngineModelSelect", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
     fireEvent.click(screen.getByRole("radio", { name: /Kimi For Coding$/ }));
-
     expect(onExecutionTargetChange).toHaveBeenCalledWith(
       expect.objectContaining({
         engine: "codex",
+        modelCatalogEntryId: "kimi-for-coding",
+        model: "kimi-for-coding",
+        providerProfileId: "doge-token-matrix",
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: "Kimi CLI" }));
+    fireEvent.click(screen.getByRole("radio", { name: /Kimi For Coding$/ }));
+
+    expect(onExecutionTargetChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        engine: "kimi",
         modelCatalogEntryId: "kimi-for-coding",
         model: "kimi-for-coding",
         providerProfileId: "doge-token-matrix",
@@ -234,7 +259,7 @@ describe("ProductEngineModelSelect", () => {
 
   it("shows the upstream display name without exposing a different runtime model", () => {
     const doubao = {
-      ...productModel("doubao-entry", "豆包", ["openai"]),
+      ...productModel("doubao-entry", "豆包", ["openai-responses"]),
       model: "ark-code-latest",
     };
     render(

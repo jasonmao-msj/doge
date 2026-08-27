@@ -109,6 +109,10 @@ React Component
     `switch_engine` 失败误报为 one-shot session 创建/续接失败。共享 helper 必须同时返回
     activation options 与是否必须 fail closed，禁止各 caller 自行猜测。
 34. External installer/config/remote-create mutation 的 side effect 与 response settlement 必须分域。Promise reject、IPC 丢失、malformed success 或首个 status snapshot stale 不能证明 mutation 未发生；先用 bounded authoritative convergence（binary/version/file/deterministic remote identity）判真，再映射 failure。若 remote create 有稳定 business identity，reconcile 必须在 Native/service owner 内 authoritative re-list + exact match + secure handoff，禁止把“再点一次 Retry 才看见已提交副作用”设计成 UI recovery。后续 remote prepare 必须切换 UI stage owner，避免把 Authority failure 继续归因到最后一个 local engine。自动 retry 只允许幂等 mutation、bounded budget、cooldown aware，并受 exact generation guard 约束。
+35. Protocol compatibility 必须细化到产生 side effect 的 exact endpoint。`OpenAI-compatible`
+    family 不能替代 `Responses` / `Chat Completions`，`/v1/models` row 也不能替代 endpoint
+    callable evidence。跨 engine 共享 model 前，先列 `engine -> endpoint protocol` matrix，再用
+    explicit upstream metadata 或 exact endpoint/CLI terminal 证明；缺证据按 endpoint fail closed。
 
 ## 常见失败模式
 
@@ -163,6 +167,9 @@ React Component
 - 只修 transcript scanner 的 camelCase API rejection，遗漏 live stdout 的 snake_case flag；DB 已写
   `target-provider-rejected`，但调用方仍卡在等待 EOF，形成“离线事实正确、前台永远 running”的分裂。
 - boundary CI 红时只更新 allowlist/baseline，或新建 neutral re-export 文件继续 import peer owner；图表变绿但 ownership drift 被永久合法化。另一种常见遗漏是只给 main Layout 注入 peer slot，嵌套 Messages/Canvas entry 因没有 host composition 静默丢功能。
+- 把 Responses 与 Chat Completions 合并成 broad `openai`，route capability 变化后仍靠 model
+  名称猜可见性；结果既可能让真实 Codex turn 暴露 Composite 400，也可能在 route 已修复后继续
+  隐藏本可调用的 K3/Kimi row。
 
 ## Optional Payload Contract
 

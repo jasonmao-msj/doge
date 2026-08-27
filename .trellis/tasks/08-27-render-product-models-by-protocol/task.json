@@ -2,8 +2,8 @@
   "id": "render-product-models-by-protocol",
   "name": "render-product-models-by-protocol",
   "title": "render-product-models-by-protocol（OpenSpec: render-product-models-by-protocol）",
-  "description": "从最新 origin/main 修复 Product model catalog：Codex/Kimi 共享 OpenAI-compatible models，Claude 消费 upstream Anthropic-compatible models，并开 PR review。",
-  "status": "planning",
+  "description": "按 endpoint protocol 投影 Product model；补齐 production K3/Kimi Responses routes，使 Kimi family 可在 Codex 与 Kimi 运行。",
+  "status": "active",
   "dev_type": "fullstack",
   "scope": null,
   "package": null,
@@ -15,7 +15,7 @@
   "branch": "codex/render-models-by-protocol",
   "base_branch": "main",
   "worktree_path": null,
-  "current_phase": 0,
+  "current_phase": 4,
   "next_action": [
     {
       "phase": 1,
@@ -43,7 +43,7 @@
     }
   ],
   "commit": null,
-  "pr_url": null,
+  "pr_url": "https://github.com/jasonmao-msj/doge/pull/35",
   "subtasks": [],
   "children": [],
   "parent": null,

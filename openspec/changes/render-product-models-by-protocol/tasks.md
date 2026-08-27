@@ -10,6 +10,18 @@
 ## 2. Regression and verification
 
 - [x] 2.1 Rust 覆盖 explicit protocol、legacy engine evidence、known fallback 与 unknown fail-closed。
-- [x] 2.2 Frontend 覆盖 Codex/Kimi 相同目录、Codex 选择 Kimi model、Claude 双协议投影。
+- [x] 2.2 Frontend 覆盖初版 broad OpenAI projection（已被 §3 runtime evidence 纠正）。
 - [x] 2.3 执行 L3 focused verification，记录未运行的 L4 Release/CI 范围。
-- [ ] 2.4 提交、记录 Trellis session、push branch 并创建未合并 PR。
+- [ ] 2.4 提交、记录 Trellis session、push branch 并更新未合并 PR #35。
+
+## 3. Runtime evidence correction
+
+- [x] 3.1 记录 Codex+K3 rollout 与 Responses/Chat Completions 最小 probe evidence。
+- [x] 3.2 将 canonical protocol 拆为 Responses、Chat Completions、Anthropic Messages。
+- [x] 3.3 定位 Responses 400 为 production Composite route 缺口，而非 Kimi converter 缺失。
+- [x] 3.4 经用户授权在 production UI 新增 `kimi*` / `k3*` → Kimi / Responses routes，并复测
+  `k3`、`k3-256k`、`kimi-for-coding` Responses 全部 HTTP 200。
+- [x] 3.5 K3/Kimi fallback 投影到 Codex + Kimi，补 Rust/Frontend regression 并更新 Trellis/ADR。
+- [x] 3.6 用 Doge isolated Codex provider home + managed key + `model=k3` 完成真实 CLI turn：
+  exit 0，final message `OK`。
+- [ ] 3.7 更新 PR #35 并完成用户 hot UI 复验。

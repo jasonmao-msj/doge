@@ -54,7 +54,7 @@ describe("AccountSidebarShortcut", () => {
             id: "gpt-5.6-luna",
             displayName: "gpt-5.6-luna",
             model: "gpt-5.6-luna",
-            apiProtocols: ["openai"],
+            apiProtocols: ["openai-responses"],
             capabilities: ["chat"],
           },
         ],

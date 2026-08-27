@@ -162,7 +162,11 @@ describe("product onboarding contract", () => {
           id: "doubao-entry",
           displayName: "豆包",
           model: "ark-code-latest",
-          apiProtocols: ["openai", "anthropic"],
+          apiProtocols: [
+            "openai-responses",
+            "openai-chat-completions",
+            "anthropic-messages",
+          ],
           capabilities: ["chat"],
         }],
       },
@@ -260,7 +264,11 @@ function rawModel(id: string, displayName = id, model = id) {
     id,
     display_name: displayName,
     model,
-    api_protocols: ["openai", "anthropic"],
+    api_protocols: [
+      "openai-responses",
+      "openai-chat-completions",
+      "anthropic-messages",
+    ],
     capabilities: ["chat"],
   };
 }
