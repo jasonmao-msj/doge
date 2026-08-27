@@ -71,3 +71,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 61: 准备 v0.1.2 正式发布
+
+**Date**: 2026-08-27
+**Task**: 准备 v0.1.2 正式发布
+**Branch**: `codex/render-models-by-protocol`
+
+### Summary
+
+用户确认 Hot Doge 目视验收通过；统一 config/brand、npm、Cargo 与 Tauri 版本为 0.1.2。release branding、workflow contract、docs、OpenSpec、upstream isolation 与 diff gate 通过；本地 origin 按项目规范校准为 canonical HTTPS。待合并 PR #35 并运行 signed release workflow。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b6b2ffe01` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
