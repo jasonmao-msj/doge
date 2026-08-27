@@ -300,3 +300,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: 修复新建会话及页面切换后的引擎路由与显示
+
+**Date**: 2026-08-27
+**Task**: 修复新建会话及页面切换后的引擎路由与显示
+**Branch**: `fix/create-session-engine-routing`
+
+### Summary
+
+修复 prompt/intent canvas/kanban composer 新建会话时引擎透传、Composer target 未就绪拦截、/clear /new 继承 thread engine + providerProfileId、queue 消息冻结引擎、已有会话 Composer 以 engineSource 为准。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3e1776daf1ac1d1e8d3d818726299703f45514ea` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
