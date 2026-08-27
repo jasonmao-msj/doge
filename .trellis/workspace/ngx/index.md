@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 8
+- **Total Sessions**: 9
 - **Last Active**: 2026-08-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~269 | Active |
+| `journal-1.md` | ~302 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 9 | 2026-08-27 | 修正 updater 验签公钥 | `644ba4b74` | `codex/fix-updater-public-key` |
 | 8 | 2026-08-27 | 修复 macOS daemon 编译错误 | `a8cf0021a` | `codex/enable-doge-updater` |
 | 7 | 2026-08-26 | 解决 PR 合并冲突 | `3569a6039` | `codex/enable-doge-updater` |
 | 6 | 2026-08-26 | 移除 macOS 系统签名校验 | `c8d47a420` | `codex/enable-doge-updater` |
