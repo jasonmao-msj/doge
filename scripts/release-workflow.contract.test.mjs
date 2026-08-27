@@ -171,7 +171,7 @@ test("shipping updater config uses the doge public key and canonical feed", () =
   assert.equal(config.plugins?.updater?.active, true);
   assert.equal(
     config.plugins?.updater?.pubkey,
-    "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA4QjcxRkFFN0Q5NzgxQUYKUldTdmdaZDlyaCszQ0k2NGVoTG1LRnVoN2F3SVZjNFVzeTZlc2VNcUJhdlhmTko4WkY2QU9UQmMK",
+    "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA4QjcxRkFFN0Q5NzgxQUYKUldTdmdaZDlyaCszQ0k2NGVoTG1LRnVoNGF3SVZjNFVzeTZlc2VNcUJhdlhmTko4WkY2QU9UQmMK",
   );
   assert.deepEqual(config.plugins?.updater?.endpoints, [
     "https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json",

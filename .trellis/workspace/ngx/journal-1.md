@@ -267,3 +267,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: 修正 updater 验签公钥
+
+**Date**: 2026-08-27
+**Task**: 修正 updater 验签公钥
+**Branch**: `codex/fix-updater-public-key`
+
+### Summary
+
+将 tauri updater 公钥从损坏的 KFuh7aw payload 修正为用户提供的 KFuh4aw payload，同步配置测试、release contract 与已归档 OpenSpec 事实源；删除上一轮误诊产生的重签 workflow、临时 verifier 与 active change。L3 验证通过：updater Vitest 2/2、release contract 7/7、typecheck、branding、diff check；L4 signed Release CI 与旧客户端到新安装包实机升级未在本地执行。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `644ba4b74` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
