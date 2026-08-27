@@ -1,0 +1,5 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "按 L3 选择 focused verification"}
+{"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "核对 catalog authority 与 fail-closed"}
+{"file": "openspec/changes/render-product-models-by-protocol/design.md", "reason": "核对 protocol projection validation matrix"}

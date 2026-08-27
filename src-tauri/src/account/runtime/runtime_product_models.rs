@@ -4,7 +4,11 @@ use serde_json::{json, Value};
 
 use crate::account::authority::ProductModelWire;
 
-const PRODUCT_RUNTIME_ENGINE_IDS: &[&str] = &["codex", "claude", "kimi"];
+const PRODUCT_MODEL_API_PROTOCOLS: &[&str] = &[
+    "openai-responses",
+    "openai-chat-completions",
+    "anthropic-messages",
+];
 
 pub(super) fn safe_product_models(values: Vec<ProductModelWire>) -> Result<Vec<Value>, ()> {
     let mut seen = HashSet::new();
@@ -29,8 +33,8 @@ pub(super) fn safe_product_models(values: Vec<ProductModelWire>) -> Result<Vec<V
             .map(str::trim)
             .filter(|model| safe_product_model_id(model))
             .unwrap_or(id);
-        let compatible_engines = compatible_product_engine_ids(&value);
-        if compatible_engines.is_empty() {
+        let api_protocols = compatible_product_api_protocols(&value);
+        if api_protocols.is_empty() {
             continue;
         }
         let capabilities = value
@@ -44,7 +48,7 @@ pub(super) fn safe_product_models(values: Vec<ProductModelWire>) -> Result<Vec<V
             "id": id,
             "display_name": display_name,
             "model": runtime_model,
-            "compatible_engines": compatible_engines,
+            "api_protocols": api_protocols,
             "capabilities": capabilities,
         }));
     }
@@ -67,18 +71,32 @@ fn safe_product_model_display_name(value: &str) -> bool {
     !value.is_empty() && value.len() <= 256 && !value.chars().any(char::is_control)
 }
 
-fn compatible_product_engine_ids(value: &ProductModelWire) -> Vec<&'static str> {
+fn compatible_product_api_protocols(value: &ProductModelWire) -> Vec<&'static str> {
+    if let Some(values) = value.api_protocols.as_deref() {
+        let requested = values
+            .iter()
+            .filter_map(|value| normalize_product_api_protocol(value))
+            .collect::<HashSet<_>>();
+        return PRODUCT_MODEL_API_PROTOCOLS
+            .iter()
+            .copied()
+            .filter(|protocol| requested.contains(protocol))
+            .collect();
+    }
+
     if let Some(values) = value.compatible_engines.as_deref() {
         let requested = values
             .iter()
             .map(|value| value.trim().to_ascii_lowercase())
             .collect::<HashSet<_>>();
-        return PRODUCT_RUNTIME_ENGINE_IDS
+        return PRODUCT_MODEL_API_PROTOCOLS
             .iter()
             .copied()
-            .filter(|engine| {
-                requested.contains(*engine)
-                    || (*engine == "claude" && requested.contains("claude-code"))
+            .filter(|protocol| {
+                (*protocol == "openai-responses" && requested.contains("codex"))
+                    || (*protocol == "openai-chat-completions" && requested.contains("kimi"))
+                    || (*protocol == "anthropic-messages"
+                        && (requested.contains("claude") || requested.contains("claude-code")))
             })
             .collect();
     }
@@ -91,10 +109,10 @@ fn compatible_product_engine_ids(value: &ProductModelWire) -> Vec<&'static str> 
     )
     .to_ascii_lowercase();
     if identity.contains("豆包") || identity.contains("doubao") || identity.contains("ark-code") {
-        return PRODUCT_RUNTIME_ENGINE_IDS.to_vec();
+        return PRODUCT_MODEL_API_PROTOCOLS.to_vec();
     }
     if identity.contains("claude") || identity.contains("anthropic") {
-        return vec!["claude"];
+        return vec!["anthropic-messages"];
     }
     if identity.contains("kimi")
         || identity.contains("moonshot")
@@ -102,7 +120,7 @@ fn compatible_product_engine_ids(value: &ProductModelWire) -> Vec<&'static str> 
             .split_whitespace()
             .any(|part| part == "k3" || part.starts_with("k3-"))
     {
-        return vec!["kimi"];
+        return vec!["openai-responses", "openai-chat-completions"];
     }
     if identity.contains("gpt")
         || identity.contains("openai")
@@ -113,9 +131,20 @@ fn compatible_product_engine_ids(value: &ProductModelWire) -> Vec<&'static str> 
                 || part.starts_with("o4-")
         })
     {
-        return vec!["codex"];
+        return vec!["openai-responses", "openai-chat-completions"];
     }
     Vec::new()
+}
+
+fn normalize_product_api_protocol(value: &str) -> Option<&'static str> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "responses" | "openai-responses" | "openai_responses" => Some("openai-responses"),
+        "openai" | "openai-compatible" | "openai_compatible" | "chat-completions"
+        | "chat_completions" => Some("openai-chat-completions"),
+        "anthropic" | "anthropic-messages" | "anthropic_messages" | "messages" | "claude"
+        | "claude-code" => Some("anthropic-messages"),
+        _ => None,
+    }
 }
 
 fn is_conversation_product_model(value: &ProductModelWire) -> bool {

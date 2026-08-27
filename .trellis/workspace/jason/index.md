@@ -7,9 +7,9 @@
 ## Current Status
 
 <!-- @@@auto:current-status -->
-- **Active File**: `journal-1.md`
-- **Total Sessions**: 58
-- **Last Active**: 2026-08-26
+- **Active File**: `journal-2.md`
+- **Total Sessions**: 61
+- **Last Active**: 2026-08-27
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,8 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1980 | Active |
+| `journal-2.md` | ~106 | Active |
+| `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +30,9 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 61 | 2026-08-27 | 准备 v0.1.2 正式发布 | `b6b2ffe01` | `codex/render-models-by-protocol` |
+| 60 | 2026-08-27 | 修复 Codex 调用 Kimi 模型 | `31951f045` | `codex/render-models-by-protocol` |
+| 59 | 2026-08-27 | 按 API protocol 统一 Product 模型目录 | `2b46b68be` | `codex/render-models-by-protocol` |
 | 58 | 2026-08-26 | 固化产品引擎与首次准备恢复 | `051292191` | `codex/product-managed-engine-onboarding` |
 | 57 | 2026-08-25 | 交付 ProjectMap 修复与双端 release artifacts | `976718b2e` | `codex/fix-project-map-windows-timeout` |
 | 56 | 2026-08-25 | 稳定 ProjectMap Windows batched test latency | `c3942ce9f` | `codex/fix-project-map-windows-timeout` |

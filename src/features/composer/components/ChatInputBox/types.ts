@@ -4,6 +4,7 @@
  */
 
 import type { ReactNode } from 'react';
+import type { ProductModelViewV1 } from '../../../account/runtime/productOnboardingClient';
 import { CODEX_MODEL_CATALOG } from "../../../models/codexModelCatalog";
 import type { ComposerSendReadiness } from '../../utils/composerSendReadiness';
 import type { ExecutionTarget } from '../../../shared-session/target/types';
@@ -367,16 +368,7 @@ export type ProductTargetCatalogV1 = {
     readonly id: Extract<EngineType, 'codex' | 'claude' | 'kimi'>;
     readonly displayName: string;
   }[];
-  readonly models: readonly {
-    readonly id: string;
-    readonly displayName: string;
-    readonly model: string;
-    readonly compatibleEngines: readonly Extract<
-      EngineType,
-      'codex' | 'claude' | 'kimi'
-    >[];
-    readonly capabilities: readonly string[];
-  }[];
+  readonly models: readonly ProductModelViewV1[];
   readonly modelsStatus: 'ready' | 'refreshing' | 'stale';
   readonly modelsUpdatedAt: number | null;
 };

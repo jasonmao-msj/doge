@@ -30,15 +30,25 @@ const catalog: ProductTargetCatalogV1 = {
     { id: "kimi", displayName: "Kimi CLI" },
   ],
   models: [
-    productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["codex"]),
-    productModel("gpt-5.5", "GPT-5.5", ["codex"]),
-    productModel("claude-sonnet-4-8", "Claude Sonnet 4.8", ["claude"]),
-    productModel("kimi-for-coding", "Kimi For Coding", ["kimi"]),
-    productModel(
-      "kimi-for-coding-highspeed",
-      "Kimi For Coding Highspeed",
-      ["kimi"],
-    ),
+    productModel("gpt-5.6-sol", "GPT-5.6 Sol", [
+      "openai-responses",
+      "openai-chat-completions",
+    ]),
+    productModel("gpt-5.5", "GPT-5.5", [
+      "openai-responses",
+      "openai-chat-completions",
+    ]),
+    productModel("claude-sonnet-4-8", "Claude Sonnet 4.8", [
+      "anthropic-messages",
+    ]),
+    productModel("kimi-for-coding", "Kimi For Coding", [
+      "openai-responses",
+      "openai-chat-completions",
+    ]),
+    productModel("kimi-for-coding-highspeed", "Kimi For Coding Highspeed", [
+      "openai-responses",
+      "openai-chat-completions",
+    ]),
   ],
   modelsStatus: "ready",
   modelsUpdatedAt: 1_893_456_000_000,
@@ -76,11 +86,12 @@ describe("ProductEngineModelSelect", () => {
     fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
 
     expect(screen.getByRole("dialog", { name: "选择引擎与模型" })).toBeTruthy();
-    expect(screen.getAllByRole("radio")).toHaveLength(5);
+    expect(screen.getAllByRole("radio")).toHaveLength(7);
     expect(screen.queryByText("切换渠道")).toBeNull();
     expect(screen.queryByText("添加模型")).toBeNull();
     expect(screen.queryByText(/Doge 订阅已生效/)).toBeNull();
     expect(screen.getByRole("dialog").querySelector("footer")).toBeNull();
+    expect(screen.getByRole("radio", { name: /Kimi For Coding$/ })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("radio", { name: "Claude" }));
     expect(changes).toHaveLength(0);
@@ -110,7 +121,11 @@ describe("ProductEngineModelSelect", () => {
 
   it("does not bridge a Kimi source model while choosing Codex Sol", () => {
     const onExecutionTargetChange = vi.fn();
-    const doubao = productModel("豆包", "豆包", ["codex", "kimi"]);
+    const doubao = productModel("豆包", "豆包", [
+      "openai-responses",
+      "openai-chat-completions",
+      "anthropic-messages",
+    ]);
     render(
       <ProductEngineModelSelect
         catalog={{ ...catalog, models: [doubao, ...catalog.models] }}
@@ -138,6 +153,40 @@ describe("ProductEngineModelSelect", () => {
         engine: "codex",
         modelCatalogEntryId: "gpt-5.6-sol",
         model: "gpt-5.6-sol",
+        providerProfileId: "doge-token-matrix",
+      }),
+    );
+  });
+
+  it("keeps Kimi-family models available in Codex and Kimi", () => {
+    const onExecutionTargetChange = vi.fn();
+    render(
+      <ProductEngineModelSelect
+        catalog={catalog}
+        executionTarget={initialTarget}
+        onExecutionTargetChange={onExecutionTargetChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Kimi For Coding$/ }));
+    expect(onExecutionTargetChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        engine: "codex",
+        modelCatalogEntryId: "kimi-for-coding",
+        model: "kimi-for-coding",
+        providerProfileId: "doge-token-matrix",
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: "Kimi CLI" }));
+    fireEvent.click(screen.getByRole("radio", { name: /Kimi For Coding$/ }));
+
+    expect(onExecutionTargetChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        engine: "kimi",
+        modelCatalogEntryId: "kimi-for-coding",
+        model: "kimi-for-coding",
         providerProfileId: "doge-token-matrix",
       }),
     );
@@ -210,7 +259,7 @@ describe("ProductEngineModelSelect", () => {
 
   it("shows the upstream display name without exposing a different runtime model", () => {
     const doubao = {
-      ...productModel("doubao-entry", "豆包", ["codex"]),
+      ...productModel("doubao-entry", "豆包", ["openai-responses"]),
       model: "ark-code-latest",
     };
     render(
@@ -244,13 +293,13 @@ describe("ProductEngineModelSelect", () => {
 function productModel(
   id: string,
   displayName: string,
-  compatibleEngines: ProductTargetCatalogV1["models"][number]["compatibleEngines"],
+  apiProtocols: ProductTargetCatalogV1["models"][number]["apiProtocols"],
 ): ProductTargetCatalogV1["models"][number] {
   return {
     id,
     displayName,
     model: id,
-    compatibleEngines,
+    apiProtocols,
     capabilities: [],
   };
 }

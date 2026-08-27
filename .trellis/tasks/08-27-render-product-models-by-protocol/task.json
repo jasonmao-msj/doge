@@ -1,0 +1,53 @@
+{
+  "id": "render-product-models-by-protocol",
+  "name": "render-product-models-by-protocol",
+  "title": "render-product-models-by-protocol（OpenSpec: render-product-models-by-protocol）",
+  "description": "按 endpoint protocol 投影 Product model；补齐 production K3/Kimi Responses routes，使 Kimi family 可在 Codex 与 Kimi 运行。",
+  "status": "active",
+  "dev_type": "fullstack",
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-27",
+  "completedAt": null,
+  "branch": "codex/render-models-by-protocol",
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 6,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": "https://github.com/jasonmao-msj/doge/pull/35",
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "Hot Doge 目视验收已通过；v0.1.2 release handoff 进行中。",
+  "meta": {}
+}

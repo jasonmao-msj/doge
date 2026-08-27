@@ -14,10 +14,6 @@ import type {
   PaymentMethodViewV1,
   SubscriptionPlanViewV1,
 } from "./onboardingTypes";
-import {
-  PRODUCT_RUNTIME_ENGINE_IDS_V1,
-  type ProductRuntimeEngineIdV1,
-} from "./productManagedEnginePolicy";
 export {
   PRODUCT_RUNTIME_ENGINE_IDS_V1,
   type ProductRuntimeEngineIdV1,
@@ -53,11 +49,19 @@ export type ProductEngineViewV1 = {
   readonly displayName: string;
 };
 
+export const PRODUCT_MODEL_API_PROTOCOLS_V1 = [
+  "openai-responses",
+  "openai-chat-completions",
+  "anthropic-messages",
+] as const;
+export type ProductModelApiProtocolV1 =
+  (typeof PRODUCT_MODEL_API_PROTOCOLS_V1)[number];
+
 export type ProductModelViewV1 = {
   readonly id: string;
   readonly displayName: string;
   readonly model: string;
-  readonly compatibleEngines: readonly ProductRuntimeEngineIdV1[];
+  readonly apiProtocols: readonly ProductModelApiProtocolV1[];
   readonly capabilities: readonly string[];
 };
 
@@ -292,23 +296,25 @@ function parseModel(value: unknown): ProductModelViewV1 | null {
   if (!item || typeof item.id !== "string" || item.id.trim() === "" || item.id.length > 128 ||
     typeof item.display_name !== "string" || item.display_name.trim() === "" ||
     typeof item.model !== "string" || item.model.trim() === "" || item.model.length > 128 ||
-    !Array.isArray(item.compatible_engines) ||
-    !item.compatible_engines.every(isProductRuntimeEngineId) ||
-    item.compatible_engines.length === 0 ||
+    !Array.isArray(item.api_protocols) ||
+    !item.api_protocols.every(isProductModelApiProtocolV1) ||
+    item.api_protocols.length === 0 ||
     !Array.isArray(item.capabilities) ||
     !item.capabilities.every((capability) => typeof capability === "string")) return null;
   return {
     id: item.id.trim(),
     displayName: item.display_name.trim(),
     model: item.model.trim(),
-    compatibleEngines: [...new Set(item.compatible_engines)],
+    apiProtocols: [...new Set(item.api_protocols)],
     capabilities: item.capabilities,
   };
 }
 
-function isProductRuntimeEngineId(value: unknown): value is ProductRuntimeEngineIdV1 {
+function isProductModelApiProtocolV1(
+  value: unknown,
+): value is ProductModelApiProtocolV1 {
   return typeof value === "string" &&
-    PRODUCT_RUNTIME_ENGINE_IDS_V1.includes(value as ProductRuntimeEngineIdV1);
+    PRODUCT_MODEL_API_PROTOCOLS_V1.includes(value as ProductModelApiProtocolV1);
 }
 
 function parsePlan(value: unknown): SubscriptionPlanViewV1 | null {

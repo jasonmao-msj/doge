@@ -2186,7 +2186,7 @@ describe('ChatInputBoxAdapter toggle bridge', () => {
         id: 'gpt-5.6-sol',
         displayName: 'GPT-5.6 Sol',
         model: 'gpt-5.6-sol',
-        compatibleEngines: ['codex' as const],
+        apiProtocols: ['openai-responses' as const],
         capabilities: ['chat'],
       }],
       modelsStatus: 'ready' as const,

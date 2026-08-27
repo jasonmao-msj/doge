@@ -221,3 +221,131 @@ await getEngineModels(activeEngine, {
   providerProfileId: activeThread.providerProfileId,
 });
 ```
+
+## Scenario: Product-managed catalog MUST project API protocol before Engine
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `account_product_v1_models`、`ProductModelWire`、
+  `ProductModelViewV1`、Product engine/model Picker 或 managed Product target repair。
+- 目标：把上游模型 entitlement 的 API wire compatibility 与本地 CLI Engine identity
+  分离；禁止按 model/vendor 名在 Renderer 拼出不同 Engine catalog。
+
+### 2. Signatures
+
+```rust
+pub(crate) struct ProductModelWire {
+    pub(crate) id: String,
+    pub(crate) display_name: Option<String>,
+    pub(crate) model: Option<String>,
+    pub(crate) compatible_engines: Option<Vec<String>>, // legacy input only
+    pub(crate) api_protocols: Option<Vec<String>>,
+    pub(crate) capabilities: Option<Vec<String>>,
+}
+```
+
+```typescript
+type ProductModelApiProtocolV1 =
+  | "openai-responses"
+  | "openai-chat-completions"
+  | "anthropic-messages";
+
+type ProductModelViewV1 = {
+  id: string;
+  displayName: string;
+  model: string;
+  apiProtocols: readonly ProductModelApiProtocolV1[];
+  capabilities: readonly string[];
+};
+```
+
+### 3. Contracts
+
+- `ProductModelApiProtocolV1` 描述 managed Provider HTTP/API protocol；它 MUST NOT 复用或
+  推断 `engineIds.json.protocolFamily`，后者描述 CLI process/stdout transport。
+- Native 是唯一 untrusted upstream normalization owner。Canonical output field MUST 为
+  `api_protocols`；Renderer DTO MUST 为 `apiProtocols`，不得继续携带一份可漂移的
+  `compatibleEngines` truth。
+- normalization precedence MUST 为：explicit `api_protocols|supported_protocols|protocols`
+  > legacy `compatible_engines|engines` 转 protocol > known family fallback > unknown fail closed。
+- explicit protocol metadata 存在时是 authority；归一后为空 MUST 丢弃 row，禁止按 model
+  name 重新扩权。
+- legacy `codex` evidence MUST 映射为 `openai-responses`，legacy `kimi` MUST 映射为
+  `openai-chat-completions`，legacy `claude|claude-code` MUST 映射为
+  `anthropic-messages`。
+- Product engine protocol capability MUST 使用一个 shared pure mapping：Codex 支持
+  Responses、Kimi 支持 Chat Completions、Claude 支持 Anthropic Messages。禁止把
+  Responses 与 Chat Completions 折叠为 broad `openai`。
+- 缺 metadata 时，fallback MUST 基于 exact endpoint evidence：GPT/OpenAI 与
+  Kimi/Moonshot/K3 可归 Responses + Chat Completions，Claude/Anthropic 只归 Anthropic
+  Messages，已有三 endpoint evidence 的 Doubao/Ark 可归全部三种；unknown family fail closed。
+- `/v1/models` 只证明 entitlement ceiling，不证明每个 endpoint callable。只要 row 没有
+  explicit protocol metadata，release/debug 结论必须来自 exact endpoint probe 或真实 CLI
+  typed terminal；一个 endpoint 200 不得扩权另一个 endpoint。
+- `id` / runtime `model` separation、upstream order、conversation-only filtering 与
+  last-known-good refresh contract 保持不变。
+
+### 4. Validation & Error Matrix
+
+| 输入 | Canonical output | Product engines | 禁止行为 |
+|---|---|---|---|
+| `api_protocols=[responses]` | `openai-responses` | Codex | 扩到 Kimi |
+| `api_protocols=[chat_completions]` | `openai-chat-completions` | Kimi | 扩到 Codex |
+| legacy `compatible_engines=[kimi]` | Chat Completions | Kimi | 保留 broad OpenAI row |
+| `supported_protocols=[anthropic-messages]` | `anthropic-messages` | Claude | 按 `claude-*` 名称决定 |
+| explicit all three | 三者，稳定去重 | 三引擎 | 复制 model row |
+| metadata absent + K3 family | Responses + Chat Completions | Codex + Kimi | 忽略 production route/probe evidence |
+| explicit unknown protocol | row rejected | none | family fallback 扩权 |
+| metadata absent + unknown family | row rejected | none | Renderer presentation guess |
+
+### 5. Good / Base / Bad Cases
+
+- Good：Native 发布 endpoint-level `api_protocols`，统一 helper 同时供 Picker、default target
+  与 engine-switch repair 使用；K3 在双 endpoint probe 通过后进入 Codex + Kimi。
+- Base：旧服务端只发 `compatible_engines=[kimi]`，Native 将其升级为 Chat Completions，
+  无需 Renderer compatibility branch。
+- Bad：Picker 为 Codex 额外 concat Kimi models，但 target repair 仍按旧
+  `compatibleEngines` fail closed。
+- Bad：因为 Codex/Kimi 都被口头称为 OpenAI-compatible，就折叠 endpoint facts；route
+  capability 变化后既无法安全扩权，也无法精确收窄。
+- Bad：把 CLI `stream-json-cli` / `app-server-json-rpc` 当作模型 API compatibility。
+
+### 6. Tests Required
+
+- Rust `account::runtime::runtime_product_tests` MUST 覆盖 explicit aliases、legacy engine
+  evidence、known family fallback、unknown explicit protocol fail closed、order/dedupe。
+- `productOnboardingClient.test.ts` MUST 覆盖 `api_protocols -> apiProtocols` boundary 和
+  unknown protocol `protocolMismatch`。
+- `productModelCompatibility.test.ts` MUST 断言 GPT 与 K3/Kimi row 可进入 Codex/Kimi，
+  Claude row 只进入 Claude，三 endpoint row 同时出现。
+- `ProductEngineModelSelect.test.tsx` MUST 断言 Codex 下 Kimi-family row 可见并提交
+  `engine=codex` + exact model + managed Provider identity；Kimi 下仍可提交同一 row。
+- Runtime evidence MUST 至少覆盖一组相同 model 的两个 endpoint；2026-08-27 production
+  route 修复后 `k3` / `k3-256k` / `kimi-for-coding` Responses 全部 200，K3 Chat Completions 亦 200。
+- L3 必跑 focused Vitest、Rust module tests、`npm run typecheck`、target ESLint、
+  `cargo check --lib`、catalog/runtime contract checks 与 OpenSpec strict validation。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+const codexModels = [...gptModels, ...doubaoModels];
+const kimiModels = [...kimiModelsOnly, ...doubaoModels];
+```
+
+#### Correct
+
+```typescript
+const PRODUCT_ENGINE_API_PROTOCOLS = {
+  codex: ["openai-responses"],
+  kimi: ["openai-chat-completions"],
+  claude: ["anthropic-messages"],
+} as const;
+
+const engineModels = models.filter((model) =>
+  model.apiProtocols.some((protocol) =>
+    PRODUCT_ENGINE_API_PROTOCOLS[engine].includes(protocol),
+  ),
+);
+```
