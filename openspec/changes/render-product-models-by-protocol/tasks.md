@@ -12,7 +12,7 @@
 - [x] 2.1 Rust 覆盖 explicit protocol、legacy engine evidence、known fallback 与 unknown fail-closed。
 - [x] 2.2 Frontend 覆盖初版 broad OpenAI projection（已被 §3 runtime evidence 纠正）。
 - [x] 2.3 执行 L3 focused verification，记录未运行的 L4 Release/CI 范围。
-- [ ] 2.4 提交、记录 Trellis session、push branch 并更新未合并 PR #35。
+- [x] 2.4 提交、记录 Trellis session、push branch 并更新未合并 PR #35。
 
 ## 3. Runtime evidence correction
 
@@ -24,4 +24,10 @@
 - [x] 3.5 K3/Kimi fallback 投影到 Codex + Kimi，补 Rust/Frontend regression 并更新 Trellis/ADR。
 - [x] 3.6 用 Doge isolated Codex provider home + managed key + `model=k3` 完成真实 CLI turn：
   exit 0，final message `OK`。
-- [ ] 3.7 更新 PR #35 并完成用户 hot UI 复验。
+- [x] 3.7 更新 PR #35 并完成用户 hot UI 复验。
+
+## 4. Release handoff
+
+- [x] 4.1 用户确认 Hot Doge 目视验收通过；release candidate 升级为 `v0.1.2`。
+- [ ] 4.2 合并 PR #35，显式以 `windows_artifact_only=false`、`macos_artifact_only=false`
+  触发 signed release workflow，并核验 GitHub Release、updater manifest 与平台产物。

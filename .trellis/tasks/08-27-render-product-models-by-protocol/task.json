@@ -15,7 +15,7 @@
   "branch": "codex/render-models-by-protocol",
   "base_branch": "main",
   "worktree_path": null,
-  "current_phase": 4,
+  "current_phase": 6,
   "next_action": [
     {
       "phase": 1,
@@ -48,6 +48,6 @@
   "children": [],
   "parent": null,
   "relatedFiles": [],
-  "notes": "",
+  "notes": "Hot Doge 目视验收已通过；v0.1.2 release handoff 进行中。",
   "meta": {}
 }
