@@ -234,3 +234,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: 修复 macOS daemon 编译错误
+
+**Date**: 2026-08-27
+**Task**: 修复 macOS daemon 编译错误
+**Branch**: `codex/enable-doge-updater`
+
+### Summary
+
+定位 GitHub Actions 的 E0432/E0433 根因：doge_daemon 的独立 engine_bridge 漏注册 kimi_launch 模块。补充 path module declaration 和 build-platform contract。cargo check --bin doge_daemon、release workflow contract 及相关 focused tests 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a8cf0021a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
