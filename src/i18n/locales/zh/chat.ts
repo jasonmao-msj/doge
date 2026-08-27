@@ -130,6 +130,8 @@ const chat = {
     fuseDisabledCommand: "斜杠命令不能融合进当前回答。",
     fuseDisabledUnavailable: "当前无法使用融合。",
     fuseFailedGatewayOrRuntime: "运行时或网关不可达。请先恢复连接，再重试融合。",
+    createSessionTargetNotReadyTitle: "会话目标未就绪",
+    createSessionTargetNotReady: "所选引擎、渠道或模型尚未加载完成，请稍后重试或重新选择。",
     dragDropHint: "拖拽文件到输入框内",
     dragDropMore: "+{{count}}个文件",
     commands: {

@@ -2751,6 +2751,21 @@ function ComposerImpl({
       // Context Fan-in（§8.6）：协作不再整类拦截 skill/记忆/便签；注入由发送链路首段消化。
       const browserContextAttachment = browserContext.attachment;
       const hasBrowserContextAttachment = Boolean(browserContextAttachment);
+      if (
+        createSessionTargetPicker &&
+        !isResolvedExecutionTarget(effectiveCreationTarget)
+      ) {
+        pushErrorToast({
+          title: t("chat.createSessionTargetNotReadyTitle", {
+            defaultValue: "Session target not ready",
+          }),
+          message: t("chat.createSessionTargetNotReady", {
+            defaultValue:
+              "The selected engine, provider, or model is still loading. Wait a moment or reselect the target, then try again.",
+          }),
+        });
+        return;
+      }
       const createSessionTarget =
         createSessionTargetPicker &&
         isResolvedExecutionTarget(effectiveCreationTarget)

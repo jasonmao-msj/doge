@@ -2052,3 +2052,31 @@ describe("Composer file reference token", () => {
     );
   });
 });
+
+describe("Composer unresolved creation target guard", () => {
+  it("blocks the send and surfaces a toast while the target is unresolved", async () => {
+    const onSend = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={onSend}
+        createSessionTargetPicker
+        selectedEngine="claude"
+        activeThreadId={null}
+      />,
+    );
+
+    await act(async () => {
+      const textarea = getTextarea(view.container);
+      fireEvent.change(textarea, { target: { value: "do not send yet" } });
+      fireEvent.keyDown(textarea, { key: "Enter" });
+      await Promise.resolve();
+    });
+
+    expect(onSend).not.toHaveBeenCalled();
+    expect(pushErrorToast).toHaveBeenCalledWith({
+      title: "Session target not ready",
+      message:
+        "The selected engine, provider, or model is still loading. Wait a moment or reselect the target, then try again.",
+    });
+  });
+});

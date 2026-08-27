@@ -791,6 +791,51 @@ describe("useWorkspaceActions", () => {
     });
   });
 
+  it("preserves the selected managed profile when a create-session retry runs", async () => {
+    let shouldFail = true;
+    const recoverableOptions = makeOptions({
+      startThreadForWorkspace: vi.fn(async () => {
+        if (shouldFail) {
+          throw new Error(
+            "[SESSION_CREATE_RUNTIME_RECOVERING] Managed runtime was restarting while creating this session.",
+          );
+        }
+        return "thread-recovered";
+      }),
+    });
+    const recoverableHook = renderHook(() => useWorkspaceActions(recoverableOptions));
+    const providerProfile = {
+      id: "doge-token-matrix",
+      name: "Doge",
+      source: "managed" as const,
+    };
+
+    await act(async () => {
+      await recoverableHook.result.current.handleAddAgent(baseWorkspace, "codex", {
+        providerProfileId: providerProfile.id,
+        providerProfile,
+      });
+    });
+
+    const toastInput = vi.mocked(pushErrorToast).mock.calls[0]?.[0];
+    const retryAction = toastInput?.actions?.[0];
+    shouldFail = false;
+
+    await act(async () => {
+      await retryAction?.run();
+    });
+
+    expect(recoverableOptions.setActiveEngine).toHaveBeenLastCalledWith("codex", {
+      ensureRuntime: true,
+      providerProfileId: "doge-token-matrix",
+    });
+    expect(recoverableOptions.startThreadForWorkspace).toHaveBeenLastCalledWith("ws-1", {
+      engine: "codex",
+      providerProfileId: "doge-token-matrix",
+      providerProfile,
+    });
+  });
+
   it("localizes empty-thread retry failures before surfacing them back to the toast action", async () => {
     let shouldRecover = false;
     const recoverableOptions = makeOptions({

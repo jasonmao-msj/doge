@@ -2684,6 +2684,27 @@ describe("useThreadMessaging", () => {
     );
   });
 
+  it("prefers options.engineOverride over activeEngine when routing a new thread", async () => {
+    const threadId = "kimi:session-override";
+    const startThreadForWorkspace = vi.fn(async () => threadId);
+    const { result } = makeThreadMessagingHook("claude", {
+      activeThreadId: null,
+      ensuredThreadId: threadId,
+      startThreadForWorkspace,
+    });
+
+    await act(async () => {
+      await result.current.sendUserMessage("hello override", [], {
+        engineOverride: "kimi",
+      });
+    });
+
+    expect(startThreadForWorkspace).toHaveBeenCalledWith(
+      "ws-1",
+      expect.objectContaining({ activate: true, engine: "kimi" }),
+    );
+  });
+
   it("does not show create-session loading for follow-up sends on existing threads", async () => {
     const runWithCreateSessionLoading = vi.fn(async (_params, action) => action());
     const { result } = makeThreadMessagingHook("codex", {

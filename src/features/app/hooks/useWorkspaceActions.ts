@@ -318,7 +318,11 @@ export function useWorkspaceActions({
   );
 
   const retryCreateSessionAfterRuntimeRecovery = useCallback(
-    async (workspace: WorkspaceInfo, targetEngine: EngineType) => {
+    async (
+      workspace: WorkspaceInfo,
+      targetEngine: EngineType,
+      options?: SessionCreationOptions,
+    ) => {
       try {
         await ensureRuntimeReady(workspace.id);
         pushErrorToast({
@@ -328,7 +332,7 @@ export function useWorkspaceActions({
           variant: "info",
           durationMs: 2600,
         });
-        await runCreateSessionFlow(workspace, targetEngine);
+        await runCreateSessionFlow(workspace, targetEngine, options);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         throw new Error(resolveSessionCreationErrorDetail(message));
@@ -343,6 +347,7 @@ export function useWorkspaceActions({
       targetEngine: EngineType,
       message: string,
       detailOverride?: string,
+      options?: SessionCreationOptions,
     ) => {
       const detail = detailOverride ?? localizeSessionCreationErrorMessage(message);
       pushGlobalRuntimeNotice({
@@ -374,7 +379,11 @@ export function useWorkspaceActions({
                   engine: targetEngine,
                 },
               });
-              await retryCreateSessionAfterRuntimeRecovery(workspace, targetEngine);
+              await retryCreateSessionAfterRuntimeRecovery(
+                workspace,
+                targetEngine,
+                options,
+              );
             },
           },
         ],
@@ -607,7 +616,13 @@ export function useWorkspaceActions({
                   error: retryMessage,
                 },
               });
-              showRecoverableCreateSessionToast(workspace, targetEngine, retryMessage);
+              showRecoverableCreateSessionToast(
+                workspace,
+                targetEngine,
+                retryMessage,
+                undefined,
+                options,
+              );
               return null;
             }
             const detail = resolveSessionCreationErrorDetail(retryMessage);
@@ -647,6 +662,7 @@ export function useWorkspaceActions({
             targetEngine,
             message,
             t("errors.failedToCreateSessionRuntimeRecovering"),
+            options,
           );
           return null;
         }
@@ -662,7 +678,13 @@ export function useWorkspaceActions({
               error: message,
             },
           });
-          showRecoverableCreateSessionToast(workspace, targetEngine, message);
+          showRecoverableCreateSessionToast(
+            workspace,
+            targetEngine,
+            message,
+            undefined,
+            options,
+          );
           return null;
         }
         const detail = resolveSessionCreationErrorDetail(message);

@@ -771,6 +771,8 @@ export function AppShell() {
     refreshThread,
     sendUserMessage,
     sendUserMessageToThread,
+    getThreadEngine,
+    getThreadProviderProfileId,
     handleFusionStalled,
     startFork,
     startReview,
@@ -1194,6 +1196,8 @@ export function AppShell() {
     hasPendingUserInput,
     steerEnabled: appSettings.experimentalSteerEnabled,
     activeEngine,
+    getThreadEngine,
+    getThreadProviderProfileId,
     // 身份 id-first（fix-shared-session-identity-id-first）：
     // shared: 前缀是 hard gate，threadKind 投影仅兜底。
     isSharedSession: resolveIsSharedSession(activeThreadId, activeThreadSummary),
@@ -1511,6 +1515,7 @@ export function AppShell() {
     handleRevealWorkspacePrompts,
     handleRevealGeneralPrompts,
   } = useAppShellPromptActionsSection({
+    activeEngine,
     activeWorkspace,
     alertError,
     connectWorkspace,

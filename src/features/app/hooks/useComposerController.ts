@@ -30,6 +30,8 @@ export function useComposerController({
   hasPendingUserInput,
   steerEnabled,
   activeEngine,
+  getThreadEngine,
+  getThreadProviderProfileId,
   isSharedSession,
   resolveCanonicalThreadId,
   connectWorkspace,
@@ -68,6 +70,14 @@ export function useComposerController({
   hasPendingUserInput?: boolean;
   steerEnabled: boolean;
   activeEngine?: EngineType;
+  getThreadEngine?: (
+    workspaceId: string,
+    threadId: string,
+  ) => EngineType | undefined;
+  getThreadProviderProfileId?: (
+    workspaceId: string,
+    threadId: string,
+  ) => string | null;
   isSharedSession?: boolean;
   resolveCanonicalThreadId: (threadId: string) => string;
   connectWorkspace: (workspace: WorkspaceInfo) => Promise<void>;
@@ -76,6 +86,7 @@ export function useComposerController({
     options?: {
       activate?: boolean;
       engine?: EngineType;
+      providerProfileId?: string | null;
       folderId?: string | null;
     },
   ) => Promise<string | null>;
@@ -154,6 +165,8 @@ export function useComposerController({
     steerEnabled,
     activeWorkspace,
     activeEngine,
+    getThreadEngine,
+    getThreadProviderProfileId,
     isSharedSession,
     resolveCanonicalThreadId,
     connectWorkspace,

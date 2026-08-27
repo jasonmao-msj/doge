@@ -122,7 +122,9 @@ describe("useQueuedSend", () => {
     });
 
     expect(options.sendUserMessage).toHaveBeenCalledTimes(1);
-    expect(options.sendUserMessage).toHaveBeenCalledWith("First", []);
+    expect(options.sendUserMessage).toHaveBeenCalledWith("First", [], {
+      engineOverride: "claude",
+    });
 
     await act(async () => {
       rerender({ ...options, isProcessing: true });
@@ -138,7 +140,9 @@ describe("useQueuedSend", () => {
     });
 
     expect(options.sendUserMessage).toHaveBeenCalledTimes(2);
-    expect(options.sendUserMessage).toHaveBeenLastCalledWith("Second", []);
+    expect(options.sendUserMessage).toHaveBeenLastCalledWith("Second", [], {
+      engineOverride: "claude",
+    });
   });
 
   it("holds the queue while an AskUserQuestion is pending, then flushes once it clears", async () => {
@@ -166,7 +170,9 @@ describe("useQueuedSend", () => {
     });
 
     expect(options.sendUserMessage).toHaveBeenCalledTimes(1);
-    expect(options.sendUserMessage).toHaveBeenCalledWith("Queued during ask", []);
+    expect(options.sendUserMessage).toHaveBeenCalledWith("Queued during ask", [], {
+      engineOverride: "claude",
+    });
   });
 
   it("waits for processing to start before sending the next queued message", async () => {
@@ -185,7 +191,9 @@ describe("useQueuedSend", () => {
     });
 
     expect(options.sendUserMessage).toHaveBeenCalledTimes(1);
-    expect(options.sendUserMessage).toHaveBeenCalledWith("Alpha", []);
+    expect(options.sendUserMessage).toHaveBeenCalledWith("Alpha", [], {
+      engineOverride: "claude",
+    });
   });
 
   it("creates a visible codex handoff bubble and sends queued follow-up directly to the active thread", async () => {
@@ -425,7 +433,9 @@ describe("useQueuedSend", () => {
     });
 
     expect(options.sendUserMessage).toHaveBeenCalledTimes(1);
-    expect(options.sendUserMessage).toHaveBeenCalledWith("pending queue item", []);
+    expect(options.sendUserMessage).toHaveBeenCalledWith("pending queue item", [], {
+      engineOverride: "claude",
+    });
   });
 
   it("migrates queued codex pending messages when the alias confirms the rebind", async () => {
@@ -530,7 +540,9 @@ describe("useQueuedSend", () => {
     });
 
     expect(options.sendUserMessage).toHaveBeenCalledTimes(2);
-    expect(options.sendUserMessage).toHaveBeenLastCalledWith("Retry", []);
+    expect(options.sendUserMessage).toHaveBeenLastCalledWith("Retry", [], {
+      engineOverride: "claude",
+    });
   });
 
   it("queues messages per thread and only flushes the active thread", async () => {
@@ -561,7 +573,9 @@ describe("useQueuedSend", () => {
     });
 
     expect(options.sendUserMessage).toHaveBeenCalledTimes(1);
-    expect(options.sendUserMessage).toHaveBeenCalledWith("Thread-1", []);
+    expect(options.sendUserMessage).toHaveBeenCalledWith("Thread-1", [], {
+      engineOverride: "claude",
+    });
   });
 
   it("connects workspace before sending when disconnected", async () => {
@@ -582,7 +596,9 @@ describe("useQueuedSend", () => {
       ...workspace,
       connected: false,
     });
-    expect(options.sendUserMessage).toHaveBeenCalledWith("Connect", []);
+    expect(options.sendUserMessage).toHaveBeenCalledWith("Connect", [], {
+      engineOverride: "claude",
+    });
   });
 
   it("ignores images for queued review messages and blocks while reviewing", async () => {
@@ -622,7 +638,9 @@ describe("useQueuedSend", () => {
     });
 
     expect(options.sendUserMessage).toHaveBeenCalledTimes(1);
-    expect(options.sendUserMessage).toHaveBeenCalledWith("After review", []);
+    expect(options.sendUserMessage).toHaveBeenCalledWith("After review", [], {
+      engineOverride: "claude",
+    });
   });
 
   it("keeps /review-code as plain text and does not route to review handler", async () => {
@@ -639,6 +657,7 @@ describe("useQueuedSend", () => {
     expect(options.sendUserMessage).toHaveBeenCalledWith(
       "/review-code run full check",
       ["img-1"],
+      { engineOverride: "claude" },
     );
   });
 
@@ -664,16 +683,19 @@ describe("useQueuedSend", () => {
       1,
       "/review:custom run",
       ["img-1"],
+      { engineOverride: "claude" },
     );
     expect(options.sendUserMessage).toHaveBeenNthCalledWith(
       2,
       "/review_custom run",
       ["img-1"],
+      { engineOverride: "claude" },
     );
     expect(options.sendUserMessage).toHaveBeenNthCalledWith(
       3,
       "/review.custom run",
       ["img-1"],
+      { engineOverride: "claude" },
     );
   });
 
@@ -753,6 +775,67 @@ describe("useQueuedSend", () => {
       [],
     );
     expect(options.sendUserMessage).not.toHaveBeenCalled();
+  });
+
+  it("preserves the current thread engine and provider binding for /clear and /new", async () => {
+    const startThreadForWorkspace = vi
+      .fn()
+      .mockResolvedValueOnce("thread-6")
+      .mockResolvedValueOnce("thread-7");
+    const sendUserMessageToThread = vi.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      activeEngine: "claude",
+      getThreadEngine: () => "kimi",
+      getThreadProviderProfileId: () => "provider-x",
+      startThreadForWorkspace,
+      sendUserMessageToThread,
+    });
+    const { result } = renderHook((props) => useQueuedSend(props), {
+      initialProps: options,
+    });
+
+    await act(async () => {
+      await result.current.handleSend("/clear keep this");
+      await result.current.handleSend("/new");
+    });
+
+    expect(startThreadForWorkspace).toHaveBeenNthCalledWith(1, "workspace-1", {
+      engine: "kimi",
+      providerProfileId: "provider-x",
+    });
+    expect(startThreadForWorkspace).toHaveBeenNthCalledWith(2, "workspace-1", {
+      engine: "kimi",
+      providerProfileId: "provider-x",
+    });
+    expect(options.sendUserMessage).not.toHaveBeenCalled();
+  });
+
+  it("freezes the engine at enqueue time and uses it when the queue drains", async () => {
+    const sendUserMessage = vi.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      activeEngine: "kimi",
+      isProcessing: true,
+      sendUserMessage,
+    });
+    const { result, rerender } = renderHook((props) => useQueuedSend(props), {
+      initialProps: options,
+    });
+
+    await act(async () => {
+      await result.current.queueMessage("frozen engine");
+    });
+    expect(sendUserMessage).not.toHaveBeenCalled();
+
+    await act(async () => {
+      rerender({ ...options, activeEngine: "claude", isProcessing: false });
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(sendUserMessage).toHaveBeenCalledWith("frozen engine", [], {
+      engineOverride: "kimi",
+    });
   });
 
   it("routes /status to the local status handler", async () => {
@@ -941,6 +1024,7 @@ describe("useQueuedSend", () => {
     expect(options.sendUserMessage).toHaveBeenCalledWith(
       "计划模式和default模式区别多大",
       [],
+      { engineOverride: "codex" },
     );
   });
 
@@ -966,16 +1050,19 @@ describe("useQueuedSend", () => {
       1,
       "/plan keep text",
       ["img-1"],
+      { engineOverride: "claude" },
     );
     expect(options.sendUserMessage).toHaveBeenNthCalledWith(
       2,
       "/mode",
       ["img-2"],
+      { engineOverride: "claude" },
     );
     expect(options.sendUserMessage).toHaveBeenNthCalledWith(
       3,
       "/fast on",
       ["img-3"],
+      { engineOverride: "claude" },
     );
     expect(startMode).not.toHaveBeenCalled();
     expect(setCodexCollaborationMode).not.toHaveBeenCalled();
@@ -996,7 +1083,9 @@ describe("useQueuedSend", () => {
     });
 
     expect(startCompact).not.toHaveBeenCalled();
-    expect(options.sendUserMessage).toHaveBeenCalledWith("/compact", ["img-1"]);
+    expect(options.sendUserMessage).toHaveBeenCalledWith("/compact", ["img-1"], {
+      engineOverride: "codex",
+    });
   });
 
   it("routes /compact by claude thread ownership even when active engine is stale", async () => {
@@ -1030,7 +1119,9 @@ describe("useQueuedSend", () => {
       await result.current.handleSend("/clear");
     });
 
-    expect(options.sendUserMessage).toHaveBeenCalledWith("/clear", []);
+    expect(options.sendUserMessage).toHaveBeenCalledWith("/clear", [], {
+      engineOverride: "codex",
+    });
     expect(options.startThreadForWorkspace).not.toHaveBeenCalled();
   });
 
@@ -1206,10 +1297,11 @@ describe("useQueuedSend", () => {
     });
 
     expect(options.sendUserMessage).toHaveBeenCalledTimes(1);
-    expect(options.sendUserMessage).toHaveBeenCalledWith("Images", [
-      "img-1",
-      "img-2",
-    ]);
+    expect(options.sendUserMessage).toHaveBeenCalledWith(
+      "Images",
+      ["img-1", "img-2"],
+      { engineOverride: "claude" },
+    );
   });
 
   it("uses interrupt-settle-successor cutover for compat-input fusion", async () => {
@@ -1549,6 +1641,7 @@ describe("useQueuedSend", () => {
       2,
       "Retry after settlement",
       [],
+      { engineOverride: "claude" },
     );
   });
 
