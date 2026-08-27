@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 59
+- **Total Sessions**: 60
 - **Last Active**: 2026-08-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~40 | Active |
+| `journal-2.md` | ~73 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 60 | 2026-08-27 | 修复 Codex 调用 Kimi 模型 | `31951f045` | `codex/render-models-by-protocol` |
 | 59 | 2026-08-27 | 按 API protocol 统一 Product 模型目录 | `2b46b68be` | `codex/render-models-by-protocol` |
 | 58 | 2026-08-26 | 固化产品引擎与首次准备恢复 | `051292191` | `codex/product-managed-engine-onboarding` |
 | 57 | 2026-08-25 | 交付 ProjectMap 修复与双端 release artifacts | `976718b2e` | `codex/fix-project-map-windows-timeout` |
