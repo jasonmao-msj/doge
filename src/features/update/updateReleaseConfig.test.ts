@@ -23,7 +23,7 @@ describe("update release configuration", () => {
     expect(config.plugins?.updater).toEqual({
       active: true,
       pubkey:
-        "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA4QjcxRkFFN0Q5NzgxQUYKUldTdmdaZDlyaCszQ0k2NGVoTG1LRnVoN2F3SVZjNFVzeTZlc2VNcUJhdlhmTko4WkY2QU9UQmMK",
+        "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDA4QjcxRkFFN0Q5NzgxQUYKUldTdmdaZDlyaCszQ0k2NGVoTG1LRnVoNGF3SVZjNFVzeTZlc2VNcUJhdlhmTko4WkY2QU9UQmMK",
       endpoints: [
         "https://github.com/jasonmao-msj/doge/releases/latest/download/latest.json",
       ],
