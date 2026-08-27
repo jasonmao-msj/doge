@@ -1,0 +1,8 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "Product model catalog authority、fail-closed 和 provider/protocol 正交 contract"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "Tauri DTO 到 ProductModelViewV1 boundary mapping"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Rust -> Tauri -> Renderer -> ExecutionTarget 跨层核对"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "统一 protocol compatibility helper，避免 Picker/repair 重复"}
+{"file": "docs/research/mossx-multi-cli-provider-session-foundation-design.md", "reason": "Provider 与 Protocol 正交、Provider-scoped Model Catalog 基石"}

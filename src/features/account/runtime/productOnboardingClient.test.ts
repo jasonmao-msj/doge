@@ -162,11 +162,24 @@ describe("product onboarding contract", () => {
           id: "doubao-entry",
           displayName: "豆包",
           model: "ark-code-latest",
-          compatibleEngines: ["codex", "claude", "kimi"],
+          apiProtocols: ["openai", "anthropic"],
           capabilities: ["chat"],
         }],
       },
     });
+  });
+
+  it("fails closed when Native publishes an unknown API protocol", () => {
+    expect(parseProductModels({
+      ok: true,
+      value: {
+        fetched_at: "2030-01-01T00:00:00Z",
+        models: [{
+          ...rawModel("gpt-5.6-sol"),
+          api_protocols: ["future-wire"],
+        }],
+      },
+    })).toEqual({ ok: false, error: { code: "protocolMismatch" } });
   });
 
   it("deduplicates concurrent catalog reads and reuses the bounded session cache", async () => {
@@ -247,7 +260,7 @@ function rawModel(id: string, displayName = id, model = id) {
     id,
     display_name: displayName,
     model,
-    compatible_engines: ["codex", "claude", "kimi"],
+    api_protocols: ["openai", "anthropic"],
     capabilities: ["chat"],
   };
 }

@@ -360,7 +360,7 @@ function readyView(): ProductReadyViewV1 {
       id: "gpt-5.6-sol",
       displayName: "gpt-5.6-sol",
       model: "gpt-5.6-sol",
-      compatibleEngines: ["codex"],
+      apiProtocols: ["openai"],
       capabilities: ["chat"],
     }],
     engines: productEngines(),

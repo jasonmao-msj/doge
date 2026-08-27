@@ -389,6 +389,8 @@ pub(crate) struct ProductModelWire {
     pub(crate) model: Option<String>,
     #[serde(alias = "engines", default)]
     pub(crate) compatible_engines: Option<Vec<String>>,
+    #[serde(alias = "supported_protocols", alias = "protocols", default)]
+    pub(crate) api_protocols: Option<Vec<String>>,
     #[serde(default)]
     pub(crate) capabilities: Option<Vec<String>>,
 }

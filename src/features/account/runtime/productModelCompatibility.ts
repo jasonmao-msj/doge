@@ -1,5 +1,6 @@
 import type { EngineType } from "../../../types";
 import type {
+  ProductModelApiProtocolV1,
   ProductModelViewV1,
   ProductRuntimeEngineIdV1,
 } from "./productOnboardingClient";
@@ -7,6 +8,14 @@ import type {
 export type { ProductRuntimeEngineIdV1 } from "./productOnboardingClient";
 
 const KIMI_CATALOG_MODEL_PREFIX = "kimi-code/";
+
+const PRODUCT_ENGINE_API_PROTOCOLS_V1: Readonly<
+  Record<ProductRuntimeEngineIdV1, readonly ProductModelApiProtocolV1[]>
+> = {
+  codex: ["openai"],
+  kimi: ["openai"],
+  claude: ["anthropic"],
+};
 
 export function normalizeProductModelIdentityV1(
   identity?: string | null,
@@ -22,7 +31,10 @@ export function isProductModelCompatibleWithEngineV1(
   engine: ProductRuntimeEngineIdV1,
   model: ProductModelViewV1,
 ): boolean {
-  return model.compatibleEngines.includes(engine);
+  const engineProtocols = PRODUCT_ENGINE_API_PROTOCOLS_V1[engine];
+  return model.apiProtocols.some((protocol) =>
+    engineProtocols.includes(protocol),
+  );
 }
 
 export function compatibleProductModelsForEngineV1(

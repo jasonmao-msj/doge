@@ -32,6 +32,7 @@ fn product_model(id: &str) -> ProductModelWire {
         display_name: None,
         model: None,
         compatible_engines: None,
+        api_protocols: None,
         capabilities: None,
     }
 }
@@ -153,13 +154,14 @@ fn product_models_are_unicode_safe_ordered_and_deduplicated() {
 }
 
 #[test]
-fn product_models_preserve_dynamic_display_runtime_and_engine_metadata() {
+fn product_models_preserve_dynamic_display_runtime_and_protocol_metadata() {
     let models = safe_product_models(vec![
         ProductModelWire {
             id: "doubao-entry".into(),
             display_name: Some("豆包".into()),
             model: Some("ark-code-latest".into()),
-            compatible_engines: Some(vec!["codex".into(), "claude-code".into()]),
+            compatible_engines: None,
+            api_protocols: Some(vec!["responses".into(), "anthropic-messages".into()]),
             capabilities: Some(vec!["chat".into()]),
         },
         product_model("claude-opus-4-8"),
@@ -170,8 +172,8 @@ fn product_models_preserve_dynamic_display_runtime_and_engine_metadata() {
     assert_eq!(models[0]["id"], "doubao-entry");
     assert_eq!(models[0]["display_name"], "豆包");
     assert_eq!(models[0]["model"], "ark-code-latest");
-    assert_eq!(models[0]["compatible_engines"], json!(["codex", "claude"]));
-    assert_eq!(models[1]["compatible_engines"], json!(["claude"]));
+    assert_eq!(models[0]["api_protocols"], json!(["openai", "anthropic"]));
+    assert_eq!(models[1]["api_protocols"], json!(["anthropic"]));
 }
 
 #[test]
@@ -185,9 +187,48 @@ fn product_models_follow_new_ids_within_known_engine_families() {
     .expect("known dynamic families remain");
 
     assert_eq!(models.len(), 3);
-    assert_eq!(models[0]["compatible_engines"], json!(["codex"]));
-    assert_eq!(models[1]["compatible_engines"], json!(["claude"]));
-    assert_eq!(models[2]["compatible_engines"], json!(["kimi"]));
+    assert_eq!(models[0]["api_protocols"], json!(["openai"]));
+    assert_eq!(models[1]["api_protocols"], json!(["anthropic"]));
+    assert_eq!(models[2]["api_protocols"], json!(["openai"]));
+}
+
+#[test]
+fn legacy_engine_metadata_maps_to_api_protocol_families() {
+    let models = safe_product_models(vec![
+        ProductModelWire {
+            id: "kimi-for-coding".into(),
+            display_name: None,
+            model: None,
+            compatible_engines: Some(vec!["kimi".into()]),
+            api_protocols: None,
+            capabilities: Some(vec!["chat".into()]),
+        },
+        ProductModelWire {
+            id: "claude-opus-4-8".into(),
+            display_name: None,
+            model: None,
+            compatible_engines: Some(vec!["claude-code".into()]),
+            api_protocols: None,
+            capabilities: Some(vec!["messages".into()]),
+        },
+    ])
+    .expect("legacy metadata maps to protocols");
+
+    assert_eq!(models[0]["api_protocols"], json!(["openai"]));
+    assert_eq!(models[1]["api_protocols"], json!(["anthropic"]));
+}
+
+#[test]
+fn explicit_unknown_protocol_fails_closed_without_family_fallback() {
+    assert!(safe_product_models(vec![ProductModelWire {
+        id: "gpt-5.7-future".into(),
+        display_name: None,
+        model: None,
+        compatible_engines: Some(vec!["codex".into()]),
+        api_protocols: Some(vec!["future-wire".into()]),
+        capabilities: Some(vec!["chat".into()]),
+    }])
+    .is_err());
 }
 
 #[test]
@@ -201,6 +242,7 @@ fn product_models_exclude_explicit_and_legacy_non_conversation_rows() {
             display_name: Some("Multimodal Chat".into()),
             model: None,
             compatible_engines: Some(vec!["codex".into(), "claude".into(), "kimi".into()]),
+            api_protocols: None,
             capabilities: Some(vec!["chat".into(), "image".into()]),
         },
         ProductModelWire {
@@ -208,6 +250,7 @@ fn product_models_exclude_explicit_and_legacy_non_conversation_rows() {
             display_name: None,
             model: None,
             compatible_engines: None,
+            api_protocols: None,
             capabilities: Some(vec!["embeddings".into()]),
         },
     ])

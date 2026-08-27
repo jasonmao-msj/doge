@@ -221,3 +221,117 @@ await getEngineModels(activeEngine, {
   providerProfileId: activeThread.providerProfileId,
 });
 ```
+
+## Scenario: Product-managed catalog MUST project API protocol before Engine
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `account_product_v1_models`、`ProductModelWire`、
+  `ProductModelViewV1`、Product engine/model Picker 或 managed Product target repair。
+- 目标：把上游模型 entitlement 的 API wire compatibility 与本地 CLI Engine identity
+  分离；禁止按 model/vendor 名在 Renderer 拼出不同 Engine catalog。
+
+### 2. Signatures
+
+```rust
+pub(crate) struct ProductModelWire {
+    pub(crate) id: String,
+    pub(crate) display_name: Option<String>,
+    pub(crate) model: Option<String>,
+    pub(crate) compatible_engines: Option<Vec<String>>, // legacy input only
+    pub(crate) api_protocols: Option<Vec<String>>,
+    pub(crate) capabilities: Option<Vec<String>>,
+}
+```
+
+```typescript
+type ProductModelApiProtocolV1 = "openai" | "anthropic";
+
+type ProductModelViewV1 = {
+  id: string;
+  displayName: string;
+  model: string;
+  apiProtocols: readonly ProductModelApiProtocolV1[];
+  capabilities: readonly string[];
+};
+```
+
+### 3. Contracts
+
+- `ProductModelApiProtocolV1` 描述 managed Provider HTTP/API protocol；它 MUST NOT 复用或
+  推断 `engineIds.json.protocolFamily`，后者描述 CLI process/stdout transport。
+- Native 是唯一 untrusted upstream normalization owner。Canonical output field MUST 为
+  `api_protocols`；Renderer DTO MUST 为 `apiProtocols`，不得继续携带一份可漂移的
+  `compatibleEngines` truth。
+- normalization precedence MUST 为：explicit `api_protocols|supported_protocols|protocols`
+  > legacy `compatible_engines|engines` 转 protocol > known family fallback > unknown fail closed。
+- explicit protocol metadata 存在时是 authority；归一后为空 MUST 丢弃 row，禁止按 model
+  name 重新扩权。
+- legacy `codex|kimi` evidence MUST 映射为 `openai`；legacy
+  `claude|claude-code` MUST 映射为 `anthropic`。
+- Product engine protocol capability MUST 使用一个 shared pure mapping：Codex + Kimi
+  支持 `openai`，Claude 支持 `anthropic`。因此 Codex/Kimi 对同一 snapshot 的 rows 与顺序
+  MUST 一致；`kimi-for-coding` 在 Codex 下仍发送 exact runtime model id。
+- 缺 metadata 时，GPT/OpenAI 与 Kimi/Moonshot/K3 family 归 `openai`，Claude/Anthropic
+  归 `anthropic`，已有双协议证据的 Doubao/Ark 可归两者；unknown family fail closed。
+- `id` / runtime `model` separation、upstream order、conversation-only filtering 与
+  last-known-good refresh contract 保持不变。
+
+### 4. Validation & Error Matrix
+
+| 输入 | Canonical output | Product engines | 禁止行为 |
+|---|---|---|---|
+| `api_protocols=[responses]` | `openai` | Codex + Kimi | 只显示在 Codex |
+| legacy `compatible_engines=[kimi]` | `openai` | Codex + Kimi | 保留 Kimi-only row |
+| `supported_protocols=[anthropic-messages]` | `anthropic` | Claude | 按 `claude-*` 名称决定 |
+| explicit OpenAI + Anthropic | 两者，稳定去重 | 三引擎 | 复制两条 model row |
+| explicit unknown protocol | row rejected | none | family fallback 扩权 |
+| metadata absent + unknown family | row rejected | none | Renderer presentation guess |
+
+### 5. Good / Base / Bad Cases
+
+- Good：Native 发布 `api_protocols=[openai]`，统一 helper 同时供 Picker、default target 与
+  engine-switch repair 使用。
+- Base：旧服务端只发 `compatible_engines=[kimi]`，Native 将其升级为 `openai`，无需
+  Renderer compatibility branch。
+- Bad：Picker 为 Codex 额外 concat Kimi models，但 target repair 仍按旧
+  `compatibleEngines` fail closed。
+- Bad：把 CLI `stream-json-cli` / `app-server-json-rpc` 当作模型 API compatibility。
+
+### 6. Tests Required
+
+- Rust `account::runtime::runtime_product_tests` MUST 覆盖 explicit aliases、legacy engine
+  evidence、known family fallback、unknown explicit protocol fail closed、order/dedupe。
+- `productOnboardingClient.test.ts` MUST 覆盖 `api_protocols -> apiProtocols` boundary 和
+  unknown protocol `protocolMismatch`。
+- `productModelCompatibility.test.ts` MUST 断言 Codex 与 Kimi 得到完全相同的 OpenAI rows
+  和顺序，Claude 只得到 Anthropic rows，双协议 row 同时出现。
+- `ProductEngineModelSelect.test.tsx` MUST 实际点击 Codex 下的 Kimi-family row，并断言
+  committed `engine=codex` + exact `model` + managed Provider identity。
+- L3 必跑 focused Vitest、Rust module tests、`npm run typecheck`、target ESLint、
+  `cargo check --lib`、catalog/runtime contract checks 与 OpenSpec strict validation。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+const codexModels = [...gptModels, ...doubaoModels];
+const kimiModels = [...kimiModelsOnly, ...doubaoModels];
+```
+
+#### Correct
+
+```typescript
+const PRODUCT_ENGINE_API_PROTOCOLS = {
+  codex: ["openai"],
+  kimi: ["openai"],
+  claude: ["anthropic"],
+} as const;
+
+const engineModels = models.filter((model) =>
+  model.apiProtocols.some((protocol) =>
+    PRODUCT_ENGINE_API_PROTOCOLS[engine].includes(protocol),
+  ),
+);
+```
