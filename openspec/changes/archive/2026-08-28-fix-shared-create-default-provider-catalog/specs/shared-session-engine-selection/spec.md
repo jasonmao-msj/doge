@@ -39,6 +39,12 @@ After the CLI is chosen, the system MUST resolve the **first Provider profile** 
 - **THEN** Shared Session creation MUST fail with an actionable error
 - **AND** MUST NOT create a Shared Session directory, metadata row, Binding, or Turn fact
 
+#### Scenario: selected CLI resolves a complete local target
+
+- **WHEN** the user selects a ready CLI from the Shared creation submenu
+- **THEN** the system MUST resolve that CLI's canonical local Provider and runtime-authoritative default Model
+- **AND** it MUST persist a complete initial `ExecutionTarget` before opening the session
+
 ## ADDED Requirements
 
 ### Requirement: Opening An Existing Shared Session MUST Restore Last Selected Target

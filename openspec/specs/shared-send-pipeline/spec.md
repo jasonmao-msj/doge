@@ -792,3 +792,23 @@ For Shared-supported local CLIs, the durable `native_session_id` MUST converge t
 - **WHEN** Shared V2 dispatches a first turn on Kimi or OpenCode and the runtime later reports a finalized native session id
 - **THEN** the durable binding MUST update `native_session_id` to that finalized identity
 - **AND** subsequent Shared list responses MUST expose that identity in `nativeThreadIds` for hide filtering
+
+### Requirement: Shared Target Availability MUST Stay Separate From Recovery
+
+The V2 send path MUST block explicitly unavailable provider/model/runtime targets with `target-unavailable` and MUST keep the target picker switchable. It MUST NOT reroute to another provider or default model, and pure target unavailability MUST NOT become whole-session `recovery-required`.
+
+#### Scenario: unavailable target blocks send without rerouting
+
+- **WHEN** the selected provider is unavailable or the model is outside the provider catalog and there is no unresolved ambiguous attempt
+- **THEN** send MUST be blocked with `target-unavailable`
+- **AND** the user MUST be able to select another target and retry
+
+### Requirement: Explicit Shared Rebuild MUST Stop Runtime Ownership First
+
+When the user explicitly rebuilds a `recovery-required` binding, the old binding metadata MUST be archived and a new native session prepared only after unresolved Runtime ownership is released by stop/interrupt or terminal settlement.
+
+#### Scenario: rebuild is refused while Runtime owns the attempt
+
+- **WHEN** the user requests rebuild while Runtime still owns the unresolved attempt
+- **THEN** rebuild MUST fail closed with a recovery-active class error
+- **AND** the binding MUST NOT be archived until ownership is released

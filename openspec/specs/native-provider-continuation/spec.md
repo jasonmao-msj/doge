@@ -603,3 +603,19 @@ Claude Provider Continuation bootstrap MUST 使用 continuation-only minimal com
 - **WHEN** minimal bootstrap 后 target history 记录 structured Provider/API rejection
 - **THEN** operation MUST 进入 existing `target-provider-rejected` recovery path
 - **AND** MUST NOT 因 user-entry persistence 或 progress completion 进入 `ready`
+
+### Requirement: Provider Continuation MUST Confirm Destination Engine Before Hydration
+
+Provider Continuation MUST confirm the destination `EngineType` as the native runtime authority before persisting destination Composer state or selecting the target thread. A failed confirmation MUST leave the source session active and MUST NOT navigate to a target whose Composer would be attributed to the source engine.
+
+#### Scenario: continuation changes a non-Codex source to Codex
+
+- **WHEN** a ready continuation returns a Codex destination
+- **THEN** the frontend MUST confirm native Codex, persist the exact target model/effort, and select the target thread
+- **AND** the Composer MUST display Codex-owned engine/model state on the first target render
+
+#### Scenario: destination engine confirmation fails
+
+- **WHEN** native engine confirmation returns failure
+- **THEN** the continuation MUST remain on the existing error/recovery surface
+- **AND** no target thread navigation or second-provider operation MUST be started
