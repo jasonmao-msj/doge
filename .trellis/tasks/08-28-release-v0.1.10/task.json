@@ -1,0 +1,53 @@
+{
+  "id": "release-v0.1.10",
+  "name": "release-v0.1.10",
+  "title": "准备并发布 doge v0.1.10",
+  "description": "OpenSpec: enforce-release-changelog-gate；同步 canonical versions 与双语 CHANGELOG，阻断 legacy tag collision，合入后触发 signed Release。",
+  "status": "planning",
+  "dev_type": "fullstack",
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-28",
+  "completedAt": null,
+  "branch": "codex/release-v0.1.10",
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

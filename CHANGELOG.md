@@ -1,5 +1,31 @@
 # Changelog
 
+### **2026年8月28日（v0.1.10）**
+
+中文：
+
+#### 改进
+
+- 版本记录现在离线展示从 v0.1.0 开始的完整双语历史，并与当前安装包版本保持同步。
+- App 内版本记录、自动更新说明与 GitHub Release 使用同一份已审核内容。
+
+#### 修复
+
+- 发布前会提前阻止版本记录不一致或目标 tag 已被占用的构建，避免更新绑定到错误源码。
+
+English:
+
+#### Improvements
+
+- Version History now shows the complete bilingual history from v0.1.0 offline and stays aligned with the installed build.
+- In-app Version History, updater notes, and the GitHub Release now share the same reviewed content.
+
+#### Fixes
+
+- Release preparation now blocks inconsistent metadata or occupied target tags before builds can attach an update to the wrong source.
+
+---
+
 ### **2026年8月28日（v0.1.3）**
 
 中文：

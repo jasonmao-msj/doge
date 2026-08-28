@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 67
+- **Total Sessions**: 68
 - **Last Active**: 2026-08-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~304 | Active |
+| `journal-2.md` | ~337 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 68 | 2026-08-28 | 准备 doge v0.1.10 Release | `0abd0698e` | `codex/release-v0.1.10` |
 | 67 | 2026-08-28 | 统一 Release 变更日志契约 | `82615a873` | `codex/enforce-release-changelog-gate` |
 | 66 | 2026-08-27 | 修复 brand 版本契约测试 | `aaec1fe5b` | `codex/fix-brand-version-contract` |
 | 65 | 2026-08-27 | 准备 doge v0.1.3 发布 | `2d595ca78` | `codex/release-v0.1.3` |

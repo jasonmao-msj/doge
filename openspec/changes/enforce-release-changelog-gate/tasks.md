@@ -12,3 +12,9 @@
 
 - [x] 3.1 [P0][Depends: 1.2,2.2][Input: affected scripts/docs/workflows/frontend parser][Output: L3 verification evidence][Verify: Node/Vitest, branding, docs, typecheck, OpenSpec strict, git diff check] 完成自动验证。
 - [x] 3.2 [P0][Depends: 3.1][Input: clean branch][Output: code commit + Trellis record + dedicated PR][Verify: PR CLEAN/MERGEABLE] 提交并开 PR。
+
+## 4. First Signed Release Exercise
+
+- [x] 4.1 [P0][Depends: 3.2][Input: legacy origin tags][Output: exact target-tag collision preflight][Verify: workflow contract + remote fact check] 阻断错误 tag 复用。
+- [x] 4.2 [P0][Depends: 4.1][Input: v0.1.3..main][Output: v0.1.10 versions + bilingual CHANGELOG][Verify: release:check + branding + Cargo metadata] 准备 release PR。
+- [ ] 4.3 [P0][Depends: 4.2][Input: merged main][Output: signed v0.1.10 Release][Verify: workflow + tag/assets/latest.json] 发布并核验。
