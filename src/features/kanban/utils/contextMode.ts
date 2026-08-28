@@ -1,3 +1,5 @@
+import type { ExecutionTarget } from "../../shared-session/target/types";
+
 export type KanbanContextMode = "new" | "inherit";
 export type KanbanTaskEngine = "claude" | "codex" | "gemini" | "grok" | "kimi" | "opencode";
 
@@ -71,6 +73,25 @@ export function isKanbanThreadCompatibleWithEngine(input: {
     return resolvedThreadEngine === input.engine;
   }
   return input.engine === "codex";
+}
+
+export function isKanbanThreadCompatibleWithTarget(input: {
+  target: Pick<ExecutionTarget, "engine" | "providerProfileId">;
+  threadId?: string | null;
+  threadEngine?: KanbanTaskEngine | null;
+  threadProviderProfileId?: string | null;
+}): boolean {
+  if (!isKanbanThreadCompatibleWithEngine({
+    engine: input.target.engine as KanbanTaskEngine,
+    threadId: input.threadId,
+    threadEngine: input.threadEngine,
+  })) {
+    return false;
+  }
+  return (
+    (input.target.providerProfileId?.trim() || null) ===
+    (input.threadProviderProfileId?.trim() || null)
+  );
 }
 
 export function resolveKanbanThreadCreationStrategy(

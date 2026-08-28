@@ -1,0 +1,7 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "openspec/changes/unify-product-target-catalog-consumers/design.md", "reason": "canonical Product target catalog 与 exact Kanban target 决策"}
+{"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "provider-scoped model identity 与 fail-closed catalog contract"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "selector-storage-execution 跨层 contract"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "共享 projection 并消除重复过滤"}

@@ -1,0 +1,53 @@
+{
+  "id": "unify-product-target-catalog-consumers",
+  "name": "unify-product-target-catalog-consumers",
+  "title": "统一 Product 目标目录并修复面板管理选项",
+  "description": "OpenSpec: unify-product-target-catalog-consumers；让 Composer、Kanban 与执行链共享 managed Product engine/model target facts。",
+  "status": "planning",
+  "dev_type": "fullstack",
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-27",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "codex/unify-panel-engine-model-catalog",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

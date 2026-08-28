@@ -7,6 +7,11 @@ import type {
   ModelOption,
   WorkspaceInfo,
 } from "../../../types";
+import { useProductEntitlementSnapshotV1 } from "../../account/runtime/productEntitlementStore";
+import {
+  projectProductTargetCatalogV1,
+  type ProductTargetCatalogV1,
+} from "../../account/runtime/productTargetCatalog";
 import { loadKanbanStyles } from "../../../styles/featureStyleLoaders";
 import { useFeatureStylesReady } from "../../../styles/useFeatureStylesReady";
 import type {
@@ -29,6 +34,7 @@ type CreateTaskInput = {
   description: string;
   engineType: EngineType;
   modelId: string | null;
+  executionTarget: KanbanTask["executionTarget"];
   branchName: string;
   images: string[];
   autoStart: boolean;
@@ -100,6 +106,24 @@ export function KanbanView({
   onToggleTerminal,
 }: KanbanViewProps) {
   const stylesReady = useFeatureStylesReady(loadKanbanStyles);
+  const productEntitlement = useProductEntitlementSnapshotV1();
+  const productTargetCatalog = useMemo<ProductTargetCatalogV1 | null>(
+    () => productEntitlement.status === "ready"
+      ? projectProductTargetCatalogV1({
+          engines: productEntitlement.engines,
+          models: productEntitlement.models,
+          modelsStatus: productEntitlement.modelsStatus,
+          modelsUpdatedAt: productEntitlement.modelsUpdatedAt,
+        })
+      : null,
+    [
+      productEntitlement.engines,
+      productEntitlement.models,
+      productEntitlement.modelsStatus,
+      productEntitlement.modelsUpdatedAt,
+      productEntitlement.status,
+    ],
+  );
   const handleSelectWorkspace = useMemo(
     () => (workspaceId: string) => {
       onCloseTaskConversation();
@@ -149,6 +173,7 @@ export function KanbanView({
         onAppModeChange={onAppModeChange}
         codexModels={codexModels}
         engineStatuses={engineStatuses}
+        productTargetCatalog={productTargetCatalog}
         conversationNode={conversationNode}
         selectedTaskId={selectedTaskId}
         taskProcessingMap={taskProcessingMap}

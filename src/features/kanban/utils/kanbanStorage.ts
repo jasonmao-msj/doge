@@ -11,6 +11,7 @@ import { getClientStoreSync, writeClientStoreValue } from "../../../services/cli
 import { normalizeTaskSchedule } from "./scheduling";
 import { normalizeTaskRunStore } from "../../tasks/utils/taskRunStorage";
 import type { KanbanLatestRunSummary } from "../../tasks/types";
+import { normalizePersistedExecutionTarget } from "../../shared-session/target/types";
 
 const EMPTY_STORE: KanbanStoreData = { panels: [], tasks: [] };
 
@@ -198,6 +199,7 @@ function normalizeTask(task: Record<string, unknown>): KanbanTask {
         ? task.engineType
         : "claude",
     modelId: typeof task.modelId === "string" ? task.modelId : null,
+    executionTarget: normalizePersistedExecutionTarget(task.executionTarget),
     branchName: typeof task.branchName === "string" ? task.branchName : "main",
     images: Array.isArray(task.images)
       ? task.images.filter((entry): entry is string => typeof entry === "string")
@@ -299,6 +301,7 @@ export type TaskDraft = {
   description: string;
   engineType: string;
   modelId: string | null;
+  executionTarget?: KanbanTask["executionTarget"];
   images: string[];
 };
 
@@ -313,7 +316,10 @@ export function loadTaskDraft(panelId: string): TaskDraft | null {
   if (!stored || (typeof stored.title !== "string" && typeof stored.description !== "string")) {
     return null;
   }
-  return stored;
+  return {
+    ...stored,
+    executionTarget: normalizePersistedExecutionTarget(stored.executionTarget),
+  };
 }
 
 export function saveTaskDraft(panelId: string, draft: TaskDraft): void {

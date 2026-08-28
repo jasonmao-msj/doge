@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { captureBrowserAgentSnapshot } from "../services/tauri";
-import { isKanbanThreadCompatibleWithEngine } from "../features/kanban/utils/contextMode";
+import { isKanbanThreadCompatibleWithTarget } from "../features/kanban/utils/contextMode";
 import { findTaskDownstream } from "../features/kanban/utils/chaining";
 import {
   buildChainedPromptPrefix,
@@ -42,11 +42,19 @@ import type {
 import type { ThreadSummary, WorkspaceInfo } from "../types";
 import { isEngineExecutionEnabled } from "../utils/engineExecutionPolicy";
 import {
+  buildRecurringKanbanTaskCloneInput,
   resolvePendingSessionThreadCandidate,
   resolveTaskThreadId,
   syncKanbanExecutionEngineAndModel,
 } from "./useAppShellSections.kanbanHelpers";
 import type { UseAppShellSectionsContext } from "./useAppShellSectionsTypes";
+import { ensureProductEngineReadyV1 } from "../features/account/runtime/productEngineProvisioning";
+import { readProductEntitlementSnapshotV1 } from "../features/account/runtime/productEntitlementStore";
+import { isNewTaskRunEngine } from "../features/tasks/taskRunEnginePolicy";
+import {
+  prepareKanbanExecutionTarget,
+  resolveKanbanExecutionTarget,
+} from "./kanbanExecutionTarget";
 
 // 到期任务的最小重查间隔：next-due 对齐定时器的下限，防止过期 nextRunAt 造成忙循环。
 const KANBAN_SCHEDULER_MIN_INTERVAL_MS = 5_000;
@@ -60,6 +68,7 @@ type CreateKanbanTaskInput = Pick<
   | "description"
   | "engineType"
   | "modelId"
+  | "executionTarget"
   | "branchName"
   | "images"
   | "autoStart"
@@ -71,7 +80,6 @@ export function useAppShellKanbanExecutionSection(
   ctx: UseAppShellSectionsContext,
 ) {
   const {
-    activeEngine,
     activeWorkspaceId,
     activeThreadId,
     interruptTurn,
@@ -221,8 +229,23 @@ export function useAppShellKanbanExecutionSection(
       if (!task) {
         return { ok: false, reason: "task_not_found" };
       }
-      const requestedEngine = task.engineType ?? activeEngine;
-      if (!isEngineExecutionEnabled(requestedEngine)) {
+      const targetResolution = resolveKanbanExecutionTarget({
+        task,
+        product: readProductEntitlementSnapshotV1(),
+      });
+      if (!targetResolution.ok) {
+        updateTaskExecution(task.id, {
+          lastSource: params.source,
+          blockedReason: targetResolution.reason,
+        });
+        return { ok: false, reason: targetResolution.reason };
+      }
+      const executionTarget = targetResolution.target;
+      const requestedEngine = executionTarget.engine;
+      if (
+        !isEngineExecutionEnabled(requestedEngine) ||
+        !isNewTaskRunEngine(requestedEngine)
+      ) {
         updateTaskExecution(task.id, {
           lastSource: params.source,
           blockedReason: "unsupported_engine",
@@ -258,6 +281,7 @@ export function useAppShellKanbanExecutionSection(
           taskRunResult = beginKanbanTaskRunLifecycle({
             task,
             source: params.source,
+            executionTarget,
           });
         } catch (error) {
           console.error("Failed to begin Kanban task run lifecycle", error);
@@ -300,8 +324,11 @@ export function useAppShellKanbanExecutionSection(
           throw new Error("workspace_not_found");
         }
 
+        const sessionTarget = await prepareKanbanExecutionTarget(
+          executionTarget,
+          ensureProductEngineReadyV1,
+        );
         await connectWorkspace(workspace);
-        const engine = requestedEngine as "claude" | "codex";
         const workspaceThreads = typedThreadsByWorkspace[workspace.id] ?? [];
         const {
           outboundModel,
@@ -309,8 +336,7 @@ export function useAppShellKanbanExecutionSection(
           composerSelection,
         } = await syncKanbanExecutionEngineAndModel({
           activate: params.activate,
-          engine,
-          modelId: task.modelId,
+          target: executionTarget,
           setActiveEngine,
         });
 
@@ -323,10 +349,16 @@ export function useAppShellKanbanExecutionSection(
               (entry) => entry.id === canonicalTaskThreadId,
             )?.engineSource ?? null)
           : null;
-        const canReuseExistingThread = isKanbanThreadCompatibleWithEngine({
-          engine,
+        const canonicalTaskThreadProviderProfileId = canonicalTaskThreadId
+          ? (workspaceThreads.find(
+              (entry) => entry.id === canonicalTaskThreadId,
+            )?.providerProfileId ?? null)
+          : null;
+        const canReuseExistingThread = isKanbanThreadCompatibleWithTarget({
+          target: executionTarget,
           threadId: canonicalTaskThreadId,
           threadEngine: canonicalTaskThreadEngine,
+          threadProviderProfileId: canonicalTaskThreadProviderProfileId,
         });
         let threadId = canReuseExistingThread ? canonicalTaskThreadId : null;
         if (shouldForceNewThread && task.threadId) {
@@ -348,7 +380,7 @@ export function useAppShellKanbanExecutionSection(
         }
         if (!threadId) {
           threadId = await startThreadForWorkspace(workspace.id, {
-            engine,
+            ...sessionTarget,
             activate: params.activate ?? false,
           });
           if (!threadId) {
@@ -452,7 +484,6 @@ export function useAppShellKanbanExecutionSection(
     [
       typedWorkspacesByPath,
       connectWorkspace,
-      activeEngine,
       typedThreadsByWorkspace,
       setActiveEngine,
       startThreadForWorkspace,
@@ -476,11 +507,37 @@ export function useAppShellKanbanExecutionSection(
       await connectWorkspace(workspace);
       selectWorkspace(workspace.id);
 
-      const engine = (task.engineType ?? activeEngine) as "claude" | "codex";
+      const targetResolution = resolveKanbanExecutionTarget({
+        task,
+        product: readProductEntitlementSnapshotV1(),
+      });
+      if (!targetResolution.ok) {
+        updateTaskExecution(task.id, {
+          lastSource: "manual",
+          blockedReason: targetResolution.reason,
+        });
+        return;
+      }
+      const executionTarget = targetResolution.target;
+      const engine = executionTarget.engine;
       const workspaceThreads = typedThreadsByWorkspace[workspace.id] ?? [];
-      const canStartNewExecution = isEngineExecutionEnabled(engine);
+      const canStartNewExecution =
+        isEngineExecutionEnabled(engine) && isNewTaskRunEngine(engine);
+      let sessionTarget: {
+        engine: typeof engine;
+        providerProfileId?: string;
+      } = { engine };
       if (canStartNewExecution) {
-        await setActiveEngine(engine);
+        sessionTarget = await prepareKanbanExecutionTarget(
+          executionTarget,
+          ensureProductEngineReadyV1,
+        );
+        const providerProfileId =
+          executionTarget.providerProfileId?.trim() || null;
+        await setActiveEngine(
+          engine,
+          providerProfileId ? { providerProfileId } : undefined,
+        );
       }
 
       if (task.threadId) {
@@ -490,10 +547,14 @@ export function useAppShellKanbanExecutionSection(
         const resolvedThreadEngine =
           workspaceThreads.find((entry) => entry.id === resolvedThreadId)
             ?.engineSource ?? null;
-        const canReuseExistingThread = isKanbanThreadCompatibleWithEngine({
-          engine,
+        const resolvedThreadProviderProfileId =
+          workspaceThreads.find((entry) => entry.id === resolvedThreadId)
+            ?.providerProfileId ?? null;
+        const canReuseExistingThread = isKanbanThreadCompatibleWithTarget({
+          target: executionTarget,
           threadId: resolvedThreadId,
           threadEngine: resolvedThreadEngine,
+          threadProviderProfileId: resolvedThreadProviderProfileId,
         });
         if (resolvedThreadId !== task.threadId) {
           kanbanUpdateTask(task.id, { threadId: resolvedThreadId });
@@ -547,7 +608,7 @@ export function useAppShellKanbanExecutionSection(
           persistKanbanTaskComposerSelection(
             workspace.id,
             resolvedThreadId,
-            task.modelId,
+            executionTarget.modelCatalogEntryId ?? executionTarget.model,
           );
           setActiveThreadId(resolvedThreadId, workspace.id);
           return;
@@ -557,13 +618,15 @@ export function useAppShellKanbanExecutionSection(
       if (!canStartNewExecution) {
         return;
       }
-      const threadId = await startThreadForWorkspace(workspace.id, { engine });
+      const threadId = await startThreadForWorkspace(workspace.id, {
+        ...sessionTarget,
+      });
       if (threadId) {
         kanbanUpdateTask(task.id, { threadId });
         persistKanbanTaskComposerSelection(
           workspace.id,
           threadId,
-          task.modelId,
+          executionTarget.modelCatalogEntryId ?? executionTarget.model,
         );
         setActiveThreadId(threadId, workspace.id);
       }
@@ -575,7 +638,6 @@ export function useAppShellKanbanExecutionSection(
       setActiveThreadId,
       startThreadForWorkspace,
       kanbanUpdateTask,
-      activeEngine,
       setActiveEngine,
       persistKanbanTaskComposerSelection,
       typedThreadStatusById,
@@ -583,6 +645,7 @@ export function useAppShellKanbanExecutionSection(
       typedKanbanTasks,
       resolveCanonicalThreadId,
       setSelectedKanbanTaskId,
+      updateTaskExecution,
     ],
   );
 
@@ -605,10 +668,22 @@ export function useAppShellKanbanExecutionSection(
       if (!task) {
         return;
       }
+      const targetResolution = resolveKanbanExecutionTarget({
+        task,
+        product: readProductEntitlementSnapshotV1(),
+      });
+      if (!targetResolution.ok) {
+        updateTaskExecution(task.id, {
+          lastSource: "manual",
+          blockedReason: targetResolution.reason,
+        });
+        return;
+      }
       const recovery = beginTaskRunRecovery({
         task,
         trigger: "retry",
         parentRun: run,
+        executionTarget: targetResolution.target,
       });
       if (!recovery.ok) {
         if (recovery.latestRunSummary) {
@@ -629,7 +704,12 @@ export function useAppShellKanbanExecutionSection(
         existingRunId: recovery.run.runId,
       });
     },
-    [kanbanUpdateTask, launchKanbanTaskExecution, resolveTaskByRun],
+    [
+      kanbanUpdateTask,
+      launchKanbanTaskExecution,
+      resolveTaskByRun,
+      updateTaskExecution,
+    ],
   );
 
   const handleForkTaskRun = useCallback(
@@ -641,10 +721,22 @@ export function useAppShellKanbanExecutionSection(
       if (!task) {
         return;
       }
+      const targetResolution = resolveKanbanExecutionTarget({
+        task,
+        product: readProductEntitlementSnapshotV1(),
+      });
+      if (!targetResolution.ok) {
+        updateTaskExecution(task.id, {
+          lastSource: "manual",
+          blockedReason: targetResolution.reason,
+        });
+        return;
+      }
       const recovery = beginTaskRunRecovery({
         task,
         trigger: "forked",
         parentRun: run,
+        executionTarget: targetResolution.target,
       });
       if (!recovery.ok) {
         if (recovery.latestRunSummary) {
@@ -665,7 +757,12 @@ export function useAppShellKanbanExecutionSection(
         existingRunId: recovery.run.runId,
       });
     },
-    [kanbanUpdateTask, launchKanbanTaskExecution, resolveTaskByRun],
+    [
+      kanbanUpdateTask,
+      launchKanbanTaskExecution,
+      resolveTaskByRun,
+      updateTaskExecution,
+    ],
   );
 
   const handleResumeTaskRun = useCallback(
@@ -1253,24 +1350,9 @@ export function useAppShellKanbanExecutionSection(
                 );
               });
               if (!hasPendingSeriesTask) {
-                kanbanCreateTask({
-                  workspaceId: task.workspaceId,
-                  panelId: task.panelId,
-                  title: task.title,
-                  description: task.description,
-                  engineType: task.engineType,
-                  modelId: task.modelId,
-                  branchName: task.branchName,
-                  images: task.images ?? [],
-                  autoStart: false,
-                  schedule: completedSchedule,
-                  chain: task.chain
-                    ? {
-                        ...task.chain,
-                        blockedReason: null,
-                      }
-                    : undefined,
-                });
+                kanbanCreateTask(
+                  buildRecurringKanbanTaskCloneInput(task, completedSchedule),
+                );
               }
             } else {
               updateTaskExecution(task.id, {

@@ -1,4 +1,5 @@
 import type { EngineType } from "../../types";
+import type { PersistedTaskRunEngine } from "./taskRunEnginePolicy";
 
 export type TaskRunStatus =
   | "queued"
@@ -77,7 +78,9 @@ export type TaskRunDefinitionRef = {
 export type TaskRunRecord = {
   runId: string;
   task: TaskRunDefinitionRef;
-  engine: Extract<EngineType, "claude" | "codex" | "gemini">;
+  engine: PersistedTaskRunEngine;
+  providerProfileId?: string | null;
+  modelCatalogEntryId?: string | null;
   model?: string | null;
   status: TaskRunStatus;
   trigger: TaskRunTrigger;
@@ -106,7 +109,7 @@ export type KanbanLatestRunSummary = {
   runId: string;
   status: TaskRunStatus;
   trigger: TaskRunTrigger;
-  engine: Extract<EngineType, "claude" | "codex" | "gemini">;
+  engine: PersistedTaskRunEngine;
   model?: string | null;
   linkedThreadId?: string | null;
   latestOutputSummary?: string | null;
@@ -123,6 +126,8 @@ export type CreateTaskRunInput = {
   taskTitle?: string | null;
   taskSource?: TaskRunDefinitionRef["source"];
   engine: EngineType;
+  providerProfileId?: string | null;
+  modelCatalogEntryId?: string | null;
   model?: string | null;
   trigger: TaskRunTrigger;
   linkedThreadId?: string | null;

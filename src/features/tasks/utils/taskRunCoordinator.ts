@@ -12,7 +12,8 @@ import {
   upsertTaskRun,
 } from "./taskRunStorage";
 import { mapExecutionSourceToRunTrigger } from "./taskRunProjection";
-import { isEngineExecutionEnabled } from "../../../utils/engineExecutionPolicy";
+import type { ExecutionTarget } from "../../shared-session/target/types";
+import { isNewTaskRunEngine } from "../taskRunEnginePolicy";
 
 export type BeginTaskRunResult =
   | {
@@ -33,6 +34,8 @@ export type BeginTaskRunDefinition = {
   title?: string | null;
   source?: TaskRunDefinitionRef["source"];
   engine: TaskRunRecord["engine"];
+  providerProfileId?: string | null;
+  modelCatalogEntryId?: string | null;
   model?: string | null;
   linkedThreadId?: string | null;
 };
@@ -44,6 +47,7 @@ export function beginTaskRun(params: {
   now?: number;
   parentRun?: TaskRunRecord | null;
   upstreamRun?: TaskRunRecord | null;
+  executionTarget?: ExecutionTarget | null;
 }): BeginTaskRunResult {
   const trigger = mapExecutionSourceToRunTrigger(params.source);
   return beginTaskRunWithTrigger({
@@ -53,6 +57,7 @@ export function beginTaskRun(params: {
     now: params.now,
     parentRun: params.parentRun,
     upstreamRun: params.upstreamRun,
+    executionTarget: params.executionTarget,
   });
 }
 
@@ -63,6 +68,7 @@ export function beginTaskRunWithTrigger(params: {
   now?: number;
   parentRun?: TaskRunRecord | null;
   upstreamRun?: TaskRunRecord | null;
+  executionTarget?: ExecutionTarget | null;
 }): BeginTaskRunResult {
   return beginTaskRunFromDefinition({
     store: params.store,
@@ -71,8 +77,12 @@ export function beginTaskRunWithTrigger(params: {
       workspaceId: params.task.workspaceId,
       title: params.task.title,
       source: "kanban",
-      engine: params.task.engineType as TaskRunRecord["engine"],
-      model: params.task.modelId,
+      engine: (params.executionTarget?.engine ??
+        params.task.engineType) as TaskRunRecord["engine"],
+      providerProfileId: params.executionTarget?.providerProfileId ?? null,
+      modelCatalogEntryId:
+        params.executionTarget?.modelCatalogEntryId ?? params.task.modelId,
+      model: params.executionTarget?.model ?? params.task.modelId,
       linkedThreadId: params.task.threadId,
     },
     trigger: params.trigger,
@@ -90,7 +100,7 @@ export function beginTaskRunFromDefinition(params: {
   parentRun?: TaskRunRecord | null;
   upstreamRun?: TaskRunRecord | null;
 }): BeginTaskRunResult {
-  if (!isEngineExecutionEnabled(params.task.engine)) {
+  if (!isNewTaskRunEngine(params.task.engine)) {
     return {
       ok: false,
       reason: "unsupported_engine",
@@ -124,6 +134,8 @@ export function beginTaskRunFromDefinition(params: {
       taskTitle: params.task.title,
       taskSource: params.task.source,
       engine: params.task.engine,
+      providerProfileId: params.task.providerProfileId,
+      modelCatalogEntryId: params.task.modelCatalogEntryId,
       model: params.task.model,
       trigger: params.trigger,
       linkedThreadId: params.task.linkedThreadId,

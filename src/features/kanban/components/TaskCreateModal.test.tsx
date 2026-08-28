@@ -6,6 +6,7 @@ import type { EngineStatus, ModelOption } from "../../../types";
 import { generateThreadTitle } from "../../../services/tauri";
 import { pushErrorToast } from "../../../services/toasts";
 import type { KanbanTask } from "../types";
+import { projectProductTargetCatalogV1 } from "../../account/runtime/productTargetCatalog";
 import { clearTaskDraft, saveTaskDraft } from "../utils/kanbanStorage";
 import { TaskCreateModal } from "./TaskCreateModal";
 
@@ -486,6 +487,97 @@ describe("TaskCreateModal", () => {
           modelId: "gpt-5.4",
         }),
       );
+    });
+  });
+
+  it("uses the Product target catalog for every engine and submits the exact target", async () => {
+    const onSubmit = vi.fn();
+    const claudeStatus = engineStatuses.find(
+      (status) => status.engineType === "claude",
+    );
+    if (!claudeStatus) {
+      throw new Error("Claude status fixture is missing");
+    }
+    const productTargetCatalog = projectProductTargetCatalogV1({
+      engines: [
+        { id: "codex", displayName: "Codex" },
+        { id: "claude-code", displayName: "Claude" },
+        { id: "kimi", displayName: "Kimi CLI" },
+      ],
+      models: [
+        {
+          id: "kimi-code/kimi-for-coding",
+          displayName: "Kimi For Coding",
+          model: "kimi-for-coding",
+          apiProtocols: [
+            "openai-responses",
+            "openai-chat-completions",
+          ],
+          capabilities: [],
+        },
+        {
+          id: "claude-sonnet-4-8",
+          displayName: "Claude Sonnet 4.8",
+          model: "claude-sonnet-4-8",
+          apiProtocols: ["anthropic-messages"],
+          capabilities: [],
+        },
+      ],
+    });
+    const { container, getByPlaceholderText, getByText } = render(
+      <TaskCreateModal
+        isOpen
+        workspaceId="ws-1"
+        workspaceBackendId="ws-1"
+        panelId="panel-product"
+        defaultStatus="todo"
+        codexModels={sharedCodexModels}
+        engineStatuses={[
+          ...engineStatusesWithLegacyCodexModels,
+          {
+            ...claudeStatus,
+            engineType: "grok",
+          },
+        ]}
+        productTargetCatalog={productTargetCatalog}
+        availableTasks={[]}
+        onSubmit={onSubmit}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    const engineSelect = findSelectWithOption(container, "kimi");
+    expect(Array.from(engineSelect.options).map((option) => option.value)).toEqual([
+      "codex",
+      "claude",
+      "kimi",
+    ]);
+    fireEvent.change(engineSelect, { target: { value: "kimi" } });
+
+    await waitFor(() => {
+      expect(
+        Array.from(
+          findSelectWithOption(container, "kimi-code/kimi-for-coding").options,
+        ).map((option) => option.value),
+      ).toEqual(["kimi-code/kimi-for-coding"]);
+    });
+    fireEvent.change(getByPlaceholderText("kanban.task.titlePlaceholder"), {
+      target: { value: "Run Kimi target" },
+    });
+    fireEvent.click(getByText("kanban.task.create"));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+        engineType: "kimi",
+        modelId: "kimi-code/kimi-for-coding",
+        executionTarget: expect.objectContaining({
+          engine: "kimi",
+          providerProfileId: "doge-token-matrix",
+          modelCatalogEntryId: "kimi-code/kimi-for-coding",
+          model: "kimi-for-coding",
+          providerProfileSource: "managed",
+        }),
+      }));
     });
   });
 

@@ -11,6 +11,7 @@ import type {
   ModelOption,
   WorkspaceInfo,
 } from "../../../types";
+import type { ProductTargetCatalogV1 } from "../../account/runtime/productTargetCatalog";
 import type {
   KanbanTaskChain,
   KanbanTaskSchedule,
@@ -33,6 +34,7 @@ type CreateTaskInput = {
   description: string;
   engineType: EngineType;
   modelId: string | null;
+  executionTarget: KanbanTask["executionTarget"];
   branchName: string;
   images: string[];
   autoStart: boolean;
@@ -296,6 +298,7 @@ type KanbanBoardProps = {
   onAppModeChange: (mode: AppMode) => void;
   codexModels: ModelOption[];
   engineStatuses: EngineStatus[];
+  productTargetCatalog?: ProductTargetCatalogV1 | null;
   conversationNode: ReactNode | null;
   selectedTaskId: string | null;
   taskProcessingMap: Record<string, { isProcessing: boolean; startedAt: number | null }>;
@@ -326,6 +329,7 @@ export function KanbanBoard({
   onAppModeChange,
   codexModels,
   engineStatuses,
+  productTargetCatalog = null,
   conversationNode,
   selectedTaskId,
   taskProcessingMap,
@@ -878,6 +882,7 @@ export function KanbanBoard({
         defaultStatus={createDefaultStatus}
         codexModels={codexModels}
         engineStatuses={engineStatuses}
+        productTargetCatalog={productTargetCatalog}
         onSubmit={handleCreateTask}
         onCancel={() => {
           setCreateModalOpen(false);

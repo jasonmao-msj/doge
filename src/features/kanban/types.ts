@@ -1,5 +1,6 @@
 import type { EngineType } from "../../types";
 import type { KanbanLatestRunSummary } from "../tasks/types";
+import type { ExecutionTarget } from "../shared-session/target/types";
 
 export type KanbanTaskStatus =
   | "todo"
@@ -94,6 +95,7 @@ export type KanbanTask = {
   status: KanbanTaskStatus;
   engineType: EngineType;
   modelId: string | null;
+  executionTarget?: ExecutionTarget | null;
   branchName: string;
   images: string[];
   autoStart: boolean;

@@ -1,4 +1,10 @@
 import type { ComposerSessionSelection } from "./selectedComposerSession";
+import type { EngineType, SetActiveEngineOptions } from "../types";
+import type { ExecutionTarget } from "../features/shared-session/target/types";
+import type {
+  KanbanTask,
+  KanbanTaskSchedule,
+} from "../features/kanban/types";
 
 const KANBAN_TAG_REGEX = /&@[^\s]+/g;
 
@@ -55,9 +61,11 @@ export function shouldSyncComposerEngineForKanbanExecution(params: {
 
 export async function syncKanbanExecutionEngineAndModel(params: {
   activate?: boolean;
-  engine: "claude" | "codex";
-  modelId?: string | null;
-  setActiveEngine: (engine: "claude" | "codex") => Promise<void> | void;
+  target: ExecutionTarget;
+  setActiveEngine: (
+    engine: EngineType,
+    options?: SetActiveEngineOptions,
+  ) => Promise<unknown> | unknown;
 }): Promise<{
   shouldSyncComposerSelection: boolean;
   outboundModel?: string;
@@ -67,9 +75,16 @@ export async function syncKanbanExecutionEngineAndModel(params: {
     activate: params.activate,
   });
   if (shouldSyncComposerSelection) {
-    await params.setActiveEngine(params.engine);
+    const providerProfileId = params.target.providerProfileId?.trim() || null;
+    if (providerProfileId) {
+      await params.setActiveEngine(params.target.engine, { providerProfileId });
+    } else {
+      await params.setActiveEngine(params.target.engine);
+    }
   }
-  if (!params.modelId) {
+  const catalogEntryId = params.target.modelCatalogEntryId?.trim() || null;
+  const runtimeModel = params.target.model?.trim() || null;
+  if (!catalogEntryId && !runtimeModel) {
     return {
       shouldSyncComposerSelection,
       outboundModel: undefined,
@@ -79,15 +94,15 @@ export async function syncKanbanExecutionEngineAndModel(params: {
   if (!shouldSyncComposerSelection) {
     return {
       shouldSyncComposerSelection,
-      outboundModel: params.modelId,
+      outboundModel: runtimeModel ?? undefined,
       composerSelection: null,
     };
   }
   return {
     shouldSyncComposerSelection,
-    outboundModel: undefined,
+    outboundModel: runtimeModel ?? undefined,
     composerSelection: {
-      modelId: params.modelId,
+      modelId: catalogEntryId ?? runtimeModel,
       effort: null,
     },
   };
@@ -119,4 +134,29 @@ export function isRewindSupportedThreadId(threadId: string): boolean {
     return false;
   }
   return true;
+}
+
+export function buildRecurringKanbanTaskCloneInput(
+  task: KanbanTask,
+  schedule: KanbanTaskSchedule,
+) {
+  return {
+    workspaceId: task.workspaceId,
+    panelId: task.panelId,
+    title: task.title,
+    description: task.description,
+    engineType: task.engineType,
+    modelId: task.modelId,
+    executionTarget: task.executionTarget,
+    branchName: task.branchName,
+    images: task.images ?? [],
+    autoStart: false,
+    schedule,
+    chain: task.chain
+      ? {
+          ...task.chain,
+          blockedReason: null,
+        }
+      : undefined,
+  };
 }

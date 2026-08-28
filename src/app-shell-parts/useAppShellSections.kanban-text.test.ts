@@ -6,6 +6,7 @@ import {
   resolvePendingSessionThreadCandidate,
   shouldSyncComposerEngineForKanbanExecution,
   syncKanbanExecutionEngineAndModel,
+  buildRecurringKanbanTaskCloneInput,
   resolveTaskThreadId,
   stripComposerKanbanTagsPreserveFormatting,
 } from "./useAppShellSections";
@@ -111,8 +112,11 @@ describe("syncKanbanExecutionEngineAndModel", () => {
 
     const result = await syncKanbanExecutionEngineAndModel({
       activate: false,
-      engine: "claude",
-      modelId: "claude-sonnet-4-5",
+      target: {
+        engine: "claude",
+        modelCatalogEntryId: "claude-sonnet-entry",
+        model: "claude-sonnet-4-5",
+      },
       setActiveEngine,
     });
 
@@ -129,17 +133,20 @@ describe("syncKanbanExecutionEngineAndModel", () => {
 
     const result = await syncKanbanExecutionEngineAndModel({
       activate: true,
-      engine: "codex",
-      modelId: "gpt-5.4",
+      target: {
+        engine: "codex",
+        modelCatalogEntryId: "gpt-5.4-entry",
+        model: "gpt-5.4",
+      },
       setActiveEngine,
     });
 
     expect(setActiveEngine).toHaveBeenCalledWith("codex");
     expect(result).toEqual({
       shouldSyncComposerSelection: true,
-      outboundModel: undefined,
+      outboundModel: "gpt-5.4",
       composerSelection: {
-        modelId: "gpt-5.4",
+        modelId: "gpt-5.4-entry",
         effort: null,
       },
     });
@@ -150,19 +157,95 @@ describe("syncKanbanExecutionEngineAndModel", () => {
 
     const result = await syncKanbanExecutionEngineAndModel({
       activate: true,
-      engine: "claude",
-      modelId: "claude-sonnet-4-5",
+      target: {
+        engine: "claude",
+        modelCatalogEntryId: "claude-sonnet-entry",
+        model: "claude-sonnet-4-5",
+      },
       setActiveEngine,
     });
 
     expect(setActiveEngine).toHaveBeenCalledWith("claude");
     expect(result).toEqual({
       shouldSyncComposerSelection: true,
-      outboundModel: undefined,
+      outboundModel: "claude-sonnet-4-5",
       composerSelection: {
-        modelId: "claude-sonnet-4-5",
+        modelId: "claude-sonnet-entry",
         effort: null,
       },
+    });
+  });
+
+  it("activates the exact managed engine and keeps catalog/runtime identities separate", async () => {
+    const setActiveEngine = vi.fn(async () => true);
+
+    const result = await syncKanbanExecutionEngineAndModel({
+      activate: true,
+      target: {
+        engine: "kimi",
+        providerProfileId: "doge-token-matrix",
+        modelCatalogEntryId: "kimi-code/kimi-for-coding",
+        model: "kimi-for-coding",
+        providerProfileNameSnapshot: "Doge",
+        providerProfileSource: "managed",
+      },
+      setActiveEngine,
+    });
+
+    expect(setActiveEngine).toHaveBeenCalledWith("kimi", {
+      providerProfileId: "doge-token-matrix",
+    });
+    expect(result).toEqual({
+      shouldSyncComposerSelection: true,
+      outboundModel: "kimi-for-coding",
+      composerSelection: {
+        modelId: "kimi-code/kimi-for-coding",
+        effort: null,
+      },
+    });
+  });
+});
+
+describe("buildRecurringKanbanTaskCloneInput", () => {
+  it("preserves the exact execution target in the next recurring task", () => {
+    const executionTarget = {
+      engine: "kimi" as const,
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "kimi-code/kimi-for-coding",
+      model: "kimi-for-coding",
+      reasoning: null,
+      providerProfileNameSnapshot: "Doge",
+      providerProfileSource: "managed" as const,
+    };
+    const schedule = {
+      mode: "recurring" as const,
+      recurringExecutionMode: "new_thread" as const,
+      nextRunAt: 2,
+    };
+
+    expect(buildRecurringKanbanTaskCloneInput({
+      id: "task-1",
+      workspaceId: "/repo",
+      panelId: "panel-1",
+      title: "Recurring",
+      description: "Run it",
+      status: "testing",
+      engineType: "kimi",
+      modelId: "kimi-code/kimi-for-coding",
+      executionTarget,
+      branchName: "main",
+      images: [],
+      autoStart: false,
+      sortOrder: 1,
+      threadId: "kimi:thread-1",
+      schedule,
+      createdAt: 1,
+      updatedAt: 1,
+    }, schedule)).toMatchObject({
+      engineType: "kimi",
+      modelId: "kimi-code/kimi-for-coding",
+      executionTarget,
+      schedule,
     });
   });
 });
