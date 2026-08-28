@@ -368,3 +368,36 @@ main CI 三次在三个无关 jsdom tests发生 5000ms timeout；保留原 timeo
 ### Next Steps
 
 - None - task complete
+
+
+## Session 70: 稳定 Unix probe descendant reaping regression
+
+**Date**: 2026-08-28
+**Task**: 稳定 Unix probe descendant reaping regression
+**Branch**: `codex/stabilize-probe-process-group-test`
+
+### Summary
+
+修复 hanging probe test对 SIGKILL 后 orphan zombie的 immediate ESRCH错误假设；在既有 2s cleanup budget内 bounded poll最终 ESRCH，production probe/kill/deadline不变。Focused Rust regression连续 10/10、cargo check --lib、rustfmt与 release/docs/OpenSpec gates通过。任务保持 active，待 PR 合入、green main 和 v0.1.10 Release。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `510d267b2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

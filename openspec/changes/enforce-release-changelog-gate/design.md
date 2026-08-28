@@ -133,3 +133,13 @@ runner在部分 jsdom batch存在瞬时 scheduling jitter，而非单一 feature
 决策：保留 5000ms per-test timeout，Windows batched lane仅允许 failed test retry 1 次；默认/其他
 callers retry=0。这样 transient scheduling有一次恢复机会，deterministic hang仍会在第二次 5000ms 后失败，
 不会通过把全局 timeout扩到 15s 来降低检测灵敏度。
+
+### Unix Probe Descendant Reaping Calibration
+
+Windows timing修复合入后的 main CI 再次暴露既有 Rust regression：probe process group收到
+`SIGKILL` 且 group leader已被 `wait()` 回收后，orphan descendant可能短暂保持 zombie，直到 init异步
+reap；此窗口内 `kill(pid, 0)` 仍返回成功。原测试在 `run_cli_probe()` 返回后立刻要求 `ESRCH`，把
+reaping latency误判为 cleanup失败。
+
+决策：不改变 production timeout/kill path。Regression test用 `DETECTION_CLEANUP_TIMEOUT` 做 bounded
+poll，最终必须观察到 `ESRCH`；若 descendant仍 live或 zombie超过 cleanup budget，测试继续失败。

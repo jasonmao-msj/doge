@@ -12,7 +12,7 @@
   "assignee": "jason",
   "createdAt": "2026-08-28",
   "completedAt": null,
-  "branch": "codex/stabilize-windows-vitest-timeouts",
+  "branch": "codex/stabilize-probe-process-group-test",
   "base_branch": "main",
   "worktree_path": null,
   "current_phase": 0,
