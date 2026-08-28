@@ -3103,6 +3103,8 @@ export function useThreads({
     startLsp,
     startShare,
     getThreadKind,
+    getThreadEngine,
+    getThreadProviderProfileId,
     updateThreadParent,
     resolveCanonicalThreadId,
     reviewPrompt,

@@ -36,6 +36,7 @@ import {
   recoverThreadBindingForManualRecovery,
 } from "./manualThreadRecovery";
 import { OPENCODE_VARIANT_OPTIONS } from "./utils";
+import { normalizeEngineForExecution } from "../utils/engineExecutionPolicy";
 import type { CodexProviderProfileSelection } from "../features/threads/constants/codexProviderProfiles";
 import type {
   WorkspaceInfo,
@@ -1143,6 +1144,7 @@ export function useAppShellLayoutNodesSection(
         activeThreadId ??
         (await startThreadForWorkspace(activeWorkspace.id, {
           activate: true,
+          engine: normalizeEngineForExecution(activeEngine),
         }));
       if (!targetThreadId) {
         const message = t("intentCanvas.errors.noThread");
@@ -1174,6 +1176,7 @@ export function useAppShellLayoutNodesSection(
       });
     },
     [
+      activeEngine,
       activeThreadId,
       activeWorkspace,
       alertError,

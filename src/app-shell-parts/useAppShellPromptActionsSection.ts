@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { revealInFileManager } from "../services/tauri";
-import type { WorkspaceInfo } from "../types";
+import type { EngineType, WorkspaceInfo } from "../types";
+import { normalizeEngineForExecution } from "../utils/engineExecutionPolicy";
 
 type PromptScope = "workspace" | "global";
 
@@ -26,6 +27,7 @@ type MovePromptInput = {
 };
 
 type UseAppShellPromptActionsSectionOptions = {
+  activeEngine?: EngineType | null;
   activeWorkspace: WorkspaceInfo | null;
   alertError: (error: unknown) => void;
   connectWorkspace: (workspace: WorkspaceInfo) => Promise<void>;
@@ -42,12 +44,13 @@ type UseAppShellPromptActionsSectionOptions = {
   ) => Promise<unknown>;
   startThreadForWorkspace: (
     workspaceId: string,
-    options?: { activate?: boolean },
+    options?: { activate?: boolean; engine?: EngineType },
   ) => Promise<string | null>;
   updatePrompt: (data: UpdatePromptInput) => Promise<void>;
 };
 
 export function useAppShellPromptActionsSection({
+  activeEngine,
   activeWorkspace,
   alertError,
   connectWorkspace,
@@ -71,13 +74,20 @@ export function useAppShellPromptActionsSection({
       }
       const threadId = await startThreadForWorkspace(activeWorkspace.id, {
         activate: false,
+        engine: normalizeEngineForExecution(activeEngine),
       });
       if (!threadId) {
         return;
       }
       await sendUserMessageToThread(activeWorkspace, threadId, trimmed, []);
     },
-    [activeWorkspace, connectWorkspace, sendUserMessageToThread, startThreadForWorkspace],
+    [
+      activeEngine,
+      activeWorkspace,
+      connectWorkspace,
+      sendUserMessageToThread,
+      startThreadForWorkspace,
+    ],
   );
 
   const handleCreatePrompt = useCallback(

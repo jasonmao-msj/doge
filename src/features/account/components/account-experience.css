@@ -360,6 +360,12 @@
   max-width: min(20rem, calc(100vw - 24px));
 }
 
+.account-sidebar-shortcut-trigger-wrapper {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+}
+
 .account-sidebar-shortcut {
   width: 32px;
   height: 32px;

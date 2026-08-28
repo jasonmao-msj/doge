@@ -17,6 +17,7 @@ import type { KanbanContextMode } from "../features/kanban/utils/contextMode";
 import { stripComposerKanbanTagsPreserveFormatting } from "./useAppShellSections.kanbanHelpers";
 import type { UseAppShellSectionsContext } from "./useAppShellSectionsTypes";
 import { resolveSessionEngineActivation } from "../features/engine/utils/engineSessionRouting";
+import { normalizeEngineForExecution } from "../utils/engineExecutionPolicy";
 
 type ComposerKanbanPanelOption = Pick<
   KanbanPanel,
@@ -408,9 +409,7 @@ export function useAppShellKanbanComposerSection(
       if (!workspace.connected) {
         await connectWorkspace(workspace);
       }
-      const engine = (activeEngine === "codex" ? "codex" : "claude") as
-        | "codex"
-        | "claude";
+      const engine = normalizeEngineForExecution(activeEngine, "claude");
       const activeThreadEngine =
         activeThreadId && activeWorkspaceId
           ? (typedThreadsByWorkspace[activeWorkspaceId]?.find(

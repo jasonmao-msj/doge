@@ -19,6 +19,7 @@ import type {
   WorkspaceInfo,
   BrowserContextSendAttachment,
   ComposerCreateSessionTarget,
+  EngineType,
   IntentCanvasContextSendAttachment,
   SelectedAgentOption,
   SharedQueuedExecutionTarget,
@@ -190,6 +191,8 @@ type SendMessageOptions = {
   autoSession?: AutoSessionMetadata | null;
   createSessionTarget?: ComposerCreateSessionTarget;
   sharedExecutionTarget?: SharedQueuedExecutionTarget;
+  /** Queue  drain 专用：enqueue 瞬间冻结的引擎，优先于 activeEngine 路由。 */
+  engineOverride?: EngineType;
   squadRequest?: true;
 };
 
@@ -2865,7 +2868,7 @@ export function useThreadMessaging({
       // Detect engine switch from the selected engine to thread ownership.
       const createSessionTarget = options?.createSessionTarget ?? null;
       const currentEngine = normalizeEngineSelection(
-        createSessionTarget?.engine ?? activeEngine,
+        createSessionTarget?.engine ?? options?.engineOverride ?? activeEngine,
       );
       const resolvedComposerSelection = resolveComposerSelection?.() ?? null;
       const firstSendProviderProfileId = createSessionTarget

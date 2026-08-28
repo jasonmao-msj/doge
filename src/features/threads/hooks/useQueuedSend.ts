@@ -31,6 +31,7 @@ import {
   type EngineMessageDeliveryDiagnostic,
 } from "../contracts/engineMessageDelivery";
 import type { ThreadMessageDispatchResult } from "./useThreadMessaging";
+import { normalizeEngineForExecution } from "../../../utils/engineExecutionPolicy";
 
 const OPENCODE_INFLIGHT_STALL_MS = 18_000;
 const FUSION_RESUME_TIMEOUT_MS = 48_000;
@@ -54,6 +55,14 @@ type UseQueuedSendOptions = {
   steerEnabled: boolean;
   activeWorkspace: WorkspaceInfo | null;
   activeEngine?: EngineType;
+  getThreadEngine?: (
+    workspaceId: string,
+    threadId: string,
+  ) => EngineType | undefined;
+  getThreadProviderProfileId?: (
+    workspaceId: string,
+    threadId: string,
+  ) => string | null;
   isSharedSession?: boolean;
   resolveCanonicalThreadId: (threadId: string) => string;
   connectWorkspace: (workspace: WorkspaceInfo) => Promise<void>;
@@ -62,6 +71,7 @@ type UseQueuedSendOptions = {
     options?: {
       activate?: boolean;
       engine?: EngineType;
+      providerProfileId?: string | null;
       folderId?: string | null;
     },
   ) => Promise<string | null>;
@@ -402,6 +412,8 @@ export function useQueuedSend({
   steerEnabled,
   activeWorkspace,
   activeEngine = "claude",
+  getThreadEngine,
+  getThreadProviderProfileId,
   isSharedSession = false,
   resolveCanonicalThreadId,
   connectWorkspace,
@@ -758,11 +770,18 @@ export function useQueuedSend({
         images: [...images],
         sendOptions:
           options === undefined ? undefined : structuredClone(options),
+        ...(isSharedSession ? {} : { engine: activeEngine }),
         sharedExecutionTarget,
         sharedPredecessorAttemptId,
       };
     },
-    [activeSharedSendState, activeThreadId, activeWorkspace, isSharedSession],
+    [
+      activeEngine,
+      activeSharedSendState,
+      activeThreadId,
+      activeWorkspace,
+      isSharedSession,
+    ],
   );
 
   const enqueueMessage = useCallback(
@@ -963,7 +982,18 @@ export function useQueuedSend({
         return true;
       }
       if (command === "clear" && activeWorkspace) {
-        const threadId = await startThreadForWorkspace(activeWorkspace.id, { engine: activeEngine });
+        const threadEngine = activeThreadId
+          ? getThreadEngine?.(activeWorkspace.id, activeThreadId)
+          : undefined;
+        const engine = normalizeEngineForExecution(threadEngine ?? activeEngine);
+        const providerProfileId = activeThreadId
+          ? (getThreadProviderProfileId?.(activeWorkspace.id, activeThreadId) ??
+            null)
+          : null;
+        const threadId = await startThreadForWorkspace(activeWorkspace.id, {
+          engine,
+          ...(providerProfileId ? { providerProfileId } : {}),
+        });
         const rest = trimmed.replace(/^\/(?:clear|reset)\b/i, "").trim();
         const effectiveOptions = withCodexCollaborationMode(options);
         if (threadId && rest) {
@@ -976,7 +1006,18 @@ export function useQueuedSend({
         return true;
       }
       if (command === "new" && activeWorkspace) {
-        const threadId = await startThreadForWorkspace(activeWorkspace.id, { engine: activeEngine });
+        const threadEngine = activeThreadId
+          ? getThreadEngine?.(activeWorkspace.id, activeThreadId)
+          : undefined;
+        const engine = normalizeEngineForExecution(threadEngine ?? activeEngine);
+        const providerProfileId = activeThreadId
+          ? (getThreadProviderProfileId?.(activeWorkspace.id, activeThreadId) ??
+            null)
+          : null;
+        const threadId = await startThreadForWorkspace(activeWorkspace.id, {
+          engine,
+          ...(providerProfileId ? { providerProfileId } : {}),
+        });
         const rest = trimmed.replace(/^\/new\b/i, "").trim();
         const effectiveOptions = withCodexCollaborationMode(options);
         if (threadId && rest) {
@@ -993,6 +1034,9 @@ export function useQueuedSend({
     [
       activeWorkspace,
       activeEngine,
+      activeThreadId,
+      getThreadEngine,
+      getThreadProviderProfileId,
       setCodexCollaborationMode,
       sendUserMessage,
       sendUserMessageToThread,
@@ -1070,8 +1114,12 @@ export function useQueuedSend({
           ? classifySharedDispatchResult(response, item.sharedExecutionTarget)
           : "dispatched";
       }
-      if (effectiveOptions) {
-        await sendUserMessage(trimmed, item.images ?? [], effectiveOptions);
+      const engineFrozenOptions =
+        item.engine !== undefined
+          ? { ...(effectiveOptions ?? {}), engineOverride: item.engine }
+          : effectiveOptions;
+      if (engineFrozenOptions) {
+        await sendUserMessage(trimmed, item.images ?? [], engineFrozenOptions);
       } else {
         await sendUserMessage(trimmed, item.images ?? []);
       }
