@@ -377,6 +377,15 @@
 ### Summary
 
 归档 32 个 OpenSpec changes，完成 main specs 与治理索引同步；按用户授权将 bundle-kimi-windows-shell-runtime 作为 waiver archive 收口，保留 11 个跨平台与 release 未完成任务，并准备 PR。
+## Session 13: 修复工作区会话启动加载
+
+**Date**: 2026-08-28
+**Task**: 修复工作区会话启动加载
+**Branch**: `codex/fix-workspace-session-startup-hydration`
+
+### Summary
+
+修复 startup gate-ready 后可见非 active workspace 会话列表不会自动 hydration、导致 Sidebar 一直 Loading 需点击才出现的问题。按 idle 顺序逐个执行 bounded first-paint hydration，复用 orchestrator dedupe/stale/concurrency；补充 sibling 顺序、排除 collapsed/disconnected、Home 行为回归测试。focused Vitest 49 tests、typecheck、target ESLint、app-shell runtime contract、git diff check 通过；真实 Tauri 双 workspace 冷启动仍保留 manual QA waiver。
 
 ### Main Changes
 
@@ -387,6 +396,7 @@
 | Hash | Message |
 |------|---------|
 | `14930420f` | (see git log) |
+| `9542e4e45` | (see git log) |
 
 ### Testing
 
