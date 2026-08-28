@@ -2,8 +2,8 @@
 
 本页为 `mossx` 已归档 OpenSpec proposal 的完整可点击索引。目录名中的日期是 archive date，不代表 proposal 首次创建时间。
 
-- Updated At: `2026-08-28`
 - Indexed proposals: `883`
+- Updated At: `2026-08-28`
 - Source of truth: `openspec/changes/archive/<archive-date>-<change-id>/proposal.md`
 - Back to current changes: [`../README.md`](../README.md)
 - Back to workspace overview: [`../../project.md`](../../project.md)
@@ -44,6 +44,7 @@
 - [`2026-08-28-retire-claude-subagent-agent-session-card`](2026-08-28-retire-claude-subagent-agent-session-card/proposal.md) — completed change，已同步 Claude subagent presentation capabilities
 - [`2026-08-28-simplify-shared-recovery-bar-ux`](2026-08-28-simplify-shared-recovery-bar-ux/proposal.md) — completed change，已同步 `shared-recovery-bar-ux` 与 `shared-session-recovery-exit`
 - [`2026-08-28-stabilize-project-map-windows-test-latency`](2026-08-28-stabilize-project-map-windows-test-latency/proposal.md) — completed change，已同步 `architecture-ci-governance`
+- [`2026-08-28-fix-workspace-session-startup-hydration`](2026-08-28-fix-workspace-session-startup-hydration/proposal.md) — startup gate-ready 后按 idle 顺序自动 hydration 可见非 active workspace 的 first-paint session list；保留 manual Tauri 冷启动验收 waiver
 
 ### 2026-08-26
 

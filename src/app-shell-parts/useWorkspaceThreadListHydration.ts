@@ -24,7 +24,10 @@ import {
   markFullCatalogAutoRetryCooldown,
 } from "../features/startup-orchestration/utils/fullCatalogAutoRetry";
 import { stampStartupGateReady } from "../features/startup-orchestration/utils/startupGateReady";
-import { shouldSkipWorkspaceThreadListLoad } from "./workspaceThreadListLoadGuard";
+import {
+  resolveNextWorkspaceThreadListHydrationId,
+  shouldSkipWorkspaceThreadListLoad,
+} from "./workspaceThreadListLoadGuard";
 import { ensureInteractiveInputHooks } from "../utils/interactiveMainThread";
 
 function hasStartupGateReady(): boolean {
@@ -622,6 +625,47 @@ export function useWorkspaceThreadListHydration({
     activeWorkspaceId,
     activeWorkspaceProjectionOwnerIds,
     ensureWorkspaceThreadListLoaded,
+    workspacesById,
+  ]);
+
+  useEffect(() => {
+    if (!activeWorkspaceId || isColdStartListGuardActive()) {
+      return;
+    }
+    const eligibleWorkspaces = Array.from(workspacesById.values()).filter(
+      (workspace) => workspace.connected && !workspace.settings.sidebarCollapsed,
+    );
+    const nextWorkspaceId = resolveNextWorkspaceThreadListHydrationId({
+      workspaces: eligibleWorkspaces,
+      activeWorkspaceProjectionOwnerIds,
+      // first-paint completion is enough for Sidebar visibility; using the
+      // full-catalog set here would select the same background workspace again.
+      hydratedWorkspaceIds: hydratedThreadListWorkspaceIdsRef.current,
+      hydratingWorkspaceIds: hydratingThreadListWorkspaceIdsRef.current,
+      loadingByWorkspace: threadListLoadingByWorkspace,
+    });
+    if (
+      !nextWorkspaceId ||
+      idleHydrationCleanupByWorkspaceIdRef.current.has(nextWorkspaceId)
+    ) {
+      return;
+    }
+    const workspace = workspacesById.get(nextWorkspaceId);
+    if (!workspace) {
+      return;
+    }
+    const cleanup = scheduleIdleHydration(() => {
+      idleHydrationCleanupByWorkspaceIdRef.current.delete(nextWorkspaceId);
+      ensureWorkspaceThreadListLoaded(nextWorkspaceId, { preserveState: true });
+    });
+    idleHydrationCleanupByWorkspaceIdRef.current.set(nextWorkspaceId, cleanup);
+  }, [
+    activeWorkspaceId,
+    activeWorkspaceProjectionOwnerIds,
+    ensureWorkspaceThreadListLoaded,
+    hydratedThreadListWorkspaceIds,
+    scheduleIdleHydration,
+    threadListLoadingByWorkspace,
     workspacesById,
   ]);
 
