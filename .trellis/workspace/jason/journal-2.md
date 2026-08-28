@@ -269,3 +269,36 @@ Semantic merge PR #36 的 create-session engine routing：保留 frozen engineOv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 67: 统一 Release 变更日志契约
+
+**Date**: 2026-08-28
+**Task**: 统一 Release 变更日志契约
+**Branch**: `codex/enforce-release-changelog-gate`
+
+### Summary
+
+以 committed CHANGELOG.md 统一 App、updater 与 GitHub Release 内容；新增双语/version gate、CI 与 signed preflight 校验，删除 commit scan 和 post-release PR，并创建 PR #44。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `82615a873` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

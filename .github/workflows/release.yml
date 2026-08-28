@@ -15,8 +15,7 @@ on:
         type: boolean
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   release_preflight:
@@ -34,6 +33,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Verify release source
+        run: |
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "Signed releases must be dispatched from main; got ${GITHUB_REF}." >&2
+            exit 1
+          fi
 
       - name: Verify doge updater trust chain
         run: |
@@ -70,6 +76,9 @@ jobs:
           if errors:
               raise SystemExit("Release is fail-closed:\n- " + "\n- ".join(errors))
           PY
+
+      - name: Verify committed release changelog
+        run: npm run release:check
 
   build_windows_artifact:
     name: doge windows artifact-only (x64)
@@ -644,6 +653,8 @@ jobs:
   release:
     runs-on: ubuntu-latest
     environment: release
+    permissions:
+      contents: write
     needs:
       - release_preflight
       - build_web_assets
@@ -708,52 +719,8 @@ jobs:
           test -s release-artifacts/doge_x86_64.app.tar.gz.sig
           SIGNATURE_AARCH64=$(cat release-artifacts/doge_aarch64.app.tar.gz.sig)
           SIGNATURE_X86_64=$(cat release-artifacts/doge_x86_64.app.tar.gz.sig)
-          LAST_TAG=$(git tag --sort=-version:refname \
-            | grep -v "^v${VERSION}$" \
-            | head -n 1 || true)
-          RANGE_END="${GITHUB_SHA}"
-          if [ -n "$LAST_TAG" ]; then
-            git log "${LAST_TAG}..${RANGE_END}" --pretty=format:"%s" > release-artifacts/release-commits.txt
-          else
-            git log "${RANGE_END}" --pretty=format:"%s" > release-artifacts/release-commits.txt
-          fi
-
-          python3 - <<'PY'
-          import re
-          from pathlib import Path
-
-          lines = Path("release-artifacts/release-commits.txt").read_text().splitlines()
-          pattern = re.compile(r"^(feat|fix|perf)(?:\([^)]*\))?:\s*(.+)$", re.IGNORECASE)
-          groups = {"feat": [], "fix": [], "perf": []}
-          for line in lines:
-              match = pattern.match(line.strip())
-              if not match:
-                  continue
-              kind = match.group(1).lower()
-              message = match.group(2).strip()
-              if message:
-                  groups[kind].append(message)
-
-          sections = [
-              ("## New Features", "feat"),
-              ("## Fixes", "fix"),
-              ("## Performance Improvements", "perf"),
-          ]
-          output = []
-          for title, key in sections:
-              items = groups[key]
-              if not items:
-                  continue
-              output.append(title)
-              output.extend([f"- {item}" for item in items])
-              output.append("")
-
-          notes = "\n".join(output).strip()
-          if not notes:
-              notes = "- No user-facing changes."
-
-          Path("release-artifacts/release-notes.md").write_text(notes + "\n")
-          PY
+          node scripts/check-release-changelog.mjs \
+            --extract-current release-artifacts/release-notes.md
 
           python3 - <<PY
           import json
@@ -869,56 +836,3 @@ jobs:
             --notes-file release-artifacts/release-notes.md \
             --target "$GITHUB_SHA" \
             "${ASSETS[@]}"
-
-      - name: Bump version and open PR
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          VERSION=$(python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          data = json.loads(Path("src-tauri/tauri.conf.json").read_text())
-          print(data["version"])
-          PY
-          )
-
-          NEXT_VERSION=$(python3 - <<'PY' "$VERSION"
-          import sys
-
-          version = sys.argv[1]
-          parts = version.split(".")
-          if len(parts) != 3:
-              raise SystemExit("Expected version like 0.X.Y")
-
-          major, minor, patch = (int(p) for p in parts)
-          print(f"{major}.{minor}.{patch + 1}")
-          PY
-          )
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          npm version "$NEXT_VERSION" --no-git-tag-version
-
-          python3 - <<PY
-          import json
-          from pathlib import Path
-
-          path = Path("src-tauri/tauri.conf.json")
-          data = json.loads(path.read_text())
-          data["version"] = "$NEXT_VERSION"
-          path.write_text(json.dumps(data, indent=2) + "\n")
-          PY
-
-          git checkout -b "chore/bump-version-${NEXT_VERSION}"
-          git add package.json package-lock.json src-tauri/tauri.conf.json
-          git commit -m "chore: bump version to ${NEXT_VERSION}"
-          git push origin "chore/bump-version-${NEXT_VERSION}"
-
-          gh pr create \
-            --title "chore: bump version to ${NEXT_VERSION}" \
-            --body "Post-release version bump to ${NEXT_VERSION}." \
-            --base main \
-            --head "chore/bump-version-${NEXT_VERSION}"

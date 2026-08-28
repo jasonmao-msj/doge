@@ -1,0 +1,53 @@
+{
+  "id": "enforce-release-changelog-gate",
+  "name": "enforce-release-changelog-gate",
+  "title": "强制 AI 管理 Release CHANGELOG",
+  "description": "OpenSpec: enforce-release-changelog-gate；committed CHANGELOG 作为 App 与 GitHub Release 唯一内容源，AI 发布准备更新，workflow 强校验。",
+  "status": "completed",
+  "dev_type": "fullstack",
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-28",
+  "completedAt": "2026-08-28",
+  "branch": "codex/enforce-release-changelog-gate",
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": "https://github.com/jasonmao-msj/doge/pull/44",
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

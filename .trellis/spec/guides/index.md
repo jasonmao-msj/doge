@@ -10,6 +10,7 @@
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | 降低 duplication 和 drift | 同类逻辑出现 2 次以上 |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | 保护 UI-runtime-backend contract | 触及 component + service + tauri/rust |
 | [Risk-Based Test Strategy](./risk-based-test-strategy.md) | 按影响面选择 L0–L4 验证，避免 leaf fix 无条件跑全量 | 所有代码、规则、测试与 Release 任务 |
+| [Release Preparation Guide](./release-preparation-guide.md) | AI 发布准备、版本/CHANGELOG single source 与正式发布 gate | 用户要求发布版本、修改 version、CHANGELOG 或 release workflow |
 | [Codex Unified Exec Override Contract](./codex-unified-exec-override-contract.md) | 固化 unified_exec 的 settings/runtime/global-config 边界 | 触及 experimental settings、Codex args、global config repair |
 | [Terminal Shell Configuration Contract](./terminal-shell-configuration.md) | 固化 built-in terminal shell path override 与平台 fallback 边界 | 触及 terminal shell path 设置或 `terminal_open` shell 解析 |
 | [Workspace Session Catalog Contract](./workspace-session-catalog-contract.md) | 固化 workspace session membership、ownership、metadata overlay、source-fact cache 边界 | 触及工作区会话列表、Claude history、Session Management、Sidebar session merge |

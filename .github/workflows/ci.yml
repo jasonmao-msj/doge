@@ -105,6 +105,8 @@ jobs:
         run: npm ci
       - name: Runtime contracts
         run: npm run check:runtime-contracts
+      - name: Release changelog contract
+        run: npm run release:check:test && npm run release:check
       - name: Messages boundaries
         run: npm run check:messages-boundaries
       - name: Engine capability matrix

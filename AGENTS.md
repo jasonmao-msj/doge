@@ -105,6 +105,12 @@ Keep this managed block so 'trellis update' can refresh the instructions.
 - 每次交付必须报告 verification level、判定理由、实际命令与未覆盖范围。
 - L4 全量测试、跨平台 build 与 smoke test 由 Release/CI 承担；用户明确要求全量时例外。
 
+### Release Changelog Gate
+
+- AI 执行正式 Release 前，必须先按 `.trellis/spec/guides/release-preparation-guide.md` 在 release preparation PR 中同步 canonical versions 与 `CHANGELOG.md` 当前双语 entry。
+- `CHANGELOG.md` 是 App Version History、`latest.json.notes` 与 GitHub Release body 的唯一内容源；禁止在 release runner 临时生成第二份 notes 或发布后自动 bump/创建 PR。
+- `npm run release:check` 未通过时不得触发或继续正式 Release；shipping workflow 不得提供跳过该 gate 的 input。
+
 ### Engine Onboarding Gate
 
 - 接入新 CLI engine（或恢复/变更既有 engine 的接入面）前，必读 `docs/research/mossx-multi-cli-provider-session-foundation-design.md`（基石设计）与 `docs/research/mossx-new-cli-onboarding-guide.md`（全量接入点核对矩阵）。
