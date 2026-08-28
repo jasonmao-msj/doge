@@ -275,6 +275,11 @@ fn is_codex_background_helper_thread_entry(entry: &Value) -> bool {
 }
 
 fn is_codex_background_helper_session(session: &LocalUsageSessionSummary) -> bool {
+    // 结构化信号优先：guardian 审批评估等非用户发起的后台线程在 session_meta
+    // 中带有 thread_source / source.subagent 标记，prompt 前缀仅作 legacy 兜底。
+    if session.background_kind.is_some() {
+        return true;
+    }
     if session.native_title.is_some() {
         return false;
     }

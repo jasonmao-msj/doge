@@ -16,7 +16,6 @@ describe("canonical doge brand manifest", () => {
       schemaVersion: 1,
       name: "doge",
       tagline: "把复杂的事，叼回来做好。",
-      version: "0.1.0",
       repository: {
         owner: "jasonmao-msj",
         name: "doge",
@@ -46,6 +45,7 @@ describe("canonical doge brand manifest", () => {
       },
       updater: { enabled: true },
     });
+    expect(brand.version).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
   it("keeps npm and Tauri metadata equal to the manifest", () => {

@@ -2,6 +2,7 @@ import type { KanbanTask, KanbanTaskExecutionSource } from "../../kanban/types";
 import type { TaskRunRecord, TaskRunStoreData } from "../types";
 import { beginTaskRun } from "./taskRunCoordinator";
 import { buildLatestRunSummary } from "./taskRunProjection";
+import type { ExecutionTarget } from "../../shared-session/target/types";
 import {
   loadTaskRunStore,
   patchTaskRun,
@@ -65,6 +66,7 @@ export function beginKanbanTaskRunLifecycle(params: {
   source: KanbanTaskExecutionSource;
   now?: number;
   store?: TaskRunStoreData;
+  executionTarget?: ExecutionTarget | null;
 }): KanbanTaskRunLifecycleResult {
   const store = params.store ?? loadTaskRunStore();
   const result = beginTaskRun({
@@ -72,6 +74,7 @@ export function beginKanbanTaskRunLifecycle(params: {
     task: params.task,
     source: params.source,
     now: params.now,
+    executionTarget: params.executionTarget,
   });
   if (!result.ok) {
     return {

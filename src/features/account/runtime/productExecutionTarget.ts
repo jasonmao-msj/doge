@@ -2,50 +2,28 @@ import type { EngineType } from "../../../types";
 import type { ExecutionTarget } from "../../shared-session/target/types";
 import { MANAGED_PROVIDER_PROFILE_ID_V1 } from "./engineEntitlementStore";
 import type {
-  ProductEngineIdV1,
   ProductEngineViewV1,
   ProductModelViewV1,
 } from "./productOnboardingClient";
 import {
   normalizeProductModelIdentityV1,
-  compatibleProductModelsForEngineV1,
   productModelMatchesIdentityV1,
-  type ProductRuntimeEngineIdV1,
 } from "./productModelCompatibility";
+import {
+  productEngineRuntimeIdV1,
+} from "./productManagedEnginePolicy";
+import {
+  PRODUCT_DOUBAO_RUNTIME_MODEL,
+  resolveProductRuntimeModelIdV1,
+} from "./productModelRuntime";
+import { projectProductTargetCatalogV1 } from "./productTargetCatalog";
 
 export const PRODUCT_MANAGED_PROVIDER_LABEL = "Doge";
-export const PRODUCT_DOUBAO_RUNTIME_MODEL = "豆包";
-
-const PRODUCT_ENGINE_RUNTIME_IDS: Record<
-  ProductEngineIdV1,
-  ProductRuntimeEngineIdV1
-> = {
-  codex: "codex",
-  "claude-code": "claude",
-  kimi: "kimi",
+export {
+  PRODUCT_DOUBAO_RUNTIME_MODEL,
+  productEngineRuntimeIdV1,
+  resolveProductRuntimeModelIdV1,
 };
-
-export function productEngineRuntimeIdV1(
-  engine: ProductEngineIdV1,
-): ProductRuntimeEngineIdV1 {
-  return PRODUCT_ENGINE_RUNTIME_IDS[engine];
-}
-
-export function resolveProductRuntimeModelIdV1(
-  model: Pick<ProductModelViewV1, "id" | "model"> &
-    Partial<Pick<ProductModelViewV1, "displayName">>,
-): string {
-  const identity = `${model.id} ${model.model} ${model.displayName ?? ""}`
-    .toLocaleLowerCase();
-  if (
-    identity.includes("豆包") ||
-    identity.includes("doubao") ||
-    identity.includes("ark-code")
-  ) {
-    return PRODUCT_DOUBAO_RUNTIME_MODEL;
-  }
-  return normalizeProductModelIdentityV1(model.model || model.id);
-}
 
 export function resolveProductManagedExecutionTargetV1(input: {
   readonly target?: ExecutionTarget | null;
@@ -59,35 +37,33 @@ export function resolveProductManagedExecutionTargetV1(input: {
     return null;
   }
 
+  const catalog = projectProductTargetCatalogV1({
+    engines: input.engines,
+    models: input.models,
+  });
   const engine =
-    input.engines.find(
-      (candidate) =>
-        productEngineRuntimeIdV1(candidate.id) === input.target?.engine,
+    catalog.engines.find(
+      (candidate) => candidate.id === input.target?.engine,
     ) ??
-    input.engines.find(
-      (candidate) =>
-        productEngineRuntimeIdV1(candidate.id) === input.preferredEngine,
+    catalog.engines.find(
+      (candidate) => candidate.id === input.preferredEngine,
     ) ??
-    input.engines[0];
-  const runtimeEngine = productEngineRuntimeIdV1(engine.id);
-  const compatibleModels = compatibleProductModelsForEngineV1(
-    runtimeEngine,
-    input.models,
-  );
-  if (compatibleModels.length === 0) {
+    catalog.engines[0];
+  if (!engine || engine.models.length === 0) {
     return null;
   }
+  const runtimeEngine = engine.id;
   const model =
-    compatibleModels.find((candidate) =>
+    engine.models.find((candidate) =>
       productModelMatchesIdentityV1(candidate, input.target?.modelCatalogEntryId),
     ) ??
-    compatibleModels.find((candidate) =>
+    engine.models.find((candidate) =>
       productModelMatchesIdentityV1(candidate, input.target?.model),
     ) ??
-    compatibleModels.find((candidate) =>
+    engine.models.find((candidate) =>
       productModelMatchesIdentityV1(candidate, input.preferredModelId),
     ) ??
-    compatibleModels[0];
+    engine.models[0];
 
   const effort =
     (input.target?.engine === runtimeEngine
@@ -95,7 +71,7 @@ export function resolveProductManagedExecutionTargetV1(input: {
       : null) ||
     input.preferredEffort?.trim() ||
     null;
-  const runtimeModel = resolveProductRuntimeModelIdV1(model);
+  const runtimeModel = model.runtimeModel;
   const selectedCatalogEntryId = input.target?.modelCatalogEntryId?.trim();
   const modelCatalogEntryId =
     selectedCatalogEntryId &&

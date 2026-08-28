@@ -61,7 +61,7 @@ describe("taskRunStorage", () => {
     ]);
   });
 
-  it("uses capability matrix semantics for codex task center support", () => {
+  it("accepts Codex for new task runs", () => {
     const run = createTaskRunRecord({
       taskId: "task-1",
       workspaceId: "/repo",
@@ -71,6 +71,22 @@ describe("taskRunStorage", () => {
     });
 
     expect(run.engine).toBe("codex");
+  });
+
+  it("accepts Kimi for new Product task runs", () => {
+    const run = createTaskRunRecord({
+      taskId: "task-kimi",
+      workspaceId: "/repo",
+      engine: "kimi",
+      model: "kimi-for-coding",
+      trigger: "manual",
+      now: 100,
+    });
+
+    expect(run).toMatchObject({
+      engine: "kimi",
+      model: "kimi-for-coding",
+    });
   });
 
   it("persists task runs under an independent app-store key", () => {

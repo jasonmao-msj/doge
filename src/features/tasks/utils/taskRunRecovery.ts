@@ -1,4 +1,5 @@
 import type { KanbanTask } from "../../kanban/types";
+import type { ExecutionTarget } from "../../shared-session/target/types";
 import type { TaskRunRecord, TaskRunStoreData, TaskRunTrigger } from "../types";
 import { beginTaskRunWithTrigger } from "./taskRunCoordinator";
 import { buildLatestRunSummary } from "./taskRunProjection";
@@ -30,6 +31,7 @@ export function beginTaskRunRecovery(params: {
   parentRun?: TaskRunRecord | null;
   now?: number;
   store?: TaskRunStoreData;
+  executionTarget?: ExecutionTarget | null;
 }): BeginTaskRunRecoveryResult {
   const store = params.store ?? loadTaskRunStore();
   const result = beginTaskRunWithTrigger({
@@ -38,6 +40,7 @@ export function beginTaskRunRecovery(params: {
     trigger: params.trigger,
     now: params.now,
     parentRun: params.parentRun ?? null,
+    executionTarget: params.executionTarget,
   });
   if (!result.ok) {
     return {

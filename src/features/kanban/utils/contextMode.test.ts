@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   isKanbanThreadCompatibleWithEngine,
+  isKanbanThreadCompatibleWithTarget,
   resolveKanbanThreadCreationStrategy,
 } from "./contextMode";
 
@@ -97,6 +98,32 @@ describe("resolveKanbanThreadCreationStrategy", () => {
         isActiveThreadInWorkspace: true,
       }),
     ).toBe("new");
+  });
+});
+
+describe("isKanbanThreadCompatibleWithTarget", () => {
+  it("rejects reusing a local thread for the same managed engine", () => {
+    expect(isKanbanThreadCompatibleWithTarget({
+      target: {
+        engine: "codex",
+        providerProfileId: "doge-token-matrix",
+      },
+      threadId: "codex:thread-1",
+      threadEngine: "codex",
+      threadProviderProfileId: null,
+    })).toBe(false);
+  });
+
+  it("reuses a thread only when engine and provider identity both match", () => {
+    expect(isKanbanThreadCompatibleWithTarget({
+      target: {
+        engine: "kimi",
+        providerProfileId: "doge-token-matrix",
+      },
+      threadId: "kimi:thread-1",
+      threadEngine: "kimi",
+      threadProviderProfileId: "doge-token-matrix",
+    })).toBe(true);
   });
 });
 

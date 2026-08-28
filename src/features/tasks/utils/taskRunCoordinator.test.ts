@@ -139,7 +139,7 @@ describe("taskRunCoordinator", () => {
     }
   });
 
-  it("rejects unsupported engines instead of creating fake runs", () => {
+  it("creates runs for locally executable OpenCode tasks", () => {
     const result = beginTaskRun({
       store: { version: 1, runs: [] },
       task: makeTask({ engineType: "opencode" }),
@@ -147,7 +147,10 @@ describe("taskRunCoordinator", () => {
       now: 100,
     });
 
-    expect(result).toMatchObject({ ok: false, reason: "unsupported_engine" });
+    expect(result).toMatchObject({
+      ok: true,
+      run: { engine: "opencode" },
+    });
   });
 
   it("rejects historical Gemini tasks when a new run is requested", () => {
@@ -159,5 +162,35 @@ describe("taskRunCoordinator", () => {
     });
 
     expect(result).toMatchObject({ ok: false, reason: "unsupported_engine" });
+  });
+
+  it("creates a Kimi run with the resolved runtime model", () => {
+    const result = beginTaskRun({
+      store: { version: 1, runs: [] },
+      task: makeTask({
+        engineType: "kimi",
+        modelId: "kimi-code/kimi-for-coding",
+      }),
+      source: "manual",
+      executionTarget: {
+        engine: "kimi",
+        providerProfileId: "doge-token-matrix",
+        modelCatalogEntryId: "kimi-code/kimi-for-coding",
+        model: "kimi-for-coding",
+        providerProfileNameSnapshot: "Doge",
+        providerProfileSource: "managed",
+      },
+      now: 100,
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      run: {
+        engine: "kimi",
+        providerProfileId: "doge-token-matrix",
+        modelCatalogEntryId: "kimi-code/kimi-for-coding",
+        model: "kimi-for-coding",
+      },
+    });
   });
 });

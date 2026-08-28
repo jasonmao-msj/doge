@@ -49,6 +49,7 @@ import {
   defineAppShellTaskRunActions,
 } from "./appShellActionBoundaries";
 export {
+  buildRecurringKanbanTaskCloneInput,
   resolvePendingSessionThreadCandidate,
   resolveTaskThreadId,
   shouldSyncComposerEngineForKanbanExecution,

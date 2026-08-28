@@ -21,6 +21,7 @@ type CreateTaskInput = {
   description: string;
   engineType: EngineType;
   modelId: string | null;
+  executionTarget?: KanbanTask["executionTarget"];
   branchName: string;
   images: string[];
   autoStart: boolean;
@@ -165,6 +166,7 @@ export function useKanbanStore(workspaces?: WorkspaceInfo[]) {
       status: "todo",
       engineType: input.engineType,
       modelId: input.modelId,
+      executionTarget: input.executionTarget,
       branchName: input.branchName,
       images: input.images,
       autoStart: input.autoStart,

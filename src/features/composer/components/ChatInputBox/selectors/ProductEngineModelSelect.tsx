@@ -9,14 +9,8 @@ import { EngineIcon } from "../../../../engine/components/EngineIcon";
 import { useAccountExperienceCopyV1 } from "../../../../account/hooks/useAccountExperienceCopy";
 import { MANAGED_PROVIDER_PROFILE_ID_V1 } from "../../../../account/runtime/engineEntitlementStore";
 import { refreshProductModelsV1 } from "../../../../account/runtime/productModelCatalogRefresh";
-import {
-  PRODUCT_MANAGED_PROVIDER_LABEL,
-  resolveProductRuntimeModelIdV1,
-} from "../../../../account/runtime/productExecutionTarget";
-import {
-  compatibleProductModelsForEngineV1,
-  productModelMatchesIdentityV1,
-} from "../../../../account/runtime/productModelCompatibility";
+import { PRODUCT_MANAGED_PROVIDER_LABEL } from "../../../../account/runtime/productExecutionTarget";
+import { productModelMatchesIdentityV1 } from "../../../../account/runtime/productModelCompatibility";
 import {
   groupProductModelsForDisplay,
   type ProductModelVendorGroupId,
@@ -24,6 +18,7 @@ import {
 import { ProviderBrandIconImg } from "../../../../vendors/components/ProviderBrandIconImg";
 import { resolveProviderBrandIcon } from "../../../../vendors/providerBrandIcon";
 import type { ExecutionTarget } from "../../../../shared-session/target/types";
+import type { ProductTargetModelV1 } from "../../../../account/runtime/productTargetCatalog";
 import type { ProductTargetCatalogV1 } from "../types";
 import "../styles/product-engine-model-panel.css";
 
@@ -56,11 +51,8 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
       ? catalog.engines.find((engine) => engine.id === draftEngineId)
       : null) ?? committedEngine;
   const compatibleModels = useMemo(
-    () =>
-      selectedEngine
-        ? compatibleProductModelsForEngineV1(selectedEngine.id, catalog.models)
-        : [],
-    [catalog.models, selectedEngine],
+    () => selectedEngine?.models ?? [],
+    [selectedEngine],
   );
   const selectedModel =
     compatibleModels.find(
@@ -110,13 +102,13 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
   const publishTarget = useCallback(
     (
       engine: ProductTargetCatalogV1["engines"][number],
-      model: ProductTargetCatalogV1["models"][number],
+      model: ProductTargetModelV1,
     ) => {
       onExecutionTargetChange({
         engine: engine.id,
         providerProfileId: MANAGED_PROVIDER_PROFILE_ID_V1,
         modelCatalogEntryId: model.id,
-        model: resolveProductRuntimeModelIdV1(model),
+        model: model.runtimeModel,
         reasoning:
           executionTarget?.engine === engine.id
             ? (executionTarget.reasoning ?? null)
@@ -182,10 +174,7 @@ export const ProductEngineModelSelect = memo(function ProductEngineModelSelect({
                 >
                   {catalog.engines.map((engine) => {
                     const selected = engine.id === selectedEngine?.id;
-                    const engineModels = compatibleProductModelsForEngineV1(
-                      engine.id,
-                      catalog.models,
-                    );
+                    const engineModels = engine.models;
                     const nextModel =
                       engineModels.find(
                         (model) => model.id === selectedModel?.id,

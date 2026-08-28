@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 63
+- **Total Sessions**: 66
 - **Last Active**: 2026-08-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~172 | Active |
+| `journal-2.md` | ~271 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,9 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 66 | 2026-08-27 | 修复 brand 版本契约测试 | `aaec1fe5b` | `codex/fix-brand-version-contract` |
+| 65 | 2026-08-27 | 准备 doge v0.1.3 发布 | `2d595ca78` | `codex/release-v0.1.3` |
+| 64 | 2026-08-27 | 统一 Product 引擎模型目录 | `709c3d57b` | `codex/unify-panel-engine-model-catalog` |
 | 63 | 2026-08-27 | 合并最新 main 引擎路由 | `89f3040e4` | `codex/lazy-engine-provisioning` |
 | 62 | 2026-08-27 | 按需静默准备产品引擎 | `48191da6a` | `codex/lazy-engine-provisioning` |
 | 61 | 2026-08-27 | 准备 v0.1.2 正式发布 | `b6b2ffe01` | `codex/render-models-by-protocol` |

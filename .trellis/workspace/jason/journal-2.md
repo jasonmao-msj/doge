@@ -170,3 +170,102 @@ Semantic merge PR #36 的 create-session engine routing：保留 frozen engineOv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 64: 统一 Product 引擎模型目录
+
+**Date**: 2026-08-27
+**Task**: 统一 Product 引擎模型目录
+**Branch**: `codex/unify-panel-engine-model-catalog`
+
+### Summary
+
+建立 canonical ProductTargetCatalog；Composer 与 Kanban 共享上游 protocol projection；Kanban dual-read/new-write exact ExecutionTarget，TaskRun/session/send 保留 managed provider 与 runtime model；修复 recurring target 丢失及同 engine 跨 provider thread 误复用。用户 Hot Doge 目视验收通过。L3：213 focused tests、target ESLint、typecheck、production build、runtime/docs contracts、OpenSpec strict validation 通过；engine-controller facade 仅有未修改文件 744>600 的既有 baseline failure。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `709c3d57b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 65: 准备 doge v0.1.3 发布
+
+**Date**: 2026-08-27
+**Task**: 准备 doge v0.1.3 发布
+**Branch**: `codex/release-v0.1.3`
+
+### Summary
+
+同步 config/brand.json、package/package-lock、Cargo/Cargo.lock 与 Tauri 版本到 0.1.3。通过 branding check、release workflow contract 7 tests、cargo metadata、git diff check，并确认 GitHub v0.1.3 tag 尚未存在。下一步合并版本 PR 后以 windows_artifact_only=false、macos_artifact_only=false 触发完整 signed release。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2d595ca78` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 66: 修复 brand 版本契约测试
+
+**Date**: 2026-08-27
+**Task**: 修复 brand 版本契约测试
+**Branch**: `codex/fix-brand-version-contract`
+
+### Summary
+
+修复 CI run 33141654705 的 test-js/test-windows 同源失败：brandManifest identity test 不再硬编码 0.1.0，改为三段 SemVer contract；package/Tauri/Cargo 与 brand.version 的严格一致性断言保持不变。通过 focused Vitest 3/3、target ESLint、branding check 与 typecheck。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `aaec1fe5b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

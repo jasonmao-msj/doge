@@ -112,10 +112,10 @@ import { useProductEntitlementSnapshotV1 } from "../../account/runtime/productEn
 import { ProductEngineProvisioningErrorV1 } from "../../account/runtime/productEngineProvisioning";
 import {
   isSameProductExecutionTargetV1,
-  productEngineRuntimeIdV1,
   resolveProductManagedExecutionTargetV1,
 } from "../../account/runtime/productExecutionTarget";
 import { productModelMatchesIdentityV1 } from "../../account/runtime/productModelCompatibility";
+import { projectProductTargetCatalogV1 } from "../../account/runtime/productTargetCatalog";
 import { overlaySessionFileChangesWithGitStats } from "@/features/messages";
 import {
   ingestFileEditsFromConversationItems,
@@ -766,11 +766,8 @@ function ComposerImpl({
   const productTargetCatalog = useMemo<ProductTargetCatalogV1 | undefined>(
     () =>
       usesProductTargetCatalog
-        ? {
-            engines: productEntitlement.engines.map((engine) => ({
-              id: productEngineRuntimeIdV1(engine.id),
-              displayName: engine.displayName,
-            })),
+        ? projectProductTargetCatalogV1({
+            engines: productEntitlement.engines,
             models: productEntitlement.models,
             modelsStatus:
               productEntitlement.modelsStatus === "refreshing" ||
@@ -778,7 +775,7 @@ function ComposerImpl({
                 ? productEntitlement.modelsStatus
                 : "ready",
             modelsUpdatedAt: productEntitlement.modelsUpdatedAt,
-          }
+          })
         : undefined,
     [
       productEntitlement.engines,
@@ -3194,11 +3191,13 @@ function ComposerImpl({
       ),
     [models, readinessModelCatalogEntryId, readinessRuntimeModel],
   );
-  const productReadinessModel = productTargetCatalog?.models.find(
-    (model) =>
-      productModelMatchesIdentityV1(model, readinessModelCatalogEntryId) ||
-      productModelMatchesIdentityV1(model, readinessRuntimeModel),
-  );
+  const productReadinessModel = productTargetCatalog?.engines
+    .find((engine) => engine.id === readinessEngine)
+    ?.models.find(
+      (model) =>
+        productModelMatchesIdentityV1(model, readinessModelCatalogEntryId) ||
+        productModelMatchesIdentityV1(model, readinessRuntimeModel),
+    );
   const selectedPermissionMode = accessModeToPermissionMode(accessMode);
   const activeUserInputRequest = useMemo(
     () =>
