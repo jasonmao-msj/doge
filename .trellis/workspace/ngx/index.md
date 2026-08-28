@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 11
-- **Last Active**: 2026-08-27
+- **Total Sessions**: 12
+- **Last Active**: 2026-08-28
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~368 | Active |
+| `journal-1.md` | ~401 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 12 | 2026-08-28 | 过滤 Codex Guardian 后台会话 | `7583cff25` | `codex/fix-codex-guardian-background-thread-filter` |
 | 11 | 2026-08-27 | 修复账户侧边栏入口 React 更新深度循环 | `bef37b6a9` | `fix/create-session-engine-routing` |
 | 10 | 2026-08-27 | 修复新建会话及页面切换后的引擎路由与显示 | `3e1776daf1ac1d1e8d3d818726299703f45514ea` | `fix/create-session-engine-routing` |
 | 9 | 2026-08-27 | 修正 updater 验签公钥 | `644ba4b74` | `codex/fix-updater-public-key` |
