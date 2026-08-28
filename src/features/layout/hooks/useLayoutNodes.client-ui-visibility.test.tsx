@@ -238,6 +238,7 @@ vi.mock("../../composer/components/Composer", async () => {
     onResolvedAlwaysThinkingChange,
     createSessionTargetPicker = false,
     onCreationTargetEngineChange,
+    selectedEngine,
     isSharedSession = false,
     providerProfileId = null,
     providerProfileName = null,
@@ -257,6 +258,7 @@ vi.mock("../../composer/components/Composer", async () => {
     onCreationTargetEngineChange?: (
       engine: "claude" | "codex" | "gemini" | "kimi" | "opencode" | null,
     ) => void;
+    selectedEngine?: string;
     isSharedSession?: boolean;
     providerProfileId?: string | null;
     providerProfileName?: string | null;
@@ -274,6 +276,7 @@ vi.mock("../../composer/components/Composer", async () => {
           showStatusPanelToggleOverride,
         )}
         data-create-session-target-picker={String(createSessionTargetPicker)}
+        data-selected-engine={selectedEngine ?? ""}
         data-is-shared-session={String(isSharedSession)}
         data-provider-profile-id={providerProfileId ?? ""}
         data-provider-profile-name={providerProfileName ?? ""}
@@ -1555,7 +1558,46 @@ describe("useLayoutNodes client UI visibility", () => {
     expect(screen.getByTestId("messages").dataset.conversationEngine).toBe(
       "claude",
     );
+    render(<>{result.current.composerNode}</>);
+    expect(screen.getByTestId("composer").dataset.selectedEngine).toBe("claude");
   });
+
+  it.each([
+    "claude",
+    "codex",
+    "gemini",
+    "grok",
+    "kimi",
+    "opencode",
+  ] as const)(
+    "keeps the Composer engine bound to a restored %s thread",
+    async (engineSource) => {
+      const { result } = await renderUseLayoutNodes(
+        createLayoutOptions({
+          selectedEngine: engineSource === "codex" ? "claude" : "codex",
+          activeThreadId: `${engineSource}:session-1`,
+          threadsByWorkspace: {
+            [workspace.id]: [
+              {
+                id: `${engineSource}:session-1`,
+                name: `${engineSource} history`,
+                updatedAt: 1,
+                engineSource,
+                selectedEngine:
+                  engineSource === "codex" ? "claude" : "codex",
+              },
+            ],
+          },
+        }),
+      );
+
+      render(<>{result.current.composerNode}</>);
+
+      expect(screen.getByTestId("composer").dataset.selectedEngine).toBe(
+        engineSource,
+      );
+    },
+  );
 
   it("does not crash when restored history metadata is omitted by a caller", async () => {
     const optionsWithoutRestoreMeta = {

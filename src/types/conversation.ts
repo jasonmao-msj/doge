@@ -304,6 +304,8 @@ export type QueuedMessage = {
   createdAt: number;
   images?: string[];
   sendOptions?: MessageSendOptions;
+  /** Queue 专用：enqueue 瞬间冻结的引擎，drain 时禁止重读 activeEngine。 */
+  engine?: EngineType;
   sharedExecutionTarget?: SharedQueuedExecutionTarget;
   sharedPredecessorAttemptId?: string | null;
   /** 已开始 Shared V2 handoff、但尚未拿到 canonical commit ACK。 */
@@ -512,6 +514,8 @@ export type MessageSendOptions = {
   createSessionTarget?: ComposerCreateSessionTarget;
   /** Queue/Fusion 专用：发送边界必须优先使用该冻结目标，禁止重读 Picker。 */
   sharedExecutionTarget?: SharedQueuedExecutionTarget;
+  /** Queue drain 专用：发送边界必须优先使用该冻结引擎，禁止重读 activeEngine。 */
+  engineOverride?: EngineType;
   /** Shared Session one-shot Multi-Agent request；target 仍由 sharedExecutionTarget 冻结。 */
   squadRequest?: true;
 };

@@ -41,16 +41,18 @@ export function AccountSidebarShortcut({
     <Popover open={open} onOpenChange={setOpen}>
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="account-sidebar-shortcut"
-              aria-label={triggerLabel}
-              title={triggerLabel}
-            >
-              <UserRound size={18} aria-hidden />
-            </button>
-          </PopoverTrigger>
+          <span className="account-sidebar-shortcut-trigger-wrapper">
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="account-sidebar-shortcut"
+                aria-label={triggerLabel}
+                title={triggerLabel}
+              >
+                <UserRound size={18} aria-hidden />
+              </button>
+            </PopoverTrigger>
+          </span>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={8}>
           {triggerLabel}

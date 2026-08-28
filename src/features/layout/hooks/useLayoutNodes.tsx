@@ -247,8 +247,8 @@ function resolveActiveConversationEngine(
   selectedEngine: EngineType | undefined,
 ): ConversationEngine {
   const threadEngine =
-    activeThreadSummary?.selectedEngine ??
     activeThreadSummary?.engineSource ??
+    activeThreadSummary?.selectedEngine ??
     inferConversationEngineFromThreadId(activeThreadId);
   return toConversationEngine(threadEngine ?? selectedEngine);
 }
@@ -1624,7 +1624,11 @@ export function useLayoutNodes(input: LayoutNodesOptions): LayoutNodesResult {
             !createSessionTargetPicker && isPickerLocked(sharedSendState)
           }
           engines={options.engines}
-          selectedEngine={options.selectedEngine}
+          selectedEngine={
+            createSessionTargetPicker
+              ? options.selectedEngine
+              : conversationEngine
+          }
           onSelectEngine={options.onSelectEngine}
           models={options.models}
           providerModelCatalogs={options.providerModelCatalogs}

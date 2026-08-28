@@ -139,6 +139,8 @@ const chat = {
     fuseDisabledCommand: "Slash commands cannot be fused into the active answer.",
     fuseDisabledUnavailable: "Fusion is currently unavailable.",
     fuseFailedGatewayOrRuntime: "Runtime or gateway is unreachable. Restore the connection, then try fusion again.",
+    createSessionTargetNotReadyTitle: "Session target not ready",
+    createSessionTargetNotReady: "The selected engine, provider, or model is still loading. Wait a moment or reselect the target, then try again.",
     dragDropHint: "Drop files into composer",
     dragDropMore: "+{{count}} files",
     commands: {

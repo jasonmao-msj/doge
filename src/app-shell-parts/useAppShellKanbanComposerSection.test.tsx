@@ -195,3 +195,79 @@ describe("useAppShellKanbanComposerSection Home target creation", () => {
     expect(context.sendUserMessageToThread).toHaveBeenCalled();
   });
 });
+
+describe("useAppShellKanbanComposerSection kanban engine routing", () => {
+  it.each(["kimi", "grok"] as const)(
+    "routes &@ kanban task thread creation to the selected %s engine",
+    async (engine) => {
+      const context = createContext({
+        activeEngine: engine,
+        kanbanPanels: [
+          {
+            id: "panel-1",
+            name: "Backlog",
+            workspaceId: "/tmp/workspace",
+            createdAt: 1,
+            sortOrder: 0,
+          },
+        ],
+        kanbanCreateTask: vi.fn().mockReturnValue({ id: "task-1" }),
+      });
+      const { result } = renderHook(() =>
+        useAppShellKanbanComposerSection(context as never),
+      );
+
+      await act(async () => {
+        await result.current.handleComposerSendWithEditorFallback(
+          "&@Backlog do something",
+          [],
+        );
+      });
+
+      expect(context.startThreadForWorkspace).toHaveBeenCalledWith(
+        "workspace-1",
+        {
+          engine,
+          activate: false,
+        },
+      );
+      expect(context.kanbanCreateTask).toHaveBeenCalledWith(
+        expect.objectContaining({ engineType: engine }),
+      );
+    },
+  );
+
+  it("falls back to claude when no engine is selected for kanban sends", async () => {
+    const context = createContext({
+      activeEngine: null,
+      kanbanPanels: [
+        {
+          id: "panel-1",
+          name: "Backlog",
+          workspaceId: "/tmp/workspace",
+          createdAt: 1,
+          sortOrder: 0,
+        },
+      ],
+      kanbanCreateTask: vi.fn().mockReturnValue({ id: "task-1" }),
+    });
+    const { result } = renderHook(() =>
+      useAppShellKanbanComposerSection(context as never),
+    );
+
+    await act(async () => {
+      await result.current.handleComposerSendWithEditorFallback(
+        "&@Backlog do something",
+        [],
+      );
+    });
+
+    expect(context.startThreadForWorkspace).toHaveBeenCalledWith(
+      "workspace-1",
+      {
+        engine: "claude",
+        activate: false,
+      },
+    );
+  });
+});

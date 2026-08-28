@@ -300,3 +300,69 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: 修复新建会话及页面切换后的引擎路由与显示
+
+**Date**: 2026-08-27
+**Task**: 修复新建会话及页面切换后的引擎路由与显示
+**Branch**: `fix/create-session-engine-routing`
+
+### Summary
+
+修复 prompt/intent canvas/kanban composer 新建会话时引擎透传、Composer target 未就绪拦截、/clear /new 继承 thread engine + providerProfileId、queue 消息冻结引擎、已有会话 Composer 以 engineSource 为准。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3e1776daf1ac1d1e8d3d818726299703f45514ea` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 11: 修复账户侧边栏入口 React 更新深度循环
+
+**Date**: 2026-08-27
+**Task**: 修复账户侧边栏入口 React 更新深度循环
+**Branch**: `fix/create-session-engine-routing`
+
+### Summary
+
+将 TooltipTrigger 与 PopoverTrigger 的 asChild ref 组合拆开，避免 Radix setRef 更新深度循环；补充 wrapper 尺寸样式。人工验证通过，AccountSidebarShortcut 与 accountVisualContract 共 17 项 focused tests 通过，changed-file ESLint 通过。代码已纳入 PR #36。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bef37b6a9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
