@@ -5,6 +5,11 @@
 const update = {
   "update": {
     "title": "업데이트",
+    "engineProvisioning": {
+      "installing": "설치 중…",
+      "ready": "준비 완료",
+      "failed": "설정을 완료하지 못했습니다."
+    },
     "checkingForUpdates": "업데이트 확인 중...",
     "updateAvailable": "새 버전을 사용할 수 있습니다!",
     "availableAction": "업데이트 가능",

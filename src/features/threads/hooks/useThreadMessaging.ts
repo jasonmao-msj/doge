@@ -100,6 +100,7 @@ import type { ThreadAction, ThreadState } from "./useThreadsReducer";
 import { useReviewPrompt } from "./useReviewPrompt";
 import { pushErrorToast } from "../../../services/toasts";
 import { pushThreadFailureRuntimeNotice } from "../../../services/globalRuntimeNotices";
+import { ensureProductEngineReadyV1 } from "../../account/runtime/productEngineProvisioning";
 import { resolveAgentIconForAgent } from "../../../utils/agentIcons";
 import {
   isSharedSessionSupportedEngine,
@@ -458,16 +459,18 @@ export function useThreadMessaging({
 
   useEffect(
     () =>
-      subscribeMultiAgentConversationItems(({ workspaceId, threadId, item }) => {
-        dispatch({
-          type: "upsertItem",
-          workspaceId,
-          threadId,
-          item,
-          hasCustomName: Boolean(getCustomName(workspaceId, threadId)),
-        });
-        safeMessageActivity();
-      }),
+      subscribeMultiAgentConversationItems(
+        ({ workspaceId, threadId, item }) => {
+          dispatch({
+            type: "upsertItem",
+            workspaceId,
+            threadId,
+            item,
+            hasCustomName: Boolean(getCustomName(workspaceId, threadId)),
+          });
+          safeMessageActivity();
+        },
+      ),
     [dispatch, getCustomName, safeMessageActivity],
   );
 
@@ -619,6 +622,22 @@ export function useThreadMessaging({
           status: "target-unavailable",
           reason: "shared-target-incomplete",
         };
+      }
+      const provisioningEngine =
+        threadKind === "shared"
+          ? (supportedStoredSharedTarget?.engine ?? null)
+          : resolvedThreadEngine;
+      const provisioningProviderProfileId =
+        threadKind === "shared"
+          ? (supportedStoredSharedTarget?.providerProfileId ?? null)
+          : options?.createSessionTarget?.providerProfileId?.trim() ||
+            getThreadProviderProfileId?.(workspace.id, threadId) ||
+            null;
+      if (provisioningEngine) {
+        await ensureProductEngineReadyV1({
+          engine: provisioningEngine,
+          providerProfileId: provisioningProviderProfileId,
+        });
       }
       if (options?.squadRequest) {
         // Shared 内已走协作发送：不再二次判断 feature flag；
@@ -2864,6 +2883,10 @@ export function useThreadMessaging({
             effort: createSessionTarget.effort,
           }
         : options;
+      await ensureProductEngineReadyV1({
+        engine: currentEngine,
+        providerProfileId: firstSendProviderProfileId,
+      });
       if (activeThreadId) {
         const storedThreadEngine = getThreadEngine(
           activeWorkspace.id,

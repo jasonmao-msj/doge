@@ -23,6 +23,7 @@ import {
   type CodexProviderProfileOption,
 } from "../../threads/constants/codexProviderProfiles";
 import { UpdateToast } from "../../update/components/UpdateToast";
+import { EngineProvisioningToast } from "../../account/components/EngineProvisioningToast";
 import { ErrorToasts } from "../../notifications/components/ErrorToasts";
 import { GlobalRuntimeNoticeDock } from "../../notifications/components/GlobalRuntimeNoticeDock";
 import type {
@@ -1760,11 +1761,14 @@ export function useLayoutNodes(input: LayoutNodesOptions): LayoutNodesResult {
   const approvalToastsNode = null;
 
   const updateToastNode = (
-    <UpdateToast
-      state={options.updaterState}
-      onUpdate={options.onUpdate}
-      onDismiss={options.onDismissUpdate}
-    />
+    <div className="update-toasts" role="region" aria-live="polite">
+      <UpdateToast
+        state={options.updaterState}
+        onUpdate={options.onUpdate}
+        onDismiss={options.onDismissUpdate}
+      />
+      <EngineProvisioningToast />
+    </div>
   );
 
   const errorToastsNode = (

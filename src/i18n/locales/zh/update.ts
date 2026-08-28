@@ -2,6 +2,11 @@
 const update = {
   update: {
     title: "更新",
+    engineProvisioning: {
+      installing: "正在安装…",
+      ready: "已就绪",
+      failed: "准备失败。",
+    },
     checkingForUpdates: "正在检查更新...",
     updateAvailable: "有新版本可用！",
     availableAction: "可更新",

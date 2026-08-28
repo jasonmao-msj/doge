@@ -2,6 +2,11 @@
 const update = {
   update: {
     title: "Update",
+    engineProvisioning: {
+      installing: "Installing…",
+      ready: "Ready",
+      failed: "Setup failed.",
+    },
     checkingForUpdates: "Checking for updates...",
     updateAvailable: "A new version is available!",
     availableAction: "Update available",

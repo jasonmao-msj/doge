@@ -5,6 +5,11 @@
 const update = {
   "update": {
     "title": "アップデート",
+    "engineProvisioning": {
+      "installing": "インストールしています…",
+      "ready": "準備完了",
+      "failed": "準備できませんでした。"
+    },
     "checkingForUpdates": "アップデートを確認中...",
     "updateAvailable": "新しいバージョンが利用可能です！",
     "availableAction": "更新できます",

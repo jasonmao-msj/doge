@@ -109,6 +109,7 @@ import {
 } from "../../account/runtime/engineEntitlementStore";
 import { requestAccountEngineSwitchV1 } from "../../account/runtime/engineSwitchSignal";
 import { useProductEntitlementSnapshotV1 } from "../../account/runtime/productEntitlementStore";
+import { ProductEngineProvisioningErrorV1 } from "../../account/runtime/productEngineProvisioning";
 import {
   isSameProductExecutionTargetV1,
   productEngineRuntimeIdV1,
@@ -2846,8 +2847,15 @@ function ComposerImpl({
       );
       setSelectedSkillNames([]);
       setSelectedCommonsNames([]);
+      let restoreProvisioningDraft = false;
       void Promise.resolve(sendResult)
         .catch((error: unknown) => {
+          if (error instanceof ProductEngineProvisioningErrorV1) {
+            restoreProvisioningDraft = true;
+            setComposerText(submittedText ?? text);
+            onAttachImages?.(mergedImages);
+            return;
+          }
           if (!isAgentSubmission) {
             throw error;
           }
@@ -2893,6 +2901,7 @@ function ComposerImpl({
           });
         })
         .finally(() => {
+          if (restoreProvisioningDraft) return;
           setSelectedManualMemories(retainedManualMemories);
           setSelectedNoteCards(retainedNoteCards);
           setSelectedInlineFileReferences([]);

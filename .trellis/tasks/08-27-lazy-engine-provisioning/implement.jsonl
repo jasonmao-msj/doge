@@ -1,0 +1,14 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "openspec/changes/lazy-engine-provisioning/design.md", "reason": "send-time provisioning 与 startup decoupling contract"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "non-blocking progress card 与 UI reuse"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "async listener/dedupe/cleanup"}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "external store 与 runtime state ownership"}
+{"file": ".trellis/spec/backend/account-convenience-native-contract.md", "reason": "managed credential/config/vault contract"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "startup/send/IPC mapping 与 installer convergence"}
+{"file": "docs/research/mossx-multi-cli-provider-session-foundation-design.md", "reason": "provider binding、side-effect、lazy binding 红线"}
+{"file": "src/features/account/components/ProductAccountAppGate.tsx", "reason": "当前 eager startup gate owner"}
+{"file": "src/features/account/runtime/productEngineProvisioning.ts", "reason": "现有 bundled toolchain orchestration"}
+{"file": "src/features/threads/hooks/useThreadMessaging.ts", "reason": "Native/Shared common send boundary"}
+{"file": "src/features/update/components/UpdateToast.tsx", "reason": "右下角 progress card 视觉复用"}

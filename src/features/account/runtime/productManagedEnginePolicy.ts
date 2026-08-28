@@ -13,6 +13,8 @@ const PRODUCT_MANAGED_ENGINE_ID_SET: ReadonlySet<string> = new Set(
 /** Product users never manage CLI/provider visibility from a shipping UI. */
 export const PRODUCT_ENGINE_MANAGEMENT_USER_VISIBLE = false;
 
-export function isProductManagedEngineId(engineId: string): boolean {
+export function isProductManagedEngineId(
+  engineId: string,
+): engineId is ProductRuntimeEngineIdV1 {
   return PRODUCT_MANAGED_ENGINE_ID_SET.has(engineId);
 }

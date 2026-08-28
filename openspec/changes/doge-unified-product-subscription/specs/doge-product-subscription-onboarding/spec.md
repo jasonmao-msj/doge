@@ -15,8 +15,9 @@ Doge MUST treat an active subscription bound to a server-advertised Composite Do
 #### Scenario: Active product entitlement is restored
 
 - **WHEN** subscription authority reports a matching active Doge product subscription
-- **THEN** Doge SHALL prepare one managed Composite credential and model catalog before mounting AppShell
+- **THEN** Doge SHALL mount AppShell immediately and reconcile the managed Composite credential/model catalog in the background
 - **AND** it MUST NOT require the user to select an engine or API key
+- **AND** Codex、Claude Code or Kimi CLI availability MUST NOT participate in the AppShell gate
 
 #### Scenario: Shipping source renders the mandatory account gate
 
@@ -50,7 +51,8 @@ The Gate MUST render plan and checkout facts from token2api and MUST NOT hardcod
 - **THEN** Doge SHALL enter a visible `fulfilling` state and force-refresh catalog with bounded backoff
 - **AND** it SHALL retain a credential-free paid fulfillment checkpoint across App restart
 - **AND** it SHALL NOT return to the plan purchase surface or create another order
-- **AND** the checkpoint SHALL clear only after active entitlement is observed and managed preparation succeeds
+- **AND** the checkpoint SHALL clear only after active entitlement is observed and managed Product access reconciliation succeeds
+- **AND** AppShell mounting SHALL NOT wait for that background reconciliation
 
 #### Scenario: Checkout polling encounters a transient failure
 
@@ -87,11 +89,10 @@ Doge MUST scope managed product access to account, device and Composite group, a
 
 #### Scenario: Product prepare is transiently unavailable during convergence
 
-- **GIVEN** local Codex/Claude/Kimi toolchains have converged
-- **WHEN** one or more idempotent product prepare attempts return `serviceUnavailable` without a server cooldown
-- **THEN** the Gate SHALL use at most 6 attempts over the bounded `[0, 1s, 2s, 4s, 8s, 15s]` schedule without showing a terminal failure surface between attempts
-- **AND** any successful result SHALL enter AppShell in the same user operation without requiring a click
-- **AND** attempts exhausted SHALL expose the recoverable error
+- **GIVEN** AppShell has mounted from an active entitlement
+- **WHEN** one or more idempotent catalog-only Product prepare attempts return `serviceUnavailable` without a server cooldown
+- **THEN** Doge SHALL use at most 6 attempts over the bounded `[0, 1s, 2s, 4s, 8s, 15s]` schedule in the background
+- **AND** attempts exhausted SHALL leave the Product model catalog stale/unavailable without unmounting AppShell
 - **AND** each failed attempt SHALL record safe `code/stage/attempt/maxAttempts/retryDelayMs` diagnostics
 - **AND** server cooldown or stale generation SHALL stop further automatic attempts
 
@@ -111,8 +112,9 @@ Doge MUST scope managed product access to account, device and Composite group, a
 
 #### Scenario: Managed engine preparation fails
 
-- **WHEN** Native returns a recoverable managed engine preparation error
-- **THEN** the full-screen Gate SHALL show one concise, cause-specific sentence and one retry action
+- **WHEN** Native returns a recoverable managed engine preparation error for a send-selected engine
+- **THEN** AppShell SHALL remain interactive and a bottom-right non-blocking card SHALL show one concise failure state with Retry and Dismiss actions
+- **AND** Doge SHALL NOT create a partial Session、Binding or Turn
 - **AND** it SHALL NOT repeat the same failure through a generic heading, inline warning, or decorative alert icon
 
 #### Scenario: Legacy Kimi registry contains a persisted secret field
@@ -153,26 +155,26 @@ For an active prepared product entitlement, Doge SHALL consume the refreshable u
 
 #### Scenario: Product preparation starts on a fresh device
 
-- **WHEN** the account has an active Doge subscription but one or more product engines are not yet executable
-- **THEN** Doge SHALL resolve Codex、Claude Code and Kimi through the verified managed toolchain
-- **AND** all three engines SHALL select verified bundled binaries for product onboarding
-- **AND** missing local Kimi SHALL NOT trigger npm install/update
-- **AND** provider configuration and AppShell ready MUST wait for post-provision verification
-- **AND** a bundle/toolchain failure SHALL remain on the recoverable preparation surface
+- **GIVEN** the account has an active Doge subscription and AppShell is mounted
+- **WHEN** the first send selects one Product engine that is not yet executable
+- **THEN** Doge SHALL configure and resolve only that exact engine through the verified managed toolchain
+- **AND** it SHALL NOT inspect、install or configure the other two Product engines
+- **AND** Session、Binding and Turn creation MUST wait for exact-engine post-provision verification
+- **AND** a toolchain failure SHALL remain in the non-blocking engine progress card
 
 #### Scenario: Fresh device has no local Kimi
 
-- **GIVEN** Kimi was absent when product preparation started
-- **WHEN** Product Gate inspects the managed Kimi toolchain
-- **THEN** Doge SHALL select and verify the bundled Kimi binary
-- **AND** it SHALL NOT depend on PATH or run npm installer side effects
+- **GIVEN** Kimi is selected for a send and no verified local Kimi is available
+- **WHEN** send-time provisioning inspects the managed Kimi toolchain
+- **THEN** Doge SHALL select and verify the bundled Kimi binary when present
+- **AND** if no bundled or verified external Kimi is available, Doge MAY run the existing exact-engine installer and SHALL verify the result before continuing
 - **AND** persistent bundle absence/verification failure SHALL return an engine-specific toolchain failure
 
 #### Scenario: Product authority preparation follows Kimi provisioning
 
-- **WHEN** Kimi toolchain provisioning has succeeded and Doge starts remote product preparation
-- **THEN** the visible preparation owner SHALL be Doge rather than Kimi CLI
-- **AND** a remote authority failure SHALL NOT be presented as a Kimi bundled-toolchain failure
+- **WHEN** a Kimi send starts exact-engine Product access preparation
+- **THEN** the progress card SHALL distinguish access、toolchain、installation and activation phases
+- **AND** a remote authority failure SHALL NOT be presented as a bundled-toolchain verification failure
 
 #### Scenario: Product picker opens on Home
 

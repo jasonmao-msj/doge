@@ -45,6 +45,7 @@ import {
   clearProductEntitlementV1,
   publishProductReadyV1,
 } from "../../account/runtime/productEntitlementStore";
+import { ProductEngineProvisioningErrorV1 } from "../../account/runtime/productEngineProvisioning";
 
 afterEach(() => {
   cleanup();
@@ -296,8 +297,10 @@ function ComposerHarness({
   models = [],
   selectedModelId = null,
   providerProfileId = null,
+  attachedImages = [],
+  onAttachImages,
 }: {
-  onSend: (text: string, options?: MessageSendOptions) => void;
+  onSend: (text: string, options?: MessageSendOptions) => void | Promise<void>;
   pendingCodeAnnotation?: CodeAnnotationDraftInput | null;
   onCodeAnnotationConsumed?: (dedupeKey: string) => void;
   sharedTarget?: {
@@ -321,6 +324,8 @@ function ComposerHarness({
   }>;
   selectedModelId?: string | null;
   providerProfileId?: string | null;
+  attachedImages?: string[];
+  onAttachImages?: (paths: string[]) => void;
 }) {
   const [selectedCodeAnnotations, setSelectedCodeAnnotations] = useState<
     CodeAnnotationSelection[]
@@ -410,6 +415,8 @@ function ComposerHarness({
       activeThreadId={activeThreadId}
       pendingCodeAnnotation={pendingCodeAnnotation}
       onCodeAnnotationConsumed={onCodeAnnotationConsumed}
+      attachedImages={attachedImages}
+      onAttachImages={onAttachImages}
       selectedCodeAnnotations={selectedCodeAnnotations}
       onRemoveCodeAnnotation={handleRemoveCodeAnnotation}
       onClearCodeAnnotations={handleClearCodeAnnotations}
@@ -426,6 +433,33 @@ function getTextarea(container: HTMLElement) {
 }
 
 describe("Composer file reference token", () => {
+  it("restores the draft and attachments when send-time engine provisioning fails", async () => {
+    const onAttachImages = vi.fn();
+    const onSend = vi.fn(async () => {
+      throw new ProductEngineProvisioningErrorV1(
+        "codex",
+        "engineBundleUnavailable",
+      );
+    });
+    const view = render(
+      <ComposerHarness
+        onSend={onSend}
+        attachedImages={["/tmp/reference.png"]}
+        onAttachImages={onAttachImages}
+      />,
+    );
+    const textarea = getTextarea(view.container);
+
+    await act(async () => {
+      fireEvent.change(textarea, { target: { value: "keep this draft" } });
+      fireEvent.keyDown(textarea, { key: "Enter" });
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(textarea.value).toBe("keep this draft"));
+    expect(onAttachImages).toHaveBeenCalledWith(["/tmp/reference.png"]);
+  });
+
   it("routes an unsubscribed Home engine target to the account purchase flow", async () => {
     publishManagedEngineEntitlementsV1([
       {

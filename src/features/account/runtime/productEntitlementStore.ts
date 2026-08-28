@@ -75,6 +75,21 @@ export function publishProductReadyV1(input: {
   }));
 }
 
+export function publishProductShellReadyV1(input: {
+  readonly entitlement: ProductEntitlementV1;
+  readonly engines: readonly ProductEngineViewV1[];
+}): void {
+  publish(Object.freeze({
+    status: "ready",
+    entitlement: input.entitlement,
+    engines: Object.freeze([...input.engines]),
+    models: Object.freeze([]),
+    modelsStatus: "refreshing",
+    modelsUpdatedAt: null,
+    modelsError: null,
+  }));
+}
+
 export function publishProductModelsRefreshingV1(subscriptionId: number): void {
   if (snapshot.status !== "ready" ||
     snapshot.entitlement?.subscriptionId !== subscriptionId ||

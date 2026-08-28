@@ -53,6 +53,29 @@ describe("managed engine toolchain client", () => {
     expect(resolve).toHaveBeenCalledWith("codex", null);
   });
 
+  it("accepts a verified external toolchain when no bundled runtime is present", async () => {
+    const resolve = vi.fn(async () => ({
+      ok: true,
+      value: {
+        engineId: "codex",
+        status: "ready",
+        bundledVersion: null,
+        externalVersion: "0.148.0",
+        selectedSource: "external",
+      },
+    }));
+    const client = createManagedEngineToolchainClientV1({ resolve, storage: null });
+
+    await expect(client.inspect("codex")).resolves.toMatchObject({
+      ok: true,
+      value: {
+        bundledVersion: null,
+        externalVersion: "0.148.0",
+        selectedSource: "external",
+      },
+    });
+  });
+
   it("returns an explicit choice when the external engine is older", async () => {
     const client = createManagedEngineToolchainClientV1({
       resolve: vi.fn(async () => choiceRequired()),

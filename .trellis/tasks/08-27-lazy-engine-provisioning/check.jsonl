@@ -1,0 +1,5 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": "openspec/changes/lazy-engine-provisioning/specs/lazy-product-engine-provisioning/spec.md", "reason": "验收场景"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 verification gate"}
+{"file": "docs/research/mossx-new-cli-onboarding-guide.md", "reason": "§0 静默失败核对矩阵"}

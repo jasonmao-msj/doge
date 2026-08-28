@@ -387,11 +387,15 @@ pub(crate) async fn account_product_v1_abandon_checkout(
 #[tauri::command]
 pub(crate) async fn account_product_v1_prepare(
     operation_id: String,
+    engine_id: Option<String>,
     state: State<'_, crate::state::AppState>,
     window: tauri::Window,
 ) -> Result<Value, String> {
     require_main_account_window(&window)?;
-    Ok(state.account_runtime.product_prepare(&operation_id).await)
+    Ok(state
+        .account_runtime
+        .product_prepare(&operation_id, engine_id.as_deref())
+        .await)
 }
 
 pub(super) struct ValidatedRequest<'a> {
