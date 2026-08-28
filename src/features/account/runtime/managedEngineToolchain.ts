@@ -18,7 +18,7 @@ export type ManagedEngineToolchainChoiceV1 = "bundled" | "external";
 export type ManagedEngineToolchainViewV1 = {
   readonly engineId: ManagedToolchainEngineIdV1;
   readonly status: "ready" | "choiceRequired";
-  readonly bundledVersion: string;
+  readonly bundledVersion: string | null;
   readonly externalVersion: string | null;
   readonly selectedSource: ManagedEngineToolchainChoiceV1 | null;
 };
@@ -88,7 +88,7 @@ function parseToolchainResultV1(value: unknown): ManagedEngineToolchainResultV1 
   const view = asObject(envelope.value);
   if (!view || !isManagedEngineId(view.engineId) ||
     !["ready", "choiceRequired"].includes(String(view.status)) ||
-    typeof view.bundledVersion !== "string" ||
+    !(typeof view.bundledVersion === "string" || view.bundledVersion === null) ||
     !(typeof view.externalVersion === "string" || view.externalVersion === null) ||
     !["bundled", "external", null].includes(view.selectedSource as never)) {
     return protocolFailure();
@@ -113,7 +113,7 @@ function preferenceKey(
   engineId: ManagedToolchainEngineIdV1,
   versions: Pick<ManagedEngineToolchainViewV1, "bundledVersion" | "externalVersion">,
 ) {
-  return `doge.account.toolchain-choice.v1:${engineId}:${versions.externalVersion ?? "none"}:${versions.bundledVersion}`;
+  return `doge.account.toolchain-choice.v1:${engineId}:${versions.externalVersion ?? "none"}:${versions.bundledVersion ?? "none"}`;
 }
 
 function readRememberedChoice(

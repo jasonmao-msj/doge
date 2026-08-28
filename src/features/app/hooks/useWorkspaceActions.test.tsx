@@ -12,6 +12,7 @@ import {
 } from "../../../services/tauri";
 import { pushGlobalRuntimeNotice } from "../../../services/globalRuntimeNotices";
 import { pushErrorToast } from "../../../services/toasts";
+import { ensureProductEngineReadyV1 } from "../../account/runtime/productEngineProvisioning";
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
@@ -65,6 +66,10 @@ vi.mock("../../../services/toasts", () => ({
 
 vi.mock("../../../services/globalRuntimeNotices", () => ({
   pushGlobalRuntimeNotice: vi.fn(),
+}));
+
+vi.mock("../../account/runtime/productEngineProvisioning", () => ({
+  ensureProductEngineReadyV1: vi.fn(async () => undefined),
 }));
 
 const baseWorkspace: WorkspaceInfo = {
@@ -152,6 +157,10 @@ describe("useWorkspaceActions", () => {
       });
     });
 
+    expect(ensureProductEngineReadyV1).toHaveBeenCalledWith({
+      engine: "codex",
+      providerProfileId: "doge-token-matrix",
+    });
     expect(options.setActiveEngine).toHaveBeenCalledWith("codex", {
       ensureRuntime: true,
       providerProfileId: "doge-token-matrix",
@@ -165,6 +174,26 @@ describe("useWorkspaceActions", () => {
         source: "managed",
       },
     });
+  });
+
+  it("does not open the blocking session dialog when on-demand provisioning fails", async () => {
+    vi.mocked(ensureProductEngineReadyV1).mockRejectedValueOnce(
+      new Error("engine unavailable"),
+    );
+    const options = makeOptions({ activeEngine: "kimi" });
+    const { result } = renderHook(() => useWorkspaceActions(options));
+
+    let threadId: string | null = "unexpected";
+    await act(async () => {
+      threadId = await result.current.handleAddAgent(baseWorkspace, "codex", {
+        providerProfileId: "doge-token-matrix",
+      });
+    });
+
+    expect(threadId).toBeNull();
+    expect(options.showLoadingProgressDialog).not.toHaveBeenCalled();
+    expect(options.setActiveEngine).not.toHaveBeenCalled();
+    expect(options.startThreadForWorkspace).not.toHaveBeenCalled();
   });
 
   it("creates a session with the active OpenCode engine when no explicit engine is provided", async () => {

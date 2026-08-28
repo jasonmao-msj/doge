@@ -48,6 +48,11 @@ import {
   resetSharedTargetStoreForTests,
   selectNextTarget,
 } from "../../shared-session/target/targetStore";
+import { ensureProductEngineReadyV1 } from "../../account/runtime/productEngineProvisioning";
+
+vi.mock("../../account/runtime/productEngineProvisioning", () => ({
+  ensureProductEngineReadyV1: vi.fn(async () => undefined),
+}));
 
 const CLAUDE_PENDING_NATIVE_SESSION_WAIT_MESSAGE =
   "Claude session is still initializing. Wait for the session to finish binding, then send again.";
@@ -108,6 +113,10 @@ describe("useThreadMessaging", () => {
       );
     });
 
+    expect(ensureProductEngineReadyV1).toHaveBeenCalledWith({
+      engine: "claude",
+      providerProfileId: "doge-token-matrix",
+    });
     expect(engineSendMessage).toHaveBeenCalledWith(
       "ws-1",
       expect.objectContaining({
@@ -305,6 +314,57 @@ describe("useThreadMessaging", () => {
     expect(dispatch).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: "upsertItem" }),
     );
+  });
+
+  it("provisions the frozen managed Shared target before dispatching Tx1", async () => {
+    const threadId = "shared:thread-managed-provisioning";
+    const target = {
+      engine: "codex" as const,
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "doge:gpt-5.6-sol",
+      providerProfileNameSnapshot: "Doge",
+      providerProfileSource: "managed" as const,
+      model: "gpt-5.6-sol",
+      reasoning: { effort: "high" },
+    };
+    selectNextTarget(workspace.id, threadId, target);
+    let resolveProvisioning!: () => void;
+    const provisioning = new Promise<void>((resolve) => {
+      resolveProvisioning = resolve;
+    });
+    vi.mocked(ensureProductEngineReadyV1).mockReturnValueOnce(provisioning);
+    vi.mocked(sendSharedSessionTurnRouted).mockResolvedValueOnce({
+      status: "accepted",
+      runtimeTurnId: "runtime-turn-managed",
+      v2: {
+        attemptId: "attempt-managed",
+        logicalTurnId: "logical-turn-managed",
+        committed: true,
+        duplicate: false,
+      },
+    });
+    const { result } = makeThreadMessagingHook("codex", {
+      activeThreadId: threadId,
+    });
+
+    const send = result.current.sendUserMessageToThread(
+      workspace,
+      threadId,
+      "provision before Tx1",
+    );
+    await waitFor(() => {
+      expect(ensureProductEngineReadyV1).toHaveBeenCalledWith({
+        engine: "codex",
+        providerProfileId: "doge-token-matrix",
+      });
+    });
+    expect(sendSharedSessionTurnRouted).not.toHaveBeenCalled();
+
+    resolveProvisioning();
+    await act(async () => {
+      await send;
+    });
+    expect(sendSharedSessionTurnRouted).toHaveBeenCalledTimes(1);
   });
 
   it("atomically admits only one of two racing Shared V2 submits before optimistic UI", async () => {

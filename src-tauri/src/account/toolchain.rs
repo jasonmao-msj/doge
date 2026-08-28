@@ -49,7 +49,7 @@ impl ToolchainError {
 pub(super) struct ToolchainResolution {
     pub(super) engine_id: String,
     pub(super) status: &'static str,
-    pub(super) bundled_version: String,
+    pub(super) bundled_version: Option<String>,
     pub(super) external_version: Option<String>,
     pub(super) selected_source: Option<&'static str>,
     #[serde(skip)]
@@ -95,38 +95,6 @@ pub(super) async fn resolve(
     if !matches!(engine_id, "codex" | "claude-code" | "kimi") {
         return Err(ToolchainError::UnsupportedEngine);
     }
-    let bundle_root = resource_dir.join(BUNDLED_ENGINE_RESOURCE_DIR);
-    let manifest_path = bundle_root.join("manifest.json");
-    let raw =
-        std::fs::read_to_string(&manifest_path).map_err(|_| ToolchainError::BundleUnavailable)?;
-    let manifest: RuntimeManifest =
-        serde_json::from_str(&raw).map_err(|_| ToolchainError::BundleInvalid)?;
-    if manifest.schema_version != 1 {
-        return Err(ToolchainError::BundleInvalid);
-    }
-    let architecture = runtime_architecture();
-    let bundled = manifest
-        .architectures
-        .get(architecture)
-        .and_then(|entry| entry.engines.get(engine_id))
-        .ok_or(ToolchainError::BundleUnavailable)?;
-    if parse_semver(&bundled.version).is_none()
-        || bundled.archive_sha256.len() != 64
-        || !bundled
-            .archive_sha256
-            .bytes()
-            .all(|value| value.is_ascii_hexdigit())
-    {
-        return Err(ToolchainError::BundleInvalid);
-    }
-    let bundled_binary = safe_bundled_executable(&bundle_root, &bundled.executable)?;
-    let bundled_version_text = verify_binary(&bundled_binary, engine_id)
-        .await
-        .map_err(|_| ToolchainError::BundleVerificationFailed)?;
-    if parse_semver(&bundled_version_text) != parse_semver(&bundled.version) {
-        return Err(ToolchainError::BundleVerificationFailed);
-    }
-
     let external_binary = external_binary(engine_id, settings);
     let external_verified = match external_binary {
         Some(path) => verify_binary(&path, engine_id)
@@ -135,8 +103,40 @@ pub(super) async fn resolve(
             .map(|version| (path, version)),
         None => None,
     };
+    let bundled = load_bundled_engine(resource_dir, engine_id);
+    let (bundled_version, bundled_binary) = match bundled {
+        Ok((version, binary)) => {
+            let version_text = verify_binary(&binary, engine_id)
+                .await
+                .map_err(|_| ToolchainError::BundleVerificationFailed)?;
+            if parse_semver(&version_text) != parse_semver(&version) {
+                return Err(ToolchainError::BundleVerificationFailed);
+            }
+            (Some(version), Some(binary))
+        }
+        Err(error) => {
+            if choice == Some(ToolchainChoice::Bundled) || external_verified.is_none() {
+                return Err(error);
+            }
+            (None, None)
+        }
+    };
+    if bundled_version.is_none() {
+        let Some((path, version)) = external_verified else {
+            return Err(ToolchainError::BundleUnavailable);
+        };
+        return Ok(ToolchainResolution {
+            engine_id: engine_id.to_string(),
+            status: "ready",
+            bundled_version: None,
+            external_version: parse_semver(&version)
+                .map(|parsed| format!("{}.{}.{}", parsed.0, parsed.1, parsed.2)),
+            selected_source: Some("external"),
+            selected_binary: Some(path),
+        });
+    }
     let decision = decide_source(
-        parse_semver(&bundled.version),
+        bundled_version.as_deref().and_then(parse_semver),
         external_verified
             .as_ref()
             .and_then(|(_, version)| parse_semver(version)),
@@ -148,7 +148,7 @@ pub(super) async fn resolve(
         .and_then(|(_, version)| parse_semver(version))
         .map(|version| format!("{}.{}.{}", version.0, version.1, version.2));
     let (status, selected_source, selected_binary) = match decision {
-        SourceDecision::Bundled => ("ready", Some("bundled"), Some(bundled_binary)),
+        SourceDecision::Bundled => ("ready", Some("bundled"), bundled_binary),
         SourceDecision::External => (
             "ready",
             Some("external"),
@@ -159,11 +159,42 @@ pub(super) async fn resolve(
     Ok(ToolchainResolution {
         engine_id: engine_id.to_string(),
         status,
-        bundled_version: bundled.version.clone(),
+        bundled_version,
         external_version,
         selected_source,
         selected_binary,
     })
+}
+
+fn load_bundled_engine(
+    resource_dir: &Path,
+    engine_id: &str,
+) -> Result<(String, PathBuf), ToolchainError> {
+    let bundle_root = resource_dir.join(BUNDLED_ENGINE_RESOURCE_DIR);
+    let manifest_path = bundle_root.join("manifest.json");
+    let raw =
+        std::fs::read_to_string(&manifest_path).map_err(|_| ToolchainError::BundleUnavailable)?;
+    let manifest: RuntimeManifest =
+        serde_json::from_str(&raw).map_err(|_| ToolchainError::BundleInvalid)?;
+    if manifest.schema_version != 1 {
+        return Err(ToolchainError::BundleInvalid);
+    }
+    let bundled = manifest
+        .architectures
+        .get(runtime_architecture())
+        .and_then(|entry| entry.engines.get(engine_id))
+        .ok_or(ToolchainError::BundleUnavailable)?;
+    if parse_semver(&bundled.version).is_none()
+        || bundled.archive_sha256.len() != 64
+        || !bundled
+            .archive_sha256
+            .bytes()
+            .all(|value| value.is_ascii_hexdigit())
+    {
+        return Err(ToolchainError::BundleInvalid);
+    }
+    let binary = safe_bundled_executable(&bundle_root, &bundled.executable)?;
+    Ok((bundled.version.clone(), binary))
 }
 
 fn safe_bundled_executable(
@@ -398,6 +429,30 @@ mod tests {
         assert_eq!(
             selected.selected_binary.as_deref(),
             Some(bundled_binary.canonicalize().unwrap().as_path())
+        );
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn resolver_uses_a_verified_external_engine_when_the_bundle_is_absent() {
+        let root = std::env::temp_dir().join(format!("doge-toolchain-{}", uuid::Uuid::new_v4()));
+        let external_binary = root.join("external/codex");
+        write_version_binary(&external_binary, "codex-cli 8.1.0");
+        let mut settings = AppSettings::default();
+        settings.codex_bin = Some(external_binary.to_string_lossy().to_string());
+
+        let inspected = resolve(&root, "codex", None, &settings)
+            .await
+            .expect("use verified external toolchain");
+
+        assert_eq!(inspected.status, "ready");
+        assert_eq!(inspected.bundled_version, None);
+        assert_eq!(inspected.external_version.as_deref(), Some("8.1.0"));
+        assert_eq!(inspected.selected_source, Some("external"));
+        assert_eq!(
+            inspected.selected_binary.as_deref(),
+            Some(external_binary.as_path())
         );
         let _ = std::fs::remove_dir_all(root);
     }

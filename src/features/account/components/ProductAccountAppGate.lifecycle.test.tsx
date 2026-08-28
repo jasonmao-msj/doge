@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { act, render, screen } from "@testing-library/react";
-import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AccountGatewayProvider } from "../gateway/AccountGatewayProvider";
 import { createMockAccountGatewayV1 } from "../mock/MockAccountGatewayV1";
@@ -37,6 +36,7 @@ vi.mock("../runtime/productModelCatalogRefresh", () => ({
 
 vi.mock("../../../services/rendererDiagnostics", () => ({
   appendRendererDiagnostic: appendDiagnostic,
+  appendEventBackpressureDiagnostic: vi.fn(),
 }));
 
 afterEach(() => {
@@ -225,7 +225,7 @@ describe("ProductAccountAppGate lifecycle", () => {
     expect(screen.queryByText("服务暂时不可用")).toBeNull();
   });
 
-  it("shows Doge rather than Kimi while remote product preparation is pending", async () => {
+  it("mounts the app immediately while product model preparation continues in the background", async () => {
     let resolvePrepare: ((value: { ok: true; value: ProductReadyViewV1 }) => void) | null = null;
     const client = productClient();
     vi.mocked(client.catalog).mockResolvedValue({
@@ -236,14 +236,12 @@ describe("ProductAccountAppGate lifecycle", () => {
       resolvePrepare = resolve;
     }));
 
-    renderGate(client, async ({ onEngine } = {}) => {
-      onEngine?.("kimi");
-      return { ok: true };
-    });
+    renderGate(client);
     await act(async () => flushMicrotasks());
 
-    expect(screen.getByRole("heading", { name: "正在准备 Doge" })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "正在准备 Kimi CLI" })).toBeNull();
+    expect(screen.getByText("主应用已挂载")).toBeTruthy();
+    expect(screen.queryByText(/正在准备/)).toBeNull();
+    expect(client.prepare).toHaveBeenCalledWith(null);
 
     await act(async () => {
       resolvePrepare?.({ ok: true, value: readyView() });
@@ -252,31 +250,29 @@ describe("ProductAccountAppGate lifecycle", () => {
     expect(screen.getByText("主应用已挂载")).toBeTruthy();
   });
 
-  it("does not configure providers when automatic engine provisioning fails", async () => {
+  it("keeps the app mounted when background product model preparation fails", async () => {
     const client = productClient();
     vi.mocked(client.catalog).mockResolvedValue({
       ok: true,
       value: activeCatalog(),
     });
-    renderGate(client, async ({ onEngine } = {}) => {
-      onEngine?.("kimi");
-      return {
-        ok: false,
-        error: { code: "engineInstallFailed", engineId: "kimi" },
-      };
+    vi.mocked(client.prepare).mockResolvedValue({
+      ok: false,
+      error: { code: "protocolMismatch", stage: "productPrepare" },
     });
+    renderGate(client);
+    await act(async () => flushMicrotasks());
 
-    expect(await screen.findByText(/内置引擎暂时不可用/)).toBeTruthy();
-    expect(client.prepare).not.toHaveBeenCalled();
+    expect(screen.getByText("主应用已挂载")).toBeTruthy();
+    expect(screen.queryByText("服务暂时不可用")).toBeNull();
+    expect(appendDiagnostic).toHaveBeenCalledWith(
+      "account/product-background-prepare-failed",
+      expect.objectContaining({ code: "protocolMismatch" }),
+    );
   });
 });
 
-function renderGate(
-  client: AccountProductOnboardingClientV1,
-  prepareToolchains: NonNullable<
-    ComponentProps<typeof ProductAccountAppGate>["prepareToolchains"]
-  > = async () => ({ ok: true }),
-) {
+function renderGate(client: AccountProductOnboardingClientV1) {
   const runtime = createScenarioRuntimeV1("session.cold-restore");
   if (!runtime.ok) throw new Error("missing authenticated account scenario");
   const gateway = createMockAccountGatewayV1(runtime.value);
@@ -284,7 +280,6 @@ function renderGate(
     <AccountGatewayProvider gateway={gateway}>
       <ProductAccountAppGate
         client={client}
-        prepareToolchains={prepareToolchains}
         readyContent={<div>主应用已挂载</div>}
       />
     </AccountGatewayProvider>,

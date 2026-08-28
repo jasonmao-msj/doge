@@ -19,6 +19,16 @@ const PRODUCT_ENGINES: &[(&str, &str)] = &[
     ("kimi", "Kimi CLI"),
 ];
 
+pub(super) fn normalize_product_prepare_engine(
+    engine_id: Option<&str>,
+) -> Result<Option<&str>, ()> {
+    match engine_id.map(str::trim) {
+        None | Some("") => Ok(None),
+        Some(value) if PRODUCT_ENGINES.iter().any(|(id, _)| *id == value) => Ok(Some(value)),
+        Some(_) => Err(()),
+    }
+}
+
 impl AccountRuntime {
     pub(crate) async fn product_catalog_snapshot(&self) -> Value {
         let mut state = self.state.lock().await;
@@ -252,7 +262,11 @@ impl AccountRuntime {
         }
     }
 
-    pub(crate) async fn product_prepare(&self, operation_id: &str) -> Value {
+    pub(crate) async fn product_prepare(
+        &self,
+        operation_id: &str,
+        engine_id: Option<&str>,
+    ) -> Value {
         if operation_id.trim().is_empty() {
             return product_failure(code_failure(
                 "validationRejected",
@@ -260,6 +274,16 @@ impl AccountRuntime {
                 "retry",
             ));
         }
+        let selected_engine = match normalize_product_prepare_engine(engine_id) {
+            Ok(value) => value,
+            Err(()) => {
+                return product_failure(code_failure(
+                    "validationRejected",
+                    "productPrepare",
+                    "retry",
+                ));
+            }
+        };
         let mut state = self.state.lock().await;
         self.initialize_session(&mut state).await;
         let access = match self.authorized_access_token(&mut state).await {
@@ -328,6 +352,8 @@ impl AccountRuntime {
             {
                 return product_failure(vault_failure());
             }
+        }
+        if let Some(engine_id) = selected_engine {
             match configuration::apply_managed_engine(
                 engine_id,
                 state.account_epoch,
@@ -372,7 +398,7 @@ impl AccountRuntime {
             },
             Err(error) if error.safe.code == "rateLimited" => {
                 log::warn!(
-                    "[account] product engines prepared but model catalog is rate limited; continuing with empty catalog"
+                    "[account] product access prepared but model catalog is rate limited; continuing with empty catalog"
                 );
                 Vec::new()
             }

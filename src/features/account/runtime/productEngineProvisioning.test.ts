@@ -1,172 +1,322 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { MANAGED_PROVIDER_PROFILE_ID_V1 } from "./engineEntitlementStore";
+import type {
+  ManagedEngineToolchainResultV1,
+  ManagedToolchainEngineIdV1,
+} from "./managedEngineToolchain";
 import {
-  prepareProductEngineProvisioningV1,
+  clearProductEngineProvisioningV1,
+  ensureProductEngineReadyV1,
+  readProductEngineProvisioningSnapshotV1,
+  retryProductEngineProvisioningV1,
   type ProductEngineProvisioningDependenciesV1,
 } from "./productEngineProvisioning";
-import type { ManagedToolchainEngineIdV1 } from "./managedEngineToolchain";
+import type {
+  ProductEngineIdV1,
+  ProductReadyViewV1,
+} from "./productOnboardingClient";
 
-describe("prepareProductEngineProvisioningV1", () => {
-  it("resolves every engine including Kimi from the bundled toolchain without npm install", async () => {
-    const inspectManaged = vi.fn(async (engineId: ManagedToolchainEngineIdV1) => ({
-      ok: true as const,
-      value: {
-        engineId,
-        status: "choiceRequired" as const,
-        bundledVersion: "1.0.0",
-        externalVersion: "0.9.0",
-        selectedSource: null,
-      },
-    }));
-    const chooseBundled = vi.fn(async (engineId: ManagedToolchainEngineIdV1) => ({
-      ok: true as const,
-      value: {
-        engineId,
-        status: "ready" as const,
-        bundledVersion: "1.0.0",
-        externalVersion: "0.9.0",
-        selectedSource: "bundled" as const,
-      },
-    }));
-    const stages: string[] = [];
+afterEach(() => {
+  clearProductEngineProvisioningV1();
+});
 
-    await expect(prepareProductEngineProvisioningV1(
-      { onEngine: (engineId) => stages.push(engineId) },
-      { inspectManaged, chooseBundled },
-    )).resolves.toEqual({ ok: true });
-    expect(stages).toEqual(["codex", "claude-code", "kimi"]);
-    expect(inspectManaged).toHaveBeenCalledTimes(3);
-    expect(chooseBundled).toHaveBeenCalledTimes(3);
+describe("ensureProductEngineReadyV1", () => {
+  it("does nothing for providers that are not managed by Doge", async () => {
+    const deps = createDependencies();
+
+    await expect(
+      ensureProductEngineReadyV1(
+        { engine: "codex", providerProfileId: "custom-provider" },
+        deps,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(deps.prepareProduct).not.toHaveBeenCalled();
+    expect(deps.inspectToolchain).not.toHaveBeenCalled();
   });
 
-  it("overrides an externally selected engine with the bundled toolchain", async () => {
-    const inspectManaged = vi.fn(async (engineId: ManagedToolchainEngineIdV1) => ({
-      ok: true as const,
-      value: {
-        engineId,
-        status: "ready" as const,
-        bundledVersion: "1.0.0",
-        externalVersion: "2.0.0",
-        selectedSource: "external" as const,
-      },
-    }));
-    const chooseBundled = vi.fn(async (engineId: ManagedToolchainEngineIdV1) => ({
-      ok: true as const,
-      value: {
-        engineId,
-        status: "ready" as const,
-        bundledVersion: "1.0.0",
-        externalVersion: "2.0.0",
-        selectedSource: "bundled" as const,
-      },
-    }));
+  it("does nothing for an engine outside the Product runtime set", async () => {
+    const deps = createDependencies();
 
-    await expect(prepareProductEngineProvisioningV1(
-      {},
-      { inspectManaged, chooseBundled },
-    )).resolves.toEqual({ ok: true });
-    expect(chooseBundled).toHaveBeenCalledTimes(3);
-    expect(chooseBundled).toHaveBeenNthCalledWith(1, "codex", expect.anything());
+    await expect(ensureProductEngineReadyV1(
+      { engine: "opencode", providerProfileId: MANAGED_PROVIDER_PROFILE_ID_V1 },
+      deps,
+    )).resolves.toBeUndefined();
+
+    expect(deps.prepareProduct).not.toHaveBeenCalled();
+    expect(deps.inspectToolchain).not.toHaveBeenCalled();
   });
 
-  it("keeps an already-ready Kimi toolchain inspection without re-choosing", async () => {
-    const chooseBundled = vi.fn();
-    const dependencies: ProductEngineProvisioningDependenciesV1 = {
-      inspectManaged: vi.fn(async (engineId) => ({
+  it("silently prepares an already-usable Codex engine", async () => {
+    const deps = createDependencies();
+
+    await expect(ensureManagedEngine("codex", deps)).resolves.toBeUndefined();
+
+    expect(deps.prepareProduct).toHaveBeenCalledTimes(1);
+    expect(deps.prepareProduct).toHaveBeenCalledWith("codex");
+    expect(deps.inspectToolchain).toHaveBeenCalledTimes(1);
+    expect(deps.inspectToolchain).toHaveBeenCalledWith("codex");
+    expect(deps.activate).toHaveBeenCalledWith("codex");
+    expect(deps.getInstallPlan).not.toHaveBeenCalled();
+    expect(readProductEngineProvisioningSnapshotV1()).toMatchObject({
+      engine: null,
+      phase: "idle",
+    });
+  });
+
+  it("uses Kimi as a one-shot engine without changing the global active engine", async () => {
+    const deps = createDependencies();
+
+    await expect(ensureManagedEngine("kimi", deps)).resolves.toBeUndefined();
+
+    expect(deps.prepareProduct).toHaveBeenCalledWith("kimi");
+    expect(deps.inspectToolchain).toHaveBeenCalledWith("kimi");
+    expect(deps.activate).not.toHaveBeenCalled();
+  });
+
+  it("deduplicates concurrent checks for the same engine", async () => {
+    let resolvePrepare: (
+      value: ReturnType<typeof successfulPrepare>,
+    ) => void = () => {
+      throw new Error("prepare resolver was not initialized");
+    };
+    const pendingPrepare = new Promise<ReturnType<typeof successfulPrepare>>(
+      (resolve) => {
+        resolvePrepare = resolve;
+      },
+    );
+    const deps = createDependencies({
+      prepareProduct: vi.fn(() => pendingPrepare),
+    });
+
+    const first = ensureManagedEngine("claude", deps);
+    const second = ensureManagedEngine("claude", deps);
+
+    expect(second).toBe(first);
+    await Promise.resolve();
+    resolvePrepare(successfulPrepare());
+    await expect(first).resolves.toBeUndefined();
+    expect(deps.prepareProduct).toHaveBeenCalledTimes(1);
+    expect(deps.prepareProduct).toHaveBeenCalledWith("claude-code");
+  });
+
+  it("selects the verified bundled toolchain when native resolution requires a choice", async () => {
+    const deps = createDependencies({
+      inspectToolchain: vi.fn(async (engineId) => ({
         ok: true as const,
         value: {
           engineId,
-          status: "ready" as const,
+          status: "choiceRequired" as const,
           bundledVersion: "1.0.0",
-          externalVersion: null,
-          selectedSource: "bundled" as const,
+          externalVersion: "0.9.0",
+          selectedSource: null,
         },
       })),
-      chooseBundled,
-    };
-    await expect(prepareProductEngineProvisioningV1({}, dependencies))
-      .resolves.toEqual({ ok: true });
-    expect(chooseBundled).not.toHaveBeenCalled();
+    });
+
+    await expect(ensureManagedEngine("codex", deps)).resolves.toBeUndefined();
+
+    expect(deps.chooseToolchain).toHaveBeenCalledWith(
+      "codex",
+      "bundled",
+      expect.objectContaining({ bundledVersion: "1.0.0" }),
+    );
+    expect(deps.getInstallPlan).not.toHaveBeenCalled();
   });
 
-  it("returns a typed engine-specific failure and stops before configuration", async () => {
-    const dependencies: ProductEngineProvisioningDependenciesV1 = {
-      inspectManaged: vi.fn(async () => ({
+  it("shows progress only while installing the selected missing engine", async () => {
+    const inspectToolchain = vi
+      .fn()
+      .mockResolvedValueOnce({
         ok: false as const,
-        error: { code: "engineBundleVerificationFailed" },
-      })),
-      chooseBundled: vi.fn(),
+        error: { code: "engineBundleUnavailable" },
+      })
+      .mockResolvedValueOnce(readyToolchain("codex", "external", null));
+    let resolveInstaller: (
+      value: Awaited<
+        ReturnType<ProductEngineProvisioningDependenciesV1["runInstaller"]>
+      >,
+    ) => void = () => {
+      throw new Error("installer resolver was not initialized");
     };
-    await expect(prepareProductEngineProvisioningV1({}, dependencies)).resolves.toEqual({
-      ok: false,
-      error: {
-        code: "engineBundleVerificationFailed",
-        engineId: "codex",
-      },
+    const installerResult = new Promise<
+      Awaited<
+        ReturnType<ProductEngineProvisioningDependenciesV1["runInstaller"]>
+      >
+    >((resolve) => {
+      resolveInstaller = resolve;
+    });
+    const runInstaller = vi.fn(() => installerResult);
+    const deps = createDependencies({ inspectToolchain, runInstaller });
+
+    const provisioning = ensureManagedEngine("codex", deps);
+    await vi.waitFor(() => expect(runInstaller).toHaveBeenCalledTimes(1));
+
+    expect(readProductEngineProvisioningSnapshotV1()).toMatchObject({
+      engine: "codex",
+      phase: "installing",
+    });
+    resolveInstaller(successfulInstallerResult(
+      "codex",
+      "installLatest",
+      "npmGlobal",
+    ));
+    await expect(provisioning).resolves.toBeUndefined();
+
+    expect(deps.getInstallPlan).toHaveBeenCalledWith(
+      "codex",
+      "installLatest",
+      "npmGlobal",
+    );
+    expect(deps.runInstaller).toHaveBeenCalledWith(
+      "codex",
+      "installLatest",
+      "npmGlobal",
+      expect.stringMatching(/^product-codex-/),
+    );
+    expect(inspectToolchain).toHaveBeenCalledTimes(2);
+    expect(readProductEngineProvisioningSnapshotV1()).toMatchObject({
+      engine: "codex",
+      phase: "ready",
     });
   });
 
-  it("attributes a Kimi bundle failure to Kimi instead of falling back to install", async () => {
-    const dependencies: ProductEngineProvisioningDependenciesV1 = {
-      inspectManaged: vi.fn(async (engineId) =>
-        engineId === "kimi"
-          ? ({
-              ok: false as const,
-              error: { code: "engineBundleUnavailable" },
-            } satisfies Awaited<
-              ReturnType<ProductEngineProvisioningDependenciesV1["inspectManaged"]>
-            >)
-          : ({
-              ok: true as const,
-              value: {
-                engineId,
-                status: "ready" as const,
-                bundledVersion: "1.0.0",
-                externalVersion: null,
-                selectedSource: "bundled" as const,
-              },
-            } satisfies Awaited<
-              ReturnType<ProductEngineProvisioningDependenciesV1["inspectManaged"]>
-            >),
-      ),
-      chooseBundled: vi.fn(),
-    };
+  it("keeps a typed error visible and retries the same engine", async () => {
+    const prepareProduct = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false as const,
+        error: { code: "protocolMismatch", stage: "productPrepare" },
+      })
+      .mockResolvedValueOnce(successfulPrepare());
+    const deps = createDependencies({ prepareProduct });
 
-    await expect(prepareProductEngineProvisioningV1({}, dependencies)).resolves.toEqual({
-      ok: false,
-      error: {
-        code: "engineBundleUnavailable",
-        engineId: "kimi",
-      },
+    await expect(ensureManagedEngine("codex", deps)).rejects.toMatchObject({
+      name: "ProductEngineProvisioningErrorV1",
+      code: "protocolMismatch",
+      engine: "codex",
     });
-  });
-
-  it("attributes an unexpected toolchain bridge error to the engine being prepared", async () => {
-    const dependencies: ProductEngineProvisioningDependenciesV1 = {
-      inspectManaged: vi.fn(async (engineId) => {
-        if (engineId === "claude-code") {
-          throw new Error("toolchain bridge unavailable");
-        }
-        return {
-          ok: true as const,
-          value: {
-            engineId,
-            status: "ready" as const,
-            bundledVersion: "1.0.0",
-            externalVersion: null,
-            selectedSource: "bundled" as const,
-          },
-        };
-      }),
-      chooseBundled: vi.fn(),
-    };
-
-    await expect(prepareProductEngineProvisioningV1({}, dependencies)).resolves.toEqual({
-      ok: false,
-      error: {
-        code: "serviceUnavailable",
-        engineId: "claude-code",
-      },
+    expect(readProductEngineProvisioningSnapshotV1()).toMatchObject({
+      engine: "codex",
+      phase: "error",
+      errorCode: "protocolMismatch",
+      retryable: true,
     });
+
+    await expect(retryProductEngineProvisioningV1()).resolves.toBeUndefined();
+    expect(prepareProduct).toHaveBeenCalledTimes(2);
+    expect(readProductEngineProvisioningSnapshotV1().phase).toBe("idle");
   });
 });
+
+function ensureManagedEngine(
+  engine: string,
+  dependencies: ProductEngineProvisioningDependenciesV1,
+) {
+  return ensureProductEngineReadyV1(
+    { engine, providerProfileId: MANAGED_PROVIDER_PROFILE_ID_V1 },
+    dependencies,
+  );
+}
+
+function createDependencies(
+  overrides: Partial<ProductEngineProvisioningDependenciesV1> = {},
+): ProductEngineProvisioningDependenciesV1 {
+  const dependencies: ProductEngineProvisioningDependenciesV1 = {
+    prepareProduct: vi.fn(async () => successfulPrepare()),
+    inspectToolchain: vi.fn(async (engineId) =>
+      readyToolchain(engineId, "bundled", "1.0.0"),
+    ),
+    chooseToolchain: vi.fn(async (engineId) =>
+      readyToolchain(engineId, "bundled", "1.0.0"),
+    ),
+    activate: vi.fn(async () => undefined),
+    getInstallPlan: vi.fn(async (engine, action, strategy) => ({
+      engine,
+      action,
+      strategy,
+      backend: "local" as const,
+      platform: "macos" as const,
+      commandPreview: [],
+      canRun: true,
+      blockers: [],
+      warnings: [],
+      manualFallback: null,
+    })),
+    runInstaller: vi.fn(async (engine, action, strategy) =>
+      successfulInstallerResult(engine, action, strategy)),
+    subscribeInstallerEvents: vi.fn(() => () => undefined),
+  };
+  return { ...dependencies, ...overrides };
+}
+
+function successfulInstallerResult(
+  engine: Parameters<ProductEngineProvisioningDependenciesV1["runInstaller"]>[0],
+  action: Parameters<ProductEngineProvisioningDependenciesV1["runInstaller"]>[1],
+  strategy: Parameters<ProductEngineProvisioningDependenciesV1["runInstaller"]>[2],
+): Awaited<ReturnType<ProductEngineProvisioningDependenciesV1["runInstaller"]>> {
+  return {
+    ok: true,
+    engine,
+    action,
+    strategy,
+    backend: "local",
+    exitCode: 0,
+    stdoutSummary: null,
+    stderrSummary: null,
+    details: null,
+    durationMs: 10,
+    doctorResult: { ok: true },
+  } as Awaited<
+    ReturnType<ProductEngineProvisioningDependenciesV1["runInstaller"]>
+  >;
+}
+
+function readyToolchain(
+  engineId: ManagedToolchainEngineIdV1,
+  source: "bundled" | "external",
+  bundledVersion: string | null,
+): ManagedEngineToolchainResultV1 {
+  return {
+    ok: true,
+    value: {
+      engineId,
+      status: "ready",
+      bundledVersion,
+      externalVersion: source === "external" ? "2.0.0" : null,
+      selectedSource: source,
+    },
+  };
+}
+
+function successfulPrepare() {
+  return { ok: true as const, value: readyProductView() };
+}
+
+function readyProductView(): ProductReadyViewV1 {
+  return {
+    status: "ready",
+    entitlement: {
+      status: "active",
+      subscriptionId: 9,
+      groupId: 5,
+      groupName: "Doge",
+      planName: "Doge",
+      expiresAt: "2030-01-01T00:00:00Z",
+      usage: null,
+    },
+    models: [
+      {
+        id: "gpt-5.6-sol",
+        displayName: "gpt-5.6-sol",
+        model: "gpt-5.6-sol",
+        apiProtocols: ["openai-responses"],
+        capabilities: ["chat"],
+      },
+    ],
+    engines: (["codex", "claude-code", "kimi"] as ProductEngineIdV1[]).map(
+      (id) => ({ id, displayName: id }),
+    ),
+  };
+}

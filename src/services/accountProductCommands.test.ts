@@ -26,6 +26,7 @@ describe("account product Tauri commands", () => {
     });
     await readAccountProductCheckoutV1(9);
     await prepareAccountProductV1("operation_prepare_0001");
+    await prepareAccountProductV1("operation_prepare_codex_0001", "codex");
     await readAccountProductUsageV1({
       startDate: "2030-01-01",
       endDate: "2030-01-31",
@@ -51,10 +52,15 @@ describe("account product Tauri commands", () => {
     expect(tauri.invoke).toHaveBeenNthCalledWith(
       3,
       "account_product_v1_prepare",
-      { operationId: "operation_prepare_0001" },
+      { operationId: "operation_prepare_0001", engineId: null },
     );
     expect(tauri.invoke).toHaveBeenNthCalledWith(
       4,
+      "account_product_v1_prepare",
+      { operationId: "operation_prepare_codex_0001", engineId: "codex" },
+    );
+    expect(tauri.invoke).toHaveBeenNthCalledWith(
+      5,
       "account_product_v1_usage",
       {
         startDate: "2030-01-01",
@@ -62,7 +68,13 @@ describe("account product Tauri commands", () => {
         granularity: "day",
       },
     );
-    expect(tauri.invoke).toHaveBeenNthCalledWith(5, "account_product_v1_billing");
-    expect(tauri.invoke).toHaveBeenNthCalledWith(6, "account_product_v1_models");
+    expect(tauri.invoke).toHaveBeenNthCalledWith(
+      6,
+      "account_product_v1_billing",
+    );
+    expect(tauri.invoke).toHaveBeenNthCalledWith(
+      7,
+      "account_product_v1_models",
+    );
   });
 });

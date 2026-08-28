@@ -95,7 +95,9 @@ export type AccountProductOnboardingClientV1 = {
   readonly readCheckout: (checkoutId: number) => Promise<EngineOnboardingResultV1<CheckoutViewV1>>;
   readonly resumeCheckout: () => Promise<EngineOnboardingResultV1<CheckoutViewV1 | null>>;
   readonly abandonCheckout: (checkoutId: number) => Promise<EngineOnboardingResultV1<null>>;
-  readonly prepare: () => Promise<EngineOnboardingResultV1<ProductReadyViewV1>>;
+  readonly prepare: (
+    engineId?: ProductEngineIdV1 | null,
+  ) => Promise<EngineOnboardingResultV1<ProductReadyViewV1>>;
   readonly models: () => Promise<EngineOnboardingResultV1<ProductModelsViewV1>>;
 };
 
@@ -155,8 +157,8 @@ export function createAccountProductOnboardingClientV1(): AccountProductOnboardi
       if (result.ok) invalidateCatalog();
       return result;
     },
-    prepare: async () => parseProductReady(
-      await prepareAccountProductV1(newOperationId()),
+    prepare: async (engineId = null) => parseProductReady(
+      await prepareAccountProductV1(newOperationId(), engineId),
     ),
     models: async () => parseProductModels(
       await readAccountProductModelsV1(),

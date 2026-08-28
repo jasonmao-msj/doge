@@ -47,6 +47,25 @@ fn order_status_projection_is_closed() {
 }
 
 #[test]
+fn product_prepare_engine_scope_is_optional_and_closed() {
+    assert_eq!(normalize_product_prepare_engine(None), Ok(None));
+    assert_eq!(normalize_product_prepare_engine(Some("")), Ok(None));
+    assert_eq!(
+        normalize_product_prepare_engine(Some(" codex ")),
+        Ok(Some("codex"))
+    );
+    assert_eq!(
+        normalize_product_prepare_engine(Some("claude-code")),
+        Ok(Some("claude-code"))
+    );
+    assert_eq!(
+        normalize_product_prepare_engine(Some("kimi")),
+        Ok(Some("kimi"))
+    );
+    assert_eq!(normalize_product_prepare_engine(Some("grok")), Err(()));
+}
+
+#[test]
 fn managed_product_key_identity_is_stable_per_group_and_device() {
     let first = managed_product_key_name(11, "device-primary-12345678");
     let repeated = managed_product_key_name(11, "device-primary-12345678");

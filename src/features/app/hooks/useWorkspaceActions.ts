@@ -20,6 +20,7 @@ import type {
   WorkspaceInfo,
 } from "../../../types";
 import { isEngineExecutionEnabled } from "../../../utils/engineExecutionPolicy";
+import { ensureProductEngineReadyV1 } from "../../account/runtime/productEngineProvisioning";
 import { resolveSessionEngineActivation } from "../../engine/utils/engineSessionRouting";
 import type { EngineProviderProfileSelection } from "../../threads/constants/codexProviderProfiles";
 import { CODEX_DISK_PROVIDER_PROFILE_ID } from "../../threads/constants/codexProviderProfiles";
@@ -246,6 +247,29 @@ export function useWorkspaceActions({
         });
         return null;
       }
+      const providerProfileId =
+        options?.providerProfileId?.trim() ||
+        options?.providerProfile?.id?.trim() ||
+        null;
+      try {
+        await ensureProductEngineReadyV1({
+          engine: targetEngine,
+          providerProfileId,
+        });
+      } catch (error) {
+        onDebug({
+          id: `${Date.now()}-client-create-session-provisioning-error`,
+          timestamp: Date.now(),
+          source: "error",
+          label: "workspace/create-session provisioning error",
+          payload: {
+            workspaceId: workspace.id,
+            engine: targetEngine,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        });
+        return null;
+      }
       return await runWithLoadingProgress(
         { showLoadingProgressDialog, hideLoadingProgressDialog },
         {
@@ -262,10 +286,6 @@ export function useWorkspaceActions({
             await connectWorkspace(workspace);
           }
           if (setActiveEngine) {
-            const providerProfileId =
-              options?.providerProfileId?.trim() ||
-              options?.providerProfile?.id?.trim() ||
-              null;
             const activationPlan = resolveSessionEngineActivation(
               targetEngine,
               providerProfileId,

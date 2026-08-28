@@ -39,7 +39,6 @@ export function UpdateToast({ state, onUpdate, onDismiss }: UpdateToastProps) {
   const updateBusy = BUSY_UPDATE_STAGES.has(state.stage);
 
   return (
-    <div className="update-toasts" role="region" aria-live="polite">
       <div className="update-toast" role="status">
         <div className="update-toast-header">
           <div className="update-toast-title">{t("update.title")}</div>
@@ -130,6 +129,5 @@ export function UpdateToast({ state, onUpdate, onDismiss }: UpdateToastProps) {
           </>
         )}
       </div>
-    </div>
   );
 }

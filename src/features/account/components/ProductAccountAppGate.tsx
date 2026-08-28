@@ -10,15 +10,13 @@ import {
 } from "../runtime/productOnboardingClient";
 import {
   clearProductEntitlementV1,
+  publishProductModelsRefreshFailedV1,
   publishProductReadyV1,
   publishProductRequiredV1,
+  publishProductShellReadyV1,
 } from "../runtime/productEntitlementStore";
 import { refreshProductModelsV1 } from "../runtime/productModelCatalogRefresh";
-import {
-  prepareProductEngineProvisioningV1,
-  type ProductEngineProvisioningResultV1,
-  type ProductProvisioningEngineIdV1,
-} from "../runtime/productEngineProvisioning";
+import { clearProductEngineProvisioningV1 } from "../runtime/productEngineProvisioning";
 import type {
   CheckoutViewV1,
   PaymentMethodViewV1,
@@ -36,7 +34,6 @@ import {
   GateInlineFailure,
   GateLoading,
   PaymentMethodList,
-  gateFailureMessage,
   interpolate,
   type GateAccountExit,
 } from "./ProductAccountAppGateViews";
@@ -47,7 +44,6 @@ type ProductGatePhase =
   | "paymentMethod"
   | "checkout"
   | "fulfilling"
-  | "preparing"
   | "ready";
 
 const PRODUCT_FULFILLMENT_MAX_ATTEMPTS = 15;
@@ -55,13 +51,9 @@ const PRODUCT_MODEL_REFRESH_INTERVAL_MS = 60_000;
 
 export function ProductAccountAppGate({
   client: injectedClient,
-  prepareToolchains = prepareProductEngineProvisioningV1,
   readyContent,
 }: {
   readonly client?: AccountProductOnboardingClientV1;
-  readonly prepareToolchains?: (options?: {
-    readonly onEngine?: (engineId: ProductProvisioningEngineIdV1) => void;
-  }) => Promise<ProductEngineProvisioningResultV1>;
   readonly readyContent?: ReactNode;
 }) {
   const client = useMemo(
@@ -81,8 +73,6 @@ export function ProductAccountAppGate({
   const [retryUntil, setRetryUntil] = useState(0);
   const [retryClock, setRetryClock] = useState(() => Date.now());
   const [fulfillmentRun, setFulfillmentRun] = useState(0);
-  const [preparingEngine, setPreparingEngine] =
-    useState<ProductProvisioningEngineIdV1 | null>(null);
   const generation = useRef(0);
   const loadingCatalog = useRef(false);
   const preparing = useRef(false);
@@ -106,23 +96,15 @@ export function ProductAccountAppGate({
     return () => window.clearInterval(timer);
   }, [retryUntil]);
 
-  const prepare = useCallback(async (requestGeneration: number) => {
+  const prepare = useCallback(async (
+    requestGeneration: number,
+    subscriptionId: number,
+  ) => {
     if (preparing.current || retryUntilRef.current > Date.now()) return;
     preparing.current = true;
-    setPhase("preparing");
-    setFailure(null);
     try {
-      const provisioned = await prepareToolchains({
-        onEngine: setPreparingEngine,
-      }).catch(() => null);
-      if (requestGeneration !== generation.current) return;
-      if (!provisioned?.ok) {
-        recordFailure(provisioned?.error);
-        return;
-      }
-      setPreparingEngine(null);
       const result = await prepareProductWithBoundedRetryV1(
-        client.prepare,
+        () => client.prepare(null),
         {
           isCurrent: () => requestGeneration === generation.current,
           onAttemptFailure: ({ error, attempt, maxAttempts, retryDelayMs }) => {
@@ -138,18 +120,21 @@ export function ProductAccountAppGate({
       );
       if (requestGeneration !== generation.current) return;
       if (!result?.ok) {
-        recordFailure(result?.error);
+        publishProductModelsRefreshFailedV1({
+          subscriptionId,
+          code: result?.error.code ?? "serviceUnavailable",
+        });
+        appendRendererDiagnostic("account/product-background-prepare-failed", {
+          code: result?.error.code ?? "serviceUnavailable",
+          stage: result?.error.stage ?? "unknown",
+        });
         return;
       }
-      retryUntilRef.current = 0;
-      setRetryUntil(0);
       publishProductReadyV1(result.value);
-      setPhase("ready");
     } finally {
       preparing.current = false;
-      setPreparingEngine(null);
     }
-  }, [client, prepareToolchains, recordFailure]);
+  }, [client]);
 
   const loadCatalog = useCallback(async () => {
     if (loadingCatalog.current || retryUntilRef.current > Date.now()) return;
@@ -169,7 +154,17 @@ export function ProductAccountAppGate({
       setRetryUntil(0);
       setCatalog(result.value);
       if (result.value.entitlement.status === "active") {
-        await prepare(requestGeneration);
+        const subscriptionId = result.value.entitlement.subscriptionId;
+        if (subscriptionId === null) {
+          recordFailure({ code: "protocolMismatch" });
+          return;
+        }
+        publishProductShellReadyV1({
+          entitlement: result.value.entitlement,
+          engines: result.value.engines,
+        });
+        setPhase("ready");
+        void prepare(requestGeneration, subscriptionId);
         return;
       }
       publishProductRequiredV1(result.value.engines);
@@ -202,6 +197,7 @@ export function ProductAccountAppGate({
     if (controller.bootstrap?.session.status !== "authenticated") {
       generation.current += 1;
       clearProductEntitlementV1();
+      clearProductEngineProvisioningV1();
       return;
     }
     void loadCatalog();
@@ -357,7 +353,17 @@ export function ProductAccountAppGate({
       }
       setCatalog(result.value);
       if (result.value.entitlement.status === "active") {
-        await prepare(requestGeneration);
+        const subscriptionId = result.value.entitlement.subscriptionId;
+        if (subscriptionId === null) {
+          recordFailure({ code: "protocolMismatch" });
+          return;
+        }
+        publishProductShellReadyV1({
+          entitlement: result.value.entitlement,
+          engines: result.value.engines,
+        });
+        setPhase("ready");
+        void prepare(requestGeneration, subscriptionId);
         return;
       }
       attempt += 1;
@@ -386,6 +392,7 @@ export function ProductAccountAppGate({
     if (signedOut) {
       generation.current += 1;
       clearProductEntitlementV1();
+      clearProductEngineProvisioningV1();
     } else {
       setLogoutFailure("serviceUnavailable");
     }
@@ -418,42 +425,6 @@ export function ProductAccountAppGate({
     return failure
       ? <GateFailure copy={copy} code={failure} onRetry={() => void loadCatalog()} retryAfterSeconds={retryAfterSeconds} accountExit={accountExit} />
       : <GateLoading label={copy.gateConfirmingServices} accountExit={accountExit} />;
-  }
-  if (phase === "preparing") {
-    return (
-      <GateFrame accountExit={accountExit}>
-        <div className="account-gate-centered" role={failure ? "alert" : "status"}>
-          {failure ? null : <LoaderCircle className="account-gate-spin" aria-hidden />}
-          {failure ? (
-            <p className="account-gate-preparation-failure">
-              {gateFailureMessage(failure, copy)}
-            </p>
-          ) : (
-            <h1>
-              {interpolate(
-                copy.gatePreparingTemplate,
-                "engine",
-                productProvisioningEngineLabel(preparingEngine),
-              )}
-            </h1>
-          )}
-          {failure ? (
-            <>
-              <button
-                className="account-gate-primary"
-                type="button"
-                disabled={retryAfterSeconds > 0}
-                onClick={() => void prepare(generation.current)}
-              >
-                {retryAfterSeconds > 0
-                  ? interpolate(copy.gateRetryAfterSecondsTemplate, "seconds", String(retryAfterSeconds))
-                  : copy.retry}
-              </button>
-            </>
-          ) : null}
-        </div>
-      </GateFrame>
-    );
   }
   if (phase === "fulfilling") {
     return (
@@ -565,15 +536,6 @@ export function ProductAccountAppGate({
     );
   }
   return <GateFailure copy={copy} code="protocolMismatch" onRetry={() => void loadCatalog()} accountExit={accountExit} />;
-}
-
-function productProvisioningEngineLabel(
-  engineId: ProductProvisioningEngineIdV1 | null,
-): string {
-  if (engineId === "codex") return "Codex";
-  if (engineId === "claude-code") return "Claude Code";
-  if (engineId === "kimi") return "Kimi CLI";
-  return "Doge";
 }
 
 async function openCheckoutAction(

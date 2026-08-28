@@ -50,6 +50,10 @@ export function abandonAccountProductCheckoutV1(
 
 export function prepareAccountProductV1(
   operationId: string,
+  engineId?: "codex" | "claude-code" | "kimi" | null,
 ): Promise<unknown> {
-  return invoke("account_product_v1_prepare", { operationId });
+  return invoke("account_product_v1_prepare", {
+    operationId,
+    engineId: engineId ?? null,
+  });
 }

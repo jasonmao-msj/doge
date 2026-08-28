@@ -149,11 +149,11 @@ When the Doge product entitlement is ready, provider configuration MUST be an in
 - **THEN** Doge SHALL repair the selection to the same supported engine and model with the managed profile before it can be sent
 - **AND** the product picker SHALL NOT expose a configuration/profile selector
 
-#### Scenario: Existing installation contains an older Doge projection
+#### Scenario: Send-selected engine contains an older Doge projection
 
 - **GIVEN** the user upgrades Doge and the stable `doge-token-matrix` entry is missing the current `managedRevision` or contains legacy endpoint, model or secret fields
-- **WHEN** the authenticated product gate prepares Codex, Claude and Kimi
-- **THEN** Doge SHALL replace each stale same-id managed entry with the current deterministic projection before mounting the app
+- **WHEN** a send selects one managed Product engine
+- **THEN** Doge SHALL replace only that engine's stale same-id managed entry with the current deterministic projection before creating a Session、Binding or Turn
 - **AND** unrelated local/custom provider entries SHALL remain intact
 - **AND** a stale projection SHALL fail closed rather than be treated as ready
 

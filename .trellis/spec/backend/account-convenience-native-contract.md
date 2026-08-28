@@ -1,7 +1,8 @@
 # Account Convenience Native Contract
 
 > **Current product calibration (2026-08-23):** OpenSpec `require-account-engine-subscription-onboarding` 已把 Account 从 Local Mode 之上的可选增值层改为 main-window mandatory gate。下文既有 broker/vault/secret-isolation contracts 继续有效；“Account failure 不 gate Local Mode”“用户选择 existing API Key”“展示配置 diff/bubble”只作为旧 change 的历史行为，不得用于当前产品主链。`doge-unified-product-subscription` 另为 macOS debug 增加 compile-time local development vault exception；Release 仍只使用 OS credential vault。
-> **Unified product cleanup (2026-08-24):** shipping renderer 已删除 legacy `AccountAppGate`、engine-scoped subscription/usage panels、engine checkout client/preferences/activation wrapper；`router.tsx` 只能渲染 `ProductAccountAppGate`。下文 `Mandatory engine subscription onboarding`、`In-App second managed engine acquisition` 等章节仅保留历史设计证据，不得恢复对应 UI/IPC consumer。当前产品只保留 `account_engine_v1_toolchain` 作为 Product Gate 的 Codex/Claude/Kimi bundled/external provisioning owner。
+> **Unified product cleanup (2026-08-24):** shipping renderer 已删除 legacy `AccountAppGate`、engine-scoped subscription/usage panels、engine checkout client/preferences/activation wrapper；`router.tsx` 只能渲染 `ProductAccountAppGate`。下文 `Mandatory engine subscription onboarding`、`In-App second managed engine acquisition` 等章节仅保留历史设计证据，不得恢复对应 UI/IPC consumer。
+> **Lazy Product engine calibration (2026-08-27):** OpenSpec `lazy-engine-provisioning` 将 CLI readiness 从 Product Gate 移到 send-time exact-engine coordinator。active entitlement catalog 成立即 mount AppShell；catalog-only prepare 在后台运行且失败不得锁屏。首次 managed send 才按 frozen target 准备一个 engine，并在 bottom-right card 投影进度/失败。
 
 ## Scenario: Local Mode 之上的 token2api Account 增值层
 
@@ -1017,15 +1018,15 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 - Product panel：`ProductEngineModelSelect({ catalog, executionTarget, onExecutionTargetChange })`。
 - Managed target：`providerProfileId="doge-token-matrix"`、`providerProfileSource="managed"`、`modelCatalogEntryId` 与 runtime `model` 分域。
 - Doubao runtime：`PRODUCT_DOUBAO_RUNTIME_MODEL = "豆包"`；公开 catalog 的 `id/display_name/model` 任一命中 `豆包 | doubao | ark-code` 时，UI、Native per-thread selection、`ExecutionTarget.model`、Kimi `--model` 与 launch config alias MUST 使用 Composite 公开别名“豆包”。`ark-code-latest` 是 account 内部 upstream model，直接发给 Composite 会返回 400。
-- Managed display：`PRODUCT_MANAGED_PROVIDER_LABEL = "Doge"`；内部 stable id 仍为 `doge-token-matrix`。`account_product_v1_prepare` 每次均以同一 stable id 幂等覆盖 Codex/Claude/Kimi registry 的 `name="Doge"`，因此旧本机显示名在下次 authenticated prepare 时迁移。
+- Managed display：`PRODUCT_MANAGED_PROVIDER_LABEL = "Doge"`；内部 stable id 仍为 `doge-token-matrix`。`account_product_v1_prepare(operationId, engineId?)` 在 `engineId=null` 时只 reconcile credential/model catalog；exact engine 时只幂等覆盖该 engine registry 的 `name="Doge"`，旧本机显示名在该 engine 第一次 managed send 时迁移。
 - Managed configuration revision：`ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64` 写入三个 same-id provider entry 的 `managedRevision`。readiness/plan verify 必须要求 exact current revision；缺失或较旧 revision 不得进入 ready，authenticated prepare 以 deterministic builder 覆盖旧 Doge entry，但保留其他 local/custom provider rows。
 - Child isolation：Doge-launched Codex 设置 isolated `CODEX_HOME`，Kimi 设置 isolated `KIMI_CODE_HOME`，Claude 使用 per-turn owner-only private `--settings`；这些 adapter 不得改写用户 global CLI home。terminal direct launch 因没有 Doge child env/args，继续使用用户本地配置。
 - Claude product projection：`project_claude_model_for_managed_product(provider_profile_id, requested_model, provider_env)`；projection 只作用于 managed product profile 的 child turn。
 - Native model wire：`ProductModelWire { id, display_name?, model?, compatible_engines?, capabilities? }`；renderer view=`{ id, display_name, model, compatible_engines, capabilities }`。
 - Read-only refresh command：`account_product_v1_models() -> { ok, value: { models[], fetched_at } }`；必须限制 main window、读取当前 account scope 的 managed key、网络请求前释放 account state lock。
 - Frontend refresh owner：`refreshProductModelsV1({ force? })`；30s freshness、same-subscription single in-flight、last-known-good、focus/visibility + 60s visible fallback。
-- Product toolchain owner：`prepareProductEngineProvisioningV1({ onEngine? })`；Codex/Claude Code/Kimi 复用 `account_engine_v1_toolchain`（Kimi bundled 产物来自 MoonshotAI/kimi-code GitHub release zip）。
-- Product prepare convergence：`prepareProductWithBoundedRetryV1(client.prepare, { isCurrent, wait?, onAttemptFailure? })`；schedule=`[0, 1000, 2000, 4000, 8000, 15000]`，最多 6 次。只重试无 cooldown 的 `serviceUnavailable`/thrown bridge result；generation stale、server cooldown、non-retryable error 或 attempts exhausted 停止。
+- Product toolchain owner：`ensureProductEngineReadyV1({ engine, providerProfileId })`；只对 `doge-token-matrix + codex|claude|kimi` 生效，复用 `account_engine_v1_toolchain`、exact `cli_install_plan/run` 与 `account_engine_v1_activate`。same-engine in-flight dedupe，Kimi one-shot 不要求 global activation。
+- Product prepare convergence：startup 调用 `prepareProductWithBoundedRetryV1(() => client.prepare(null), …)`；send-time 调用 exact `client.prepare(engineId)`。schedule=`[0, 1000, 2000, 4000, 8000, 15000]`，最多 6 次；generation stale、server cooldown、non-retryable error 或 attempts exhausted 停止。
 - Product visibility owner：`PRODUCT_RUNTIME_ENGINE_IDS_V1 = ["codex", "claude", "kimi"]`；Rust `sanitize_disabled_cli_engines(&mut AppSettings)` 与 TypeScript `normalizeDisabledCliEngines(unknown)` MUST 使用同一 closed set 语义，read/update/restore 后 effective blacklist 均不得含 product ids。
 - Compatibility evidence：`engine × product model × real CLI payload`，至少覆盖 Codex Responses Agent payload、Claude Code Messages payload、Kimi stream-json Chat payload。
 - Current OpenAI price allowlist：`gpt-5.6-luna + gpt-5.6-sol + gpt-5.6-terra` 共享 `Doge 统一定价` GPT rule；三者保留 exact requested model identity。
@@ -1033,8 +1034,10 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 ### 3. Contracts
 
 - Home create-session、Shared Next Turn、Existing Native Session 的修改入口与 Account Center MUST 从同一个 refreshable product snapshot 读取 entitlement catalog，并复用同一个 compatibility helper 求 selected engine rows。product-ready 普通会话不得回落 legacy `ModelSelect` 的 Grok/OpenCode/provider/channel UI。
-- `ProductAccountAppGate.prepare` MUST 先完成 toolchain owner 再调用 `account_product_v1_prepare`。Codex/Claude/Kimi `choiceRequired` 在产品自动准备中选择 bundled；Kimi 与 Codex/Claude 一样从 bundled-engines manifest 解析（external 缺失选 bundled、external 更新静默复用），缺失时不得回退 npm 在线安装。任一失败不得写 provider config 或进入 ready。
-- toolchain success 后 Gate MUST 清除 specific `preparingEngine`，remote `account_product_v1_prepare` 只显示 Doge owner。无 `retryAfterMs` 的 `serviceUnavailable`/bridge failure MAY 按固定 schedule 最多 6 次自动幂等 convergence；连续失败、cooldown、generation stale MUST stop，禁止无限 retry 或旧 lifecycle side effect。每次失败通过 `appendRendererDiagnostic("account/product-prepare-attempt-failed", { code, stage, attempt, maxAttempts, retryDelayMs })` 记录 safe evidence。
+- `ProductAccountAppGate` MUST NOT inspect、install、select、verify or activate any CLI。active subscription catalog 后先 `publishProductShellReadyV1` + mount AppShell，再 fire-and-observe catalog-only `client.prepare(null)`；失败只发布 stale model state 与 safe diagnostic，禁止恢复 full-screen engine preparing/failure。
+- New Home、Existing Native、Shared 与 Sidebar direct create MUST 在任何 Session/Binding/Turn side effect 前 await `ensureProductEngineReadyV1`。coordinator 只 prepare/inspect/install exact frozen engine；`choiceRequired` 选择 verified bundled，bundle 缺失且无 verified external 时才调用 exact-engine installer；post-install MUST re-inspect/doctor before activation。失败不得 optimistic bubble、partial thread/turn 或 silent fallback。
+- same-engine concurrent sends MUST share one provisioning promise；logout/account switch MUST generation-invalidate late completion。Codex/Claude activation成功后继续 original send；Kimi one-shot直接继续 exact target。Composer provisioning failure MUST restore submitted text/images。
+- `UpdateToast` 与 `EngineProvisioningToast` MUST 由一个 `.update-toasts` host stack。bundled/external ready 的 access/config/inspect/activation 全程 silent；只有 actual `cli_install_run` 才显示 installing，post-install success 才 bounded ready，error提供 Retry/Dismiss。禁止为了强调内部 readiness 而显示 checking/configuring/activating/ready；raw secret/path/unbounded installer output不得进入 card。
 - Native MUST preserve upstream order and separate catalog `id`、user `display_name`、callable `model`。`model/runtime_model` 缺失时回退公开 `id`；禁止从 display name 或 admin-only account mapping 猜调用名。
 - `compatible_engines` 缺失时使用 stable family fallback：GPT/OpenAI→Codex、Claude/Anthropic→Claude Code、Kimi/Moonshot/K3→Kimi CLI、豆包/Ark Coding→三种 managed adapter；unknown family fail closed。显式空/unknown-only集合时 row 不可选。`capabilities` 有 positive conversation value 时优先；image/audio/realtime/embedding-only row必须过滤，legacy catalog用 bounded negative heuristic。
 - 目录刷新 pending/error MUST 保留 last-known-good；成功刷新删除当前 model 时，在下一次发送前按同一 target repair contract 原子收敛。
@@ -1067,10 +1070,10 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 | Kimi + 豆包 Native send | UI/per-thread/runtime/config alias/`--model`=`豆包`；token2api account 内部再映射 `ark-code-latest` | UI 显示豆包但请求 `gpt-5.5`，或直发 private model 导致 Composite 400 |
 | upstream 新增 `claude-opus-4-8` | bounded refresh 后进入同一 snapshot | 不修改 Doge exact-id manifest |
 | refresh pending / failure | 保留 rows，显示 refreshing/stale + retry | 不清空 Composer / Account Center |
-| fresh device 无本地 Kimi | inspect managed Kimi + select verified bundled binary | 不发 npm install/update mutation |
-| bundled Kimi 缺失或校验失败 | typed bundle failure，停止在 Gate | 回退 PATH/npm 或假 ready |
-| remote product prepare 前若干次 `serviceUnavailable`、后续 success | 按 1/2/4/8/15s backoff，任一次 success 同一操作进入 AppShell | 过早展示 terminal error 再靠用户点击 |
-| remote product prepare 连续失败或 lifecycle stale | 最多 6 次/约30s；连续失败显示 recoverable error，stale 不发下一次 | 无限 retry / logout 后旧请求继续 mutation |
+| login 后三 CLI 均缺失 | active entitlement 后直接 mount AppShell；后台只做 catalog-only prepare | engine-specific full-screen preparing/failure |
+| 首次 Kimi send 且无 verified toolchain | exact Kimi bundle/external inspect；必要时只运行 Kimi installer，post-install re-probe | 检查/安装 Codex、Claude 或锁定 App |
+| startup catalog-only prepare 连续失败 | 最多 6 次；AppShell 保持 mounted，models stale + safe diagnostic | terminal Gate / logout 后旧请求继续 mutation |
+| send-time provisioning failure | 无 Session/Binding/Turn side effect；draft/images restore；card retryable | optimistic bubble、partial session 或 silent fallback |
 | generic `/v1/messages` 为 200、Claude Code payload 400 | 保留 exact target typed failure并记录E2E阻塞 | NOT compatible；检查 client-sensitive routing |
 | minimal Responses 200、Codex Agent 两分钟无首包 | 保留 exact target typed failure并记录E2E阻塞 | NOT compatible；检查 tools/stream/Agent payload |
 | Kimi stream-json 返回 typed final | 正常 settle、runtime model evidence匹配 | compatible for that pair |
@@ -1080,7 +1083,7 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 
 - Good：production `/v1/models` 新增一个 valid text row 后，Native 保留 `display_name/model`，刷新 owner 一次发布给 panel、Composer 与 Account Center；选择与发送使用同一 target identity。
 - Good：product-ready Native 会话打开与 Home 相同的 panel；点击 Kimi model 生成 `providerProfileId="doge-token-matrix"` 且由既有 continuation/new-session owner 执行。
-- Good：fresh device 的 PATH 没有 Kimi；Product Gate 从 bundled-engines manifest 解析并验证 Kimi，与 Codex/Claude 一样选择 bundled 后才进入 remote prepare，整个流程零 npm mutation。
+- Good：fresh device 三 CLI 均缺失仍直接进入 Home；用户首次发送到 Kimi 时只检查/准备 Kimi，右下角 card 更新且其余 App 可用，成功后 original send 自动继续一次。
 - Good：Kimi Native 会话点选豆包后，Composer 保留 `modelCatalogEntryId="豆包"`，per-thread selection 与 command payload 同样使用公开别名“豆包”，hydrate 生成 bare + `doge/` alias。
 - Base：三个 engine 共享 upstream entitlement catalog 与 helper；上游可用 `compatible_engines` 收窄 subset，不需要客户端列举 id。
 - Base：Account vendor row 默认只显示数量，用户展开后才 mount 该 vendor 的 model list。
@@ -1088,7 +1091,7 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 - Bad：为获得 200 在 Doge 本地伪造非 Claude-Code User-Agent，绕过 token2api `ClaudeCodeOnly` policy。
 - Bad：某组合失败后自动改成 engine 默认 model，让用户看到的 Target 与计费/usage/runtime 不一致。
 - Bad：product-ready Native 会话仍渲染 Grok/OpenCode 或 provider profile picker；这会重新引入用户不需要理解的 local/expert channel。
-- Bad：bundled Kimi 不可用时静默回退 npm/PATH；或 remote product prepare 时仍保留 `preparingEngine="kimi"`，把 Authority 瞬时失败伪装成 Kimi toolchain failure。
+- Bad：登录时后台预装三个 engine，或把 engine-specific loading/error 恢复成 full-screen Gate；另一错误是 installer 成功前先创建 pending Session/Turn。
 - Bad：只改 UI local state，不调用 `onSelectModel("豆包")`；AppShell/Kimi send 会从 local catalog/default 解析成 `gpt-5.5`。另一错误是把 account 内部 `ark-code-latest` 直接发给 Composite，服务会返回 400。
 
 ### 6. Tests Required
@@ -1097,8 +1100,10 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 - Account component：billing source/copy 无 invoice；vendor summary count 默认可见，model detail 初始不 mount，pointer/keyboard 展开后出现、再次点击消失。
 - Brand icon：`resolveProviderBrandIcon` 对 `豆包`、`doubao-entry`、`ark-code-latest` 全部返回本地 `doubao.png`；`ProviderBrandIconImg` 与 Product trigger component tests 断言 intrinsic + inline size、wrapper `overflow:hidden`，覆盖 consumer CSS `img { width:100%; height:100% }`。
 - Refresh coordinator：same-subscription coalescing、freshness skip、pending保留rows、success原子发布、failure stale、logout/account-switch stale settle不覆盖。
-- Product provisioning：Codex/Claude/Kimi 均覆盖 bundled ready、external selected→bundled override、bundle failure 与 bridge reject；断言零 npm installer dependency，provider prepare 只在三者 provisioning success 后调用。
-- Product Gate lifecycle MUST 追加：多次 `serviceUnavailable` 后 ready 不渲染 error、delay schedule exact；连续失败最多 6 次；cooldown 只有 1 次；generation stale 不发下一次；diagnostic 保留 stage/attempt；remote prepare pending heading 为 Doge 而非 Kimi。
+- Product provisioning：unmanaged no-op、exact Codex/Claude/Kimi only、same-engine dedupe、bundled choice、verified external fallback、exact installer + post-inspect、Kimi no global activate、typed failure/retry。
+- Product Gate lifecycle MUST 断言 background prepare pending/failure 时 `readyContent` 已挂载且源码不存在 engine-specific preparing branch；多次 `serviceUnavailable` 仍按 bounded schedule并保留 safe diagnostic。
+- Send boundary：managed target provisioning 先于 create-session/optimistic bubble；failure 时未调用 native send、未展示 blocking session dialog、draft/images 可恢复。
+- Progress card：busy disabled dismiss、safe error Retry/Dismiss、ready auto-dismiss、updater + engine cards共享一个 stack；所有 locale key parity。
 - Composer regression：Home dynamic product mode；Shared removed-model selection 自动 repair并持久化 managed target；readiness/display/runtime identity 跟随 `selectedAtomicTarget`。
 - Native Kimi regression：product picker 点豆包调用 `onSelectModel("豆包")`；managed Kimi hook 保留 catalog 外 alias；local/unmanaged Kimi 仍遵循 CLI catalog repair。
 - Rust unit：display/runtime/engine metadata、upstream order/dedupe、non-conversation filtering、main-window IPC、managed product Claude Unicode model、Kimi Unicode bare+`doge/` alias。

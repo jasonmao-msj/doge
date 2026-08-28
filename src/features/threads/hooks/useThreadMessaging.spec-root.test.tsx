@@ -12,6 +12,7 @@ import {
   listExternalSpecTree,
   sendUserMessage,
 } from "../../../services/tauri";
+import { ensureProductEngineReadyV1 } from "../../account/runtime/productEngineProvisioning";
 import { useThreadMessaging } from "./useThreadMessaging";
 
 vi.mock("../../../services/toasts", () => ({
@@ -55,6 +56,10 @@ vi.mock("../../shared-session/runtime/sendSharedSessionTurn", () => ({
   sendSharedSessionTurn: vi.fn(),
 }));
 
+vi.mock("../../account/runtime/productEngineProvisioning", () => ({
+  ensureProductEngineReadyV1: vi.fn(async () => undefined),
+}));
+
 const workspace: WorkspaceInfo = {
   id: "ws-1",
   name: "ccgui",
@@ -80,6 +85,7 @@ type HookOverrides = {
   itemsByThread?: Record<string, ConversationItem[]>;
   model?: string | null;
   rateLimitsByWorkspace?: Record<string, RateLimitSnapshot | null>;
+  providerProfileId?: string | null;
 };
 
 function mockWorkspaceSpecRoot(rootPath: string | null) {
@@ -118,6 +124,7 @@ function makeCodexHook(overrides: HookOverrides = {}) {
       getCustomName: () => undefined,
       getThreadEngine: () => "codex",
       getThreadKind: () => "native",
+      getThreadProviderProfileId: () => overrides.providerProfileId ?? null,
       markProcessing: vi.fn(),
       markReviewing: vi.fn(),
       setActiveTurnId: vi.fn(),
@@ -149,6 +156,48 @@ beforeEach(() => {
 });
 
 describe("useThreadMessaging spec root", () => {
+  it("provisions the selected managed engine before sending a turn", async () => {
+    const { result } = makeCodexHook({
+      providerProfileId: "doge-token-matrix",
+    });
+
+    await act(async () => {
+      await result.current.sendUserMessageToThread(
+        workspace,
+        "thread-1",
+        "hello codex",
+      );
+    });
+
+    expect(ensureProductEngineReadyV1).toHaveBeenCalledWith({
+      engine: "codex",
+      providerProfileId: "doge-token-matrix",
+    });
+    expect(sendUserMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not create an optimistic turn when provisioning rejects", async () => {
+    vi.mocked(ensureProductEngineReadyV1).mockRejectedValueOnce(
+      new Error("engine unavailable"),
+    );
+    const dispatch = vi.fn();
+    const { result } = makeCodexHook({
+      dispatch,
+      providerProfileId: "doge-token-matrix",
+    });
+
+    await expect(result.current.sendUserMessageToThread(
+      workspace,
+      "thread-1",
+      "hello codex",
+    )).rejects.toThrow("engine unavailable");
+
+    expect(sendUserMessage).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: "addUserMessage" }),
+    );
+  });
+
   it("passes custom spec root through codex send when configured", async () => {
     mockWorkspaceSpecRoot("/tmp/external-openspec");
 

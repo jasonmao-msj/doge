@@ -5,6 +5,11 @@
 const update = {
   "update": {
     "title": "Обновление",
+    "engineProvisioning": {
+      "installing": "Установка…",
+      "ready": "Готово",
+      "failed": "Не удалось завершить настройку."
+    },
     "checkingForUpdates": "Проверка обновлений...",
     "updateAvailable": "Доступна новая версия!",
     "availableAction": "Доступно обновление",
