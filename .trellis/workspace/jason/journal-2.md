@@ -302,3 +302,36 @@ Semantic merge PR #36 的 create-session engine routing：保留 frozen engineOv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 68: 准备 doge v0.1.10 Release
+
+**Date**: 2026-08-28
+**Task**: 准备 doge v0.1.10 Release
+**Branch**: `codex/release-v0.1.10`
+
+### Summary
+
+同步七个 canonical version facts 与双语 CHANGELOG 到 0.1.10；发现并规避 v0.1.4-v0.1.9 legacy tag 冲突，新增 signed preflight exact-tag fail-closed gate；L3 release checks、contracts、typecheck、production build 与 OpenSpec strict 通过。任务保持 active，待 PR 合入和 L4 Release。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0abd0698e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
