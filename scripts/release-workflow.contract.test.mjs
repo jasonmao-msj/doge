@@ -57,10 +57,14 @@ test("release stays fail-closed until the independent doge updater trust chain e
   assert.match(preflight, /environment: release/);
   assert.match(preflight, /inputs\.windows_artifact_only != true/);
   assert.match(preflight, /inputs\.macos_artifact_only != true/);
+  assert.match(preflight, /name: Verify release source/);
+  assert.match(preflight, /refs\/heads\/main/);
   assert.match(preflight, /TAURI_SIGNING_PRIVATE_KEY_B64/);
   assert.match(preflight, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
   assert.match(preflight, /createUpdaterArtifacts/);
   assert.match(preflight, /Tauri updater plugin is disabled/);
+  assert.match(preflight, /name: Verify committed release changelog/);
+  assert.match(preflight, /npm run release:check/);
   assert.match(
     preflight,
     /https:\/\/github\.com\/jasonmao-msj\/doge\/releases\/latest\/download\/latest\.json/,
@@ -81,6 +85,31 @@ test("release stays fail-closed until the independent doge updater trust chain e
   assert.match(release, /release-artifacts\/latest\.json/);
   assert.match(release, /Missing Linux updater signature/);
   assert.match(release, /Missing Windows updater signature/);
+  assert.match(
+    release,
+    /node scripts\/check-release-changelog\.mjs[\s\\]+--extract-current release-artifacts\/release-notes\.md/,
+  );
+  assert.match(release, /--notes-file release-artifacts\/release-notes\.md/);
+  assert.doesNotMatch(release, /git tag --sort=-version:refname|release-commits\.txt/);
+  assert.doesNotMatch(release, /Bump version and open PR|gh pr create|npm version/);
+  assert.match(workflow, /^permissions:\n  contents: read$/m);
+  assert.match(release, /permissions:\n\s+contents: write/);
+  assert.doesNotMatch(workflow, /pull-requests:\s+write/);
+});
+
+test("normal CI and signed release share the committed changelog gate", () => {
+  const ci = read(".github/workflows/ci.yml");
+  const workflow = read(".github/workflows/release.yml");
+
+  assert.match(
+    ci,
+    /name: Release changelog contract\n\s+run: npm run release:check:test && npm run release:check/,
+  );
+  assert.match(workflowJob(workflow, "release_preflight"), /npm run release:check/);
+  assert.match(
+    workflowJob(workflow, "release"),
+    /--extract-current release-artifacts\/release-notes\.md/,
+  );
 });
 
 test("Windows artifact-only dispatch cannot publish or access release secrets", () => {

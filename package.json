@@ -29,6 +29,8 @@
     "check:messages-boundaries": "node scripts/check-messages-boundaries.mjs",
     "check:branding": "node scripts/check-branding.mjs",
     "check:branding:test": "node --test scripts/lib/brandingChecker.test.mjs",
+    "release:check": "node scripts/check-release-changelog.mjs",
+    "release:check:test": "node --test scripts/release-changelog.test.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "check:icon-assets": "node --test scripts/icon-assets.contract.test.mjs",
     "check:upstream-sync": "node scripts/upstream-sync-audit.mjs",

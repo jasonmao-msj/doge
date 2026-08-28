@@ -13,6 +13,7 @@
 - Canonical upstream fetch URL only in `scripts/upstream-sync-audit.mjs`；`remote.upstream.pushurl=DISABLED`。
 - Updater state：`bundle.createUpdaterArtifacts=false` and no updater plugin until doge key exists。
 - Release preflight inputs：`TAURI_SIGNING_PRIVATE_KEY_B64`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` plus enabled updater config/public key/canonical endpoint。
+- Release changelog commands：`npm run release:check`；`node scripts/check-release-changelog.mjs --extract-current <output>`。
 - Internal artifact inputs：`workflow_dispatch.inputs.windows_artifact_only: boolean` 与 `workflow_dispatch.inputs.macos_artifact_only: boolean`；true 时只允许对应平台的 unsigned installer artifact build。
 - Default manual packaging：上述两个 input MUST both default to `true`，因此未改参数的 `workflow_dispatch` MUST 在同一个 workflow run 内并行产出 macOS 与 Windows internal artifacts。Agent MUST prefer this combined default；只有用户明确要求单平台，或某个平台失败后做 targeted retry，才 MAY 把另一平台 input 设为 `false`。正式 signed release MUST 显式把两个 input 都设为 `false`，并继续通过 release preflight。
 - External provider contract：user-supplied custom base URL remains supported；no upstream managed relay default。
@@ -25,6 +26,9 @@
 - About、Settings、Error、update metadata and web-assets URL MUST point to canonical doge repository/release or local-only fallback。
 - Upstream remote is fetch-only developer topology。Audit MUST read local Git config only; MUST NOT fetch、push or mutate。
 - Release workflow MUST stop before matrix build when signing secrets or enabled doge updater trust chain are incomplete；MUST NOT publish partial `latest.json`。
+- Signed Release MUST stop before matrix build unless `GITHUB_REF=refs/heads/main`；artifact-only internal builds MAY run from an explicitly selected non-main ref。
+- Shipping Release MUST stop before matrix build unless the committed first `CHANGELOG.md` entry matches all canonical versions and contains non-empty 中文/English bodies。该 entry MUST 同时生成 `latest.json.notes` 与 GitHub Release body；workflow MUST NOT scan Git history生成第二份 notes、修改 version/changelog 或创建 post-release PR。
+- Release workflow 默认权限 MUST 为 `contents: read`；只有最终 publish job MAY 提升为 `contents: write`，workflow MUST NOT 请求 `pull-requests: write`。
 - `windows_artifact_only=true` MAY bypass release preflight only for an internal test installer job；该 job MUST use `contents: read`、MUST NOT reference release environment/secrets、MUST NOT generate `.sig`/`latest.json` or call `gh release`，且只能上传 NSIS EXE + SHA-256 Actions artifact。
 - `macos_artifact_only=true` MAY bypass release preflight only for internal Apple Silicon / Intel test DMG jobs；jobs MUST use `contents: read`、MUST NOT reference release environment/secrets、MUST use explicit `--skip-sign --skip-notarize`、MUST verify each DMG with `hdiutil verify`，且只能上传 DMG + SHA-256 Actions artifacts。
 - Credential helper MUST NOT export、encode、persist or print password/private key/certificate content。
@@ -41,6 +45,10 @@
 | manual dispatch accepts defaults | one run builds macOS ARM64 / Intel DMGs and Windows x64 NSIS in parallel | split routine packaging into separate runs、enter signed release lane |
 | explicit single-platform retry | only the requested/retried artifact job runs | silently treat platform-only output as the default complete set |
 | both artifact inputs explicitly `false` | enter signed release preflight | bypass trust-chain validation or publish unsigned metadata |
+| signed release selected ref is not `main` | preflight fail before platform matrix | publish unreviewed branch |
+| signed release + stale/missing CHANGELOG | preflight fail before platform matrix | runner 临时生成 notes 或继续发布 |
+| committed current CHANGELOG valid | extract exact bilingual current entry for updater + GitHub Release | commit scan body 与 App 版本记录漂移 |
+| release workflow permissions | default `contents: read`；final publish job only `contents: write` | workflow-wide write 或 `pull-requests: write` |
 | some platform signature missing | metadata job fail | omit platform and publish partial feed |
 | custom provider URL | accept through generic path | replace with removed relay |
 | removed analytics token returns in shipping source | exact negative test fail | allowlist runtime service |
@@ -61,6 +69,7 @@
 - `npx vitest run src/features/brand/contracts/upstreamServiceIsolation.test.ts src/features/brand/contracts/externalServiceContracts.test.ts src/features/brand/contracts/productLinks.test.tsx`
 - `node --test scripts/upstream-sync-audit.test.mjs scripts/release-workflow.contract.test.mjs`；release contract MUST assert both artifact inputs default to `true`、combined dispatch reaches both platform jobs、artifact-only jobs have read-only permissions and no secret/signature/publish surface。
 - `npm run check:upstream-sync && npm run check:branding && npm run check:docs`
+- `npm run release:check && npm run release:check:test && node --test scripts/release-workflow.contract.test.mjs`
 - Release/draft smoke remains manual until doge-owned signing material exists。
 
 ### 7. Wrong vs Correct
@@ -76,4 +85,21 @@
 ```yaml
 - name: Verify doge updater trust chain
   run: test -n "$TAURI_SIGNING_PRIVATE_KEY_B64" && verify_updater_config
+```
+
+#### Wrong
+
+```yaml
+- name: Generate release notes from commits and bump after publish
+  run: git log "$LAST_TAG..HEAD" > release-notes.md && gh pr create
+```
+
+#### Correct
+
+```yaml
+- name: Verify committed release changelog
+  run: npm run release:check
+
+- name: Extract the reviewed current entry
+  run: node scripts/check-release-changelog.mjs --extract-current release-artifacts/release-notes.md
 ```

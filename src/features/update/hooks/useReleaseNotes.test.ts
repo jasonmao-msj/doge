@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   findReleaseIndex,
@@ -110,6 +112,19 @@ describe("parseChangelogEntries", () => {
     expect(entries[0]?.chineseBody).not.toContain("Denser Git Graph workbench");
     expect(entries[0]?.englishBody).not.toContain("Git Graph 工作台更密");
     expect(entries[1]?.version).toBe("0.7.15");
+  });
+
+  it("parses the committed release history bundled with the app", () => {
+    const changelog = readFileSync(resolve(process.cwd(), "CHANGELOG.md"), "utf8");
+    const packageVersion = JSON.parse(
+      readFileSync(resolve(process.cwd(), "package.json"), "utf8"),
+    ).version as string;
+    const entries = parseChangelogEntries(changelog);
+
+    expect(entries[0]?.version).toBe(packageVersion);
+    expect(entries.some((entry) => entry.version === "0.1.0")).toBe(true);
+    expect(entries.every((entry) => entry.chineseBody.trim().length > 0)).toBe(true);
+    expect(entries.every((entry) => entry.englishBody.trim().length > 0)).toBe(true);
   });
 });
 
