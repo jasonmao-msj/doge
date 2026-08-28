@@ -401,3 +401,36 @@ main CI 三次在三个无关 jsdom tests发生 5000ms timeout；保留原 timeo
 ### Next Steps
 
 - None - task complete
+
+
+## Session 71: 校准 bounded retry 到 full batched CI
+
+**Date**: 2026-08-28
+**Task**: 校准 bounded retry 到 full batched CI
+**Branch**: `codex/extend-vitest-retry-to-ci`
+
+### Summary
+
+Windows gate绿后 Ubuntu test-js在相同 ClaudeSettings suite发生 5s timeout，证明 jitter跨 runner。将 VITEST_RETRY=1覆盖 test-js/test-windows，保留本地/default 0与原 timeout；19条 harness/workflow tests、focused suite、typecheck与 OpenSpec strict通过。任务保持 active，待 PR 合入、green main 与 Release。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3436694b3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

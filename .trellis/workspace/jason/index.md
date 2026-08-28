@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 70
+- **Total Sessions**: 71
 - **Last Active**: 2026-08-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~403 | Active |
+| `journal-2.md` | ~436 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 71 | 2026-08-28 | 校准 bounded retry 到 full batched CI | `3436694b3` | `codex/extend-vitest-retry-to-ci` |
 | 70 | 2026-08-28 | 稳定 Unix probe descendant reaping regression | `510d267b2` | `codex/stabilize-probe-process-group-test` |
 | 69 | 2026-08-28 | 稳定 Windows Vitest timing gate | `558d1ac8d` | `codex/stabilize-windows-vitest-timeouts` |
 | 68 | 2026-08-28 | 准备 doge v0.1.10 Release | `0abd0698e` | `codex/release-v0.1.10` |
