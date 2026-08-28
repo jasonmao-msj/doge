@@ -353,7 +353,7 @@ describe("useWorkspaceThreadListHydration", () => {
     vi.useRealTimers();
   });
 
-  it("keeps unrelated workspaces cold after active first-paint reaches the gate", async () => {
+  it("hydrates visible unrelated workspaces after active first-paint reaches the gate", async () => {
     vi.useFakeTimers();
     const restoreIdleCallback = installImmediateIdleCallback();
     const workspaces = [
@@ -399,13 +399,105 @@ describe("useWorkspaceThreadListHydration", () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10_000);
     });
+    expect(listThreadsForWorkspace).toHaveBeenCalledWith(
+      workspaces[0],
+      expect.objectContaining({
+        preserveState: true,
+        startupHydrationMode: "first-paint",
+      }),
+    );
+    const backgroundTaskEvents = getStartupTraceSnapshot().events.filter(
+      (event): event is Extract<typeof event, { type: "task" }> =>
+        event.type === "task" &&
+        event.taskId === "thread-list:first-paint:ws-older",
+    );
     expect(
-      listThreadsForWorkspace.mock.calls.some(
-        (call) => call[0]?.id === "ws-older",
-      ),
-    ).toBe(false);
+      backgroundTaskEvents.some((event) => event.phase === "idle-prewarm"),
+    ).toBe(true);
     restoreIdleCallback();
     vi.useRealTimers();
+  });
+
+  it("hydrates eligible background workspaces one at a time", async () => {
+    const restoreIdleCallback = installImmediateIdleCallback();
+    const workspaces = [
+      createWorkspace("ws-active"),
+      createWorkspace("ws-visible"),
+      createWorkspace("ws-visible-next"),
+      createWorkspace("ws-collapsed"),
+      { ...createWorkspace("ws-offline"), connected: false },
+    ];
+    workspaces[3] = {
+      ...workspaces[3],
+      settings: { ...workspaces[3].settings, sidebarCollapsed: true },
+    };
+    const visibleHydration = createDeferred();
+    const listThreadsForWorkspace = vi
+      .fn<
+        (
+          workspace: WorkspaceInfo,
+          options?: {
+            preserveState?: boolean;
+            includeOpenCodeSessions?: boolean;
+            startupHydrationMode?: "full-catalog" | "first-paint";
+          },
+        ) => Promise<void>
+      >()
+      .mockImplementation(async (workspace) => {
+        if (workspace.id === "ws-visible") {
+          await visibleHydration.promise;
+        }
+      });
+
+    renderHook(() =>
+      useWorkspaceThreadListHydration({
+        activeWorkspaceId: "ws-active",
+        activeWorkspaceProjectionOwnerIds: ["ws-active"],
+        listThreadsForWorkspace,
+        threadListLoadingByWorkspace: {},
+        workspaces,
+        workspacesById: new Map(
+          workspaces.map((workspace) => [workspace.id, workspace]),
+        ),
+      }),
+    );
+
+    await waitFor(() => {
+      expect(listThreadsForWorkspace).toHaveBeenCalledWith(
+        workspaces[1],
+        expect.objectContaining({ startupHydrationMode: "first-paint" }),
+      );
+    });
+    expect(
+      listThreadsForWorkspace.mock.calls.some(
+        (call) => call[0]?.id === "ws-collapsed",
+      ),
+    ).toBe(false);
+    expect(
+      listThreadsForWorkspace.mock.calls.some(
+        (call) => call[0]?.id === "ws-offline",
+      ),
+    ).toBe(false);
+    expect(listThreadsForWorkspace).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      visibleHydration.resolve();
+      await visibleHydration.promise;
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(listThreadsForWorkspace).toHaveBeenCalledWith(
+        workspaces[2],
+        expect.objectContaining({ startupHydrationMode: "first-paint" }),
+      );
+    });
+    expect(listThreadsForWorkspace).toHaveBeenCalledTimes(3);
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    restoreIdleCallback();
   });
 
   it("blocks non-active listThreadsForWorkspaceTracked during cold-start", async () => {
