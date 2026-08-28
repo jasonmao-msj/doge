@@ -2649,6 +2649,28 @@ opencode/gpt-5-nano
     }
 
     #[cfg(unix)]
+    async fn wait_for_unix_process_to_disappear(
+        pid: libc::pid_t,
+        budget: Duration,
+    ) -> Result<(), String> {
+        timeout(budget, async {
+            loop {
+                let probe = unsafe { libc::kill(pid, 0) };
+                if probe == -1 {
+                    let error = std::io::Error::last_os_error();
+                    if error.raw_os_error() == Some(libc::ESRCH) {
+                        return Ok(());
+                    }
+                    return Err(format!("failed to probe descendant pid {pid}: {error}"));
+                }
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+        })
+        .await
+        .map_err(|_| format!("descendant pid {pid} still exists after {budget:?}"))?
+    }
+
+    #[cfg(unix)]
     #[tokio::test]
     async fn hanging_probe_times_out_and_terminates_its_process_group() {
         let child_pid_path = std::env::temp_dir().join(format!(
@@ -2679,15 +2701,12 @@ opencode/gpt-5-nano
             .expect("probe must record descendant pid")
             .parse::<libc::pid_t>()
             .expect("descendant pid must be numeric");
-        let probe = unsafe { libc::kill(child_pid, 0) };
-        assert_eq!(
-            probe, -1,
-            "probe descendant must be terminated with its group"
-        );
-        assert_eq!(
-            std::io::Error::last_os_error().raw_os_error(),
-            Some(libc::ESRCH)
-        );
+        let descendant_exit =
+            wait_for_unix_process_to_disappear(child_pid, DETECTION_CLEANUP_TIMEOUT).await;
+        if descendant_exit.is_err() {
+            let _ = unsafe { libc::kill(child_pid, libc::SIGKILL) };
+        }
+        descendant_exit.expect("probe descendant must disappear after group termination");
 
         let _ = fs::remove_file(&script_path);
         let _ = fs::remove_file(&child_pid_path);
