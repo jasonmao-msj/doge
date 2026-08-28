@@ -203,3 +203,36 @@ Semantic merge PR #36 的 create-session engine routing：保留 frozen engineOv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 65: 准备 doge v0.1.3 发布
+
+**Date**: 2026-08-27
+**Task**: 准备 doge v0.1.3 发布
+**Branch**: `codex/release-v0.1.3`
+
+### Summary
+
+同步 config/brand.json、package/package-lock、Cargo/Cargo.lock 与 Tauri 版本到 0.1.3。通过 branding check、release workflow contract 7 tests、cargo metadata、git diff check，并确认 GitHub v0.1.3 tag 尚未存在。下一步合并版本 PR 后以 windows_artifact_only=false、macos_artifact_only=false 触发完整 signed release。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2d595ca78` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
