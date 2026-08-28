@@ -236,3 +236,36 @@ Semantic merge PR #36 的 create-session engine routing：保留 frozen engineOv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 66: 修复 brand 版本契约测试
+
+**Date**: 2026-08-27
+**Task**: 修复 brand 版本契约测试
+**Branch**: `codex/fix-brand-version-contract`
+
+### Summary
+
+修复 CI run 33141654705 的 test-js/test-windows 同源失败：brandManifest identity test 不再硬编码 0.1.0，改为三段 SemVer contract；package/Tauri/Cargo 与 brand.version 的严格一致性断言保持不变。通过 focused Vitest 3/3、target ESLint、branding check 与 typecheck。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `aaec1fe5b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
