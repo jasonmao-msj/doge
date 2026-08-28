@@ -9,6 +9,7 @@ use super::{
     run_start_thread_with_hook_safe_fallback_and_recovery_probe, run_start_thread_with_retry,
     run_start_thread_with_retry_and_recovery_probe,
 };
+use crate::local_usage::CODEX_BACKGROUND_KIND_GUARDIAN_REVIEW;
 use crate::types::{LocalUsageSessionSummary, LocalUsageUsageData};
 use crate::{
     engine::EngineType,
@@ -327,6 +328,7 @@ fn merge_unified_codex_thread_entries_dedupes_and_keeps_metadata_stable() {
             physical_path: None,
             file_size_bytes: Some(4_096),
             modified_lines: 0,
+            background_kind: None,
         },
         LocalUsageSessionSummary {
             session_id: "thread-local".to_string(),
@@ -348,6 +350,7 @@ fn merge_unified_codex_thread_entries_dedupes_and_keeps_metadata_stable() {
             physical_path: None,
             file_size_bytes: Some(8_192),
             modified_lines: 0,
+            background_kind: None,
         },
     ];
 
@@ -419,6 +422,7 @@ fn merge_unified_codex_thread_entries_replaces_generic_vscode_source() {
         physical_path: None,
         file_size_bytes: Some(1_024),
         modified_lines: 0,
+        background_kind: None,
     }];
 
     let workspace_session_ids: HashSet<String> = local_sessions
@@ -466,6 +470,7 @@ fn merge_unified_codex_thread_entries_matches_session_id_aliases() {
         physical_path: None,
         file_size_bytes: Some(2_048),
         modified_lines: 0,
+        background_kind: None,
     }];
 
     let workspace_session_ids: HashSet<String> = local_sessions
@@ -640,6 +645,7 @@ fn merge_unified_codex_thread_entries_filters_background_helper_sessions() {
             physical_path: None,
             file_size_bytes: Some(2_048),
             modified_lines: 0,
+            background_kind: None,
         },
         LocalUsageSessionSummary {
             session_id: "thread-visible-local".to_string(),
@@ -661,6 +667,91 @@ fn merge_unified_codex_thread_entries_filters_background_helper_sessions() {
             physical_path: None,
             file_size_bytes: Some(1_024),
             modified_lines: 0,
+            background_kind: None,
+        },
+    ];
+
+    let workspace_session_ids: HashSet<String> = local_sessions
+        .iter()
+        .flat_map(codex_session_identifier_candidates)
+        .collect();
+    let merged = merge_unified_codex_thread_entries(
+        live_entries,
+        &local_sessions,
+        &workspace_session_ids,
+        "/tmp/workspace",
+        10,
+    );
+    let ids = merged
+        .iter()
+        .filter_map(|entry| entry.get("id").and_then(|value| value.as_str()))
+        .collect::<Vec<_>>();
+
+    assert_eq!(ids, vec!["thread-visible", "thread-visible-local"]);
+}
+#[test]
+fn merge_unified_codex_thread_entries_filters_structural_background_sessions() {
+    let live_entries = vec![
+        json!({
+            "id": "thread-guardian-live",
+            "preview": "live guardian row should be hidden through local background id set",
+            "updatedAt": 130,
+            "createdAt": 130
+        }),
+        json!({
+            "id": "thread-visible",
+            "preview": "normal user prompt",
+            "updatedAt": 100,
+            "createdAt": 100
+        }),
+    ];
+    let local_sessions = vec![
+        LocalUsageSessionSummary {
+            session_id: "session-guardian".to_string(),
+            session_id_aliases: vec!["thread-guardian-live".to_string()],
+            parent_session_id: None,
+            timestamp: 135,
+            cwd: None,
+            model: "openai/gpt-5".to_string(),
+            usage: LocalUsageUsageData::default(),
+            cost: 0.0,
+            summary: Some(
+                "The following is the Codex agent history whose request action you are assessing."
+                    .to_string(),
+            ),
+            native_title: None,
+            source: Some("custom".to_string()),
+            provider: Some("openai".to_string()),
+            provider_profile_id: None,
+            provider_profile_source: None,
+            provider_profile_name: None,
+            provider_availability: None,
+            physical_path: None,
+            file_size_bytes: Some(2_048),
+            modified_lines: 0,
+            background_kind: Some(CODEX_BACKGROUND_KIND_GUARDIAN_REVIEW.to_string()),
+        },
+        LocalUsageSessionSummary {
+            session_id: "thread-visible-local".to_string(),
+            session_id_aliases: Vec::new(),
+            parent_session_id: None,
+            timestamp: 90,
+            cwd: None,
+            model: "openai/gpt-5-mini".to_string(),
+            usage: LocalUsageUsageData::default(),
+            cost: 0.0,
+            summary: Some("normal local prompt".to_string()),
+            native_title: None,
+            source: Some("cli".to_string()),
+            provider: Some("openai".to_string()),
+            provider_profile_id: None,
+            provider_profile_source: None,
+            provider_profile_name: None,
+            provider_availability: None,
+            physical_path: None,
+            file_size_bytes: Some(1_024),
+            modified_lines: 0,
+            background_kind: None,
         },
     ];
 
@@ -757,6 +848,7 @@ fn merge_unified_codex_thread_entries_backfills_workspace_cwd_for_mapped_live_ro
         physical_path: None,
         file_size_bytes: Some(2_048),
         modified_lines: 0,
+        background_kind: None,
     }];
 
     let workspace_session_ids: HashSet<String> = local_sessions

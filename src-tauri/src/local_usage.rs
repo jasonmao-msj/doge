@@ -809,6 +809,7 @@ fn parse_codex_session_summary_with_mode(
     let mut cwd: Option<String> = None;
     let mut canonical_session_id: Option<String> = None;
     let mut subagent_metadata: Option<CodexSubagentSessionMetadata> = None;
+    let mut background_kind: Option<&'static str> = None;
     let mut latest_timestamp = 0_i64;
     let mut previous_totals: Option<UsageTotals> = None;
     let mut match_known = workspace_path.is_none();
@@ -916,6 +917,9 @@ fn parse_codex_session_summary_with_mode(
             }
             if subagent_metadata.is_none() {
                 subagent_metadata = extract_codex_subagent_metadata_from_session_value(&value);
+            }
+            if background_kind.is_none() {
+                background_kind = classify_codex_background_helper_from_session_value(&value);
             }
             if let Some(detected_cwd) = extract_cwd(&value) {
                 if cwd.is_none() {
@@ -1117,6 +1121,7 @@ fn parse_codex_session_summary_with_mode(
             .as_millis() as i64
     };
 
+    let background_kind = background_kind.map(str::to_string);
     let parent_session_id = subagent_metadata
         .as_ref()
         .map(|metadata| metadata.parent_session_id.clone());
@@ -1154,6 +1159,7 @@ fn parse_codex_session_summary_with_mode(
         physical_path,
         file_size_bytes: fs::metadata(path).ok().map(|metadata| metadata.len()),
         modified_lines,
+        background_kind,
     }))
 }
 
@@ -1438,6 +1444,58 @@ fn codex_subagent_display_title(metadata: &CodexSubagentSessionMetadata) -> Opti
             .as_deref()
             .and_then(portable_path_basename)
     })
+}
+
+pub(crate) const CODEX_BACKGROUND_KIND_GUARDIAN_REVIEW: &str = "guardian-review";
+pub(crate) const CODEX_BACKGROUND_KIND_SUBAGENT_HELPER: &str = "subagent-helper";
+
+// 非用户发起的 codex 后台会话（如 guardian 审批评估线程）通过 session_meta 的
+// 结构化字段归类，不再依赖 prompt 文本匹配。`source.subagent` 中仅
+// `thread_spawn` 形态是用户可见的 collab 子代理，其余形态一律视为 background。
+fn classify_codex_background_helper_from_session_value(value: &Value) -> Option<&'static str> {
+    let root = value.as_object()?;
+    let payload = root.get("payload").and_then(Value::as_object);
+    let session_meta = payload
+        .and_then(|payload| payload.get("session_meta"))
+        .and_then(Value::as_object)
+        .or_else(|| {
+            payload
+                .and_then(|payload| payload.get("sessionMeta"))
+                .and_then(Value::as_object)
+        });
+
+    for object in [Some(root), payload, session_meta].into_iter().flatten() {
+        if read_string_from_object(object, &["thread_source", "threadSource"])
+            .as_deref()
+            .is_some_and(|source| source.eq_ignore_ascii_case("guardian_review"))
+        {
+            return Some(CODEX_BACKGROUND_KIND_GUARDIAN_REVIEW);
+        }
+        let Some(source) = object
+            .get("source")
+            .or_else(|| object.get("sessionSource"))
+            .and_then(Value::as_object)
+        else {
+            continue;
+        };
+        let Some(subagent) = source
+            .get("subagent")
+            .or_else(|| source.get("subAgent"))
+            .and_then(Value::as_object)
+        else {
+            continue;
+        };
+        let is_thread_spawn = subagent
+            .get("thread_spawn")
+            .or_else(|| subagent.get("threadSpawn"))
+            .and_then(Value::as_object)
+            .is_some();
+        if !is_thread_spawn {
+            return Some(CODEX_BACKGROUND_KIND_SUBAGENT_HELPER);
+        }
+    }
+
+    None
 }
 
 fn portable_path_basename(path: &str) -> Option<String> {

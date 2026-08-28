@@ -559,6 +559,8 @@ pub(crate) struct LocalUsageSessionSummary {
     pub(crate) file_size_bytes: Option<u64>,
     #[serde(default)]
     pub(crate) modified_lines: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) background_kind: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
