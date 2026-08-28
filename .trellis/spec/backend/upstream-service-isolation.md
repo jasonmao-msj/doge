@@ -15,6 +15,7 @@
 - Release preflight inputs：`TAURI_SIGNING_PRIVATE_KEY_B64`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` plus enabled updater config/public key/canonical endpoint。
 - Release changelog commands：`npm run release:check`；`node scripts/check-release-changelog.mjs --extract-current <output>`。
 - Release tag collision probe：`git ls-remote --tags origin "refs/tags/v${VERSION}"`，network failure 与 non-empty exact-ref result 都 MUST fail closed。
+- Windows batched test recovery：`VITEST_RETRY`（integer `0..3`）→ `parseVitestBatchConfig(...).retry` → Vitest `--retry <n>`；default `0`，shipping `test-windows` lane固定 `1`。
 - Internal artifact inputs：`workflow_dispatch.inputs.windows_artifact_only: boolean` 与 `workflow_dispatch.inputs.macos_artifact_only: boolean`；true 时只允许对应平台的 unsigned installer artifact build。
 - Default manual packaging：上述两个 input MUST both default to `true`，因此未改参数的 `workflow_dispatch` MUST 在同一个 workflow run 内并行产出 macOS 与 Windows internal artifacts。Agent MUST prefer this combined default；只有用户明确要求单平台，或某个平台失败后做 targeted retry，才 MAY 把另一平台 input 设为 `false`。正式 signed release MUST 显式把两个 input 都设为 `false`，并继续通过 release preflight。
 - External provider contract：user-supplied custom base URL remains supported；no upstream managed relay default。
@@ -31,6 +32,7 @@
 - Signed Release MUST stop before matrix build when exact `refs/tags/v<canonical-version>` lookup fails or already exists；workflow MUST NOT delete、move或 reuse冲突 tag。
 - Shipping Release MUST stop before matrix build unless the committed first `CHANGELOG.md` entry matches all canonical versions and contains non-empty 中文/English bodies。该 entry MUST 同时生成 `latest.json.notes` 与 GitHub Release body；workflow MUST NOT scan Git history生成第二份 notes、修改 version/changelog 或创建 post-release PR。
 - Release workflow 默认权限 MUST 为 `contents: read`；只有最终 publish job MAY 提升为 `contents: write`，workflow MUST NOT 请求 `pull-requests: write`。
+- Windows CI MAY为 transient runner scheduling对 failed test做一次 Vitest retry；MUST保留默认 5000ms test timeout，MUST NOT让非 Windows/default callers继承 retry，且 retry MUST bounded `<=3`。
 - `windows_artifact_only=true` MAY bypass release preflight only for an internal test installer job；该 job MUST use `contents: read`、MUST NOT reference release environment/secrets、MUST NOT generate `.sig`/`latest.json` or call `gh release`，且只能上传 NSIS EXE + SHA-256 Actions artifact。
 - `macos_artifact_only=true` MAY bypass release preflight only for internal Apple Silicon / Intel test DMG jobs；jobs MUST use `contents: read`、MUST NOT reference release environment/secrets、MUST use explicit `--skip-sign --skip-notarize`、MUST verify each DMG with `hdiutil verify`，且只能上传 DMG + SHA-256 Actions artifacts。
 - Credential helper MUST NOT export、encode、persist or print password/private key/certificate content。
@@ -53,6 +55,9 @@
 | signed release + stale/missing CHANGELOG | preflight fail before platform matrix | runner 临时生成 notes 或继续发布 |
 | committed current CHANGELOG valid | extract exact bilingual current entry for updater + GitHub Release | commit scan body 与 App 版本记录漂移 |
 | release workflow permissions | default `contents: read`；final publish job only `contents: write` | workflow-wide write 或 `pull-requests: write` |
+| default/macOS batched Vitest | `retry=0` | 隐式放宽所有 CI callers |
+| Windows batched transient timeout | Vitest retry failed test once | rerun entire 40min job或全局增大 timeout |
+| deterministic Windows test hang | second attempt仍在原 timeout失败 | unbounded retry掩盖缺陷 |
 | some platform signature missing | metadata job fail | omit platform and publish partial feed |
 | custom provider URL | accept through generic path | replace with removed relay |
 | removed analytics token returns in shipping source | exact negative test fail | allowlist runtime service |
@@ -64,10 +69,12 @@
 - Good：developer manually dispatches `macos_artifact_only=true` to obtain checksummed Apple Silicon and Intel test DMGs without weakening the signed release lane。
 - Good：routine internal packaging keeps both default inputs enabled and obtains Mac + Windows artifacts from one traceable workflow run。
 - Good：candidate version exact tag不存在，signed preflight确认 remote lookup成功且 output为空后才启动 platform matrix。
+- Good：Windows runner单次 5s jitter由 `--retry 1` 恢复；同一测试连续失败两次仍阻断 CI。
 - Base：single-platform mode is an explicit operator choice for targeted retry or a user-requested platform-only package。
 - Base：normal client distribution uses GitHub Releases and needs no custom cloud server。
 - Bad：agent routinely starts separate Mac and Windows runs even though the combined default is available。
 - Bad：只因为 GitHub Release不存在就复用同名 legacy tag，或把 remote lookup failure当作 tag absent。
+- Bad：把所有 test timeout从 5s提高到 15s，或对本地/macOS默认开启 retry。
 - Bad：reuse upstream updater public key、Apple identity、analytics endpoint or managed relay。
 
 ### 6. Tests Required
@@ -77,6 +84,7 @@
 - `npm run check:upstream-sync && npm run check:branding && npm run check:docs`
 - `npm run release:check && npm run release:check:test && node --test scripts/release-workflow.contract.test.mjs`
 - Contract test MUST assert exact-ref remote lookup、lookup error fail-closed、non-empty collision fail-closed，以及无 tag mutation command。
+- `node --test scripts/test-batched.test.mjs` MUST assert default/Windows retry config、invalid/out-of-range rejection 与 exact Vitest args；CI static contract MUST assert only `test-windows` sets `VITEST_RETRY: "1"`。
 - Release/draft smoke remains manual until doge-owned signing material exists。
 
 ### 7. Wrong vs Correct

@@ -18,10 +18,16 @@ export function parseVitestBatchConfig(argv = [], env = process.env) {
     throw new Error(`Invalid VITEST_BATCH_SIZE: ${env.VITEST_BATCH_SIZE ?? ""}`);
   }
   const batchSize = Number(batchSizeText);
+  const retryText = env.VITEST_RETRY ?? "0";
+  if (!/^\d+$/.test(retryText) || Number(retryText) > 3) {
+    throw new Error(`Invalid VITEST_RETRY: ${env.VITEST_RETRY ?? ""}`);
+  }
+  const retry = Number(retryText);
 
   return {
     batchSize,
     includeHeavyIntegration,
+    retry,
   };
 }
 
@@ -29,10 +35,11 @@ export const testBatchedInternals = {
   isCommandNotFound,
   parseRipgrepFileList,
   shellQuote,
+  vitestRetryArgs,
 };
 
 export function runVitestBatches(argv = process.argv.slice(2), env = process.env) {
-  const { batchSize, includeHeavyIntegration } = parseVitestBatchConfig(argv, env);
+  const { batchSize, includeHeavyIntegration, retry } = parseVitestBatchConfig(argv, env);
   const testFiles = listTestFiles().filter((file) => {
     if (includeHeavyIntegration) {
       return true;
@@ -49,6 +56,9 @@ export function runVitestBatches(argv = process.argv.slice(2), env = process.env
     console.log(
       "[vitest-batch] heavy *.integration.test.tsx suites are excluded by default; set VITEST_INCLUDE_HEAVY=1 or pass --include-heavy to include.",
     );
+  }
+  if (retry > 0) {
+    console.log(`[vitest-batch] failed tests may retry up to ${retry} time(s).`);
   }
 
   const totalBatches = Math.ceil(testFiles.length / batchSize);
@@ -68,6 +78,7 @@ export function runVitestBatches(argv = process.argv.slice(2), env = process.env
         "1",
         "--minWorkers",
         "1",
+        ...vitestRetryArgs(retry),
         ...files,
       ],
       {
@@ -86,6 +97,10 @@ export function runVitestBatches(argv = process.argv.slice(2), env = process.env
 
   console.log(`[vitest-batch] completed ${testFiles.length} test files.`);
   return 0;
+}
+
+function vitestRetryArgs(retry) {
+  return retry > 0 ? ["--retry", String(retry)] : [];
 }
 
 function listTestFiles() {

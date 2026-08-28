@@ -335,3 +335,36 @@ Semantic merge PR #36 的 create-session engine routing：保留 frozen engineOv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 69: 稳定 Windows Vitest timing gate
+
+**Date**: 2026-08-28
+**Task**: 稳定 Windows Vitest timing gate
+**Branch**: `codex/stabilize-windows-vitest-timeouts`
+
+### Summary
+
+main CI 三次在三个无关 jsdom tests发生 5000ms timeout；保留原 timeout，仅为 Windows batched lane增加一次 bounded Vitest retry，默认/其他 callers保持 retry 0。Parser、args、workflow contract、三个失败 suites、typecheck与 OpenSpec strict通过。任务保持 active，待 PR 合入、green main 与 v0.1.10 Release。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `558d1ac8d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

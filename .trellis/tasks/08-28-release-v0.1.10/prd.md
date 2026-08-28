@@ -15,15 +15,17 @@
 - signed Release preflight 必须在 platform matrix 前拒绝已存在的目标 tag。
 - CI contract 覆盖 tag collision gate；release preparation PR 合入后从 `main` dispatch。
 - workflow inputs 必须显式设置 `windows_artifact_only=false`、`macos_artifact_only=false`。
+- Windows CI batched Vitest 对单个 transient test最多 retry 1 次，保留原 5000ms timeout；不得用全局放宽 timeout掩盖确定性 hang。
 
 ## Acceptance Criteria
 
 - [x] `v0.1.10` 在 origin tags 与 GitHub Releases 中均不存在。
 - [x] `npm run release:check` 对七个 version facts 与 current CHANGELOG entry 通过。
 - [x] workflow contract 证明 existing tag 会阻断 signed release preflight。
-- [ ] L3 release-preparation checks 通过并创建、合入独立 PR。
+- [x] L3 release-preparation checks 通过并创建、合入独立 PR。
 - [ ] signed Release workflow 从 `main` 启动并产出 `v0.1.10` Release。
 - [ ] Release tag 指向触发 workflow 的 main commit，`latest.json` 与 Release notes 使用 current CHANGELOG。
+- [x] Windows CI retry contract有 parser/argument/workflow tests；默认与非 Windows callers保持零 retry。
 
 ## Technical Approach
 
@@ -31,6 +33,9 @@
 - Collision gate：preflight 从 canonical Tauri version构造 `refs/tags/vX.Y.Z`，通过
   `git ls-remote --exit-code --tags origin` fail closed。
 - Notes：AI curate bilingual entry；workflow继续只 extract committed current entry。
+- Windows flake recovery：`scripts/test-batched.mjs` 从 bounded `VITEST_RETRY`生成 Vitest
+  `--retry`；仅 `test-windows` 设为 1。三次 main CI分别在三个无关 UI tests发生同型 5000ms timeout，
+  证明是 runner timing jitter；不修改 test timeout。
 
 ## Verification Level
 
