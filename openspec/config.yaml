@@ -12,9 +12,9 @@ context: |
     - Backend: Rust + Tauri Commands + local file persistence
     - Storage: Tauri app-data JSON、~/.ccgui JSON/client stores 与 feature directories；部分 WebView state 使用 localStorage；engine history 保留各 runtime 的 JSONL/SQLite 格式
   OpenSpec workspace:
-    - Main specs: openspec/specs/* (431 capabilities)
-    - Active changes: 5; index at openspec/changes/README.md
-    - Archived changes: 731; index at openspec/changes/archive/README.md
+    - Main specs: openspec/specs/* (517 capabilities)
+    - Active changes: 28; index at openspec/changes/README.md
+    - Archived changes: 883; index at openspec/changes/archive/README.md
     - Legacy project context remains in openspec/project.md for detailed audit history; this config context is the injected planning context for OpenSpec 1.3.x.
   Conventions:
     - Behavior changes MUST start from an OpenSpec change under openspec/changes/<change-id>/.

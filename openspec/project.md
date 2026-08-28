@@ -1,7 +1,7 @@
 # Project Context
 
 - Type: OpenSpec Workspace
-- Updated At: 2026-08-03T20:00:00+08:00
+- Updated At: 2026-08-28T20:00:00+08:00
 - Scope: governance snapshot for the current `doge` repository workspace
 - Product version fact: `doge@0.1.0` from `config/brand.json`, `package.json`, and `src-tauri/tauri.conf.json`
 
@@ -20,7 +20,7 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 - Change workflow artifacts: `openspec/changes/<change-id>/{proposal,design,tasks,verification}.md`
 - Archive: `openspec/changes/archive/*`
 - Implementation rules: `.trellis/spec/**`
-- Current workspace state: active changes = `1`, archive changes = `848`, main specs = `492`
+- Current workspace state: active changes = `28`, archive changes = `883`, main specs = `517`
 
 ## Entry Surfaces
 
@@ -64,19 +64,23 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 
 ## Current Inventory
 
-- Active changes: `1`
-- Archive changes: `848`
-- Main specs: `492`
-- Completed task sets still active: `8`
-- Ready-for-implementation task sets: `11`
+- Active changes: `28`
+- Archive changes: `883`
+- Main specs: `517`
+- Completed task sets still active: `0`
+- Ready-for-implementation task sets: `0`
 - Demand-pool proposal directories without `proposal.md` / `tasks.md`: `0`
 
 ## Active Changes
 
-Active OpenSpec changes in the current working tree (1; see [`changes/README.md`](changes/README.md)):
+Active OpenSpec changes in the current working tree (28; see [`changes/README.md`](changes/README.md)):
 
-- 仅 `add-linux-native-menu-localization`：Linux 非默认语言 native menu 启动本地化仍缺实机证据。
-- 2026-08-03 三波 bulk archive 已清退其余 complete / shipped residual 提案。
+- 当前 active set 保留未完成或 `no-tasks` 的 change；完整清单以 [`changes/README.md`](changes/README.md) 和磁盘目录为准。
+- `add-collab-stage-upstream-feed-mode`、`add-conversation-squad-inspector`、`add-daily-poetry-composer-banner`、`add-linux-native-menu-localization`、`add-shared-squad-worker-execution`、`add-sub2api-relay-quota`
+- `doge-unified-product-subscription`、`fix-claude-background-shell-settlement`、`fix-codex-collab-subagent-live-parity`、`fix-live-settle-assistant-tool-order`、`fix-messages-boundary-regressions`、`fix-runtime-workspace-switch-main-thread-stall`、`fix-shared-collab-context-and-sidebar-spawn`
+- `fix-shared-session-subscription-quota-projection`、`fix-shared-sidebar-hide-set-staleness`、`fix-ui-scale-native-zoom-freeze-all-platforms`、`fix-windows-cold-start-freeze-residual`、`fix-windows-ui-scale-webview2-hang`、`harden-shared-squad-recovery`、`integrate-token2api-account-system`
+- `lazy-engine-provisioning`、`optimize-cold-start-hydration-orchestration`、`rebrand-client-to-doge`、`redesign-startup-diagnostics-timeline`、`render-product-models-by-protocol`、`require-account-engine-subscription-onboarding`、`retire-canvas-subagent-squad-grid`、`wire-shared-composer-run-status-strip`
+- 2026-08-28 已归档 32 个内容，其中 bundle change 由用户明确授权 waiver archive，保留未完成 release evidence。
 
 
 ## P1 Performance Execution Order
@@ -84,6 +88,12 @@ Active OpenSpec changes in the current working tree (1; see [`changes/README.md`
 The previous v0.5.11 performance and recovery follow-up chain has been archived. Future performance work should open a new chain instead of reusing the archived change directories.
 
 ## Recent Archive / Sync Snapshot
+
+### 2026-08-28 Complete Bulk Archive
+
+Archived 31 completed changes after strict validation, main-spec sync, and archive-directory relocation. The batch included feature, governance, and fix changes; archive links are indexed in [`changes/archive/README.md`](changes/archive/README.md#2026-08-28). No product code was modified.
+
+Current counts: active=`28`, archive=`883`, specs=`517`.
 
 ### 2026-07-24 Verified Bulk Archive Batch
 

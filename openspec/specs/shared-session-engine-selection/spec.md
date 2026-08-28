@@ -160,3 +160,29 @@ The Sidebar `Shared CLI` creation action MUST expose a second-level selector con
 - **WHEN** the user selects a ready CLI from the Shared creation submenu
 - **THEN** the system MUST resolve that CLI's canonical local Provider and runtime-authoritative default Model
 - **AND** it MUST persist a complete initial `ExecutionTarget` before opening the session
+
+### Requirement: Shared Session Creation MUST Resolve The First Provider Catalog
+
+After the CLI is chosen, Shared Session creation MUST resolve the first Provider profile in that CLI's ordered provider catalog and load its authoritative model catalog before persisting `initialTarget`. It MUST NOT seed create-time models from a bare engine-wide model list or stale engine status cache.
+
+#### Scenario: selected CLI defaults to first provider
+
+- **WHEN** the user selects a ready CLI from the Shared creation submenu
+- **THEN** the system MUST select the first ordered Provider profile and choose its catalog default model, otherwise the first catalog row
+- **AND** it MUST persist a complete initial `ExecutionTarget` before opening the session
+
+#### Scenario: empty catalog fails closed
+
+- **WHEN** the selected first Provider profile has no usable model row after authoritative load
+- **THEN** Shared Session creation MUST fail with an actionable error
+- **AND** it MUST NOT create a Shared Session directory, metadata row, Binding, or Turn fact
+
+### Requirement: Existing Shared Session Open MUST Restore Its Durable Target
+
+Opening or re-activating an existing Shared Session MUST restore its durable last selected target and MUST NOT silently reseed the create-time first-provider default.
+
+#### Scenario: reopen restores last provider and model
+
+- **WHEN** an existing Shared Session was last used with a non-default Provider or Model
+- **THEN** the picker MUST show that last Provider and Model
+- **AND** it MUST NOT reset to the create-time default

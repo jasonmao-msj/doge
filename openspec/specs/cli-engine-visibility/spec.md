@@ -108,3 +108,35 @@ GitDiff 与 GitHistory 的 commit message picker MUST 从 global engine registry
 - **WHEN** visibility filter 后没有可用 engine
 - **THEN** picker 展示明确空状态
 - **AND** 不提供可触发 generation 的 engine item
+
+### Requirement: CLI Engine First-Install Defaults MUST Preserve Explicit Choices
+
+When `disabledCliEngines` is absent, the system MUST default `grok`, `kimi`, and `opencode` to disabled while keeping `codex` and `claude` enabled. When the field exists, including an empty array, the stored value MUST remain authoritative and MUST NOT be rewritten during startup.
+
+#### Scenario: first install uses product-curated engine defaults
+
+- **WHEN** the application reads settings whose `disabledCliEngines` field is absent
+- **THEN** Codex and Claude MUST appear in the enabled group
+- **AND** Grok, Kimi, and OpenCode MUST appear in the disabled group
+
+#### Scenario: stored choice remains authoritative
+
+- **WHEN** settings contain any explicit `disabledCliEngines` value, including `[]`
+- **THEN** the application MUST use that value unchanged
+- **AND** it MUST NOT insert or remove engine ids during startup
+
+### Requirement: Account Center SHALL Use A Subscription-First Two-Tab Information Architecture
+
+Authenticated Account Center MUST expose exactly `subscription` and `usage` as its primary tabs. The subscription surface MUST directly render subscribed engine cards and MUST NOT require a second “my engines” page or an “overview” indirection.
+
+#### Scenario: authenticated user opens Account Center
+
+- **WHEN** a Token Matrix session is authenticated
+- **THEN** Account Center MUST render `subscription` and `usage` as the primary tabs
+- **AND** the subscription tab MUST directly render available subscribed engine cards
+
+#### Scenario: user has no active subscription
+
+- **WHEN** the authenticated account has no active engine subscription
+- **THEN** the subscription tab MUST render the existing subscription acquisition state in place
+- **AND** it MUST NOT navigate through an empty intermediate engines page

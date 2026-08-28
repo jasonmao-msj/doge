@@ -2,13 +2,48 @@
 
 本页为 `mossx` 已归档 OpenSpec proposal 的完整可点击索引。目录名中的日期是 archive date，不代表 proposal 首次创建时间。
 
-- Updated At: `2026-08-26`
-- Indexed proposals: `850+`
+- Updated At: `2026-08-28`
+- Indexed proposals: `883`
 - Source of truth: `openspec/changes/archive/<archive-date>-<change-id>/proposal.md`
 - Back to current changes: [`../README.md`](../README.md)
 - Back to workspace overview: [`../../project.md`](../../project.md)
 
 ## 2026-08
+
+### 2026-08-28
+
+- [`2026-08-28-bundle-kimi-windows-shell-runtime`](2026-08-28-bundle-kimi-windows-shell-runtime/proposal.md) — user-authorized waiver archive；已同步 `kimi-engine-runtime`；保留 discovery、跨平台实机、installer/signing 与 L4 release 未完成任务，不代表完整发布验收
+- [`2026-08-28-add-collab-first-stage-main-canvas-context`](2026-08-28-add-collab-first-stage-main-canvas-context/proposal.md) — completed change，已同步 `collab-first-stage-main-canvas-context` 与 `multi-agent-orchestration`
+- [`2026-08-28-add-multi-agent-inspector-inject-context`](2026-08-28-add-multi-agent-inspector-inject-context/proposal.md) — completed change，已同步 `multi-agent-inspector-inject-context` 与 `multi-agent-orchestration`
+- [`2026-08-28-add-shared-session-project-memory-capture`](2026-08-28-add-shared-session-project-memory-capture/proposal.md) — completed change，已同步 `project-memory-auto-capture` 与 `shared-session-project-memory`
+- [`2026-08-28-add-shared-squad-control-plane`](2026-08-28-add-shared-squad-control-plane/proposal.md) — completed change，已同步 shared squad control-plane capabilities
+- [`2026-08-28-add-windows-main-window-close-confirm`](2026-08-28-add-windows-main-window-close-confirm/proposal.md) — completed change，已同步 `windows-main-window-close-confirm`
+- [`2026-08-28-add-windows-sidebar-quick-switcher-and-collapse`](2026-08-28-add-windows-sidebar-quick-switcher-and-collapse/proposal.md) — completed change，已同步 `windows-sidebar-chrome-parity`
+- [`2026-08-28-custom-model-provider-binding`](2026-08-28-custom-model-provider-binding/proposal.md) — completed change，已同步 custom provider binding capabilities
+- [`2026-08-28-establish-doge-development-agent-system`](2026-08-28-establish-doge-development-agent-system/proposal.md) — completed change，已同步 `project-instruction-layering-governance`
+- [`2026-08-28-fix-assistant-duplicate-render-native-shared`](2026-08-28-fix-assistant-duplicate-render-native-shared/proposal.md) — completed change，已同步 assistant/conversation convergence capabilities
+- [`2026-08-28-fix-composer-rewind-reset-update-depth-loop`](2026-08-28-fix-composer-rewind-reset-update-depth-loop/proposal.md) — completed change，已同步 `client-renderer-stability-under-pressure`
+- [`2026-08-28-fix-create-session-engine-routing`](2026-08-28-fix-create-session-engine-routing/proposal.md) — completed change，已同步 `create-session-engine-routing`
+- [`2026-08-28-fix-custom-prompts-stale-empty-cache`](2026-08-28-fix-custom-prompts-stale-empty-cache/proposal.md) — completed change，已同步 `composer-prompt-completion`
+- [`2026-08-28-fix-deepseek-balance-quota`](2026-08-28-fix-deepseek-balance-quota/proposal.md) — completed change，已同步 provider quota and status-panel capabilities
+- [`2026-08-28-fix-engine-routed-session-launch`](2026-08-28-fix-engine-routed-session-launch/proposal.md) — completed change，已同步 `native-provider-continuation`
+- [`2026-08-28-fix-grok-kimi-native-memory-completion`](2026-08-28-fix-grok-kimi-native-memory-completion/proposal.md) — completed change，已同步 `project-memory-auto-capture`
+- [`2026-08-28-fix-local-dev-managed-engine-resources`](2026-08-28-fix-local-dev-managed-engine-resources/proposal.md) — completed change，已同步 `local-development-managed-engine-resources`
+- [`2026-08-28-fix-product-provisional-thread-terminal-settlement`](2026-08-28-fix-product-provisional-thread-terminal-settlement/proposal.md) — completed change，已同步 product thread settlement capabilities
+- [`2026-08-28-fix-provider-continuation-target-hydration`](2026-08-28-fix-provider-continuation-target-hydration/proposal.md) — completed change，已同步 `native-provider-continuation`
+- [`2026-08-28-fix-shared-atomic-model-reasoning-linkage`](2026-08-28-fix-shared-atomic-model-reasoning-linkage/proposal.md) — completed change，已同步 shared model/reasoning capabilities
+- [`2026-08-28-fix-shared-context-resume-integrity`](2026-08-28-fix-shared-context-resume-integrity/proposal.md) — completed change，已同步 `shared-context-resume-integrity`
+- [`2026-08-28-fix-shared-create-default-provider-catalog`](2026-08-28-fix-shared-create-default-provider-catalog/proposal.md) — completed change，已同步 `model-provider-catalog-runtime`
+- [`2026-08-28-fix-shared-model-picker-display-authority`](2026-08-28-fix-shared-model-picker-display-authority/proposal.md) — completed change，已同步 `model-provider-catalog-runtime`
+- [`2026-08-28-fix-shared-session-recovery-exit-closure`](2026-08-28-fix-shared-session-recovery-exit-closure/proposal.md) — completed change，已同步 `shared-session-recovery-exit` 与 `shared-send-pipeline`
+- [`2026-08-28-fix-shared-user-image-bubble-projection`](2026-08-28-fix-shared-user-image-bubble-projection/proposal.md) — completed change，已同步 shared canonical/user-image projection capabilities
+- [`2026-08-28-hide-startup-gate-overlay`](2026-08-28-hide-startup-gate-overlay/proposal.md) — completed change，已同步 `client-startup-orchestration`
+- [`2026-08-28-redesign-composer-session-control-hud`](2026-08-28-redesign-composer-session-control-hud/proposal.md) — completed change，已同步 composer session-control capabilities
+- [`2026-08-28-refine-account-center-subscription-ui`](2026-08-28-refine-account-center-subscription-ui/proposal.md) — completed change，已同步 `account-center-subscription-ui` 与 `cli-engine-visibility`
+- [`2026-08-28-refine-account-shortcut-and-managed-provider-default`](2026-08-28-refine-account-shortcut-and-managed-provider-default/proposal.md) — completed change，已同步 account/provider catalog capabilities
+- [`2026-08-28-retire-claude-subagent-agent-session-card`](2026-08-28-retire-claude-subagent-agent-session-card/proposal.md) — completed change，已同步 Claude subagent presentation capabilities
+- [`2026-08-28-simplify-shared-recovery-bar-ux`](2026-08-28-simplify-shared-recovery-bar-ux/proposal.md) — completed change，已同步 `shared-recovery-bar-ux` 与 `shared-session-recovery-exit`
+- [`2026-08-28-stabilize-project-map-windows-test-latency`](2026-08-28-stabilize-project-map-windows-test-latency/proposal.md) — completed change，已同步 `architecture-ci-governance`
 
 ### 2026-08-26
 
@@ -95,21 +130,85 @@
 - [`2026-08-03-stabilize-client-runtime-and-diagnostics`](2026-08-03-stabilize-client-runtime-and-diagnostics/proposal.md) — runtime/diagnostics 稳定化已上线；功能 smoke 已过，quantified frame residual waived
 - [`2026-08-03-streamline-native-provider-continuation`](2026-08-03-streamline-native-provider-continuation/proposal.md) — provider continuation 单确认/进度已上线；跨引擎手工 residual waived
 
+#### 2026-08-03 历史索引补全
+
+- [`2026-08-03-govern-documentation-information-architecture`](2026-08-03-govern-documentation-information-architecture/proposal.md) — historical archive index backfill
+
 ### 2026-08-02
 
 - [`2026-08-02-fix-native-process-phase-orphan-reasoning`](2026-08-02-fix-native-process-phase-orphan-reasoning/proposal.md) — verified implementation，已同步 `message-process-phase-collapse`；过程相位折叠改为 turn-final ownership，吸收 Native 流式 mid-plan 前的孤儿思考过程
 - [`2026-08-02-fix-native-continuation-artifact-path-windows-compat`](2026-08-02-fix-native-continuation-artifact-path-windows-compat/proposal.md) — verified implementation，已同步 `native-provider-continuation`；artifact 存储路径改为 platform-safe key，修复 Windows `os error 267`，读取兼容 legacy `{sessionId}` 布局
 
-## 2026-07 (201)
+## 2026-07 (249)
+
+### 2026-07-30
+
+- [`2026-07-30-fix-live-history-reveal-click`](2026-07-30-fix-live-history-reveal-click/proposal.md) — historical archive index backfill
+- [`2026-07-30-fix-shared-active-turn-timeout-recovery`](2026-07-30-fix-shared-active-turn-timeout-recovery/proposal.md) — historical archive index backfill
+- [`2026-07-30-refine-message-anchor-rail-preview`](2026-07-30-refine-message-anchor-rail-preview/proposal.md) — historical archive index backfill
+- [`2026-07-30-restore-shared-queue-fusion-compaction-continuity`](2026-07-30-restore-shared-queue-fusion-compaction-continuity/proposal.md) — historical archive index backfill
+
+### 2026-07-29
+
+- [`2026-07-29-group-provider-continuation-family-in-sidebar`](2026-07-29-group-provider-continuation-family-in-sidebar/proposal.md) — historical archive index backfill
+- [`2026-07-29-separate-config-reload-and-cli-model-discovery`](2026-07-29-separate-config-reload-and-cli-model-discovery/proposal.md) — historical archive index backfill
+
+### 2026-07-28
+
+- [`2026-07-28-add-native-provider-continuation`](2026-07-28-add-native-provider-continuation/proposal.md) — historical archive index backfill
+- [`2026-07-28-add-shared-context-compiler`](2026-07-28-add-shared-context-compiler/proposal.md) — historical archive index backfill
+- [`2026-07-28-calibrate-multi-cli-session-foundation-a-d`](2026-07-28-calibrate-multi-cli-session-foundation-a-d/proposal.md) — historical archive index backfill
+- [`2026-07-28-complete-multi-cli-provider-switching-ux`](2026-07-28-complete-multi-cli-provider-switching-ux/proposal.md) — historical archive index backfill
+- [`2026-07-28-compose-shared-session-execution-target`](2026-07-28-compose-shared-session-execution-target/proposal.md) — historical archive index backfill
+- [`2026-07-28-fix-native-continuation-runtime-model-ack`](2026-07-28-fix-native-continuation-runtime-model-ack/proposal.md) — historical archive index backfill
+- [`2026-07-28-fix-native-provider-model-picker`](2026-07-28-fix-native-provider-model-picker/proposal.md) — historical archive index backfill
+- [`2026-07-28-fix-provider-continuation-header-collapse`](2026-07-28-fix-provider-continuation-header-collapse/proposal.md) — historical archive index backfill
+- [`2026-07-28-fix-shared-provider-picker-accordion-focus`](2026-07-28-fix-shared-provider-picker-accordion-focus/proposal.md) — historical archive index backfill
+- [`2026-07-28-fix-shared-provider-picker-focus-stall`](2026-07-28-fix-shared-provider-picker-focus-stall/proposal.md) — historical archive index backfill
+- [`2026-07-28-fix-shared-session-canvas-history-parity`](2026-07-28-fix-shared-session-canvas-history-parity/proposal.md) — historical archive index backfill
+- [`2026-07-28-fix-shared-terminal-final-persistence`](2026-07-28-fix-shared-terminal-final-persistence/proposal.md) — historical archive index backfill
+- [`2026-07-28-refine-provider-continuation-header-surface`](2026-07-28-refine-provider-continuation-header-surface/proposal.md) — historical archive index backfill
+- [`2026-07-28-replace-shared-picker-with-stable-two-pane`](2026-07-28-replace-shared-picker-with-stable-two-pane/proposal.md) — historical archive index backfill
+- [`2026-07-28-show-provider-continuation-source-excerpt`](2026-07-28-show-provider-continuation-source-excerpt/proposal.md) — historical archive index backfill
+- [`2026-07-28-stabilize-provider-continuation-ux`](2026-07-28-stabilize-provider-continuation-ux/proposal.md) — historical archive index backfill
 
 ### 2026-07-27
 
+- [`2026-07-27-assemble-shared-canonical-facts`](2026-07-27-assemble-shared-canonical-facts/proposal.md) — historical archive index backfill
+- [`2026-07-27-establish-shared-event-storage`](2026-07-27-establish-shared-event-storage/proposal.md) — historical archive index backfill
+- [`2026-07-27-isolate-claude-provider-runtimes-and-align-vendor-ui`](2026-07-27-isolate-claude-provider-runtimes-and-align-vendor-ui/proposal.md) — historical archive index backfill
+- [`2026-07-27-project-shared-canonical-conversation`](2026-07-27-project-shared-canonical-conversation/proposal.md) — historical archive index backfill
 - [`2026-07-27-expose-shared-projection-test-toggle`](2026-07-27-expose-shared-projection-test-toggle/proposal.md) — verified implementation，已同步 `shared-canonical-projection`；设置 → 其他设置新增默认关闭、可回滚的 Shared Projection 动态测试开关
 - [`2026-07-27-improve-codex-provider-protocol-error`](2026-07-27-improve-codex-provider-protocol-error/proposal.md) — verified implementation，已同步 `codex-provider-scoped-session-launch` 与新增 `frontend-error-feedback`；Codex managed provider 非法 TOML/unsupported wire protocol 使用本地化 global Error Toast，renderer production code 禁止 native Alert
 
 ### 2026-07-26
 
+- [`2026-07-26-align-engine-runtime-capability-contract`](2026-07-26-align-engine-runtime-capability-contract/proposal.md) — historical archive index backfill
+- [`2026-07-26-cache-message-search-index`](2026-07-26-cache-message-search-index/proposal.md) — historical archive index backfill
+- [`2026-07-26-converge-model-provider-catalog-runtime`](2026-07-26-converge-model-provider-catalog-runtime/proposal.md) — historical archive index backfill
+- [`2026-07-26-define-engine-adapter-protocol-registry`](2026-07-26-define-engine-adapter-protocol-registry/proposal.md) — historical archive index backfill
+- [`2026-07-26-define-engine-message-delivery-semantics`](2026-07-26-define-engine-message-delivery-semantics/proposal.md) — historical archive index backfill
+- [`2026-07-26-enforce-opencode-soft-retirement-boundary`](2026-07-26-enforce-opencode-soft-retirement-boundary/proposal.md) — historical archive index backfill
+- [`2026-07-26-establish-executable-session-registry`](2026-07-26-establish-executable-session-registry/proposal.md) — historical archive index backfill
+- [`2026-07-26-establish-logical-session-runtime-identity`](2026-07-26-establish-logical-session-runtime-identity/proposal.md) — historical archive index backfill
+- [`2026-07-26-establish-unified-engine-event-bus`](2026-07-26-establish-unified-engine-event-bus/proposal.md) — historical archive index backfill
+- [`2026-07-26-fix-retired-opencode-session-hydration`](2026-07-26-fix-retired-opencode-session-hydration/proposal.md) — historical archive index backfill
+- [`2026-07-26-harden-claude-provider-management`](2026-07-26-harden-claude-provider-management/proposal.md) — historical archive index backfill
+- [`2026-07-26-harden-kimi-engine-governance`](2026-07-26-harden-kimi-engine-governance/proposal.md) — historical archive index backfill
+- [`2026-07-26-harden-per-session-provider-selection-review-findings`](2026-07-26-harden-per-session-provider-selection-review-findings/proposal.md) — historical archive index backfill
+- [`2026-07-26-migrate-engine-controller-facade`](2026-07-26-migrate-engine-controller-facade/proposal.md) — historical archive index backfill
+- [`2026-07-26-redesign-git-commit-composer`](2026-07-26-redesign-git-commit-composer/proposal.md) — historical archive index backfill
+- [`2026-07-26-remove-generated-worktree-branch-default`](2026-07-26-remove-generated-worktree-branch-default/proposal.md) — historical archive index backfill
+- [`2026-07-26-unify-per-session-provider-selection`](2026-07-26-unify-per-session-provider-selection/proposal.md) — historical archive index backfill
 - [`2026-07-26-fix-file-document-loading-error-stuck-state`](2026-07-26-fix-file-document-loading-error-stuck-state/proposal.md) — verified implementation，已同步 `file-document-loading-error-surface`；Windows manual gate 经 product owner 明确授权 waived
+
+### 2026-07-25
+
+- [`2026-07-25-add-terminal-search-and-web-links`](2026-07-25-add-terminal-search-and-web-links/proposal.md) — historical archive index backfill
+- [`2026-07-25-modularize-git-file-and-diff-surfaces`](2026-07-25-modularize-git-file-and-diff-surfaces/proposal.md) — historical archive index backfill
+- [`2026-07-25-restore-git-history-type-safety`](2026-07-25-restore-git-history-type-safety/proposal.md) — historical archive index backfill
+- [`2026-07-25-separate-markdown-preview-renderer-boundaries`](2026-07-25-separate-markdown-preview-renderer-boundaries/proposal.md) — historical archive index backfill
+- [`2026-07-25-stabilize-code-annotation-anchors`](2026-07-25-stabilize-code-annotation-anchors/proposal.md) — historical archive index backfill
 
 ### 2026-07-24
 

@@ -15,6 +15,12 @@ The repository SHALL define an explicit ownership model for project instructions
 - **THEN** the repository SHALL describe the distinct roles of project entry, implementation rules, behavior specs, host adapter config, and runtime artifacts
 - **AND** the guidance SHALL identify which layer is the source of truth for each rule category
 
+#### Scenario: project-neutral agent layers are explicit
+
+- **WHEN** collaborators inspect project-neutral roles or reusable workflows
+- **THEN** `.agents/agents/**` SHALL own role contracts and `.agents/skills/**` SHALL own reusable workflows
+- **AND** `.codex/**` and `.claude/**` SHALL remain host-specific registration and glue
+
 #### Scenario: Rules are updated in the correct layer
 
 - **WHEN** a collaborator needs to update a frontend/backend implementation rule, behavior requirement, or host-specific hook behavior
@@ -36,6 +42,11 @@ The project entry document SHALL remain a minimal operational entrypoint instead
 - **WHEN** detailed frontend, backend, or cross-layer implementation constraints are needed
 - **THEN** the project entry document SHALL point to `.trellis/spec/**` instead of reproducing the detailed rules inline
 - **AND** updates to those implementation rules SHALL be made in `.trellis/spec/**` first
+
+#### Scenario: agent detail remains outside the entrypoint
+
+- **WHEN** detailed agent role or workflow constraints are needed
+- **THEN** the project entry document SHALL point to `.agents/agents/**` or `.agents/skills/**` instead of reproducing them inline
 
 ### Requirement: Session-Start Injection MUST Stay Minimal And Pointer-Oriented
 

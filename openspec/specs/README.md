@@ -1,16 +1,19 @@
 # OpenSpec Main Specs 索引
 
-`openspec/specs/*/spec.md` 是已经同步进入 mainline 的 capability behavior truth。当前索引覆盖 **492** 个 capability，并按 capability id 首字母分组。
+`openspec/specs/*/spec.md` 是已经同步进入 mainline 的 capability behavior truth。当前索引覆盖 **517** 个 capability，并按 capability id 首字母分组。
 
 ## 使用边界
 
 - 查当前已生效的行为契约：从本索引进入对应 `spec.md`。
 - 查尚未归档、可能仍含未同步 delta 的提案：查看 [Active Changes](../changes/README.md)。
 - 查历史决策与归档证据：查看 [Archived Changes](../changes/archive/README.md)。
-- Updated At: `2026-08-03`（第三波 bulk archive 后重建）。
+- Updated At: `2026-08-28`（本次 bulk archive 后重建）。
 
 ## A
 
+- [account-center-subscription-ui](./account-center-subscription-ui/spec.md)
+- [account-sidebar-shortcut](./account-sidebar-shortcut/spec.md)
+- [account-subscription-summary](./account-subscription-summary/spec.md)
 - [agent-domain-event-runtime](./agent-domain-event-runtime/spec.md)
 - [agent-domain-event-schema](./agent-domain-event-schema/spec.md)
 - [agent-startup-selection-stability](./agent-startup-selection-stability/spec.md)
@@ -26,6 +29,7 @@
 - [architecture-ci-governance](./architecture-ci-governance/spec.md)
 - [architecture-cross-platform-compatibility](./architecture-cross-platform-compatibility/spec.md)
 - [assemble-shared-canonical-facts](./assemble-shared-canonical-facts/spec.md)
+- [assistant-duplicate-render-convergence](./assistant-duplicate-render-convergence/spec.md)
 - [auto-session-visibility-classification](./auto-session-visibility-classification/spec.md)
 
 ## B
@@ -65,6 +69,7 @@
 - [claude-runtime-termination-hardening](./claude-runtime-termination-hardening/spec.md)
 - [claude-session-sidebar-state-parity](./claude-session-sidebar-state-parity/spec.md)
 - [claude-streaming-lightweight-render](./claude-streaming-lightweight-render/spec.md)
+- [claude-subagent-canvas-surface](./claude-subagent-canvas-surface/spec.md)
 - [claude-thread-session-continuity](./claude-thread-session-continuity/spec.md)
 - [claude-tui-resume-affordance](./claude-tui-resume-affordance/spec.md)
 - [claude-turn-settlement-stream-lifecycle](./claude-turn-settlement-stream-lifecycle/spec.md)
@@ -86,6 +91,7 @@
 - [client-ui-visibility-controls](./client-ui-visibility-controls/spec.md)
 - [client-web-service-settings](./client-web-service-settings/spec.md)
 - [client-workflow-runtime-model](./client-workflow-runtime-model/spec.md)
+- [collab-first-stage-main-canvas-context](./collab-first-stage-main-canvas-context/spec.md)
 - [code-annotation-anchor-stability](./code-annotation-anchor-stability/spec.md)
 - [codex-app-server-wrapper-launch](./codex-app-server-wrapper-launch/spec.md)
 - [codex-chat-canvas-collaboration-mode](./codex-chat-canvas-collaboration-mode/spec.md)
@@ -148,12 +154,14 @@
 - [composer-model-selector-config-actions](./composer-model-selector-config-actions/spec.md)
 - [composer-note-card-reference](./composer-note-card-reference/spec.md)
 - [composer-persistent-input-with-filetree](./composer-persistent-input-with-filetree/spec.md)
+- [composer-prompt-completion](./composer-prompt-completion/spec.md)
 - [composer-prompt-enhancer](./composer-prompt-enhancer/spec.md)
 - [composer-queue-input-state](./composer-queue-input-state/spec.md)
 - [composer-queued-followup-fusion](./composer-queued-followup-fusion/spec.md)
 - [composer-rewind-modal-style-compatibility](./composer-rewind-modal-style-compatibility/spec.md)
 - [composer-selector-home-chat-simplification](./composer-selector-home-chat-simplification/spec.md)
 - [composer-send-readiness-ux](./composer-send-readiness-ux/spec.md)
+- [composer-session-control-hud](./composer-session-control-hud/spec.md)
 - [composer-shortcut-actions-menu](./composer-shortcut-actions-menu/spec.md)
 - [composer-skill-invocation-contract](./composer-skill-invocation-contract/spec.md)
 - [composer-tool-menu-primary-controls](./composer-tool-menu-primary-controls/spec.md)
@@ -201,6 +209,7 @@
 - [conversation-tool-card-persistence](./conversation-tool-card-persistence/spec.md)
 - [conversation-user-path-reference-cards](./conversation-user-path-reference-cards/spec.md)
 - [core-complexity-governance](./core-complexity-governance/spec.md)
+- [create-session-engine-routing](./create-session-engine-routing/spec.md)
 - [cross-workspace-cost-admin-view](./cross-workspace-cost-admin-view/spec.md)
 - [curated-agent-catalog](./curated-agent-catalog/spec.md)
 - [curated-skill-bundles](./curated-skill-bundles/spec.md)
@@ -214,6 +223,8 @@
 - [detached-file-explorer](./detached-file-explorer/spec.md)
 - [detached-spec-hub-window](./detached-spec-hub-window/spec.md)
 - [diagnostics-storage-agent-config](./diagnostics-storage-agent-config/spec.md)
+- [documentation-governance](./documentation-governance/spec.md)
+- [doge-release-updater](./doge-release-updater/spec.md)
 - [dual-surface-file-explorer](./dual-surface-file-explorer/spec.md)
 - [dynamic-project-governance-evidence](./dynamic-project-governance-evidence/spec.md)
 
@@ -326,6 +337,7 @@
 - [linux-native-baidu-analytics-stability](./linux-native-baidu-analytics-stability/spec.md)
 - [live-assistant-shadow-transcript](./live-assistant-shadow-transcript/spec.md)
 - [local-html-builtin-browser-open](./local-html-builtin-browser-open/spec.md)
+- [local-development-managed-engine-resources](./local-development-managed-engine-resources/spec.md)
 - [long-list-virtualization-performance](./long-list-virtualization-performance/spec.md)
 
 ## M
@@ -360,6 +372,7 @@
 - [messages-public-input](./messages-public-input/spec.md)
 - [messages-row-correctness](./messages-row-correctness/spec.md)
 - [messages-timeline-ownership](./messages-timeline-ownership/spec.md)
+- [multi-agent-inspector-inject-context](./multi-agent-inspector-inject-context/spec.md)
 - [model-provider-catalog-runtime](./model-provider-catalog-runtime/spec.md)
 - [model-structured-output-normalization](./model-structured-output-normalization/spec.md)
 - [multi-agent-orchestration](./multi-agent-orchestration/spec.md)
@@ -416,6 +429,7 @@
 - [project-memory-ui](./project-memory-ui/spec.md)
 - [project-runtime-log-viewer](./project-runtime-log-viewer/spec.md)
 - [project-xray-panel](./project-xray-panel/spec.md)
+- [provider-balance-quota](./provider-balance-quota/spec.md)
 - [provider-model-catalog-refresh](./provider-model-catalog-refresh/spec.md)
 
 ## Q
@@ -465,18 +479,24 @@
 - [shared-context-compiler](./shared-context-compiler/spec.md)
 - [shared-context-delivery](./shared-context-delivery/spec.md)
 - [shared-context-package](./shared-context-package/spec.md)
+- [shared-context-resume-integrity](./shared-context-resume-integrity/spec.md)
 - [shared-event-storage](./shared-event-storage/spec.md)
 - [shared-execution-target](./shared-execution-target/spec.md)
 - [shared-markdown-renderer](./shared-markdown-renderer/spec.md)
 - [shared-message-domain-helpers](./shared-message-domain-helpers/spec.md)
+- [shared-recovery-bar-ux](./shared-recovery-bar-ux/spec.md)
 - [shared-send-pipeline](./shared-send-pipeline/spec.md)
 - [shared-session-curtain-parity](./shared-session-curtain-parity/spec.md)
 - [shared-session-engine-selection](./shared-session-engine-selection/spec.md)
 - [shared-session-identity](./shared-session-identity/spec.md)
 - [shared-session-merge-guard](./shared-session-merge-guard/spec.md)
+- [shared-session-project-memory](./shared-session-project-memory/spec.md)
+- [shared-session-recovery-exit](./shared-session-recovery-exit/spec.md)
 - [shared-session-target-optimistic](./shared-session-target-optimistic/spec.md)
 - [shared-session-thread](./shared-session-thread/spec.md)
+- [shared-squad-control-plane](./shared-squad-control-plane/spec.md)
 - [shared-state-lock-governance](./shared-state-lock-governance/spec.md)
+- [shared-user-image-canvas-projection](./shared-user-image-canvas-projection/spec.md)
 - [shell-first-lazy-runtime-isolation](./shell-first-lazy-runtime-isolation/spec.md)
 - [shell-orchestration-hardening](./shell-orchestration-hardening/spec.md)
 - [sidebar-list-timeout-fallback](./sidebar-list-timeout-fallback/spec.md)
@@ -536,13 +556,16 @@
 
 ## V
 
+- [vendor-custom-model-provider-binding](./vendor-custom-model-provider-binding/spec.md)
 - [vendor-gemini-settings](./vendor-gemini-settings/spec.md)
 - [vibecoding-browser-agent](./vibecoding-browser-agent/spec.md)
 
 ## W
 
+- [windows-main-window-close-confirm](./windows-main-window-close-confirm/spec.md)
 - [windows-offline-installer](./windows-offline-installer/spec.md)
 - [windows-runtime-churn-diagnostics](./windows-runtime-churn-diagnostics/spec.md)
+- [windows-sidebar-chrome-parity](./windows-sidebar-chrome-parity/spec.md)
 - [windows-titlebar-control-safe-zone](./windows-titlebar-control-safe-zone/spec.md)
 - [workspace-file-compare-tool](./workspace-file-compare-tool/spec.md)
 - [workspace-file-listing-budget](./workspace-file-listing-budget/spec.md)

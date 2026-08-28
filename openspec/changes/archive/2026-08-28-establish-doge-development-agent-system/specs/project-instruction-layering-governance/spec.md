@@ -18,6 +18,12 @@ The repository SHALL define an explicit ownership model for project instructions
 - **THEN** the repository SHALL direct that update to the implementation-rule layer, behavior-spec layer, `.agents/agents/**`, `.agents/skills/**`, or host-adapter layer respectively
 - **AND** the project entry document SHALL NOT require duplicating the same rule正文 across multiple layers
 
+#### Scenario: project-neutral agent layers are explicit
+
+- **WHEN** collaborators inspect project-neutral roles or reusable workflows
+- **THEN** `.agents/agents/**` SHALL own role contracts and `.agents/skills/**` SHALL own reusable workflows
+- **AND** `.codex/**` and `.claude/**` SHALL remain host-specific registration and glue
+
 ### Requirement: AGENTS Entry MUST Stay Minimal And Pointer-Oriented
 
 The project entry document SHALL remain a minimal operational entrypoint instead of duplicating implementation manuals, agent role contracts, or workspace snapshots.
@@ -29,6 +35,17 @@ The project entry document SHALL remain a minimal operational entrypoint instead
 - **AND** it SHALL NOT instruct default full-tree reading of unrelated rule directories or all agent files as the primary path
 
 #### Scenario: Implementation and agent detail remains outside AGENTS
+
+- **WHEN** detailed frontend/backend/cross-layer constraints or agent role contracts are needed
+- **THEN** the project entry document SHALL point to `.trellis/spec/**` or `.agents/agents/**` instead of reproducing the detailed rules inline
+- **AND** updates to those implementation rules or agent contracts SHALL be made in their owning layer first
+
+#### Scenario: agent detail remains outside the entrypoint
+
+- **WHEN** detailed agent role or workflow constraints are needed
+- **THEN** the project entry document SHALL point to `.agents/agents/**` or `.agents/skills/**` instead of reproducing them inline
+
+#### Scenario: Implementation detail remains outside AGENTS
 
 - **WHEN** detailed frontend/backend/cross-layer constraints or agent role contracts are needed
 - **THEN** the project entry document SHALL point to `.trellis/spec/**` or `.agents/agents/**` instead of reproducing the detailed rules inline
