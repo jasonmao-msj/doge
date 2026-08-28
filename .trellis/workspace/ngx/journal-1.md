@@ -366,3 +366,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: OpenSpec 归档与 Kimi bundle PR
+
+**Date**: 2026-08-28
+**Task**: OpenSpec 归档与 Kimi bundle PR
+**Branch**: `codex/archive-kimi-windows-shell-runtime`
+
+### Summary
+
+归档 32 个 OpenSpec changes，完成 main specs 与治理索引同步；按用户授权将 bundle-kimi-windows-shell-runtime 作为 waiver archive 收口，保留 11 个跨平台与 release 未完成任务，并准备 PR。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `14930420f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
