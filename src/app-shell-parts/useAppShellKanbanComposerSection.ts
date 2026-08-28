@@ -18,6 +18,8 @@ import { stripComposerKanbanTagsPreserveFormatting } from "./useAppShellSections
 import type { UseAppShellSectionsContext } from "./useAppShellSectionsTypes";
 import { resolveSessionEngineActivation } from "../features/engine/utils/engineSessionRouting";
 import { normalizeEngineForExecution } from "../utils/engineExecutionPolicy";
+import { readProductEntitlementSnapshotV1 } from "../features/account/runtime/productEntitlementStore";
+import { resolveKanbanExecutionTarget } from "./kanbanExecutionTarget";
 
 type ComposerKanbanPanelOption = Pick<
   KanbanPanel,
@@ -483,6 +485,14 @@ export function useAppShellKanbanComposerSection(
         taskDescription,
         taskFallbackTitle,
       );
+      const taskTargetResolution = resolveKanbanExecutionTarget({
+        task: {
+          engineType: engine,
+          modelId: effectiveSelectedModelId,
+          executionTarget: null,
+        },
+        product: readProductEntitlementSnapshotV1(),
+      });
       const createdTask = kanbanCreateTask({
         workspaceId: workspace.path,
         panelId,
@@ -490,6 +500,9 @@ export function useAppShellKanbanComposerSection(
         description: taskDescription,
         engineType: engine,
         modelId: effectiveSelectedModelId,
+        executionTarget: taskTargetResolution.ok
+          ? taskTargetResolution.target
+          : null,
         branchName: "main",
         images,
         autoStart: true,

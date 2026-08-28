@@ -170,3 +170,36 @@ Semantic merge PR #36 的 create-session engine routing：保留 frozen engineOv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 64: 统一 Product 引擎模型目录
+
+**Date**: 2026-08-27
+**Task**: 统一 Product 引擎模型目录
+**Branch**: `codex/unify-panel-engine-model-catalog`
+
+### Summary
+
+建立 canonical ProductTargetCatalog；Composer 与 Kanban 共享上游 protocol projection；Kanban dual-read/new-write exact ExecutionTarget，TaskRun/session/send 保留 managed provider 与 runtime model；修复 recurring target 丢失及同 engine 跨 provider thread 误复用。用户 Hot Doge 目视验收通过。L3：213 focused tests、target ESLint、typecheck、production build、runtime/docs contracts、OpenSpec strict validation 通过；engine-controller facade 仅有未修改文件 744>600 的既有 baseline failure。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `709c3d57b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

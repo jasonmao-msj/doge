@@ -4,6 +4,8 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { ExecutionTarget } from "../../../../shared-session/target/types";
+import type { ProductModelViewV1 } from "../../../../account/runtime/productOnboardingClient";
+import { projectProductTargetCatalogV1 } from "../../../../account/runtime/productTargetCatalog";
 import type { ProductTargetCatalogV1 } from "../types";
 import { ProductEngineModelSelect } from "./ProductEngineModelSelect";
 
@@ -23,13 +25,7 @@ vi.mock("../../../../account/runtime/productModelCatalogRefresh", () => ({
   refreshProductModelsV1: refreshModels,
 }));
 
-const catalog: ProductTargetCatalogV1 = {
-  engines: [
-    { id: "codex", displayName: "Codex" },
-    { id: "claude", displayName: "Claude" },
-    { id: "kimi", displayName: "Kimi CLI" },
-  ],
-  models: [
+const rawModels: ProductModelViewV1[] = [
     productModel("gpt-5.6-sol", "GPT-5.6 Sol", [
       "openai-responses",
       "openai-chat-completions",
@@ -49,10 +45,9 @@ const catalog: ProductTargetCatalogV1 = {
       "openai-responses",
       "openai-chat-completions",
     ]),
-  ],
-  modelsStatus: "ready",
-  modelsUpdatedAt: 1_893_456_000_000,
-};
+];
+
+const catalog: ProductTargetCatalogV1 = productCatalog(rawModels);
 
 const initialTarget: ExecutionTarget = {
   engine: "codex",
@@ -128,7 +123,7 @@ describe("ProductEngineModelSelect", () => {
     ]);
     render(
       <ProductEngineModelSelect
-        catalog={{ ...catalog, models: [doubao, ...catalog.models] }}
+        catalog={productCatalog([doubao, ...rawModels])}
         executionTarget={{
           ...initialTarget,
           engine: "kimi",
@@ -225,8 +220,8 @@ describe("ProductEngineModelSelect", () => {
       <ProductEngineModelSelect
         catalog={{
           ...catalog,
-          models: catalog.models.filter(
-            (model) => model.id !== "claude-sonnet-4-8",
+          engines: catalog.engines.map((engine) =>
+            engine.id === "claude" ? { ...engine, models: [] } : engine,
           ),
         }}
         executionTarget={initialTarget}
@@ -264,7 +259,9 @@ describe("ProductEngineModelSelect", () => {
     };
     render(
       <ProductEngineModelSelect
-        catalog={{ ...catalog, models: [doubao] }}
+        catalog={productCatalog([doubao], [
+          { id: "codex", displayName: "Codex" },
+        ])}
         executionTarget={{
           ...initialTarget,
           modelCatalogEntryId: doubao.id,
@@ -293,8 +290,8 @@ describe("ProductEngineModelSelect", () => {
 function productModel(
   id: string,
   displayName: string,
-  apiProtocols: ProductTargetCatalogV1["models"][number]["apiProtocols"],
-): ProductTargetCatalogV1["models"][number] {
+  apiProtocols: ProductModelViewV1["apiProtocols"],
+): ProductModelViewV1 {
   return {
     id,
     displayName,
@@ -302,4 +299,20 @@ function productModel(
     apiProtocols,
     capabilities: [],
   };
+}
+
+function productCatalog(
+  models: readonly ProductModelViewV1[],
+  engines: Parameters<typeof projectProductTargetCatalogV1>[0]["engines"] = [
+    { id: "codex", displayName: "Codex" },
+    { id: "claude-code", displayName: "Claude" },
+    { id: "kimi", displayName: "Kimi CLI" },
+  ],
+): ProductTargetCatalogV1 {
+  return projectProductTargetCatalogV1({
+    engines,
+    models,
+    modelsStatus: "ready",
+    modelsUpdatedAt: 1_893_456_000_000,
+  });
 }

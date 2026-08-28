@@ -14,7 +14,10 @@ import type {
 } from "../types";
 import type { EngineType } from "../../../types";
 import type { BrowserContextSendAttachment } from "../../../types";
-import { isEngineCapabilityAvailable } from "../../engine/engineCapabilityMatrix";
+import {
+  isNewTaskRunEngine,
+  isPersistedTaskRunEngine,
+} from "../taskRunEnginePolicy";
 
 export const TASK_RUN_STORE_KEY = "taskCenter.taskRuns";
 
@@ -31,18 +34,10 @@ const SETTLED_RUN_STATUSES = new Set<TaskRunStatus>([
   "completed",
   "canceled",
 ]);
-const TASK_CENTER_BASE_ENGINES = new Set<EngineType>(["claude", "gemini"]);
-
 function isSupportedTaskCenterEngine(
   engine: EngineType | unknown,
 ): engine is TaskRunRecord["engine"] {
-  if (!engine || typeof engine !== "string") {
-    return false;
-  }
-  return (
-    TASK_CENTER_BASE_ENGINES.has(engine as EngineType) ||
-    isEngineCapabilityAvailable(engine as EngineType, "collaboration.mode")
-  );
+  return isPersistedTaskRunEngine(engine);
 }
 
 function normalizeStatus(value: unknown): TaskRunStatus | null {
@@ -279,6 +274,8 @@ function normalizeRun(raw: unknown): TaskRunRecord | null {
       title: normalizeNullableString(taskInput.title),
     },
     engine,
+    providerProfileId: normalizeNullableString(input.providerProfileId),
+    modelCatalogEntryId: normalizeNullableString(input.modelCatalogEntryId),
     model: normalizeNullableString(input.model),
     status,
     trigger,
@@ -372,7 +369,7 @@ export function findActiveRunForTask(
 
 export function createTaskRunRecord(input: CreateTaskRunInput): TaskRunRecord {
   const now = input.now ?? Date.now();
-  if (!isSupportedTaskCenterEngine(input.engine)) {
+  if (!isNewTaskRunEngine(input.engine)) {
     throw new Error(`unsupported_task_run_engine:${input.engine}`);
   }
   return {
@@ -384,6 +381,8 @@ export function createTaskRunRecord(input: CreateTaskRunInput): TaskRunRecord {
       title: input.taskTitle ?? null,
     },
     engine: input.engine,
+    providerProfileId: normalizeNullableString(input.providerProfileId),
+    modelCatalogEntryId: normalizeNullableString(input.modelCatalogEntryId),
     model: normalizeNullableString(input.model),
     status: "queued",
     trigger: input.trigger,

@@ -106,8 +106,9 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
     }) => void;
     providerTargetPickerMode?: "shared" | "create-session" | "product";
     productTargetCatalog?: {
-      engines: readonly unknown[];
-      models: readonly unknown[];
+      engines: readonly {
+        models: readonly { id: string }[];
+      }[];
     };
     sendReadiness?: {
       target: { engine: string; modelLabel: string };
@@ -120,7 +121,13 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
         data-atomic-target={String(Boolean(onExecutionTargetChange))}
         data-picker-mode={providerTargetPickerMode ?? "create-session"}
         data-product-engines={productTargetCatalog?.engines.length ?? 0}
-        data-product-models={productTargetCatalog?.models.length ?? 0}
+        data-product-models={
+          new Set(
+            productTargetCatalog?.engines.flatMap((engine) =>
+              engine.models.map((model) => model.id),
+            ) ?? [],
+          ).size
+        }
         data-readiness-engine={sendReadiness?.target.engine ?? "none"}
         data-readiness-model={sendReadiness?.target.modelLabel ?? "none"}
       />

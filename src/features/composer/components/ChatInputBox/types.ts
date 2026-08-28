@@ -4,11 +4,10 @@
  */
 
 import type { ReactNode } from 'react';
-import type { ProductModelViewV1 } from '../../../account/runtime/productOnboardingClient';
+import type { ProductTargetCatalogV1 } from '../../../account/runtime/productTargetCatalog';
 import { CODEX_MODEL_CATALOG } from "../../../models/codexModelCatalog";
 import type { ComposerSendReadiness } from '../../utils/composerSendReadiness';
 import type { ExecutionTarget } from '../../../shared-session/target/types';
-import type { EngineType } from '../../../../types';
 
 // ============================================================
 // Core Entity Types
@@ -363,15 +362,7 @@ export type ProviderId = 'claude' | 'codex' | 'gemini' | 'grok' | 'kimi' | 'open
 export type ProviderModelCatalogs = Partial<Record<ProviderId, ModelInfo[]>>;
 /** Atomic 双栏 catalog 语义：Shared 持久化 vs 首页/会话 create-session 投影。 */
 export type ProviderTargetPickerMode = 'shared' | 'create-session' | 'product';
-export type ProductTargetCatalogV1 = {
-  readonly engines: readonly {
-    readonly id: Extract<EngineType, 'codex' | 'claude' | 'kimi'>;
-    readonly displayName: string;
-  }[];
-  readonly models: readonly ProductModelViewV1[];
-  readonly modelsStatus: 'ready' | 'refreshing' | 'stale';
-  readonly modelsUpdatedAt: number | null;
-};
+export type { ProductTargetCatalogV1 };
 export type CodexSpeedMode = 'standard' | 'fast' | 'unknown';
 export type StreamActivityPhase = 'idle' | 'waiting' | 'ingress';
 

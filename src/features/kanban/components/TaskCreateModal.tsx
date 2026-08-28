@@ -12,6 +12,8 @@ import Hash from "lucide-react/dist/esm/icons/hash";
 import GitBranch from "lucide-react/dist/esm/icons/git-branch";
 import Link2 from "lucide-react/dist/esm/icons/link-2";
 import type { EngineStatus, EngineType, ModelOption } from "../../../types";
+import type { ProductTargetCatalogV1 } from "../../account/runtime/productTargetCatalog";
+import type { ExecutionTarget } from "../../shared-session/target/types";
 import type {
   KanbanNewThreadResultMode,
   KanbanRecurringUnit,
@@ -31,7 +33,11 @@ import { loadTaskDraft, saveTaskDraft, clearTaskDraft } from "../utils/kanbanSto
 import { hasKanbanImageDataUrl, persistKanbanImages } from "../utils/kanbanImages";
 import { buildTaskChain, validateChainSelection } from "../utils/chaining";
 import { buildTaskScheduleFromForm } from "../utils/scheduling";
-
+import {
+  buildKanbanTaskTargetCatalog,
+  findKanbanTaskTargetModel,
+} from "../utils/taskTargetCatalog";
+import { TaskTargetSelectors } from "./TaskTargetSelectors";
 type CreateTaskInput = {
   workspaceId: string;
   panelId: string;
@@ -39,13 +45,13 @@ type CreateTaskInput = {
   description: string;
   engineType: EngineType;
   modelId: string | null;
+  executionTarget: ExecutionTarget | null;
   branchName: string;
   images: string[];
   autoStart: boolean;
   schedule?: KanbanTaskSchedule;
   chain?: KanbanTaskChain;
 };
-
 type TaskCreateModalProps = {
   isOpen: boolean;
   workspaceId: string;
@@ -54,13 +60,13 @@ type TaskCreateModalProps = {
   defaultStatus: KanbanTaskStatus;
   codexModels: ModelOption[];
   engineStatuses: EngineStatus[];
+  productTargetCatalog?: ProductTargetCatalogV1 | null;
   onSubmit: (input: CreateTaskInput) => void;
   onCancel: () => void;
   availableTasks: KanbanTask[];
   editingTask?: KanbanTask;
   onUpdate?: (taskId: string, changes: Partial<KanbanTask>) => void;
 };
-
 function pad2(value: number): string {
   return value.toString().padStart(2, "0");
 }
@@ -85,6 +91,7 @@ export function TaskCreateModal({
   defaultStatus,
   codexModels,
   engineStatuses,
+  productTargetCatalog = null,
   onSubmit,
   onCancel,
   availableTasks,
@@ -107,6 +114,8 @@ export function TaskCreateModal({
   const [description, setDescription] = useState("");
   const [engineType, setEngineType] = useState<EngineType>("claude");
   const [modelId, setModelId] = useState<string | null>(null);
+  const [executionTarget, setExecutionTarget] =
+    useState<ExecutionTarget | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [autoStart, setAutoStart] = useState(false);
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false);
@@ -138,16 +147,23 @@ export function TaskCreateModal({
   // branchName is always "main" - no UI control needed
   const branchName = "main";
 
-  const availableEngines = engineStatuses.filter((e) => e.installed);
-  const selectedEngine = engineStatuses.find(
-    (e) => e.engineType === engineType
+  const targetCatalog = useMemo(
+    () => buildKanbanTaskTargetCatalog({
+      productCatalog: productTargetCatalog,
+      engineStatuses,
+      codexModels,
+    }),
+    [codexModels, engineStatuses, productTargetCatalog],
+  );
+  const availableEngines = targetCatalog.engines.filter(
+    (engine) => engine.selectable,
+  );
+  const selectedEngine = targetCatalog.engines.find(
+    (engine) => engine.id === engineType,
   );
   const availableModels = useMemo(
-    () =>
-      engineType === "codex"
-        ? codexModels
-        : (selectedEngine?.models ?? []),
-    [codexModels, engineType, selectedEngine],
+    () => selectedEngine?.models ?? [],
+    [selectedEngine],
   );
   const chainCandidates = availableTasks.filter(
     (task) => task.id !== editingTask?.id && task.status === "todo",
@@ -183,17 +199,6 @@ export function TaskCreateModal({
     }
   };
 
-  const formatEngineName = (type: EngineType): string => {
-    switch (type) {
-      case "claude":
-        return "Claude";
-      case "codex":
-        return "Codex";
-      default:
-        return type;
-    }
-  };
-
   const resolveTaskScheduleModeLabel = useCallback(
     (mode: KanbanScheduleMode): string => {
       if (mode === "once") {
@@ -225,6 +230,7 @@ export function TaskCreateModal({
       setDescription(editingTask.description);
       setEngineType(editingTask.engineType);
       setModelId(editingTask.modelId);
+      setExecutionTarget(editingTask.executionTarget ?? null);
       setImages(editingTask.images);
       setAutoStart(editingTask.autoStart);
       setScheduleMode(editingTask.schedule?.mode ?? "manual");
@@ -244,11 +250,14 @@ export function TaskCreateModal({
         setDescription(draft.description);
         setEngineType(draftEngineType);
         setModelId(draft.modelId);
+        setExecutionTarget(draft.executionTarget ?? null);
         setImages(draft.images);
       } else {
         pendingModelInitializationEngineRef.current = null;
         setTitle("");
         setDescription("");
+        setModelId(null);
+        setExecutionTarget(null);
         setImages([]);
       }
       setAutoStart(defaultStatus !== "todo");
@@ -273,8 +282,8 @@ export function TaskCreateModal({
     if (!isOpen || availableEngines.length === 0) {
       return;
     }
-    if (!availableEngines.find((engine) => engine.engineType === engineType)) {
-      setEngineType(availableEngines[0]?.engineType ?? "codex");
+    if (!availableEngines.find((engine) => engine.id === engineType)) {
+      setEngineType(availableEngines[0]?.id ?? "codex");
     }
   }, [availableEngines, engineType, isOpen]);
 
@@ -287,17 +296,21 @@ export function TaskCreateModal({
       return;
     }
     pendingModelInitializationEngineRef.current = null;
-    setModelId((currentModelId) => {
-      const currentModelIsAvailable =
-        currentModelId !== null &&
-        availableModels.some((model) => model.id === currentModelId);
-      if (currentModelIsAvailable) {
-        return currentModelId;
-      }
-      const defaultModel = availableModels.find((model) => model.isDefault);
-      return defaultModel?.id ?? availableModels[0]?.id ?? null;
-    });
-  }, [availableModels, engineType, isOpen]);
+    const selectedModel = findKanbanTaskTargetModel({
+      engine: selectedEngine,
+      target: executionTarget,
+      legacyModelId: modelId,
+    }) ?? availableModels[0] ?? null;
+    setModelId(selectedModel?.id ?? null);
+    setExecutionTarget(selectedModel?.target ?? null);
+  }, [
+    availableModels,
+    engineType,
+    executionTarget,
+    isOpen,
+    modelId,
+    selectedEngine,
+  ]);
 
   useEffect(() => {
     if (scheduleMode !== "manual" && previousTaskId) {
@@ -316,6 +329,9 @@ export function TaskCreateModal({
     setFormError(null);
     const trimmedTitle = title.trim();
     if (!trimmedTitle) return;
+    if (targetCatalog.authority === "product" && !executionTarget) {
+      return;
+    }
     const trimmedDesc = description.trim();
     if (trimmedDesc) {
       recordInputHistory(trimmedDesc);
@@ -371,6 +387,7 @@ export function TaskCreateModal({
         description: trimmedDesc,
         engineType,
         modelId,
+        executionTarget,
         images,
         autoStart,
         schedule: normalizedSchedule,
@@ -389,6 +406,7 @@ export function TaskCreateModal({
         description: trimmedDesc,
         engineType,
         modelId,
+        executionTarget,
         branchName: branchName.trim() || "main",
         images,
         autoStart,
@@ -484,7 +502,14 @@ export function TaskCreateModal({
   const handleCancel = () => {
     if (!editingTask) {
       if (title.trim() || description.trim()) {
-        saveTaskDraft(panelId, { title, description, engineType, modelId, images });
+        saveTaskDraft(panelId, {
+          title,
+          description,
+          engineType,
+          modelId,
+          executionTarget,
+          images,
+        });
       } else {
         clearTaskDraft(panelId);
       }
@@ -552,42 +577,17 @@ export function TaskCreateModal({
                   >
                     <ImagePlus size={16} />
                   </button>
-                  <div className="kanban-task-selector">
-                    <select
-                      className="kanban-select"
-                      value={engineType}
-                      onChange={(e) =>
-                        setEngineType(e.target.value as EngineType)
-                      }
-                    >
-                      {engineStatuses.map((engine) => (
-                        <option
-                          key={engine.engineType}
-                          value={engine.engineType}
-                          disabled={!engine.installed}
-                        >
-                          {formatEngineName(engine.engineType)}
-                          {!engine.installed ? ` (${t("kanban.task.notInstalled")})` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="kanban-task-selector">
-                    <select
-                      className="kanban-select"
-                      value={modelId ?? ""}
-                      onChange={(e) => setModelId(e.target.value || null)}
-                    >
-                      {availableModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.displayName}
-                        </option>
-                      ))}
-                      {availableModels.length === 0 && (
-                        <option value="">{t("kanban.task.noModels")}</option>
-                      )}
-                    </select>
-                  </div>
+                  <TaskTargetSelectors
+                    catalog={targetCatalog}
+                    engineType={engineType}
+                    modelId={modelId}
+                    executionTarget={executionTarget}
+                    onChange={(selection) => {
+                      setEngineType(selection.engineType);
+                      setModelId(selection.modelId);
+                      setExecutionTarget(selection.executionTarget);
+                    }}
+                  />
                 </>
               }
             />
@@ -785,7 +785,10 @@ export function TaskCreateModal({
             <button
               type="submit"
               className="kanban-btn kanban-btn-primary"
-              disabled={!title.trim()}
+              disabled={
+                !title.trim() ||
+                (targetCatalog.authority === "product" && !executionTarget)
+              }
             >
               {editingTask ? t("kanban.task.update") : t("kanban.task.create")}
             </button>

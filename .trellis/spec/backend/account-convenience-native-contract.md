@@ -1014,7 +1014,7 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 
 ### 2. Signatures
 
-- Product picker mode：`ProviderTargetPickerMode = "product"`；catalog=`ProductTargetCatalogV1 { engines[], models[], modelsStatus, modelsUpdatedAt }`。
+- Product picker mode：`ProviderTargetPickerMode = "product"`；catalog=`ProductTargetCatalogV1 { engines: [{ id, displayName, models: ProductTargetModelV1[] }], modelsStatus, modelsUpdatedAt }`。raw upstream models 不再作为 parallel renderer catalog 暴露。
 - Product panel：`ProductEngineModelSelect({ catalog, executionTarget, onExecutionTargetChange })`。
 - Managed target：`providerProfileId="doge-token-matrix"`、`providerProfileSource="managed"`、`modelCatalogEntryId` 与 runtime `model` 分域。
 - Doubao runtime：`PRODUCT_DOUBAO_RUNTIME_MODEL = "豆包"`；公开 catalog 的 `id/display_name/model` 任一命中 `豆包 | doubao | ark-code` 时，UI、Native per-thread selection、`ExecutionTarget.model`、Kimi `--model` 与 launch config alias MUST 使用 Composite 公开别名“豆包”。`ark-code-latest` 是 account 内部 upstream model，直接发给 Composite 会返回 400。
@@ -1159,9 +1159,14 @@ for (const engineId of ["codex", "claude-code", "kimi"] as const) {
 ```
 
 ```ts
-const catalog = productEntitlement.models; // refreshed upstream rows
-const rows = compatibleProductModelsForEngineV1(nextEngine, catalog);
-commitTarget(resolveProductManagedExecutionTargetV1({ engines, models: rows }));
+const catalog = projectProductTargetCatalogV1({
+  engines: productEntitlement.engines,
+  models: productEntitlement.models,
+});
+const row = catalog.engines
+  .find((engine) => engine.id === nextEngine)
+  ?.models.at(0);
+if (row) commitTarget(row);
 
 // Product-ready Home / Shared / Native modification share one presentation.
 const usesProductTargetCatalog = productEntitlement.status === "ready";
@@ -1175,6 +1180,130 @@ catalog entitlement
   + protocol endpoint probe
   + real CLI system/tools/stream payload terminal
   = compatibility evidence for one engine×model cell
+```
+
+## Scenario: Product target catalog consumer parity and Kanban exact target
+
+### 1. Scope / Trigger
+
+- Trigger：新增 Product engine/model selector consumer，修改 `ProductTargetCatalogV1`、Kanban task target
+  storage、TaskRun launch、scheduled/retry/fork 或 Native thread reuse。
+- 目标：Product upstream entitlement、protocol intersection、catalog/runtime model identity 与 managed Provider
+  只在 canonical projection 计算一次；presentation 与 execution 不再分别猜 target。
+
+### 2. Signatures
+
+```ts
+projectProductTargetCatalogV1({
+  engines: ProductEngineViewV1[],
+  models: ProductModelViewV1[],
+  modelsStatus?,
+  modelsUpdatedAt?,
+}): ProductTargetCatalogV1
+
+type ProductTargetEngineV1 = {
+  id: "codex" | "claude" | "kimi";
+  displayName: string;
+  models: ProductTargetModelV1[];
+};
+
+type ProductTargetModelV1 = ProductModelViewV1 & {
+  runtimeModel: string;
+};
+
+type KanbanTask = {
+  engineType: EngineType;                 // legacy mirror
+  modelId: string | null;                 // catalog-id mirror
+  executionTarget?: ExecutionTarget | null;
+};
+
+resolveKanbanExecutionTarget({ task, product }):
+  | { ok: true; target: ExecutionTarget }
+  | { ok: false; reason: string };
+```
+
+### 3. Contracts
+
+- `productEntitlementStore` raw rows MUST 只经 `projectProductTargetCatalogV1` 按 exact endpoint protocol
+  投影；Composer、Kanban、target repair 不得再次调用 compatibility helper 或按 model name 猜 engine。
+- Product-ready Kanban MUST 只显示 Product catalog engines；local `EngineStatus` 中的 Grok/OpenCode/model
+  rows 不得 fallback 进入 Product selector。Local Mode 继续使用 `engineStatuses + hydrated codexModels`。
+- Product entitlement 不等于 installation。不得把 Product rows 覆盖进 `EngineStatus.installed/models`；有合法
+  target 的未安装 Product engine 仍可选择，CLI readiness 由 `ensureProductEngineReadyV1` 在 execution
+  boundary 收敛。
+- 新建/编辑 task MUST new-write complete `executionTarget`，同时保留 flat mirrors；loader MUST 使用
+  `normalizePersistedExecutionTarget` dual-read，malformed target 丢弃但不得污染 legacy fields。
+- TaskRun/session/turn side effect 前 MUST 解析 fresh target。Product legacy task 按 current Product catalog
+  升级为 managed target；managed target 无 catalog evidence时 fail closed，禁止改发 local/default Provider。
+- TaskRun 与 first send MUST 使用 `ExecutionTarget.model`，不是 `modelId/modelCatalogEntryId`；session create
+  MUST 带 `providerProfileId`。
+- recurring clone MUST 复制 `executionTarget`。retry/fork MUST 用 fresh resolved target 创建 successor
+  TaskRun。
+- Native thread reuse MUST 同时匹配 `engine + providerProfileId`；同 engine 的 local 与 managed thread
+  不兼容。
+
+### 4. Validation & Error Matrix
+
+| 状态 | Catalog/UI | Storage/Execution |
+|---|---|---|
+| Product ready + compatible row | engine scoped row；不读 local status | managed exact target；send runtime model |
+| Product ready + no row | engine empty/disabled | `product_target_unavailable`，零 Session/Turn side effect |
+| Product refreshing/stale + last-good | 保留 last-good + transient status | 只允许 last-good exact target |
+| managed task + Product snapshot unavailable | 不降级 local | `managed_target_catalog_unavailable` |
+| Local Mode legacy task | local controller catalog | explicit disk target；model 可为空 |
+| `catalog id != runtime model` | label/value 使用 catalog id | TaskRun/send 使用 runtime model |
+| existing thread engine same、provider different | UI 可继续创建 | 禁止 reuse，创建 exact Provider thread |
+| malformed persisted target | 丢弃 poisoned object | legacy repair；无法 repair 时 fail closed |
+
+### 5. Good / Base / Bad Cases
+
+- Good：`productTargetCatalog.engines[].models[]` 同时供 Product picker 与 Kanban adapter 使用；Kimi row
+  保存 `modelCatalogEntryId="kimi-code/kimi-for-coding"`、发送 `model="kimi-for-coding"`。
+- Base：Local Mode 仍从 `useEngineController` 获取 installed/model facts，不引入 Product provider identity。
+- Bad：为了复用旧 UI 把 Product entitlement 写回 `EngineStatus.models/installed`。
+- Bad：task 只存 `engineType + modelId`，scheduled run 再从 current active engine/provider 推断。
+- Bad：只比较 thread engine 后复用，导致 Doge managed task 落入同 engine local thread。
+
+### 6. Tests Required
+
+- Product projection MUST 覆盖三 engine protocol rows、upstream order、unknown fail-closed、catalog/runtime id
+  分离与 Doubao alias。
+- Product picker 与 target resolver MUST 证明不再拥有第二套 compatibility filtering。
+- Kanban adapter/component MUST 覆盖 Product 无 local leakage、Local Codex hydrated fallback、engine switch
+  atomic target、refresh preserve、empty disable、submit exact target。
+- Storage MUST 覆盖 exact/malformed/legacy task 与 draft；recurring clone MUST 断言 target preserved。
+- Execution resolver/coordinator MUST 覆盖 Product legacy upgrade、managed unavailable fail-closed、Kimi
+  TaskRun runtime model、provider-scoped session options、retry/fork 与 provider mismatch thread no-reuse。
+- Required commands：affected Vitest、target ESLint、`npm run typecheck`、runtime/docs/contracts、OpenSpec strict
+  validation；Hot Doge Product Kanban visual smoke。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+const models = engine === "codex" ? codexModels : engineStatus.models;
+startThread({ engine: task.engineType });
+send({ model: task.modelId });
+```
+
+#### Correct
+
+```ts
+const catalog = projectProductTargetCatalogV1(productSnapshot);
+const selection = buildKanbanTaskTargetCatalog({ productCatalog: catalog, ...local });
+const resolved = resolveKanbanExecutionTarget({ task, product: productSnapshot });
+if (!resolved.ok) return failClosed(resolved.reason);
+
+await ensureProductEngineReadyV1({
+  engine: resolved.target.engine,
+  providerProfileId: resolved.target.providerProfileId,
+});
+startThread({
+  engine: resolved.target.engine,
+  providerProfileId: resolved.target.providerProfileId,
+});
+send({ model: resolved.target.model });
 ```
 
 ## Scenario: Product usage selected-range query and model facts table

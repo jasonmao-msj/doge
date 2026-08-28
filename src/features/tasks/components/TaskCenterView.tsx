@@ -10,6 +10,7 @@ import {
   describeTaskRunSurface,
 } from "../utils/taskRunSurface";
 import { RunDetailSurface, formatTaskRunTime } from "./RunDetailSurface";
+import { getEngineRegistryEntry } from "../../engine/engineRegistry";
 
 type TaskCenterViewProps = {
   runs: TaskRunRecord[];
@@ -30,6 +31,14 @@ const STATUS_ORDER: TaskRunStatus[] = [
   "queued",
   "completed",
   "canceled",
+];
+const ENGINE_FILTERS: readonly TaskRunRecord["engine"][] = [
+  "codex",
+  "claude",
+  "kimi",
+  "grok",
+  "opencode",
+  "gemini",
 ];
 
 export function TaskCenterView({
@@ -114,9 +123,11 @@ export function TaskCenterView({
               }
             >
               <option value="all">{t("taskCenter.filterAll")}</option>
-              <option value="codex">Codex</option>
-              <option value="claude">Claude</option>
-              <option value="gemini">Gemini</option>
+              {ENGINE_FILTERS.map((engine) => (
+                <option key={engine} value={engine}>
+                  {getEngineRegistryEntry(engine)?.displayName ?? engine}
+                </option>
+              ))}
             </select>
           </label>
         </div>

@@ -44,7 +44,7 @@ describe("kanbanStorage compatibility", () => {
           updatedAt: 1,
         },
       ],
-    } as any);
+    });
 
     const data = loadKanbanData();
     expect(data.tasks).toHaveLength(1);
@@ -94,7 +94,7 @@ describe("kanbanStorage compatibility", () => {
           updatedAt: 1,
         },
       ],
-    } as any);
+    });
 
     const data = loadKanbanData();
     expect(data.tasks).toHaveLength(1);
@@ -157,5 +157,60 @@ describe("kanbanStorage compatibility", () => {
       artifactCount: 2,
     });
     expect(data.tasks[0]).not.toHaveProperty("taskRuns");
+  });
+
+  it("normalizes exact execution targets and drops malformed target payloads", () => {
+    const baseTask = {
+      workspaceId: "/workspace",
+      panelId: "panel-1",
+      title: "Task",
+      description: "",
+      status: "todo",
+      engineType: "kimi",
+      modelId: "kimi-code/kimi-for-coding",
+      branchName: "main",
+      images: [],
+      autoStart: false,
+      sortOrder: 1,
+      threadId: null,
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    vi.mocked(getClientStoreSync).mockReturnValue({
+      panels: [],
+      tasks: [{
+        ...baseTask,
+        id: "task-valid",
+        executionTarget: {
+          engine: "kimi",
+          providerProfileId: "doge-token-matrix",
+          modelCatalogEntryId: "kimi-code/kimi-for-coding",
+          model: "kimi-for-coding",
+          providerProfileNameSnapshot: "Doge",
+          providerProfileSource: "managed",
+        },
+      }, {
+        ...baseTask,
+        id: "task-malformed",
+        executionTarget: {
+          engine: "unknown",
+          providerProfileId: 42,
+          model: ["poisoned"],
+        },
+      }],
+    });
+
+    const data = loadKanbanData();
+
+    expect(data.tasks[0]?.executionTarget).toEqual({
+      engine: "kimi",
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "kimi-code/kimi-for-coding",
+      model: "kimi-for-coding",
+      reasoning: null,
+      providerProfileNameSnapshot: "Doge",
+      providerProfileSource: "managed",
+    });
+    expect(data.tasks[1]?.executionTarget).toBeNull();
   });
 });

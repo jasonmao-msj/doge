@@ -2177,17 +2177,25 @@ describe('ChatInputBoxAdapter toggle bridge', () => {
 
   it('forwards the product entitlement catalog without provider picker semantics', async () => {
     const productTargetCatalog = {
-      engines: [
-        { id: 'codex' as const, displayName: 'Codex' },
-        { id: 'claude' as const, displayName: 'Claude' },
-        { id: 'kimi' as const, displayName: 'Kimi CLI' },
-      ],
-      models: [{
-        id: 'gpt-5.6-sol',
-        displayName: 'GPT-5.6 Sol',
-        model: 'gpt-5.6-sol',
-        apiProtocols: ['openai-responses' as const],
-        capabilities: ['chat'],
+      engines: [{
+        id: 'codex' as const,
+        displayName: 'Codex',
+        models: [{
+          id: 'gpt-5.6-sol',
+          displayName: 'GPT-5.6 Sol',
+          model: 'gpt-5.6-sol',
+          runtimeModel: 'gpt-5.6-sol',
+          apiProtocols: ['openai-responses' as const],
+          capabilities: ['chat'],
+        }],
+      }, {
+        id: 'claude' as const,
+        displayName: 'Claude',
+        models: [],
+      }, {
+        id: 'kimi' as const,
+        displayName: 'Kimi CLI',
+        models: [],
       }],
       modelsStatus: 'ready' as const,
       modelsUpdatedAt: 1_893_456_000_000,
