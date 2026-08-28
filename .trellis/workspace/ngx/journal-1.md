@@ -366,3 +366,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: 过滤 Codex Guardian 后台会话
+
+**Date**: 2026-08-28
+**Task**: 过滤 Codex Guardian 后台会话
+**Branch**: `codex/fix-codex-guardian-background-thread-filter`
+
+### Summary
+
+完成 fix-codex-guardian-background-thread-filter：基于 session_meta 结构化字段识别 Guardian 与非 thread_spawn helper，会话 merge 同时过滤 local/live 路径；新增 Rust 回归测试与 OpenSpec artifacts。L3 focused verification 通过；人工 UI 验收仍待执行。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7583cff25` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

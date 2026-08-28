@@ -1923,6 +1923,80 @@ fn parse_codex_session_summary_preserves_subagent_parent_and_agent_title() {
     assert_eq!(summary.session_id, "child-session");
     assert_eq!(serialized["parentSessionId"], "parent-session");
     assert_eq!(summary.summary.as_deref(), Some("Aristotle"));
+    assert_eq!(summary.background_kind, None);
+}
+
+#[test]
+fn parse_codex_session_summary_marks_guardian_review_thread_as_background() {
+    let root = make_temp_sessions_root();
+    let day_key = "2026-08-28";
+    let workspace_path = Path::new("/tmp/project-alpha");
+    let session_path = write_named_session_file(
+        &root,
+        day_key,
+        "rollout-2026-08-28T02-26-00-guardian-session",
+        &[
+            r#"{"timestamp":"2026-08-28T02:26:00.000Z","type":"session_meta","payload":{"id":"guardian-session","parent_thread_id":"parent-session","cwd":"/tmp/project-alpha","originator":"Codex Desktop","source":{"subagent":{"other":"guardian"}},"thread_source":"guardian_review"}}"#
+                .to_string(),
+        ],
+    );
+
+    let summary = parse_codex_session_summary(session_path.as_path(), Some(workspace_path))
+        .expect("parse summary")
+        .expect("summary exists");
+
+    assert_eq!(
+        summary.background_kind.as_deref(),
+        Some(CODEX_BACKGROUND_KIND_GUARDIAN_REVIEW)
+    );
+    assert_eq!(summary.parent_session_id, None);
+}
+
+#[test]
+fn parse_codex_session_summary_marks_unknown_subagent_shape_as_background() {
+    let root = make_temp_sessions_root();
+    let day_key = "2026-08-28";
+    let workspace_path = Path::new("/tmp/project-alpha");
+    let session_path = write_named_session_file(
+        &root,
+        day_key,
+        "rollout-2026-08-28T03-00-00-helper-session",
+        &[
+            r#"{"timestamp":"2026-08-28T03:00:00.000Z","type":"session_meta","payload":{"id":"helper-session","cwd":"/tmp/project-alpha","originator":"Codex Desktop","source":{"subagent":{"other":"future-helper"}}}}"#
+                .to_string(),
+        ],
+    );
+
+    let summary = parse_codex_session_summary(session_path.as_path(), Some(workspace_path))
+        .expect("parse summary")
+        .expect("summary exists");
+
+    assert_eq!(
+        summary.background_kind.as_deref(),
+        Some(CODEX_BACKGROUND_KIND_SUBAGENT_HELPER)
+    );
+}
+
+#[test]
+fn parse_codex_session_summary_keeps_plain_user_session_visible() {
+    let root = make_temp_sessions_root();
+    let day_key = "2026-08-28";
+    let workspace_path = Path::new("/tmp/project-alpha");
+    let session_path = write_named_session_file(
+        &root,
+        day_key,
+        "rollout-2026-08-28T04-00-00-user-session",
+        &[
+            r#"{"timestamp":"2026-08-28T04:00:00.000Z","type":"session_meta","payload":{"id":"user-session","cwd":"/tmp/project-alpha","originator":"Codex Desktop","source":"vscode"}}"#
+                .to_string(),
+        ],
+    );
+
+    let summary = parse_codex_session_summary(session_path.as_path(), Some(workspace_path))
+        .expect("parse summary")
+        .expect("summary exists");
+
+    assert_eq!(summary.background_kind, None);
 }
 
 #[test]
