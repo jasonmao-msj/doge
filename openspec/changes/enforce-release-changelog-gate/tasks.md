@@ -17,4 +17,5 @@
 
 - [x] 4.1 [P0][Depends: 3.2][Input: legacy origin tags][Output: exact target-tag collision preflight][Verify: workflow contract + remote fact check] 阻断错误 tag 复用。
 - [x] 4.2 [P0][Depends: 4.1][Input: v0.1.3..main][Output: v0.1.10 versions + bilingual CHANGELOG][Verify: release:check + branding + Cargo metadata] 准备 release PR。
-- [ ] 4.3 [P0][Depends: 4.2][Input: merged main][Output: signed v0.1.10 Release][Verify: workflow + tag/assets/latest.json] 发布并核验。
+- [ ] 4.3 [P0][Depends: 4.2][Input: three unrelated Windows 5s timeouts][Output: bounded Vitest retry contract][Verify: parser/args/workflow tests + green main CI] 稳定 Windows gate。
+- [ ] 4.4 [P0][Depends: 4.3][Input: merged green main][Output: signed v0.1.10 Release][Verify: workflow + tag/assets/latest.json] 发布并核验。

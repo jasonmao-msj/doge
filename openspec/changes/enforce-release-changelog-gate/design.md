@@ -123,3 +123,13 @@ tags，且 `v0.1.4` 指向非 doge release commit。仅检查 GitHub Release 是
 决策：不 destructive retag；doge 选择第一个未占用的 `v0.1.10`。Signed preflight 必须从 canonical
 version构造 exact ref，并在任何 platform build 前通过 remote tag lookup证明不存在；artifact-only lane
 仍允许对任意 ref 做内部构建。
+
+### Windows CI Timing Calibration
+
+`v0.1.10` merge 后的 main CI 三次分别在 `SkillsPage`、`ClaudeSettingsJsonDialog`、`HomeChat`
+发生同型 5000ms timeout，失败文件互不相同；Rust/build/release gates均通过。日志显示 batched Windows
+runner在部分 jsdom batch存在瞬时 scheduling jitter，而非单一 feature regression。
+
+决策：保留 5000ms per-test timeout，Windows batched lane仅允许 failed test retry 1 次；默认/其他
+callers retry=0。这样 transient scheduling有一次恢复机会，deterministic hang仍会在第二次 5000ms 后失败，
+不会通过把全局 timeout扩到 15s 来降低检测灵敏度。

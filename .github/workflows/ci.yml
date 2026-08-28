@@ -156,6 +156,7 @@ jobs:
       - name: Integration tests (Windows)
         env:
           VITEST_INCLUDE_HEAVY: "1"
+          VITEST_RETRY: "1"
         run: node scripts/test-batched.mjs
   build-macos:
     runs-on: macos-latest
