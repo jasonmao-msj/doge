@@ -137,3 +137,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 63: 合并最新 main 引擎路由
+
+**Date**: 2026-08-27
+**Task**: 合并最新 main 引擎路由
+**Branch**: `codex/lazy-engine-provisioning`
+
+### Summary
+
+Semantic merge PR #36 的 create-session engine routing：保留 frozen engineOverride、SessionCreationOptions retry 与 Target readiness guard，同时保持 send-time exact-engine provisioning；268 项重叠面测试、typecheck 与 targeted ESLint 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `89f3040e4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
