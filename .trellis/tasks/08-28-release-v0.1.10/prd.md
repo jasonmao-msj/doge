@@ -15,7 +15,7 @@
 - signed Release preflight 必须在 platform matrix 前拒绝已存在的目标 tag。
 - CI contract 覆盖 tag collision gate；release preparation PR 合入后从 `main` dispatch。
 - workflow inputs 必须显式设置 `windows_artifact_only=false`、`macos_artifact_only=false`。
-- Windows CI batched Vitest 对单个 transient test最多 retry 1 次，保留原 5000ms timeout；不得用全局放宽 timeout掩盖确定性 hang。
+- `test-js` 与 `test-windows` 两个 full batched CI lanes对单个 transient test最多 retry 1 次，保留原 5000ms timeout；本地/default callers保持零 retry。
 - Unix CLI probe cleanup test必须区分 live descendant 与 SIGKILL 后等待 init reaping 的 transient zombie；在 cleanup timeout内 poll `ESRCH`，不得改变 production probe deadline。
 
 ## Acceptance Criteria
@@ -26,7 +26,7 @@
 - [x] L3 release-preparation checks 通过并创建、合入独立 PR。
 - [ ] signed Release workflow 从 `main` 启动并产出 `v0.1.10` Release。
 - [ ] Release tag 指向触发 workflow 的 main commit，`latest.json` 与 Release notes 使用 current CHANGELOG。
-- [x] Windows CI retry contract有 parser/argument/workflow tests；默认与非 Windows callers保持零 retry。
+- [x] Batched CI retry contract有 parser/argument/workflow tests；本地/default callers保持零 retry。
 - [x] Unix hanging-probe regression在连续重复运行下稳定，并继续证明 descendant最终消失。
 
 ## Technical Approach
@@ -35,9 +35,10 @@
 - Collision gate：preflight 从 canonical Tauri version构造 `refs/tags/vX.Y.Z`，通过
   `git ls-remote --exit-code --tags origin` fail closed。
 - Notes：AI curate bilingual entry；workflow继续只 extract committed current entry。
-- Windows flake recovery：`scripts/test-batched.mjs` 从 bounded `VITEST_RETRY`生成 Vitest
-  `--retry`；仅 `test-windows` 设为 1。三次 main CI分别在三个无关 UI tests发生同型 5000ms timeout，
-  证明是 runner timing jitter；不修改 test timeout。
+- Batched CI flake recovery：`scripts/test-batched.mjs` 从 bounded `VITEST_RETRY`生成 Vitest
+  `--retry`；`test-js` 与 `test-windows` 设为 1。Windows三次在无关 UI tests超时后，Ubuntu
+  `test-js` 又在相同 `ClaudeSettingsJsonDialog` 发生 5000ms timeout，证明是 shared CI/jsdom timing
+  jitter；不修改 test timeout，本地/default retry仍为 0。
 - Unix process-group regression：`killpg(SIGKILL)` 后 leader可立即 reap，但 background descendant由 init
   异步 reap；`kill(pid, 0)` 在 zombie窗口仍返回 0。测试在 `DETECTION_CLEANUP_TIMEOUT` 内 bounded poll
   `ESRCH`，超时仍失败；production `run_cli_probe` 与 cleanup行为不变。

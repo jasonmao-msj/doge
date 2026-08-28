@@ -136,6 +136,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Tests
+        env:
+          VITEST_RETRY: "1"
         run: npm run test
   test-windows:
     runs-on: windows-latest

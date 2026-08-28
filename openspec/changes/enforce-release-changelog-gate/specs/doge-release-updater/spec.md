@@ -48,11 +48,11 @@ second release body from Git history or mutate version/changelog files after pub
 - **THEN** the signed release preflight MUST fail before any platform build starts
 - **AND** MUST NOT treat the lookup error as proof that the tag is unused
 
-#### Scenario: Windows CI has transient per-test scheduling jitter
+#### Scenario: batched CI has transient per-test scheduling jitter
 
-- **WHEN** the Windows batched Vitest lane encounters a single test timeout
+- **WHEN** a full batched Vitest CI lane encounters a single test timeout
 - **THEN** it MAY retry that failed test exactly once using Vitest retry semantics
-- **AND** the default and non-Windows callers MUST keep retry disabled
+- **AND** local and default callers MUST keep retry disabled
 - **AND** the per-test timeout MUST remain unchanged so a deterministic hang still fails after the bounded retry
 
 #### Scenario: workflow publishes release metadata
