@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": "openspec/changes/enforce-release-changelog-gate/design.md", "reason": "release authority 与 fail-closed workflow 设计"}
+{"file": ".trellis/spec/backend/upstream-service-isolation.md", "reason": "release trust chain contract"}
+{"file": ".trellis/spec/guides/project-instruction-layering-guide.md", "reason": "AGENTS 与细则分层"}
