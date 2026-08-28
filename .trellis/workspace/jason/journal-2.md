@@ -434,3 +434,36 @@ Windows gate绿后 Ubuntu test-js在相同 ClaudeSettings suite发生 5s timeout
 ### Next Steps
 
 - None - task complete
+
+
+## Session 72: 完成并收口 doge v0.1.10 Release
+
+**Date**: 2026-08-28
+**Task**: 完成并收口 doge v0.1.10 Release
+**Branch**: `codex/close-release-v0.1.10`
+
+### Summary
+
+v0.1.10 signed Release 33173561758成功；tag精确指向 cdd7ecb29，macOS/Linux/Windows/Web assets与latest.json完整，四平台 signatures和双语notes一致。同步 doge-release-updater main spec，归档 enforce-release-changelog-gate与release Trellis task，记录CI稳定化证据。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `72e016a81` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

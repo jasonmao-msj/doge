@@ -24,8 +24,8 @@
 - [x] `npm run release:check` 对七个 version facts 与 current CHANGELOG entry 通过。
 - [x] workflow contract 证明 existing tag 会阻断 signed release preflight。
 - [x] L3 release-preparation checks 通过并创建、合入独立 PR。
-- [ ] signed Release workflow 从 `main` 启动并产出 `v0.1.10` Release。
-- [ ] Release tag 指向触发 workflow 的 main commit，`latest.json` 与 Release notes 使用 current CHANGELOG。
+- [x] signed Release workflow 从 `main` 启动并产出 `v0.1.10` Release。
+- [x] Release tag 指向触发 workflow 的 main commit，`latest.json` 与 Release notes 使用 current CHANGELOG。
 - [x] Batched CI retry contract有 parser/argument/workflow tests；本地/default callers保持零 retry。
 - [x] Unix hanging-probe regression在连续重复运行下稳定，并继续证明 descendant最终消失。
 

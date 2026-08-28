@@ -3,7 +3,7 @@
   "name": "release-v0.1.10",
   "title": "准备并发布 doge v0.1.10",
   "description": "OpenSpec: enforce-release-changelog-gate；同步 canonical versions 与双语 CHANGELOG，阻断 legacy tag collision，合入后触发 signed Release。",
-  "status": "planning",
+  "status": "completed",
   "dev_type": "fullstack",
   "scope": null,
   "package": null,
@@ -11,8 +11,8 @@
   "creator": "jason",
   "assignee": "jason",
   "createdAt": "2026-08-28",
-  "completedAt": null,
-  "branch": "codex/extend-vitest-retry-to-ci",
+  "completedAt": "2026-08-28",
+  "branch": "codex/close-release-v0.1.10",
   "base_branch": "main",
   "worktree_path": null,
   "current_phase": 0,
@@ -43,11 +43,11 @@
     }
   ],
   "commit": null,
-  "pr_url": null,
+  "pr_url": "https://github.com/jasonmao-msj/doge/pull/45",
   "subtasks": [],
   "children": [],
   "parent": null,
   "relatedFiles": [],
-  "notes": "",
+  "notes": "Release prep PR #45；CI hardening PRs #46/#47/#48；main CI 33170451643；signed Release 33173561758；v0.1.10 verified latest。",
   "meta": {}
 }
