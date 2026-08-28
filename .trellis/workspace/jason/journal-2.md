@@ -104,3 +104,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 62: 按需静默准备产品引擎
+
+**Date**: 2026-08-27
+**Task**: 按需静默准备产品引擎
+**Branch**: `codex/lazy-engine-provisioning`
+
+### Summary
+
+登录后立即进入 AppShell；仅在实际 cli_install_run 时展示安装卡，已安装或 bundled/external 引擎静默复用；补齐 exact-engine IPC、send 边界、draft 恢复、跨层规范与 L3 验证，Hot Doge 冷启动由用户目视通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `48191da6a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

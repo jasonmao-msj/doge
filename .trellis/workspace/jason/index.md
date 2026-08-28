@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 61
+- **Total Sessions**: 62
 - **Last Active**: 2026-08-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~106 | Active |
+| `journal-2.md` | ~139 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 62 | 2026-08-27 | 按需静默准备产品引擎 | `48191da6a` | `codex/lazy-engine-provisioning` |
 | 61 | 2026-08-27 | 准备 v0.1.2 正式发布 | `b6b2ffe01` | `codex/render-models-by-protocol` |
 | 60 | 2026-08-27 | 修复 Codex 调用 Kimi 模型 | `31951f045` | `codex/render-models-by-protocol` |
 | 59 | 2026-08-27 | 按 API protocol 统一 Product 模型目录 | `2b46b68be` | `codex/render-models-by-protocol` |
