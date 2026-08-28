@@ -70,14 +70,23 @@ test("adds Vitest retry arguments only when explicitly enabled", () => {
   assert.deepEqual(testBatchedInternals.vitestRetryArgs(1), ["--retry", "1"]);
 });
 
-test("enables one retry only for the Windows CI batch lane", () => {
+test("enables one retry only for the full batched CI lanes", () => {
   const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  );
+  const jsJob = workflowJob(workflow, "test-js");
   const windowsJob = workflowJob(workflow, "test-windows");
-  const withoutWindows = workflow.replace(`  test-windows:\n${windowsJob}`, "");
+  const withoutBatchedJobs = workflow
+    .replace(`  test-js:\n${jsJob}`, "")
+    .replace(`  test-windows:\n${windowsJob}`, "");
 
+  assert.match(jsJob, /VITEST_RETRY: "1"/);
+  assert.match(jsJob, /run: npm run test/);
+  assert.equal(packageJson.scripts.test, "node scripts/test-batched.mjs");
   assert.match(windowsJob, /VITEST_RETRY: "1"/);
   assert.match(windowsJob, /run: node scripts\/test-batched\.mjs/);
-  assert.doesNotMatch(withoutWindows, /VITEST_RETRY/);
+  assert.doesNotMatch(withoutBatchedJobs, /VITEST_RETRY/);
 });
 
 test("normalizes ripgrep file output across line endings", () => {
