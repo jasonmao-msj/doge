@@ -1136,7 +1136,7 @@ dependencies = [
 
 [[package]]
 name = "doge"
-version = "0.1.3"
+version = "0.1.10"
 dependencies = [
  "axum",
  "base64 0.22.1",

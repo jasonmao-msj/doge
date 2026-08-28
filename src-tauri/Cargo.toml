@@ -1,6 +1,6 @@
 [package]
 name = "doge"
-version = "0.1.3"
+version = "0.1.10"
 description = "doge — an AI Shiba life and work assistant"
 authors = ["jasonmao-msj"]
 edition = "2021"

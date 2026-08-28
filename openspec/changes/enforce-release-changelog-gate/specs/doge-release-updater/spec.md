@@ -35,6 +35,19 @@ second release body from Git history or mutate version/changelog files after pub
 - **THEN** the signed release preflight MUST fail before any platform build starts
 - **AND** artifact-only internal builds MAY still run from the selected ref
 
+#### Scenario: canonical release tag is already occupied
+
+- **WHEN** both artifact-only inputs are false and `refs/tags/v<canonical-version>` already exists on `origin`
+- **THEN** the signed release preflight MUST fail before any platform build starts
+- **AND** the workflow MUST report the conflicting exact tag
+- **AND** MUST NOT move, delete, or reuse the existing tag
+
+#### Scenario: canonical release tag cannot be verified
+
+- **WHEN** the exact remote tag lookup exits non-zero because `origin` is unavailable or authentication fails
+- **THEN** the signed release preflight MUST fail before any platform build starts
+- **AND** MUST NOT treat the lookup error as proof that the tag is unused
+
 #### Scenario: workflow publishes release metadata
 
 - **WHEN** all signed platform artifacts succeed

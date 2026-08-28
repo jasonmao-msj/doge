@@ -59,6 +59,13 @@ test("release stays fail-closed until the independent doge updater trust chain e
   assert.match(preflight, /inputs\.macos_artifact_only != true/);
   assert.match(preflight, /name: Verify release source/);
   assert.match(preflight, /refs\/heads\/main/);
+  assert.match(preflight, /name: Verify release tag is unused/);
+  assert.match(preflight, /require\('\.\/src-tauri\/tauri\.conf\.json'\)\.version/);
+  assert.match(preflight, /git ls-remote --tags origin "refs\/tags\/\$\{TAG\}"/);
+  assert.match(preflight, /if \[ "\$TAG_LOOKUP_STATUS" -ne 0 \]/);
+  assert.match(preflight, /if \[ -n "\$TAG_LOOKUP" \]/);
+  assert.match(preflight, /refusing to reuse or move it/);
+  assert.doesNotMatch(preflight, /git push.+refs\/tags|git tag -[df]/);
   assert.match(preflight, /TAURI_SIGNING_PRIVATE_KEY_B64/);
   assert.match(preflight, /TAURI_SIGNING_PRIVATE_KEY_PASSWORD/);
   assert.match(preflight, /createUpdaterArtifacts/);

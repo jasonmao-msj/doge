@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/guides/release-preparation-guide.md", "reason": "canonical release preparation flow"}
+{"file": ".trellis/spec/backend/upstream-service-isolation.md", "reason": "signed release and fail-closed contract"}
+{"file": "openspec/changes/enforce-release-changelog-gate/design.md", "reason": "release authority and legacy tag collision decision"}

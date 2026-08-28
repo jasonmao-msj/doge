@@ -114,3 +114,12 @@ Rollback：恢复旧 release notes generator不会影响 updater artifacts，但
 ## Open Questions
 
 无。Tag ruleset/GitHub App 属于可选的手工 Release hardening，不阻塞本 change。
+
+## Follow-up Calibration: Legacy Tag Collision
+
+2026-08-28 首次按本 contract 准备下一版本时，发现 `origin` 已保留上游 `v0.1.4`～`v0.1.9`
+tags，且 `v0.1.4` 指向非 doge release commit。仅检查 GitHub Release 是否存在不足以证明 tag 可用。
+
+决策：不 destructive retag；doge 选择第一个未占用的 `v0.1.10`。Signed preflight 必须从 canonical
+version构造 exact ref，并在任何 platform build 前通过 remote tag lookup证明不存在；artifact-only lane
+仍允许对任意 ref 做内部构建。

@@ -31,6 +31,16 @@ Signed Release MUST 从 `main` dispatch；workflow 会在 platform matrix 前验
 - `src-tauri/tauri.conf.json`
 - `CHANGELOG.md`
 
+Candidate version MUST 同时满足 exact origin tag 与 GitHub Release 都不存在：
+
+```bash
+git ls-remote --tags origin "refs/tags/vX.Y.Z"
+gh release view "vX.Y.Z" --repo jasonmao-msj/doge
+```
+
+若 exact tag 已被 legacy history占用，默认选择同一 planned series 中下一个未占用版本；禁止隐式删除、
+移动或复用历史 tag。只有用户明确授权 destructive retag时才可另行处理。
+
 ## CHANGELOG Contract
 
 最新 entry MUST 位于第一条，格式：

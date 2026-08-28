@@ -41,6 +41,26 @@ jobs:
             exit 1
           fi
 
+      - name: Verify release tag is unused
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          TAG="v${VERSION}"
+
+          set +e
+          TAG_LOOKUP=$(git ls-remote --tags origin "refs/tags/${TAG}" 2>&1)
+          TAG_LOOKUP_STATUS=$?
+          set -e
+
+          if [ "$TAG_LOOKUP_STATUS" -ne 0 ]; then
+            echo "Unable to verify release tag ${TAG}: ${TAG_LOOKUP}" >&2
+            exit 1
+          fi
+          if [ -n "$TAG_LOOKUP" ]; then
+            echo "Release tag ${TAG} already exists on origin; refusing to reuse or move it." >&2
+            exit 1
+          fi
+
       - name: Verify doge updater trust chain
         run: |
           set -euo pipefail
