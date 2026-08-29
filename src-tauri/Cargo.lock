@@ -1185,6 +1185,7 @@ dependencies = [
  "toml 0.8.2",
  "trash",
  "uuid",
+ "webview2-com",
  "which 7.0.3",
  "whisper-rs",
  "windows-sys 0.61.2",

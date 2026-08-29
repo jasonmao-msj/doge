@@ -388,9 +388,53 @@ function extractCodexDiscoveredModels(response: Record<string, unknown>): ModelI
           : runtimeModel,
       description:
         typeof model.description === "string" ? model.description : undefined,
+      supportedReasoningEfforts: normalizeDiscoveredReasoningEfforts(
+        model.supportedReasoningEfforts ?? model.supported_reasoning_efforts,
+      ),
+      defaultReasoningEffort:
+        typeof (model.defaultReasoningEffort ?? model.default_reasoning_effort) ===
+        "string"
+          ? ((model.defaultReasoningEffort ?? model.default_reasoning_effort) as string)
+          : null,
       source: "runtime",
     }];
   });
+}
+
+function normalizeDiscoveredReasoningEfforts(
+  value: unknown,
+): ModelInfo["supportedReasoningEfforts"] {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const efforts: NonNullable<ModelInfo["supportedReasoningEfforts"]> = [];
+  for (const entry of value) {
+    if (typeof entry === "string") {
+      const reasoningEffort = entry.trim();
+      if (reasoningEffort) {
+        efforts.push({ reasoningEffort, description: "" });
+      }
+      continue;
+    }
+    if (!entry || typeof entry !== "object") {
+      continue;
+    }
+    const record = entry as Record<string, unknown>;
+    const reasoningEffort =
+      typeof record.reasoningEffort === "string"
+        ? record.reasoningEffort.trim()
+        : typeof record.reasoning_effort === "string"
+          ? record.reasoning_effort.trim()
+          : "";
+    if (reasoningEffort) {
+      efforts.push({
+        reasoningEffort,
+        description:
+          typeof record.description === "string" ? record.description : "",
+      });
+    }
+  }
+  return efforts.length > 0 ? efforts : undefined;
 }
 
 function useProviderTargetCatalogOwner({

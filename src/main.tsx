@@ -5,8 +5,10 @@ import {
   startReactScanOverlay,
 } from "./services/reactScanController";
 import { installRendererPlatformAttribute } from "./utils/rendererPlatform";
+import { installWindowsReloadShortcutGuard } from "./utils/windowsReloadShortcutGuard";
 
 installRendererPlatformAttribute();
+installWindowsReloadShortcutGuard();
 installRendererLifecycleDiagnostics();
 // Migrate brand-prefixed keys before bootstrapApp imports modules that read
 // localStorage at module initialization. The later bootstrap migration remains

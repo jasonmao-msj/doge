@@ -330,6 +330,24 @@ describe("threadItems", () => {
     }
   });
 
+  it("bounds oversized command output during history normalization", () => {
+    const normalized = normalizeItem({
+      id: "tool-large",
+      kind: "tool",
+      toolType: "commandExecution",
+      title: "Command",
+      detail: "",
+      output: `head${"x".repeat(300 * 1024)}tail`,
+    });
+    expect(normalized.kind).toBe("tool");
+    if (normalized.kind === "tool") {
+      expect(normalized.output?.length ?? 0).toBeLessThanOrEqual(256 * 1024);
+      expect(normalized.output).toMatch(/omitted \d+ chars/);
+      expect(normalized.output?.startsWith("head")).toBe(true);
+      expect(normalized.output?.endsWith("tail")).toBe(true);
+    }
+  });
+
   it("preserves long structured edit detail JSON", () => {
     const oldString = Array.from({ length: 180 }, (_, index) => `old-${index}`).join("\n");
     const newString = Array.from({ length: 180 }, (_, index) => `new-${index}`).join("\n");

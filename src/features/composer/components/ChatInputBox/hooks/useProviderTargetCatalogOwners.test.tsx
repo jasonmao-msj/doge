@@ -921,6 +921,57 @@ describe("Provider target catalog owners", () => {
     ]);
   });
 
+  it("preserves reasoning metadata returned by Codex model discovery", async () => {
+    discoverCodexModelsMock.mockResolvedValueOnce({
+      data: [
+        {
+          id: "relay-reasoning",
+          model: "relay-reasoning",
+          supported_reasoning_efforts: [
+            "low",
+            { reasoningEffort: "high", description: "Deep" },
+          ],
+          default_reasoning_effort: "high",
+        },
+        { id: "relay-plain", model: "relay-plain" },
+      ],
+    });
+    const { result } = renderHook(() =>
+      useAtomicProviderTargetCatalog({
+        enabled: true,
+        mode: "create-session",
+        workspaceId: "ws-1",
+        currentProvider: "codex",
+        currentProviderProfileId: "__disk__",
+        resolveProviderLabel: (provider) => provider,
+        kimiDisabledReason: "source only",
+      }),
+    );
+
+    await act(async () => {
+      await result.current.ensureProfiles();
+      await result.current.discoverModels("codex", "__disk__");
+    });
+
+    const models =
+      result.current.groups
+        .find((group) => group.providerId === "codex")
+        ?.profiles.find((profile) => profile.id === "__disk__")?.models ?? [];
+    expect(
+      models
+        .find((model) => model.id === "relay-reasoning")
+        ?.supportedReasoningEfforts?.map((entry) => entry.reasoningEffort),
+    ).toEqual(["low", "high"]);
+    expect(
+      models.find((model) => model.id === "relay-reasoning")
+        ?.defaultReasoningEffort,
+    ).toBe("high");
+    expect(
+      models.find((model) => model.id === "relay-plain")
+        ?.supportedReasoningEfforts ?? [],
+    ).toEqual([]);
+  });
+
   describe("CLI engine visibility", () => {
     it("hides user-disabled engines from the shared picker groups", () => {
       seedCliEngineVisibility(["grok", "opencode"]);

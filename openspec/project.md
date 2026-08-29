@@ -20,7 +20,7 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 - Change workflow artifacts: `openspec/changes/<change-id>/{proposal,design,tasks,verification}.md`
 - Archive: `openspec/changes/archive/*`
 - Implementation rules: `.trellis/spec/**`
-- Current workspace state: active changes = `28`, archive changes = `883`, main specs = `517`
+- Current workspace state: active changes = `32`, archive changes = `885`, main specs = `502`
 
 ## Entry Surfaces
 
@@ -64,22 +64,22 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 
 ## Current Inventory
 
-- Active changes: `28`
-- Archive changes: `883`
-- Main specs: `517`
+- Active changes: `32`
+- Archive changes: `885`
+- Main specs: `502`
 - Completed task sets still active: `0`
 - Ready-for-implementation task sets: `0`
 - Demand-pool proposal directories without `proposal.md` / `tasks.md`: `0`
 
 ## Active Changes
 
-Active OpenSpec changes in the current working tree (28; see [`changes/README.md`](changes/README.md)):
+Active OpenSpec changes in the current working tree (32; see [`changes/README.md`](changes/README.md)):
 
 - 当前 active set 保留未完成或 `no-tasks` 的 change；完整清单以 [`changes/README.md`](changes/README.md) 和磁盘目录为准。
-- `add-collab-stage-upstream-feed-mode`、`add-conversation-squad-inspector`、`add-daily-poetry-composer-banner`、`add-linux-native-menu-localization`、`add-shared-squad-worker-execution`、`add-sub2api-relay-quota`
-- `doge-unified-product-subscription`、`fix-claude-background-shell-settlement`、`fix-codex-collab-subagent-live-parity`、`fix-live-settle-assistant-tool-order`、`fix-messages-boundary-regressions`、`fix-runtime-workspace-switch-main-thread-stall`、`fix-shared-collab-context-and-sidebar-spawn`
+- `add-collab-stage-upstream-feed-mode`、`add-conversation-squad-inspector`、`add-daily-poetry-composer-banner`、`add-doubao-to-managed-codex`、`add-linux-native-menu-localization`、`add-shared-squad-worker-execution`、`add-sub2api-relay-quota`
+- `doge-unified-product-subscription`、`fix-claude-background-shell-settlement`、`fix-codex-collab-subagent-live-parity`、`fix-codex-guardian-background-thread-filter`、`fix-live-settle-assistant-tool-order`、`fix-messages-boundary-regressions`、`fix-runtime-workspace-switch-main-thread-stall`、`fix-shared-collab-context-and-sidebar-spawn`
 - `fix-shared-session-subscription-quota-projection`、`fix-shared-sidebar-hide-set-staleness`、`fix-ui-scale-native-zoom-freeze-all-platforms`、`fix-windows-cold-start-freeze-residual`、`fix-windows-ui-scale-webview2-hang`、`harden-shared-squad-recovery`、`integrate-token2api-account-system`
-- `lazy-engine-provisioning`、`optimize-cold-start-hydration-orchestration`、`rebrand-client-to-doge`、`redesign-startup-diagnostics-timeline`、`render-product-models-by-protocol`、`require-account-engine-subscription-onboarding`、`retire-canvas-subagent-squad-grid`、`wire-shared-composer-run-status-strip`
+- `lazy-engine-provisioning`、`optimize-cold-start-hydration-orchestration`、`rebrand-client-to-doge`、`redesign-startup-diagnostics-timeline`、`render-product-models-by-protocol`、`require-account-engine-subscription-onboarding`、`retire-canvas-subagent-squad-grid`、`sync-upstream-stability-2026-08`、`unify-product-target-catalog-consumers`、`wire-shared-composer-run-status-strip`
 - 2026-08-28 已归档 32 个内容，其中 bundle change 由用户明确授权 waiver archive，保留未完成 release evidence。
 
 

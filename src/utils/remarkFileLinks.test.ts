@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { isLinkableFilePath, normalizeBareWindowsFilePathLinks } from "./remarkFileLinks";
+import {
+  decodeFileLink,
+  isLinkableFilePath,
+  normalizeBareWindowsFilePathLinks,
+  recoverLocalFileLinkPath,
+  rewriteWindowsAbsoluteMarkdownLinkDestinations,
+  toFileLink,
+} from "./remarkFileLinks";
 
 describe("isLinkableFilePath", () => {
   it("does not linkify CJK prose that merely contains slashes", () => {
@@ -34,5 +41,46 @@ describe("isLinkableFilePath", () => {
     expect(normalizeBareWindowsFilePathLinks(`PPTX: ${path}`)).toContain(
       `(codex-file:${encodeURIComponent(path)})`,
     );
+  });
+});
+
+describe("recoverLocalFileLinkPath", () => {
+  const windowsPath = "D:/AI/Alchat/突击队/输出/report.md";
+
+  it("recovers nested rendered Windows links", () => {
+    expect(
+      recoverLocalFileLinkPath(
+        `/[${windowsPath}] (codex-file:${windowsPath})`,
+      ),
+    ).toBe(windowsPath);
+    expect(
+      recoverLocalFileLinkPath(
+        `[${windowsPath}](codex-file:${encodeURIComponent(windowsPath)})`,
+      ),
+    ).toBe(windowsPath);
+  });
+
+  it("keeps clean paths and decodes encoded file links", () => {
+    expect(recoverLocalFileLinkPath("D:/work/a.md")).toBe("D:/work/a.md");
+    expect(recoverLocalFileLinkPath("/Users/test/a.md")).toBe("/Users/test/a.md");
+    expect(recoverLocalFileLinkPath("src/foo.ts")).toBe("src/foo.ts");
+    expect(decodeFileLink(toFileLink("D:/work/a.md"))).toBe("D:/work/a.md");
+  });
+});
+
+describe("rewriteWindowsAbsoluteMarkdownLinkDestinations", () => {
+  it("rewrites drive destinations without touching web or image links", () => {
+    const windowsPath = "D:/work/报告.md";
+    expect(
+      rewriteWindowsAbsoluteMarkdownLinkDestinations(`[报告](${windowsPath})`),
+    ).toBe(`[报告](${toFileLink(windowsPath)})`);
+    expect(
+      rewriteWindowsAbsoluteMarkdownLinkDestinations(
+        "[name](https://example.com/a.md)",
+      ),
+    ).toBe("[name](https://example.com/a.md)");
+    expect(
+      rewriteWindowsAbsoluteMarkdownLinkDestinations("![img](D:/shots/a.png)"),
+    ).toBe("![img](D:/shots/a.png)");
   });
 });

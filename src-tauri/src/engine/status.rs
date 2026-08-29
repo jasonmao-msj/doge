@@ -104,6 +104,21 @@ fn merge_provider_models_with_public(
     dedupe_models_preserve_order(provider_models.into_iter().chain(public_models).collect())
 }
 
+/// Finalize a provider-scoped catalog without leaking an engine-global model
+/// roster into a third-party Codex binding. Official generated Codex rows are
+/// provider facts, not binding facts; selecting one against a relay that never
+/// declared it creates a ghost model. Other engines retain their existing
+/// public merge contract. Semantic port of upstream `0f90c742b`.
+fn finalize_provider_scoped_catalog(
+    engine_type: EngineType,
+    provider_models: Vec<ModelInfo>,
+) -> Vec<ModelInfo> {
+    if engine_type == EngineType::Codex {
+        return provider_models;
+    }
+    merge_provider_models_with_public(provider_models, public_models_for_engine(engine_type))
+}
+
 fn public_models_for_engine(engine_type: EngineType) -> Vec<ModelInfo> {
     match engine_type {
         EngineType::Claude => get_builtin_claude_models(),
@@ -473,9 +488,9 @@ pub(crate) fn get_provider_scoped_engine_models(
         }
         EngineType::Gemini => return Ok(None),
     };
-    Ok(Some(merge_provider_models_with_public(
+    Ok(Some(finalize_provider_scoped_catalog(
+        engine_type,
         provider_models,
-        public_models_for_engine(engine_type),
     )))
 }
 
@@ -1973,14 +1988,14 @@ pub async fn resolve_engine_type(
     }
 
     // 3. Auto-detect based on installed CLIs
-    detect_preferred_engine(
+    Box::pin(detect_preferred_engine(
         claude_bin,
         codex_bin,
         gemini_bin,
         opencode_bin,
         kimi_bin,
         grok_bin,
-    )
+    ))
     .await
 }
 
@@ -2239,9 +2254,9 @@ mod tests {
             "ANTHROPIC_MODEL".to_string(),
             "claude-opus-5".to_string(),
         )]);
-        let models = merge_provider_models_with_public(
+        let models = finalize_provider_scoped_catalog(
+            EngineType::Claude,
             claude_provider_models_from_env("provider-a", &env),
-            public_models_for_engine(EngineType::Claude),
         );
 
         // Provider catalog carries the full tier list, all scoped to the profile.
@@ -2263,7 +2278,7 @@ mod tests {
     }
 
     #[test]
-    fn codex_provider_catalog_merges_config_custom_and_public_models() {
+    fn codex_provider_catalog_skips_official_public_fallback() {
         let provider_models = codex_provider_models_from_config(
             "provider-a",
             "model = \"gpt-5.3-codex\"\nmodel_provider = \"proxy-a\"\n",
@@ -2274,10 +2289,7 @@ mod tests {
             }],
         )
         .expect("parse provider catalog");
-        let models = merge_provider_models_with_public(
-            provider_models,
-            public_models_for_engine(EngineType::Codex),
-        );
+        let models = finalize_provider_scoped_catalog(EngineType::Codex, provider_models);
 
         assert_eq!(
             models
@@ -2292,7 +2304,7 @@ mod tests {
         }));
         assert!(models
             .iter()
-            .any(|model| { model.source == "fallback" && model.provider_profile_id.is_none() }));
+            .all(|model| model.source != "fallback" && model.provider_profile_id.is_some()));
     }
 
     #[test]
@@ -2313,9 +2325,9 @@ mod tests {
             max_context_size: None,
             display_name: Some("Provider Kimi".to_string()),
         };
-        let models = merge_provider_models_with_public(
+        let models = finalize_provider_scoped_catalog(
+            EngineType::Kimi,
             kimi_provider_models_from_config("provider-a", provider),
-            public_models_for_engine(EngineType::Kimi),
         );
 
         assert_eq!(

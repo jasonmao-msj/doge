@@ -21,7 +21,7 @@
 - `changes/archive/`
   - 已归档 change artifacts；`README.md` 按月份 / 归档日期索引全部 proposal
 - `specs/`
-  - 当前主线 capability 规范；`README.md` 完整索引 492 个已同步 capability
+  - 当前主线 capability 规范；`README.md` 完整索引 502 个已同步 capability
 - `docs/`
   - 审计、验证、同步与研究辅助文档；`README.md` 区分 durable reference 与 dated snapshot
 - `config.yaml`

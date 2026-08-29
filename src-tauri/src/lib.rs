@@ -194,6 +194,8 @@ mod utils;
 mod vendors;
 mod web_service;
 mod window;
+#[cfg(any(test, target_os = "windows"))]
+mod windows_f5_reload_guard;
 mod workspaces;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -389,6 +391,7 @@ pub fn run() {
             #[cfg(target_os = "windows")]
             {
                 let _ = window.hide_menu();
+                windows_f5_reload_guard::install_on_main_window(&window);
             }
 
             // Suppress unused variable warning on non-Windows

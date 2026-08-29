@@ -22,6 +22,11 @@ describe("markdownLocalResources", () => {
       "D:\\work\\notes\\todo.md",
     );
     expect(resolveLocalFileHref("https://example.com")).toBeNull();
+    expect(
+      resolveLocalFileHref(
+        "/[D:/AI/Alchat/突击队/输出/report.md] (codex-file:D:/AI/Alchat/突击队/输出/report.md)",
+      ),
+    ).toBe("D:/AI/Alchat/突击队/输出/report.md");
   });
 
   it("extracts browser-safe local image paths without converting remote URLs", () => {

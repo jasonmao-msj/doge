@@ -102,6 +102,18 @@ test("build failures are propagated unless a caller explicitly requests best-eff
   assert.doesNotMatch(execImplementation, /TAURI_SIGNING_PRIVATE_KEY|error\.status/);
 });
 
+test("platform builds fail closed when expected doge artifacts are missing", () => {
+  const build = read("scripts/build-platform.mjs");
+  const fixOpenSsl = read("scripts/macos-fix-openssl.sh");
+
+  assert.match(build, /function assertBuildArtifact\(artifactPath, label\)/);
+  assert.match(build, /assertMacAppBundle\(bundlePath\)/);
+  assert.match(build, /assertBuildArtifact\(installerPath, "Windows NSIS bundle"\)/);
+  assert.match(build, /assertBuildArtifact\(appImagePath, "Linux AppImage bundle"\)/);
+  assert.match(fixOpenSsl, /no doge binaries found under/);
+  assert.match(fixOpenSsl, /incomplete app bundle/);
+});
+
 test("DMG Finder automation is bounded and keeps headless fallbacks", () => {
   const dmg = read("scripts/create-dmg.sh");
 

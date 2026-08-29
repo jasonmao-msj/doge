@@ -57,7 +57,8 @@ type EngineModelInfo = {
 - `providerProfileId` omitted/blank：保持 legacy engine-global catalog。
 - local/disk sentinel：resolver 返回 `None`，保持对应 CLI 的本地配置行为。
 - managed provider：只读取该 provider profile 的 model fields/custom models，不读取其他 provider 或默认 managed config。
-- provider models 必须先于 public generated/built-in models 合并；按 runtime `model` identity 稳定去重，provider row 获胜。
+- Claude/Kimi/Grok managed provider models 必须先于 public generated/built-in models 合并；按 runtime `model` identity 稳定去重，provider row 获胜。
+- **Codex managed provider 例外**：`get_provider_scoped_engine_models(EngineType::Codex, Some(profile))` MUST 只返回该 profile 配置/发现/用户管理的 rows，MUST NOT 拼 official generated fallback。Official fallback 是 upstream/provider capability，不是任意 relay binding 的事实；空 scoped catalog 走 configured-default/custom guidance。Product mode 继续读取 endpoint protocol → `projectProductTargetCatalogV1`，不得借此例外隐藏或复制 Product row。
 - catalog entry `id` 是 UI/selection identity，`model` 是 CLI/API runtime identity。
   Picker/Target snapshot 必须分域保存；send/continuation execution MUST 只消费 runtime
   `model`。legacy entry 缺少 `model` 时允许显式 compatibility fallback；已知
@@ -125,9 +126,10 @@ type EngineModelInfo = {
   selection，也不得把其他 managed Provider 或 Local settings override 放入当前
   managed Provider。
 - Backend managed catalog 返回 `providerProfileId = null` 且 `source = fallback | builtin`
-  的 public fallback 时，Native 单栏与 Atomic 双栏都 MUST 保留这些 rows。Atomic
-  managed Profile 只允许当前 `profile.id` 的 scoped rows 加 public fallback；其他
-  无 binding identity 的 Local/config rows 只允许出现在 local/disk Profile。
+  的合法 public fallback 时，Native 单栏与 Atomic 双栏都 MUST 保留这些 rows。Atomic
+  managed Profile 只允许当前 `profile.id` 的 scoped rows 加该 engine contract 允许的
+  public fallback；**Codex managed Profile 不允许 official generated fallback**。其他无
+  binding identity 的 Local/config rows 只允许出现在 local/disk Profile。
 - Profile catalog loader MUST 按 canonical local sentinel（以及 backend
   `isLocalProvider` metadata）保持 local Profile 的 `source = disk`。Backend
   返回 local sentinel 不得因经过统一 Provider normalization 被重分类为
@@ -147,7 +149,8 @@ type EngineModelInfo = {
 |---|---|---|
 | `providerProfileId` omitted | 对应 CLI local validation catalog | supported CLI 返回 `None` 或绕过 strict pair validation |
 | local/disk sentinel | CLI 本地配置模型 | 当作 managed provider 查询 |
-| valid managed provider | provider models + public models，整体去重 | 混入其他 provider models |
+| valid Claude/Kimi/Grok managed provider | provider models + public models，整体去重 | 混入其他 provider models |
+| valid Codex managed provider | provider-owned models only | 拼入 uncallable official generated rows |
 | provider model 与 public model 同 runtime id | provider row 保留一次 | public row 覆盖 provider label/origin |
 | missing/invalid provider | contextual `Err(String)` | 回退默认 provider |
 | provider A 请求晚于 provider B 返回 | UI 保持 provider B catalog | A 覆盖 B |
@@ -171,10 +174,10 @@ type EngineModelInfo = {
 
 ### 5. Good/Base/Bad Cases
 
-- Good：thread 绑定 `provider-a`，service 发送 `providerProfileId: "provider-a"`，backend 解析 provider A，合并 public catalog，Composer 过滤 provider B custom rows。
+- Good：thread 绑定 `provider-a`，service 发送 `providerProfileId: "provider-a"`，backend 解析 provider A；Codex 保持 provider-only，其他允许合并的 engine 再追加 public catalog；Composer 过滤 provider B custom rows。
 - Base：legacy thread 无 provider binding，继续使用既有 engine-global catalog。
 - Bad：只在创建会话时保存 provider binding，但模型刷新仍调用 `getEngineModels(engineType)`。
-- Bad：provider lookup 失败后使用 `engineStatuses.models`，导致菜单泄漏默认配置模型。
+- Bad：provider lookup 失败后使用 `engineStatuses.models`，或给 Codex relay 拼 official fallback，导致菜单泄漏 uncallable 模型。
 - Bad：只扩展 Shared Engine allowlist 与前端 Picker，遗漏 local validation catalog 或
   Projection Engine mapping。
 
@@ -185,8 +188,7 @@ type EngineModelInfo = {
 - `src/app-shell-parts/useProviderModelCatalogSync.test.tsx`：断言 Claude/Codex/Kimi/Grok/OpenCode thread binding 触发 scoped refresh。
 - `src/app-shell-parts/useAppShellComposerModelSection.test.tsx`：断言绑定 Codex provider 后不消费 global model list。
 - `src/features/composer/components/ChatInputBox/modelOptions.test.ts`：断言 provider models + public models、过滤其他 provider、runtime id 去重。
-- Rust `engine::status::tests`：分别覆盖五 CLI local validation catalog，以及
-  Claude/Codex/Kimi/Grok/OpenCode provider 优先、public 追加与去重。
+- Rust `engine::status::tests`：分别覆盖五 CLI local validation catalog；Claude/Kimi/Grok provider 优先 + public 追加/去重；Codex managed provider-only + empty/subset catalog；OpenCode 保持其 managed-only contract。
 - Rust `shared_sessions::tests` + `shared_session_v2::execution_target_contract_tests`：
   覆盖 Kimi/Grok/OpenCode canonical local target 在 create/persistence 与 V2 turn
   boundary 均通过同一 strict catalog pair validation。

@@ -23,6 +23,8 @@
 - deferred `renderSourceItems` / `presentationRenderedItems` snapshot MUST be scoped by `workspaceId + threadId`; tab/session 切换时 scope 不同的旧 snapshot 必须立即失效，禁止把上一会话的 grouped entries 与当前会话 live tail 混到同一幕布。
 - streaming 结束后，stable snapshot MUST 自然收敛到 canonical latest presentation items；不得永久停留在旧快照。
 - `liveTextExternalization` 只允许把逐 delta 文本移出 root reducer；terminal event MUST 将 Provider 的完整 final text 以同一 assistant item identity 一次性 settle 回 reducer。`seenDelta` 不能成为 Shared Session 跳过 terminal settlement 的理由，否则 snapshot persistence 会把首个 delta 永久误写为 final。
+- terminal owner MUST call `flushPendingRealtimeEvents()` before `markRealtimeTurnTerminal(...)` / quarantine；该 flush MUST 同步 drain legacy delta queue、normalized operation queue 与 `NormalizedRealtimeBatcher.flush("terminal")`。deferred completion MUST reuse the same settlement owner，不能只在 immediate `turn/completed` caller flush。
+- terminal barrier 后只允许 exact-turn、non-empty assistant `completeAgentMessage` 作为 content-only salvage；它可以更新 durable text，但 MUST NOT mark processing、set active turn 或产生第二 terminal。无 `turnId`、incremental delta、reasoning/tool 或 mismatched completion 继续 drop/diagnostic-only。
 - `Claude Code` 与 `Codex` live row 收敛 MUST 先走 realtime path；history replay / reconcile 只能用于校验、补账或最终一致性，不得成为 live assistant text、reasoning、tool output 可见的唯一路径。
 - backend diagnostics、runtime ledger persistence、Windows process diagnostics、first-token timing、context ledger 或 runtime pool refresh MAY 提供 observability，但 MUST NOT 成为每个 delta 的前置门槛。
 
@@ -230,6 +232,11 @@ queue.push(event);
   dual-read；不能读取 Native history，也不能把 unknown Provider 归一成 local。
 - `contextProtocol` classifier 必须匹配完整 protocol envelope；过滤只发生在
   presentation boundary，原始 Runtime/Canonical evidence 保留。
+- retained tool output 使用 neutral `src/utils/boundToolOutput.ts`：`commandExecution`
+  保留 64 KiB head + recent tail、总长 ≤256 KiB；`fileChange` 总长 ≤1 MiB。helper MUST
+  同时进入 `useThreadsReducer.appendToolOutput` 与 `threadItems.normalizeItem`，避免 live
+  reducer 有界但 history/snapshot 绕过。`useToolOutputTailGate` 只管 dispatch cadence，
+  不能替代 retained-state budget。
 
 ## Scenario: Messages Peer Features Must Use Host Composition
 
@@ -415,6 +422,8 @@ const owner = candidates.find(
 - Claude Code regression：覆盖 first-token diagnostics 不阻塞 first visible delta，且 diagnostics/history reconcile 不成为 live delta 前置条件。
 - Codex regression：覆盖 no-text 但有 heartbeat/tool/status progress 时不会 terminalize active turn；late stale progress 不能复活已 settled turn。
 - Shared terminal regression：覆盖 Codex/Claude 在已收到 delta 后仍以原 assistant item id settle `turn/completed.result.text`，且 completion 只触发一次。
+- terminal batching regression：fake timer 下 first-token 已建壳、cadence tail pending、terminal flush 同步落尾；后续 cadence no-op；late full completion content salvage 不复燃 lifecycle。
+- tool-output budget regression：连续 append 累计 omitted count、command head/recent tail 保留、fileChange 使用更大 budget、history normalization 不绕过。
 - Shared owner regression：覆盖 malformed Snapshot、Engine mismatch、Provider mismatch 均
   fail closed；valid owner 保留 `modelCatalogEntryId + runtime model`。
 - Shared projection regression：覆盖 canonical default-on、legacy dual-read、failed Turn、

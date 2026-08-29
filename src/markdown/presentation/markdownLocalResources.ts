@@ -1,4 +1,7 @@
-import { isLinkableFilePath } from "../../utils/remarkFileLinks";
+import {
+  isLinkableFilePath,
+  recoverLocalFileLinkPath,
+} from "../../utils/remarkFileLinks";
 
 const MARKDOWN_IMAGE_FILE_EXTENSION_REGEX =
   /\.(png|jpe?g|gif|webp|bmp|tiff?|svg|ico|avif)(?:[?#].*)?$/i;
@@ -118,7 +121,7 @@ export function normalizeImageTags(value: string) {
 export function resolveLocalFileHref(url: string) {
   const trimmed = url.trim();
   if (!trimmed || trimmed.startsWith("#")) return null;
-  const decoded = decodeUrlValueSafe(trimmed);
+  const decoded = recoverLocalFileLinkPath(decodeUrlValueSafe(trimmed));
   const withoutScheme = decoded.startsWith("file://")
     ? normalizeImageLocalPath(decoded) ?? decoded
     : decoded;

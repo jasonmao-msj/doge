@@ -13,6 +13,7 @@ import {
   formatCollabAgentStates,
   normalizeCollabAgentStatusMap,
 } from "./collabToolParsing";
+import { boundToolOutput } from "./boundToolOutput";
 import { summarizeExploration } from "./threadItemsExploreSummary";
 import {
   inferFileChangesFromCommandExecutionArtifacts,
@@ -549,9 +550,9 @@ export function normalizeItem(
       title: truncateText(item.title, 200),
       detail: shouldKeepDetail ? item.detail : truncateText(item.detail, 2000),
       output: isNoTruncateTool
-        ? item.output
+        ? boundToolOutput(item.output, item.toolType)
         : item.output
-          ? truncateText(item.output)
+          ? truncateText(boundToolOutput(item.output, item.toolType))
           : item.output,
       changes: item.changes
         ? item.changes.map((change) => ({

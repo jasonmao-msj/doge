@@ -702,7 +702,14 @@ function resolveLegacyModelContextWindow(
   if (parsed !== null && parsed > 0) {
     return parsed;
   }
-  return isClaudeThreadId(threadId) ? null : 200000;
+  if (
+    isClaudeThreadId(threadId) ||
+    threadId.startsWith("codex:") ||
+    threadId.startsWith("codex-pending-")
+  ) {
+    return null;
+  }
+  return 200000;
 }
 
 function isGeminiThreadId(threadId: string): boolean {
