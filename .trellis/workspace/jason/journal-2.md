@@ -500,3 +500,36 @@ v0.1.10 signed Release 33173561758成功；tag精确指向 cdd7ecb29，macOS/Lin
 ### Next Steps
 
 - None - task complete
+
+
+## Session 74: 准备 v0.1.11 Release
+
+**Date**: 2026-08-29
+**Task**: 准备 v0.1.11 Release
+**Branch**: `codex/release-v0.1.11`
+
+### Summary
+
+同步七个 canonical version facts，补充 v0.1.11 双语 CHANGELOG，并通过全部 release preparation gate。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `856771334` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
