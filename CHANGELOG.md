@@ -1,5 +1,35 @@
 # Changelog
 
+### **2026年8月28日（v0.1.11）**
+
+中文：
+
+#### 改进
+
+- 大型命令和文件变更输出会自动保留关键内容并限制内存占用，长时间对话更加流畅。
+- Codex 的供应商模型目录更忠实于实际配置：不再补入无关官方模型，未知 context window 不再显示虚假使用率，并保留上游 reasoning 能力。
+- Windows 现在支持打开本地磁盘和 UNC 文件链接；Git 面板丢弃未暂存改动时会保留已暂存内容。
+
+#### 修复
+
+- 修复消息结束瞬间偶发丢失助手回复尾段的问题。
+- 提升 Windows 深层任务的运行稳定性，并阻止 F5 误刷新造成会话状态丢失。
+
+English:
+
+#### Improvements
+
+- Large command and file-change output now preserves the important content within a bounded memory budget, keeping long conversations responsive.
+- Codex provider model catalogs now match the actual provider configuration: unrelated official models are no longer injected, unknown context windows no longer show fabricated usage, and upstream reasoning capabilities are preserved.
+- Windows now opens local-drive and UNC file links, while discarding unstaged Git changes preserves staged work.
+
+#### Fixes
+
+- Fixed an end-of-turn race that could occasionally drop the tail of an assistant response.
+- Improved stability for deeply nested work on Windows and prevented accidental F5 reloads from discarding session state.
+
+---
+
 ### **2026年8月28日（v0.1.10）**
 
 中文：
