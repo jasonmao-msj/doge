@@ -70,9 +70,20 @@ if [[ -n "${crypto_ref}" && "${crypto_ref}" != "@rpath/libcrypto.3.dylib" ]]; th
 fi
 
 # Fix binary references dynamically
-for bin in "${bin_path}" "${daemon_path}"; do
-  [[ -f "${bin}" ]] || continue
+if [[ ! -d "${macos_dir}" ]]; then
+  echo "ERROR: incomplete app bundle: ${macos_dir} is missing"
+  exit 1
+fi
 
+bins_to_fix=()
+[[ -f "${daemon_path}" ]] && bins_to_fix+=("${daemon_path}")
+[[ -f "${bin_path}" ]] && bins_to_fix+=("${bin_path}")
+if [[ ${#bins_to_fix[@]} -eq 0 ]]; then
+  echo "ERROR: no doge binaries found under ${macos_dir}"
+  exit 1
+fi
+
+for bin in "${bins_to_fix[@]}"; do
   ssl_ref=$(otool -L "${bin}" | grep 'libssl' | awk '{print $1}')
   if [[ -n "${ssl_ref}" && "${ssl_ref}" != "@rpath/libssl.3.dylib" ]]; then
     echo "Fixing $(basename "${bin}") -> libssl reference: ${ssl_ref}"

@@ -82,6 +82,18 @@ function exec(cmd, options = {}) {
   }
 }
 
+function assertBuildArtifact(artifactPath, label) {
+  if (!existsSync(artifactPath)) {
+    throw new Error(
+      `Incomplete ${label}: expected build artifact is missing at ${artifactPath}`,
+    );
+  }
+}
+
+function assertMacAppBundle(bundlePath) {
+  assertBuildArtifact(join(bundlePath, "Contents/MacOS/doge"), "macOS app bundle");
+}
+
 function pruneLinuxAppImageWaylandLibraries(appImagePath) {
   exec(`node scripts/prune-appimage-wayland-libs.mjs --appimage "${appImagePath}"`);
 }
@@ -231,6 +243,7 @@ async function buildMacOS(arch, options = {}) {
     exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app${configOverride}`, {
       env: bundledEngineEnv,
     });
+    assertMacAppBundle(bundlePath);
 
     // For universal builds, merge daemon binary
     if (arch === "universal") {
@@ -244,6 +257,7 @@ async function buildMacOS(arch, options = {}) {
       exec(`${buildEnv}npm run tauri -- build --target ${target} --bundles app${configOverride}`, {
         env: bundledEngineEnv,
       });
+      assertMacAppBundle(bundlePath);
     }
   } finally {
     if (configOverridePath) {
@@ -364,6 +378,7 @@ async function buildWindows(arch, options = {}) {
     TAURI_DIR,
     `target/release/bundle/nsis/doge_${version}_x64-setup.exe`,
   );
+  assertBuildArtifact(installerPath, "Windows NSIS bundle");
 
   console.log(`\n========================================`);
   console.log(`Windows ${arch} build complete!`);
@@ -412,6 +427,7 @@ async function buildLinux(arch, options = {}) {
     TAURI_DIR,
     `target/release/bundle/appimage/doge_${version}_${arch === "arm64" ? "aarch64" : "amd64"}.AppImage`,
   );
+  assertBuildArtifact(appImagePath, "Linux AppImage bundle");
   pruneLinuxAppImageWaylandLibraries(appImagePath);
 
   console.log(`\n========================================`);

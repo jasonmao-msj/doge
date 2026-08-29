@@ -16,6 +16,7 @@
 - `CodexProviderBinding { providerProfileId, providerProfileSource, providerProfileName, providerAvailability }`
 - `resolve_codex_provider_profile(provider_profile_id: Option<&str>) -> Result<CodexProviderProfile, String>`
 - `materialize_codex_provider_profile(profile: CodexProviderProfile) -> Result<MaterializedCodexProviderProfile, String>`
+- `apply_codex_provider_env(command: &mut tokio::process::Command, codex_home: Option<&Path>, launch_env: &BTreeMap<String, String>) -> Result<(), String>`
 - `codex_runtime_key(workspace_id: &str, provider_profile_id: &str) -> String`
 - `legacy_codex_runtime_key(workspace_id: &str) -> String`
 - `ensure_codex_session_for_provider(workspace_id, provider_profile_id, state, app) -> Result<(), String>`
@@ -30,6 +31,8 @@
 - Managed provider home MUST be app-local under `codex-provider-homes/<providerId>/`; provider id path segment rejects empty, `.`, `..`, `/`, and `\`.
 - Managed materialization MUST write `config.toml`; if `authJson` exists, it MUST JSON-validate and write `auth.json`. On Unix, written files MUST use owner-only `0600` permissions.
 - Managed materialization MUST extract top-level `model`, `model_provider`, `approval_policy`, and `sandbox_mode` from `configToml` into `codex_args_override` as `-c key=value` pairs so project `.codex/config.toml` cannot silently override launch-critical settings.
+- Codex child spawn MUST scan only validated `model_providers.*.env_key` names from the effective `config.toml`. Keys already provided by authoritative `launch_env` or the current process MUST win; remaining keys MAY be resolved by one bounded 5s zsh/bash login-shell invocation. Invalid shell identifiers MUST NOT be interpolated; values MUST NOT enter logs/renderer/persisted business config.
+- Required `env_key` values unresolved after the bounded resolver MUST fail the exact provider launch with variable names only. They MUST NOT fall back to `__disk__` or another Provider. Resolver timeout MUST terminate/reap its process owner; desktop startup outside an actual Codex launch remains unaffected.
 - `start_thread` MUST normalize selected provider id, ensure that provider runtime, call `thread/start`, and record `CodexProviderBinding` only after a thread id is returned.
 - `start_thread` and model-omitted `send_user_message` MUST resolve fallback model from the same provider identity: disk keeps workspace/default lookup; managed provider reads its own top-level `configToml.model`; missing managed model means omit model, never inject disk/global fallback.
 - Provider display name is opaque metadata. A Codex provider named `Kimi` MUST remain Codex and MUST NOT route to Kimi CLI.
@@ -54,15 +57,20 @@
 | `turn/start` stale thread | same runtime `thread/resume` + short bounded readiness retry | 重新路由到 disk、无限 retry 或立即把 cold-start race 当成用户恢复卡 |
 | daemon 收到 managed provider id | 显式 unsupported error | 丢弃 `providerProfileId` 后创建 disk thread |
 | Codex launch identity | `codex-tui` client info + terminal fallback env | 影响 Claude/Gemini/OpenCode launch |
+| managed Product `launch_env` already contains `OPENAI_API_KEY` | use the Native authority value; no login-shell lookup | shell value overrides OS-vault/managed key |
+| macOS GUI misses a declared custom provider env key | one bounded login-shell resolution, then child-only env injection | print/persist secret or block AppShell startup |
+| declared env key remains unavailable | provider-scoped redacted error | silent disk/default credential fallback |
 
 ### 5. Good / Base / Bad Cases
 
 - Good: `send_user_message` 先 `resolve_thread_provider_profile_id`，再 `ensure_codex_session_for_provider`，最后把 `Some(provider_profile_id)` 传入 `send_user_message_core`。
 - Good: `fork_thread` 对 cross-provider fork 只在 parent provider runtime 调 `thread/fork`，`copy_native_fork_history_to_selected_provider` 成功后才 `record_codex_provider_binding`。
+- Good: `spawn_workspace_session_once` calls `apply_codex_provider_env` with the exact effective `CODEX_HOME` and already-authoritative `launch_env` before spawning the child.
 - Base: 旧历史 thread 没有 metadata，默认 `__disk__`，使用 workspace-only legacy runtime key。
 - Bad: managed provider 找不到时 `unwrap_or(__disk__)`。
 - Bad: daemon/web adapter 解析到 `providerProfileId` 后不使用也不报错。
 - Bad: `thread not found` 后重新 `start_thread` 或新建 disk thread 替代原 thread。
+- Bad: per-key unbounded shell spawns；把 API key value 写进 diagnostic；忽略 Product `launch_env` 后用 shell 同名变量覆盖。
 
 ### 6. Tests Required
 
@@ -72,6 +80,7 @@
 - Rust tests for fork response enrichment and cross-provider history copy failure diagnostics.
 - Rust tests for stale thread classifier and same-runtime retry behavior; at minimum classifier tests must cover both response error shapes and unrelated errors.
 - Rust tests for `codex-tui` version parsing and GUI control-plane classification for `codex-tui + experimentalApi`.
+- Rust tests for provider env TOML key collection、shell-name validation、multi-key framed parsing、missing key redacted failure；`cargo check --bins` MUST cover desktop + `doge_daemon` module wiring。
 - Contract validation: `npm run check:runtime-contracts`, `cargo test --manifest-path src-tauri/Cargo.toml --no-run`, and `openspec validate add-codex-provider-scoped-session-launch --strict --no-interactive` after cross-layer routing changes.
 
 ### 7. Wrong vs Correct

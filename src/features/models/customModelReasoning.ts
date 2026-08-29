@@ -40,6 +40,19 @@ export const CUSTOM_MODEL_SUPPORTED_REASONING_OPTIONS: Array<{
 
 export type CustomModelSource = string | null | undefined;
 
+const USER_MANAGED_CUSTOM_MODEL_SOURCES: ReadonlySet<string> = new Set([
+  'custom',
+  'provider-custom',
+  'provider-config',
+]);
+
+export function isUserManagedCustomModelSource(
+  source: CustomModelSource,
+): boolean {
+  const normalized = typeof source === 'string' ? source.trim() : '';
+  return normalized.length > 0 && USER_MANAGED_CUSTOM_MODEL_SOURCES.has(normalized);
+}
+
 /**
  * 仅对用户管理的自定义 Codex 模型返回默认档；其他 engine / source 返回 null，
  * 避免为 unknown runtime model 伪造 capability。
@@ -48,7 +61,7 @@ export function resolveCustomModelDefaultReasoningEffort(
   engine: string | null | undefined,
   source: CustomModelSource,
 ): string | null {
-  if (engine !== 'codex' || source !== 'custom') {
+  if (engine !== 'codex' || !isUserManagedCustomModelSource(source)) {
     return null;
   }
   return CUSTOM_MODEL_DEFAULT_REASONING_EFFORT;

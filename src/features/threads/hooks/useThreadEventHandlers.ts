@@ -17,6 +17,7 @@ import type {
 } from "../../../types";
 import { useThreadApprovalEvents } from "./useThreadApprovalEvents";
 import { useThreadItemEvents } from "./useThreadItemEvents";
+import { isSalvageableTerminalAssistantComplete } from "../contracts/realtimeEventContract";
 import { useThreadTurnEvents } from "./useThreadTurnEvents";
 import { queryTurnReconciliationStatusWithTimeout } from "./threadReconciliationStatusQuery";
 import { useThreadUserInputEvents } from "./useThreadUserInputEvents";
@@ -1705,9 +1706,12 @@ export function useThreadEventHandlers({
 
   const onNormalizedRealtimeEventTracked = useCallback(
     (event: NormalizedThreadEvent) => {
+      const salvageableTerminalComplete =
+        isSalvageableTerminalAssistantComplete(event);
       if (
         event.turnId &&
-        isRealtimeTurnTerminalExact(event.threadId, event.turnId)
+        isRealtimeTurnTerminalExact(event.threadId, event.turnId) &&
+        !salvageableTerminalComplete
       ) {
         onDebug?.({
           id: `${Date.now()}-realtime-terminal-exact-drop`,
@@ -1723,7 +1727,10 @@ export function useThreadEventHandlers({
         });
         return;
       }
-      if (shouldSkipLateCodexNormalizedEvent(event)) {
+      if (
+        !salvageableTerminalComplete &&
+        shouldSkipLateCodexNormalizedEvent(event)
+      ) {
         return;
       }
       onNormalizedRealtimeEvent(event);
@@ -1976,6 +1983,10 @@ export function useThreadEventHandlers({
       normalizedTurnId: string,
       rawTurnId: string | null = normalizedTurnId,
     ) => {
+      // Drain every accepted content lane before installing the terminal
+      // barrier. Deferred completion calls this same owner, so it cannot leave
+      // a cadence-batched tail behind. Semantic port of upstream `0d8f2426c`.
+      flushPendingRealtimeEvents();
       markRealtimeTurnTerminal(threadId, normalizedTurnId);
       quarantineCodexTurn(
         workspaceId,
@@ -2139,6 +2150,7 @@ export function useThreadEventHandlers({
       emitForegroundSettlementDiagnostic,
       emitTurnDomainEvent,
       finalizeTurnDiagnostic,
+      flushPendingRealtimeEvents,
       getThreadLifecycleSnapshot,
       interruptedThreadsRef,
       markRealtimeTurnTerminal,
@@ -2417,7 +2429,6 @@ export function useThreadEventHandlers({
   const onTurnCompletedTracked = useCallback(
     (workspaceId: string, threadId: string, turnId: string) => {
       const normalizedTurnId = resolveTerminalSettlementTurnId(threadId, turnId);
-      flushPendingRealtimeEvents();
       if (deferCodexTurnCompletionIfBlocked(workspaceId, threadId, normalizedTurnId)) {
         return;
       }
@@ -2425,7 +2436,6 @@ export function useThreadEventHandlers({
     },
     [
       deferCodexTurnCompletionIfBlocked,
-      flushPendingRealtimeEvents,
       resolveTerminalSettlementTurnId,
       settleCompletedTurn,
     ],

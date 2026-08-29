@@ -307,4 +307,38 @@ describe("useFileLinkOpener", () => {
         : null,
     ).toBe("Open in Cursor");
   });
+
+  it("recovers markdown-wrapped Windows hrefs before revealing", async () => {
+    openerMocks.revealInFileManager.mockResolvedValue(undefined);
+    const windowsPath = "D:/AI/Alchat/突击队/输出/report.md";
+    const { result } = renderHook(() =>
+      useFileLinkOpener(
+        "D:/AI/Alchat/突击队",
+        [makeOpenTarget("vscode", "Visual Studio Code")],
+        "vscode",
+        null,
+      ),
+    );
+
+    act(() => {
+      result.current.showFileLinkMenu(
+        {
+          clientX: 12,
+          clientY: 24,
+          preventDefault: vi.fn(),
+          stopPropagation: vi.fn(),
+        } as unknown as MouseEvent,
+        `/[${windowsPath}] (codex-file:${windowsPath})`,
+      );
+    });
+    const reveal = result.current.fileLinkMenu?.items.find(
+      (item) => item.type === "item" && item.id === "reveal",
+    );
+    if (reveal?.type !== "item") {
+      throw new Error("Missing reveal action");
+    }
+    await act(async () => reveal.onSelect());
+
+    expect(openerMocks.revealInFileManager).toHaveBeenCalledWith(windowsPath);
+  });
 });

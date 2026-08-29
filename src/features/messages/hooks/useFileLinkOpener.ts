@@ -4,6 +4,7 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { openWorkspaceIn, revealInFileManager } from "../../../services/tauri";
 import { pushErrorToast } from "../../../services/toasts";
 import type { OpenAppTarget } from "../../../types";
+import { recoverLocalFileLinkPath } from "../../../utils/remarkFileLinks";
 import {
   clampRendererContextMenuPosition,
   estimateRendererContextMenuHeight,
@@ -90,15 +91,16 @@ function normalizeLocalFilePath(path: string) {
       if (url.hostname && url.hostname !== "localhost") {
         return `\\\\${url.hostname}${decodedPath.replace(/\//g, "\\")}`;
       }
-      return decodedPath;
+      return recoverLocalFileLinkPath(decodedPath);
     } catch {
-      return trimmed;
+      return recoverLocalFileLinkPath(trimmed);
     }
   }
-  if (/^\/[A-Za-z]:[\\/]/.test(trimmed)) {
-    return trimmed.slice(1);
+  const recovered = recoverLocalFileLinkPath(trimmed);
+  if (/^\/[A-Za-z]:[\\/]/.test(recovered)) {
+    return recovered.slice(1);
   }
-  return trimmed;
+  return recovered;
 }
 
 function resolveFilePath(path: string, workspacePath?: string | null) {

@@ -11,6 +11,7 @@ import { CODEX_MODEL_CATALOG } from "./codexModelCatalog";
 import {
   CUSTOM_MODEL_DEFAULT_REASONING_EFFORT,
   CUSTOM_MODEL_REASONING_EFFORTS,
+  isUserManagedCustomModelSource,
 } from "./customModelReasoning";
 
 /** Keep aligned with `CLAUDE_REASONING_OPTIONS` in modelSelection.ts. */
@@ -115,6 +116,14 @@ export function enrichModelInfoWithAtomicReasoning<T extends AtomicReasoningMode
       }
       if (!defaultEffort) {
         defaultEffort = normalizeEffort(catalog.defaultReasoningEffort);
+      }
+    }
+    if (isUserManagedCustomModelSource(source)) {
+      if (supported.length === 0) {
+        supported = [...CUSTOM_MODEL_REASONING_EFFORTS];
+      }
+      if (!defaultEffort) {
+        defaultEffort = CUSTOM_MODEL_DEFAULT_REASONING_EFFORT;
       }
     }
   }

@@ -1621,12 +1621,10 @@ impl DaemonState {
             return Err("path is required".to_string());
         }
         for path in paths {
-            if git_core::run_git_command(
-                &repo_root,
-                &["restore", "--staged", "--worktree", "--", &path],
-            )
-            .await
-            .is_err()
+            let restore_args = crate::git_utils::git_restore_unstaged_args(&path);
+            if git_core::run_git_command(&repo_root, &restore_args)
+                .await
+                .is_err()
             {
                 git_core::run_git_command(&repo_root, &["clean", "-f", "--", &path]).await?;
             }
@@ -1653,7 +1651,7 @@ impl DaemonState {
         }
         let _ = run_daemon_git_command_with_paths(
             &repo_root,
-            &["restore", "--staged", "--worktree", "--"],
+            crate::git_utils::GIT_RESTORE_UNSTAGED_PREFIX,
             &expanded,
         )
         .await;

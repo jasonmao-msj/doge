@@ -1099,7 +1099,7 @@ pub(crate) async fn spawn_workspace_session_with_launch_options<E: EventSink>(
     launch_options: CodexAppServerLaunchOptions,
 ) -> Result<Arc<WorkspaceSession>, String> {
     let provider_runtime_key = entry.id.clone();
-    spawn_workspace_session_inner_with_settings(
+    Box::pin(spawn_workspace_session_inner_with_settings(
         entry,
         default_codex_bin,
         codex_args,
@@ -1112,7 +1112,7 @@ pub(crate) async fn spawn_workspace_session_with_launch_options<E: EventSink>(
         provider_runtime_key,
         crate::types::AppSettings::default(),
         std::collections::BTreeMap::new(),
-    )
+    ))
     .await
 }
 
@@ -1294,6 +1294,12 @@ async fn spawn_workspace_session_once<E: EventSink>(
     if let Some(codex_home) = codex_home {
         command.env("CODEX_HOME", codex_home);
     }
+    crate::codex::provider_env::apply_codex_provider_env(
+        &mut command,
+        effective_codex_home.as_deref(),
+        &launch_env,
+    )
+    .await?;
     for (key, value) in launch_env {
         command.env(key, value);
     }

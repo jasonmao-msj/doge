@@ -23,6 +23,8 @@ mod codex_home;
 mod codex_installer;
 #[path = "../codex/launch_profile.rs"]
 mod codex_launch_profile;
+#[path = "../codex/provider_env.rs"]
+mod codex_provider_env;
 #[path = "../codex/rewind.rs"]
 mod codex_rewind;
 #[path = "../codex/thread_mode_state.rs"]
@@ -347,6 +349,9 @@ mod codex {
     }
     pub(crate) mod launch_profile {
         pub(crate) use crate::codex_launch_profile::*;
+    }
+    pub(crate) mod provider_env {
+        pub(crate) use crate::codex_provider_env::*;
     }
     pub(crate) mod provider_profile {
         use crate::session_management::CodexProviderBinding;

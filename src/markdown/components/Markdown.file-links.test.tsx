@@ -399,6 +399,21 @@ describe("Markdown file links", () => {
     expect(onOpenFileLink).toHaveBeenCalledWith("C:\\Users\\test\\repo\\demo.ts#L3");
   });
 
+  it("routes full Markdown Windows drive destinations through the file opener", async () => {
+    const onOpenFileLink = vi.fn();
+    const windowsPath = "D:/AI/Alchat/突击队/输出/report.md";
+
+    render(
+      <Markdown
+        value={`结果在：[report.md](${windowsPath})`}
+        onOpenFileLink={onOpenFileLink}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("link", { name: "report.md" }));
+    expect(onOpenFileLink).toHaveBeenCalledWith(windowsPath);
+  });
+
   it("falls back to safe progressive reveal defaults for non-finite inputs", () => {
     vi.useFakeTimers();
     const onRenderedValueChange = vi.fn();

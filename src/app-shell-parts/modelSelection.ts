@@ -1,5 +1,10 @@
 import type { ComposerSessionSelection } from "./selectedComposerSession";
 import type { EngineType, ModelOption } from "../types";
+import {
+  CUSTOM_MODEL_DEFAULT_REASONING_EFFORT,
+  CUSTOM_MODEL_SUPPORTED_REASONING_OPTIONS,
+  isUserManagedCustomModelSource,
+} from "../features/models/customModelReasoning";
 
 type GetEffectiveSelectedModelIdOptions = {
   activeEngine: EngineType;
@@ -86,7 +91,7 @@ export function enrichScopedCodexReasoningMetadata(
       getModelRuntimeIdentity(scopedModel),
     );
     if (!authoritativeModel) {
-      return scopedModel;
+      return withUserManagedReasoningDefaults(scopedModel);
     }
     const supportedReasoningEfforts =
       scopedModel.supportedReasoningEfforts.length > 0
@@ -99,14 +104,31 @@ export function enrichScopedCodexReasoningMetadata(
       supportedReasoningEfforts === scopedModel.supportedReasoningEfforts &&
       defaultReasoningEffort === scopedModel.defaultReasoningEffort
     ) {
-      return scopedModel;
+      return withUserManagedReasoningDefaults(scopedModel);
     }
-    return {
+    return withUserManagedReasoningDefaults({
       ...scopedModel,
       supportedReasoningEfforts,
       defaultReasoningEffort,
-    };
+    });
   });
+}
+
+function withUserManagedReasoningDefaults(model: ModelOption): ModelOption {
+  if (
+    !isUserManagedCustomModelSource(model.source) ||
+    model.supportedReasoningEfforts.length > 0
+  ) {
+    return model;
+  }
+  return {
+    ...model,
+    supportedReasoningEfforts: CUSTOM_MODEL_SUPPORTED_REASONING_OPTIONS.map(
+      (entry) => ({ ...entry }),
+    ),
+    defaultReasoningEffort:
+      model.defaultReasoningEffort ?? CUSTOM_MODEL_DEFAULT_REASONING_EFFORT,
+  };
 }
 
 export function isReasoningEffortSupportedForEngine(
