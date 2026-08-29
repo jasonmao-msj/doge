@@ -467,3 +467,36 @@ v0.1.10 signed Release 33173561758成功；tag精确指向 cdd7ecb29，macOS/Lin
 ### Next Steps
 
 - None - task complete
+
+
+## Session 73: 精选同步上游稳定性修复
+
+**Date**: 2026-08-28
+**Task**: 精选同步上游稳定性修复
+**Branch**: `codex/sync-upstream-stability-2026-08`
+
+### Summary
+
+完成 upstream/main@cd362f8cf 相对 doge main 的 476 提交 capability 审计与 OpenSpec explore/propose/apply；语义移植 terminal causal drain/late final salvage、tool output retained budget、Codex context/catalog/reasoning/env facts、Windows stack/F5 guard、Markdown Windows 文件链接、Git index-to-worktree discard 与 build artifact fail-closed。L3 验证覆盖 335 Vitest、14 Rust focused tests、typecheck/ESLint/host bins/runtime/model/branding/docs gates；明确延期网络盘 blanket canonicalize、Session Index/AppShell/Markdown 架构波次与 timeout 猜终态。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `699710928` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 72
+- **Total Sessions**: 73
 - **Last Active**: 2026-08-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~469 | Active |
+| `journal-2.md` | ~502 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 73 | 2026-08-28 | 精选同步上游稳定性修复 | `699710928` | `codex/sync-upstream-stability-2026-08` |
 | 72 | 2026-08-28 | 完成并收口 doge v0.1.10 Release | `72e016a81` | `codex/close-release-v0.1.10` |
 | 71 | 2026-08-28 | 校准 bounded retry 到 full batched CI | `3436694b3` | `codex/extend-vitest-retry-to-ci` |
 | 70 | 2026-08-28 | 稳定 Unix probe descendant reaping regression | `510d267b2` | `codex/stabilize-probe-process-group-test` |
