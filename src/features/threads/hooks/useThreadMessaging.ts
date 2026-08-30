@@ -175,6 +175,7 @@ type SendMessageOptions = {
   skipOptimisticUserBubble?: boolean;
   suppressUserMessageRender?: boolean;
   model?: string | null;
+  modelCatalogEntryId?: string | null;
   effort?: string | null;
   collaborationMode?: Record<string, unknown> | null;
   accessMode?: AccessMode;
@@ -1254,6 +1255,10 @@ export function useThreadMessaging({
         threadKind === "shared"
           ? (supportedStoredSharedTarget?.modelCatalogEntryId ?? null)
           : (resolvedComposerSelection?.id ?? null);
+      const executionTargetModelCatalogEntryId =
+        options?.createSessionTarget?.modelCatalogEntryId?.trim() ||
+        selectedModelId?.trim() ||
+        null;
       const selectedModelSource =
         threadKind === "shared"
           ? (supportedStoredSharedTarget?.providerProfileSource ?? "unknown")
@@ -1692,6 +1697,7 @@ export function useThreadMessaging({
               skipPromptExpansion: true,
               skipOptimisticUserBubble: true,
               model: modelForSend,
+              modelCatalogEntryId: executionTargetModelCatalogEntryId,
               effort: resolvedEffort,
               collaborationMode: sanitizedCollaborationMode,
               accessMode: resolvedAccessMode,
@@ -2220,6 +2226,7 @@ export function useThreadMessaging({
               text: finalText,
               engine: resolvedEngine,
               model: modelForSend,
+              modelCatalogEntryId: executionTargetModelCatalogEntryId,
               effort: resolvedEffort,
               disableThinking: disableThinkingForClaude,
               images: finalImages.length > 0 ? finalImages : null,
@@ -2499,6 +2506,7 @@ export function useThreadMessaging({
               codexEffectiveText,
               {
                 model: modelForSend,
+                modelCatalogEntryId: executionTargetModelCatalogEntryId,
                 effort: resolvedEffort,
                 collaborationMode: sanitizedCollaborationMode,
                 accessMode: resolvedAccessMode,
@@ -2867,8 +2875,14 @@ export function useThreadMessaging({
 
       // Detect engine switch from the selected engine to thread ownership.
       const createSessionTarget = options?.createSessionTarget ?? null;
+      const activeThreadEngine = activeThreadId
+        ? resolveThreadEngine(activeWorkspace.id, activeThreadId)
+        : null;
       const currentEngine = normalizeEngineSelection(
-        createSessionTarget?.engine ?? options?.engineOverride ?? activeEngine,
+        createSessionTarget?.engine ??
+          options?.engineOverride ??
+          activeThreadEngine ??
+          activeEngine,
       );
       const resolvedComposerSelection = resolveComposerSelection?.() ?? null;
       const firstSendProviderProfileId = createSessionTarget
@@ -2883,6 +2897,7 @@ export function useThreadMessaging({
         ? {
             ...options,
             model: createSessionTarget.model,
+            modelCatalogEntryId: createSessionTarget.modelCatalogEntryId,
             effort: createSessionTarget.effort,
           }
         : options;

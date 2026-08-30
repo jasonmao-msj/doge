@@ -3786,6 +3786,45 @@ impl DaemonState {
         .await
     }
 
+    pub(super) async fn record_session_execution_target(
+        &self,
+        workspace_id: String,
+        session_id: String,
+        engine: String,
+        model_catalog_entry_id: String,
+        model: String,
+        reasoning_effort: Option<String>,
+    ) -> Result<(), String> {
+        session_management::record_session_execution_target_core(
+            &self.workspaces,
+            self.storage_path.as_path(),
+            workspace_id,
+            session_id,
+            engine,
+            model_catalog_entry_id,
+            model,
+            reasoning_effort,
+        )
+        .await
+        .map(|_| ())
+    }
+
+    pub(super) async fn get_session_execution_target(
+        &self,
+        workspace_id: String,
+        session_id: String,
+        engine: String,
+    ) -> Result<Option<session_management::SessionExecutionTarget>, String> {
+        session_management::get_session_execution_target_core(
+            &self.workspaces,
+            self.storage_path.as_path(),
+            workspace_id,
+            session_id,
+            engine,
+        )
+        .await
+    }
+
     pub(super) async fn list_global_codex_sessions(
         &self,
         query: Option<session_management::WorkspaceSessionCatalogQuery>,
@@ -3945,11 +3984,20 @@ impl DaemonState {
     ) -> Result<(), String> {
         thread_titles_core::rename_thread_title_core(
             &self.workspaces,
+            workspace_id.clone(),
+            old_thread_id.clone(),
+            new_thread_id.clone(),
+        )
+        .await?;
+        session_management::migrate_session_execution_target_for_thread_rename_core(
+            &self.workspaces,
+            self.storage_path.as_path(),
             workspace_id,
             old_thread_id,
             new_thread_id,
         )
         .await
+        .map(|_| ())
     }
 
     pub(super) async fn respond_to_server_request(

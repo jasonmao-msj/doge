@@ -27,6 +27,7 @@ export async function sendUserMessage(
   text: string,
   options?: {
     model?: string | null;
+    modelCatalogEntryId?: string | null;
     effort?: string | null;
     disableThinking?: boolean | null;
     accessMode?: "default" | "read-only" | "current" | "full-access";
@@ -44,6 +45,7 @@ export async function sendUserMessage(
     threadId,
     text,
     model: options?.model ?? null,
+    modelCatalogEntryId: options?.modelCatalogEntryId ?? null,
     effort: options?.effort ?? null,
     disableThinking: options?.disableThinking ?? false,
     accessMode: options?.accessMode ?? null,

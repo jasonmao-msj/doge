@@ -176,6 +176,9 @@ type ThreadProviderBindingFields = Pick<
   | "providerProfileSource"
   | "providerProfileName"
   | "providerAvailability"
+  | "modelCatalogEntryId"
+  | "model"
+  | "reasoningEffort"
 >;
 
 function normalizeEnsureThreadMetadataValue(value: string | null | undefined) {
@@ -330,6 +333,10 @@ function threadSummaryEqual(left: ThreadSummary, right: ThreadSummary) {
     (left.providerProfileName ?? null) === (right.providerProfileName ?? null) &&
     (left.providerAvailability ?? null) ===
       (right.providerAvailability ?? null) &&
+    (left.modelCatalogEntryId ?? null) ===
+      (right.modelCatalogEntryId ?? null) &&
+    (left.model ?? null) === (right.model ?? null) &&
+    (left.reasoningEffort ?? null) === (right.reasoningEffort ?? null) &&
     (left.partialSource ?? null) === (right.partialSource ?? null) &&
     (left.isDegraded ?? false) === (right.isDegraded ?? false) &&
     (left.degradedReason ?? null) === (right.degradedReason ?? null) &&
@@ -398,6 +405,10 @@ function mergeProviderBindingFields<T extends ThreadSummary>(
       incoming.providerProfileName ?? existing.providerProfileName,
     providerAvailability:
       incoming.providerAvailability ?? existing.providerAvailability,
+    modelCatalogEntryId:
+      incoming.modelCatalogEntryId ?? existing.modelCatalogEntryId,
+    model: incoming.model ?? existing.model,
+    reasoningEffort: incoming.reasoningEffort ?? existing.reasoningEffort,
   };
 }
 

@@ -929,6 +929,29 @@ pub(crate) fn read_shared_session_meta(
     Ok(meta)
 }
 
+fn resolve_shared_session_read_target(
+    meta: &SharedSessionMeta,
+    event_writer: Option<&SharedEventWriter>,
+) -> Result<Option<SharedSelectedTarget>, String> {
+    let Some(writer) = event_writer else {
+        return Ok(meta.selected_target.clone());
+    };
+    let Some(stored_target) = writer
+        .session_target(&meta.id)
+        .map_err(|error| error.to_string())?
+    else {
+        return Ok(meta.selected_target.clone());
+    };
+    let target = serde_json::from_str::<SharedSelectedTarget>(&stored_target.selected_target_json)
+        .map_err(|error| {
+            format!(
+                "invalid Shared V2 selected target for session {}: {error}",
+                meta.id
+            )
+        })?;
+    Ok(Some(normalize_shared_selected_target(target)))
+}
+
 pub(crate) fn write_shared_session_meta(meta: &SharedSessionMeta) -> Result<(), String> {
     let path = shared_session_meta_path(&meta.workspace_id, &meta.id)?;
     with_shared_store_lock(&path, || {
@@ -998,6 +1021,11 @@ pub(crate) fn list_workspace_shared_sessions(
             Ok(meta) => meta,
             Err(_) => continue,
         };
+        let selected_target = resolve_shared_session_read_target(&meta, event_writer)?;
+        let selected_engine = selected_target
+            .as_ref()
+            .map(|target| target.engine)
+            .unwrap_or(meta.selected_engine);
         let mut native_thread_ids = meta
             .bindings_by_engine
             .values()
@@ -1020,10 +1048,10 @@ pub(crate) fn list_workspace_shared_sessions(
             thread_id: shared_thread_id(&meta.id),
             title: meta.title.clone(),
             updated_at: meta.updated_at,
-            selected_engine: meta.selected_engine,
+            selected_engine,
             thread_kind: "shared".to_string(),
-            engine_source: meta.selected_engine,
-            selected_engine_label: meta.selected_engine.display_name().to_string(),
+            engine_source: selected_engine,
+            selected_engine_label: selected_engine.display_name().to_string(),
             native_thread_ids,
         });
     }
@@ -1317,14 +1345,20 @@ pub async fn load_shared_session(
     ensure_known_workspace(&state.workspaces, &workspace_id).await?;
     let shared_session_id = parse_shared_session_id(&thread_id)?;
     let (meta, snapshot) = load_meta_and_snapshot(&workspace_id, &shared_session_id)?;
+    let selected_target =
+        resolve_shared_session_read_target(&meta, state.shared_event_writer.as_ref())?;
+    let selected_engine = selected_target
+        .as_ref()
+        .map(|target| target.engine)
+        .unwrap_or(meta.selected_engine);
     let payload = SharedSessionLoadPayload {
         id: meta.id.clone(),
         thread_id: shared_thread_id(&meta.id),
         title: meta.title.clone(),
-        selected_engine: meta.selected_engine,
+        selected_engine,
         thread_kind: "shared".to_string(),
-        engine_source: meta.selected_engine,
-        selected_target: meta.selected_target.clone(),
+        engine_source: selected_engine,
+        selected_target,
         items: snapshot
             .as_ref()
             .map(|entry| entry.items.clone())
@@ -1750,6 +1784,7 @@ pub async fn send_shared_session_message(
                 outbound_text,
                 Some(engine),
                 model,
+                None,
                 effort,
                 disable_thinking,
                 access_mode,
@@ -1843,13 +1878,14 @@ mod tests {
         is_legacy_engine_only_selected_target, is_pending_shared_binding_thread_id,
         legacy_engine_only_selected_target, normalize_provider_selection_source,
         normalize_shared_selected_target, parse_shared_session_id, resolve_shared_selection_update,
-        sanitize_shared_session_meta, select_meta_engine_compat, select_meta_target,
-        shared_target_binding_key, validate_resolved_shared_selected_target,
-        validate_shared_native_thread_id, SharedEngineBinding, SharedSelectedReasoning,
-        SharedSelectedTarget, SharedSessionMeta, SharedTargetBindingMeta, MAX_DELTA_SYNC_CHARS,
-        SHARED_SESSION_SCHEMA_VERSION,
+        resolve_shared_session_read_target, sanitize_shared_session_meta,
+        select_meta_engine_compat, select_meta_target, shared_target_binding_key,
+        validate_resolved_shared_selected_target, validate_shared_native_thread_id,
+        SharedEngineBinding, SharedSelectedReasoning, SharedSelectedTarget, SharedSessionMeta,
+        SharedTargetBindingMeta, MAX_DELTA_SYNC_CHARS, SHARED_SESSION_SCHEMA_VERSION,
     };
     use crate::engine::EngineType;
+    use crate::shared_event_log::{open, OpenOutcome, SessionTargetUpdate};
     use serde_json::{json, Value};
     use std::collections::HashMap;
 
@@ -2287,6 +2323,76 @@ mod tests {
         assert!(legacy.model_catalog_entry_id.is_none());
         assert!(legacy.model.is_none());
         assert!(legacy.reasoning.is_none());
+    }
+
+    #[test]
+    fn shared_v2_target_wins_over_stale_legacy_meta_without_writing_either_store() {
+        let temp = std::env::temp_dir().join(format!(
+            "doge-shared-target-authority-{}",
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir_all(&temp).expect("create temp dir");
+        let writer = match open(&temp.join("shared-v2.sqlite3")).expect("open V2 store") {
+            OpenOutcome::Ready(writer) => writer,
+            OpenOutcome::ReadOnlyRecovery { .. } => panic!("fresh V2 store must be writable"),
+        };
+        let mut meta = meta_with_engine_binding(EngineType::Codex, "codex:legacy");
+        meta.id = "shared-authority".to_string();
+        meta.selected_engine = EngineType::Codex;
+        meta.selected_target = Some(SharedSelectedTarget {
+            engine: EngineType::Codex,
+            provider_profile_id: Some("doge-token-matrix".to_string()),
+            model_catalog_entry_id: Some("gpt-5.6-sol".to_string()),
+            model: Some("gpt-5.6-sol".to_string()),
+            reasoning: None,
+            provider_profile_name_snapshot: Some("Doge".to_string()),
+            provider_profile_source: Some("managed".to_string()),
+        });
+        let kimi_target = SharedSelectedTarget {
+            engine: EngineType::Kimi,
+            provider_profile_id: Some("doge-token-matrix".to_string()),
+            model_catalog_entry_id: Some("k3-256k".to_string()),
+            model: Some("k3-256k".to_string()),
+            reasoning: None,
+            provider_profile_name_snapshot: Some("Doge".to_string()),
+            provider_profile_source: Some("managed".to_string()),
+        };
+        writer
+            .upsert_session_target(&SessionTargetUpdate {
+                session_id: meta.id.clone(),
+                schema_version: SHARED_SESSION_SCHEMA_VERSION,
+                selected_target_json: serde_json::to_string(&kimi_target)
+                    .expect("serialize Kimi target"),
+                updated_at: 42,
+            })
+            .expect("persist V2 target");
+        let stored_before = writer
+            .session_target(&meta.id)
+            .expect("read V2 before")
+            .expect("stored V2 target");
+
+        let resolved = resolve_shared_session_read_target(&meta, Some(&writer))
+            .expect("resolve read authority")
+            .expect("resolved target");
+
+        assert_eq!(resolved, kimi_target);
+        assert_eq!(
+            meta.selected_target
+                .as_ref()
+                .and_then(|target| target.model.as_deref()),
+            Some("gpt-5.6-sol"),
+            "read projection must not mutate legacy metadata"
+        );
+        assert_eq!(
+            writer
+                .session_target(&meta.id)
+                .expect("read V2 after")
+                .expect("stored V2 target"),
+            stored_before,
+            "read projection must not rewrite V2 target"
+        );
+        writer.shutdown().expect("shutdown V2 writer");
+        std::fs::remove_dir_all(temp).expect("remove temp dir");
     }
 
     #[test]

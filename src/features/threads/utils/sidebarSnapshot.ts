@@ -181,6 +181,24 @@ function normalizeThreadSummary(value: unknown): ThreadSummary | null {
   if (typeof value.providerAvailability === "string") {
     summary.providerAvailability = value.providerAvailability;
   }
+  if (typeof value.modelCatalogEntryId === "string") {
+    const modelCatalogEntryId = value.modelCatalogEntryId.trim();
+    if (modelCatalogEntryId.length > 0) {
+      summary.modelCatalogEntryId = modelCatalogEntryId;
+    }
+  }
+  if (typeof value.model === "string") {
+    const model = value.model.trim();
+    if (model.length > 0) {
+      summary.model = model;
+    }
+  }
+  if (typeof value.reasoningEffort === "string") {
+    const reasoningEffort = value.reasoningEffort.trim();
+    if (reasoningEffort.length > 0) {
+      summary.reasoningEffort = reasoningEffort;
+    }
+  }
   if (typeof value.partialSource === "string") {
     summary.partialSource = value.partialSource;
   }

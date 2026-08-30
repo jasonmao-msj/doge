@@ -3,9 +3,11 @@ import {
   extractClaudeForkParentThreadId,
   getThreadComposerSelectionStorageKey,
   normalizeComposerSessionSelectionForThread,
+  resolveActiveThreadEngine,
   shouldApplyDraftComposerSelectionToThread,
   shouldInheritComposerSelectionFromClaudeForkParent,
   shouldMigrateComposerSelectionBetweenThreadIds,
+  shouldSyncActiveThreadEngine,
   type ComposerSessionSelection,
 } from "./selectedComposerSession";
 
@@ -23,6 +25,46 @@ describe("selectedComposerSession", () => {
     expect(getThreadComposerSelectionStorageKey("ws-b", "codex:session-1")).toBe(
       "selectedModelByThread.ws-b:codex:session-1",
     );
+  });
+
+  it("uses a native thread id to resolve the engine during cold start", () => {
+    expect(
+      resolveActiveThreadEngine({
+        threadId: "kimi:session-1",
+        fallbackEngine: "codex",
+      }),
+    ).toBe("kimi");
+    expect(
+      resolveActiveThreadEngine({
+        threadId: "kimi:session-1",
+        threadEngine: "claude",
+        fallbackEngine: "codex",
+      }),
+    ).toBe("claude");
+  });
+
+  it("resyncs the active thread after global engine restore overwrites it", () => {
+    expect(
+      shouldSyncActiveThreadEngine({
+        threadId: "kimi:session-1",
+        activeEngine: "codex",
+        activeThreadEngine: "kimi",
+      }),
+    ).toBe(true);
+    expect(
+      shouldSyncActiveThreadEngine({
+        threadId: "kimi:session-1",
+        activeEngine: "kimi",
+        activeThreadEngine: "kimi",
+      }),
+    ).toBe(false);
+    expect(
+      shouldSyncActiveThreadEngine({
+        threadId: null,
+        activeEngine: "codex",
+        activeThreadEngine: "codex",
+      }),
+    ).toBe(false);
   });
 
   it("applies a draft selection to the first pending thread", () => {

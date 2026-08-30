@@ -61,6 +61,13 @@ export function resolveProductManagedExecutionTargetV1(input: {
       productModelMatchesIdentityV1(candidate, input.target?.model),
     ) ??
     engine.models.find((candidate) =>
+      [input.target?.modelCatalogEntryId, input.target?.model].some(
+        (identity) =>
+          normalizeProductModelIdentityV1(candidate.runtimeModel) ===
+          normalizeProductModelIdentityV1(identity),
+      ),
+    ) ??
+    engine.models.find((candidate) =>
       productModelMatchesIdentityV1(candidate, input.preferredModelId),
     ) ??
     engine.models[0];
@@ -74,8 +81,10 @@ export function resolveProductManagedExecutionTargetV1(input: {
   const runtimeModel = model.runtimeModel;
   const selectedCatalogEntryId = input.target?.modelCatalogEntryId?.trim();
   const modelCatalogEntryId =
-    selectedCatalogEntryId &&
-    normalizeProductModelIdentityV1(selectedCatalogEntryId) === runtimeModel
+    selectedCatalogEntryId === model.id ||
+    (selectedCatalogEntryId?.toLowerCase().startsWith("kimi-code/") &&
+      normalizeProductModelIdentityV1(selectedCatalogEntryId) ===
+        normalizeProductModelIdentityV1(model.runtimeModel))
       ? selectedCatalogEntryId
       : model.id;
   return {

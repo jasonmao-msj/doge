@@ -88,6 +88,9 @@ export type CodexCatalogSessionSummary = {
   providerProfileSource?: string | null;
   providerProfileName?: string | null;
   providerAvailability?: string | null;
+  modelCatalogEntryId?: string | null;
+  model?: string | null;
+  reasoningEffort?: string | null;
   folderId?: string | null;
   autoSession?: ThreadSummary["autoSession"];
   originKind?: string | null;
@@ -1713,6 +1716,9 @@ export function mergeCodexCatalogSessionSummaries(
       providerProfileSource: session.providerProfileSource ?? undefined,
       providerProfileName: session.providerProfileName ?? undefined,
       providerAvailability: session.providerAvailability ?? undefined,
+      modelCatalogEntryId: session.modelCatalogEntryId ?? undefined,
+      model: session.model ?? undefined,
+      reasoningEffort: session.reasoningEffort ?? undefined,
       folderId: session.folderId ?? null,
       autoSession: session.autoSession ?? null,
       parentThreadId,

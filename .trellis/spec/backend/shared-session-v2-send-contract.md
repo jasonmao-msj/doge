@@ -1189,6 +1189,120 @@ try {
 }
 ```
 
+## Scenario: Shared Cold-start Target Authority And Repair Guard
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `load_shared_session`、`shared_sessions_v2.selected_target_json`、Shared
+  history target hydration、Product catalog canonical repair 或 Composer mount effect。
+- 目标：existing Shared Session 冷启动不得把尚未 hydrate 的空 target 解析成 global/default
+  model 并持久化；V2 durable target 与 legacy meta 冲突时有唯一只读 authority。
+
+### 2. Signatures
+
+```text
+SharedEventWriter.session_target(sessionId)
+  -> Option<StoredSessionTarget { selectedTargetJson, updatedAt }>
+
+resolve_shared_session_read_target(meta, eventWriter?)
+  -> Result<Option<SharedSelectedTarget>, String>
+
+load_shared_session(workspaceId, threadId)
+  -> { selectedEngine, engineSource, selectedTarget, items, ... }
+
+createSharedHistoryLoader(...).load(threadId)
+  -> hydrateSharedTargetState(workspaceId, threadId, selectedTarget)
+
+Composer automatic Product repair input
+  = ResolvedExecutionTarget only
+```
+
+### 3. Contracts
+
+- Desktop Shared read authority MUST be
+  `shared_sessions_v2.selected_target_json > legacy meta.selectedTarget`；V2 row 缺失或 writer
+  unavailable 时才允许 legacy fallback。
+- `load_shared_session` 与 list summary MUST 从同一个 authoritative target 派生
+  `selectedEngine` / `engineSource`；禁止 target=Kimi 但 summary=Codex。
+- Cold-start read MUST be side-effect free：不得更新 V2 row、legacy meta、persist generation
+  或 renderer selection cache。
+- Product automatic repair MUST require an already resolved existing target。`null` / partial
+  表示 hydration pending 或 legacy incomplete，不得送入 default resolver 后调用
+  `set_shared_session_selected_engine`。
+- History loader generation guard 只解决 concurrent user mutation 的 stale response；它不得
+  为 mount/default mutation 提供合法性。
+- 若旧 build 已把 V2 与 legacy 同时覆盖，系统 MUST NOT 仅凭最后一轮 Turn 猜测当前 mutable
+  selection；恢复需要用户重新确认 target 或具备独立 mutation provenance。
+
+### 4. Validation & Error Matrix
+
+| 场景 | 必须行为 | 禁止行为 |
+|---|---|---|
+| V2=Kimi，legacy=GPT | load/list 投影 Kimi | 读取 legacy GPT |
+| V2 row 缺失 | 兼容 legacy target | 制造 catalog default |
+| V2 JSON malformed | 返回可观察错误 | silent fallback 并写回 |
+| Product ready + store target null | 等待 history hydration，零 selection IPC | 持久化首个 GPT row |
+| resolved legacy alias | 可做一次 canonical repair | partial target repair |
+| user picker persist 并发 history load | generation guard 保留用户 mutation | stale history 覆盖新选择 |
+
+### 5. Good / Base / Bad Cases
+
+- Good：legacy meta 是 GPT、V2 row 是 Kimi K3，load response 与 Composer 都显示 Kimi，两个
+  store 在 read 前后字节/row 相等。
+- Base：旧 session 没有 V2 row，完整 legacy target 继续可读；缺字段则 Composer 保持 blocked
+  直到用户选择完整 model。
+- Bad：`resolveProductManagedExecutionTargetV1({ target: null })` 返回首个 GPT 后，mount effect
+  直接调用 selection persistence；persist generation 随后让真实 Kimi history response 失效。
+
+### 6. Tests Required
+
+- Rust：构造 `legacy=Codex/GPT`、`V2=Kimi/k3-256k`，断言
+  `resolve_shared_session_read_target` 返回 V2 且 read 前后两份存储不变。
+- Composer：Product entitlement ready + Shared target store null，mount/flush effects 后断言
+  `set_shared_session_selected_engine` 调用次数为 0、store 仍为 null。
+- History loader：response 含完整 Kimi target 时断言 target store 与 snapshot engine 使用 Kimi。
+- Layout：断言 `selectedModelRuntime` 与 `onPersistNativeSessionTarget` 从 AppShell options 到
+  Composer production entry 完整透传。
+- L3 gate：affected Vitest、targeted ESLint、typecheck、runtime contracts、Rust focused test、
+  `cargo check --lib` 与 daemon compile。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+const repaired = resolveProductManagedExecutionTargetV1({
+  target: selectedSharedTarget, // hydration 期间可能为 null
+  engines,
+  models,
+});
+handleSharedTargetChange(repaired); // 把 default 当 user mutation 写盘
+```
+
+#### Correct
+
+```ts
+const repaired = isResolvedExecutionTarget(selectedSharedTarget)
+  ? resolveProductManagedExecutionTargetV1({
+      target: selectedSharedTarget,
+      engines,
+      models,
+    })
+  : null;
+if (repaired && !isSameExecutionTarget(selectedSharedTarget, repaired)) {
+  handleSharedTargetChange(repaired);
+}
+```
+
+```rust
+let selected_target = writer
+    .session_target(&meta.id)?
+    .map(parse_target)
+    .transpose()?
+    .or_else(|| meta.selected_target.clone());
+// read projection only; no upsert/write_shared_session_meta
+```
+
 #### Correct
 
 ```rust

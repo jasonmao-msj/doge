@@ -242,6 +242,8 @@ vi.mock("../../composer/components/Composer", async () => {
     isSharedSession = false,
     providerProfileId = null,
     providerProfileName = null,
+    selectedModelRuntime = null,
+    onPersistNativeSessionTarget,
     submitDisabled = false,
     isContextCompacting = false,
     codexCompactionLifecycleState = "idle",
@@ -262,6 +264,12 @@ vi.mock("../../composer/components/Composer", async () => {
     isSharedSession?: boolean;
     providerProfileId?: string | null;
     providerProfileName?: string | null;
+    selectedModelRuntime?: string | null;
+    onPersistNativeSessionTarget?: (target: {
+      engine: "codex";
+      modelCatalogEntryId: string;
+      model: string;
+    }) => void;
     submitDisabled?: boolean;
     isContextCompacting?: boolean;
     codexCompactionLifecycleState?: string;
@@ -280,6 +288,7 @@ vi.mock("../../composer/components/Composer", async () => {
         data-is-shared-session={String(isSharedSession)}
         data-provider-profile-id={providerProfileId ?? ""}
         data-provider-profile-name={providerProfileName ?? ""}
+        data-selected-model-runtime={selectedModelRuntime ?? ""}
         data-submit-disabled={String(submitDisabled)}
         data-is-context-compacting={String(isContextCompacting)}
         data-codex-compaction-lifecycle={codexCompactionLifecycleState}
@@ -303,6 +312,18 @@ vi.mock("../../composer/components/Composer", async () => {
           onClick={() => onResolvedAlwaysThinkingChange?.(false)}
         >
           report thinking disabled
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            onPersistNativeSessionTarget?.({
+              engine: "codex",
+              modelCatalogEntryId: "k3-256k",
+              model: "k3-256k",
+            })
+          }
+        >
+          persist native target
         </button>
         {createSessionTargetPicker ? (
           <button
@@ -1169,6 +1190,30 @@ describe("useLayoutNodes client UI visibility", () => {
     expect(
       homeComposer.getByTestId("composer").dataset.providerProfileName,
     ).toBe("");
+  });
+
+  it("forwards native runtime model identity and persistence through the layout", async () => {
+    const onPersistNativeSessionTarget = vi.fn();
+    const { result } = await renderUseLayoutNodes(
+      createLayoutOptions({
+        selectedModelRuntime: "k3-256k",
+        onPersistNativeSessionTarget,
+      }),
+    );
+
+    render(<>{result.current.composerNode}</>);
+
+    expect(screen.getByTestId("composer").dataset.selectedModelRuntime).toBe(
+      "k3-256k",
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "persist native target" }),
+    );
+    expect(onPersistNativeSessionTarget).toHaveBeenCalledWith({
+      engine: "codex",
+      modelCatalogEntryId: "k3-256k",
+      model: "k3-256k",
+    });
   });
 
   it("allows Shared running follow-up queue and projects compaction lifecycle", async () => {

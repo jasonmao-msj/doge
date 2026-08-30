@@ -582,6 +582,68 @@ describe("useSelectedComposerSession", () => {
     });
   });
 
+  it("hydrates a cold-start native session from the targeted durable reader", async () => {
+    const loadDurableSelection = vi.fn().mockResolvedValue({
+      modelId: "doubao-entry",
+      effort: "high",
+    });
+
+    const { result } = renderHook(() =>
+      useSelectedComposerSession({
+        activeThreadId: "kimi:session-1",
+        activeThreadEngine: "kimi",
+        activeWorkspaceId: "ws-a",
+        loadDurableSelection,
+        resolveCanonicalThreadId: (threadId) => threadId,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.selectedComposerSelection).toEqual({
+        modelId: "doubao-entry",
+        effort: null,
+      });
+    });
+    expect(loadDurableSelection).toHaveBeenCalledWith(
+      "ws-a",
+      "kimi:session-1",
+      "kimi",
+    );
+  });
+
+  it("prefers the durable target over a stale selected-model cache", async () => {
+    composerStore["selectedModelByThread.ws-a:codex:session-1"] = {
+      modelId: "old-model",
+      effort: "low",
+    };
+
+    const { result } = renderHook(() =>
+      useSelectedComposerSession({
+        activeWorkspaceId: "ws-a",
+        activeThreadId: "codex:session-1",
+        durableSelection: {
+          modelId: "k3-256k",
+          effort: "high",
+        },
+        resolveCanonicalThreadId: (threadId: string) => threadId,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(result.current.selectedComposerSelection).toEqual({
+        modelId: "k3-256k",
+        effort: "high",
+      });
+    });
+    expect(result.current.resolveComposerSelectionForThread("ws-a", "codex:session-1"))
+      .toEqual({ modelId: "k3-256k", effort: "high" });
+    expect(writeClientStoreValue).toHaveBeenCalledWith(
+      "composer",
+      "selectedModelByThread.ws-a:codex:session-1",
+      { modelId: "k3-256k", effort: "high" },
+    );
+  });
+
   it("does not seed an already-finalized thread from the engine default", async () => {
     const { result } = renderHook(() =>
       useSelectedComposerSession({

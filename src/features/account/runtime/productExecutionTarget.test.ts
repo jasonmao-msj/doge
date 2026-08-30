@@ -107,6 +107,28 @@ describe("resolveProductManagedExecutionTargetV1", () => {
     ).toBe(PRODUCT_DOUBAO_RUNTIME_MODEL);
   });
 
+  it("repairs a legacy Doubao alias to the real Product catalog entry", () => {
+    expect(
+      resolveProductManagedExecutionTargetV1({
+        target: {
+          engine: "kimi",
+          providerProfileId: "doge-token-matrix",
+          modelCatalogEntryId: "豆包",
+          model: "豆包",
+          reasoning: null,
+          providerProfileNameSnapshot: "Doge",
+          providerProfileSource: "managed",
+        },
+        engines,
+        models,
+      }),
+    ).toMatchObject({
+      engine: "kimi",
+      modelCatalogEntryId: "doubao-entry",
+      model: "豆包",
+    });
+  });
+
   it("normalizes the Kimi fallback catalog namespace to the product runtime id", () => {
     expect(
       resolveProductManagedExecutionTargetV1({

@@ -305,6 +305,9 @@ export function useEngineController({
                 ?.installed,
             )
           : false;
+        const managedCodexReady =
+          managedCodexStatus?.ok === true &&
+          managedCodexStatus.value.status === "ready";
         if (
           persistedEngine &&
           enabledEngineTypes.includes(persistedEngine) &&
@@ -313,7 +316,11 @@ export function useEngineController({
         ) {
           if (engineUsesNativeActiveEngineAuthority(persistedEngine)) {
             try {
-              await switchEngine(persistedEngine);
+              if (persistedEngine === "codex" && managedCodexReady) {
+                await activateAccountEngineV1("codex");
+              } else {
+                await switchEngine(persistedEngine);
+              }
               nextActiveEngine = persistedEngine;
             } catch (error) {
               onDebug?.({

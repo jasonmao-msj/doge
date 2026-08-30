@@ -245,6 +245,10 @@ export type ThreadSummary = {
   providerProfileSource?: "disk" | "managed" | string;
   providerProfileName?: string;
   providerAvailability?: "available" | "unavailable" | string;
+  /** Durable execution target hydrated from the native session catalog. */
+  modelCatalogEntryId?: string;
+  model?: string;
+  reasoningEffort?: string;
   partialSource?: string;
   isDegraded?: boolean;
   degradedReason?: string;

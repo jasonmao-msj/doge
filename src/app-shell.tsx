@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useThreads } from "./features/threads/hooks/useThreads";
-import { resolveIsSharedSession } from "./features/shared-session/utils/sharedSessionIdentity";
+import {
+  isSharedSessionThreadId,
+  resolveIsSharedSession,
+} from "./features/shared-session/utils/sharedSessionIdentity";
 import { useGitPanelController } from "./features/app/hooks/useGitPanelController";
 import { useGitRemote } from "./features/git/hooks/useGitRemote";
 import { useGitRepoScan } from "./features/git/hooks/useGitRepoScan";
@@ -43,6 +46,8 @@ import { useMultiRepositoryGitStatus } from "./features/git/hooks/useMultiReposi
 import {
   revertGitFile,
   revertGitPaths,
+  getSessionExecutionTarget,
+  recordSessionExecutionTarget,
   stageGitAll,
   stageGitFile,
   unstageGitAll,
@@ -55,7 +60,11 @@ import type {
   AppMode,
   ComposerEditorSettings,
 } from "./types";
-import { resolveEngineDefaultComposerSelection } from "./app-shell-parts/selectedComposerSession";
+import {
+  resolveActiveThreadEngine,
+  resolveEngineDefaultComposerSelection,
+  shouldSyncActiveThreadEngine,
+} from "./app-shell-parts/selectedComposerSession";
 import { useCodeCssVars } from "./features/app/hooks/useCodeCssVars";
 import { useAccountSwitching } from "./features/app/hooks/useAccountSwitching";
 import { extractPlanFromTimelineItems } from "./app-shell-parts/utils";
@@ -850,6 +859,77 @@ export function AppShell() {
     queueGitStatusRefresh,
     threadStatusById,
   });
+  const activeThreadSummary = activeWorkspaceId
+    ? threadsByWorkspace[activeWorkspaceId]?.find(
+        (thread) => thread.id === activeThreadId,
+      )
+    : null;
+  const activeThreadEngine =
+    resolveActiveThreadEngine({
+      threadId: activeThreadId,
+      threadEngine: activeThreadSummary?.engineSource,
+      selectedEngine: activeThreadSummary?.selectedEngine,
+      fallbackEngine: activeEngine,
+    });
+  // An existing conversation owns its engine. The global controller may still
+  // be publishing the native/default engine during cold start, so all session
+  // surfaces below must use this effective value until the controller catches up.
+  const effectiveActiveEngine = activeThreadId
+    ? activeThreadEngine
+    : activeEngine;
+  useEffect(() => {
+    if (
+      shouldSyncActiveThreadEngine({
+        threadId: activeThreadId,
+        activeEngine,
+        activeThreadEngine,
+      })
+    ) {
+      setActiveEngine(activeThreadEngine);
+    }
+  }, [
+    activeEngine,
+    activeThreadEngine,
+    activeThreadId,
+    setActiveEngine,
+  ]);
+  const loadDurableComposerSelection = useCallback(
+    async (workspaceId: string, sessionId: string, engine: string) => {
+      if (isSharedSessionThreadId(sessionId)) {
+        return null;
+      }
+      const target = await getSessionExecutionTarget({
+        workspaceId,
+        sessionId,
+        engine,
+      });
+      if (!target?.modelCatalogEntryId?.trim() || !target.model?.trim()) {
+        return null;
+      }
+      return {
+        modelId: target.modelCatalogEntryId.trim(),
+        effort: target.reasoningEffort?.trim() || null,
+        runtimeModel: target.model.trim(),
+      };
+    },
+    [],
+  );
+  const durableComposerSelection = useMemo(() => {
+    const modelId = activeThreadSummary?.modelCatalogEntryId?.trim();
+    const model = activeThreadSummary?.model?.trim();
+    if (!modelId || !model) {
+      return null;
+    }
+    return {
+      modelId,
+      effort: activeThreadSummary?.reasoningEffort ?? null,
+      runtimeModel: model,
+    };
+  }, [
+    activeThreadSummary?.model,
+    activeThreadSummary?.modelCatalogEntryId,
+    activeThreadSummary?.reasoningEffort,
+  ]);
   const {
     selectedComposerSelection,
     handleSelectComposerSelection,
@@ -858,20 +938,43 @@ export function AppShell() {
   } = useSelectedComposerSession({
     activeThreadId,
     activeWorkspaceId,
+    activeThreadEngine,
+    durableSelection: durableComposerSelection,
+    loadDurableSelection: loadDurableComposerSelection,
+    onDebug: addDebugEntry,
     resolveCanonicalThreadId,
     engineDefaultSelectionReady: !appSettingsLoading,
     resolveEngineDefaultComposerSelection,
-    onDebug: addDebugEntry,
   });
-  const activeThreadSummary = activeWorkspaceId
-    ? threadsByWorkspace[activeWorkspaceId]?.find(
-        (thread) => thread.id === activeThreadId,
-      )
-    : null;
-  const activeThreadEngine =
-    activeThreadSummary?.engineSource ??
-    activeThreadSummary?.selectedEngine ??
-    null;
+  const persistSessionExecutionTarget = useCallback(
+    (input: {
+      workspaceId: string;
+      sessionId: string;
+      engine: string;
+      modelCatalogEntryId: string;
+      model: string;
+      reasoningEffort?: string | null;
+    }) => {
+      void recordSessionExecutionTarget(input).catch((error) => {
+        addDebugEntry({
+          id: `${Date.now()}-session-execution-target-persist-failed`,
+          timestamp: Date.now(),
+          source: "error",
+          label: "session/execution-target-persist-failed",
+          payload: {
+            workspaceId: input.workspaceId,
+            sessionId: input.sessionId,
+            engine: input.engine,
+            modelCatalogEntryId: input.modelCatalogEntryId,
+            model: input.model,
+            reasoningEffort: input.reasoningEffort ?? null,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        });
+      });
+    },
+    [addDebugEntry],
+  );
   useAutoMigrateDisabledActiveEngine({
     activeEngine,
     activeThreadEngine,
@@ -894,6 +997,7 @@ export function AppShell() {
     engineSelectedModelIdByType,
     handleSelectComposerEffort,
     handleSelectModel,
+    persistNativeSessionTarget,
     providerModelCatalogs,
     resolvedEffort,
     resolvedModel,
@@ -901,7 +1005,11 @@ export function AppShell() {
     threadAccessMode,
   } = useAppShellComposerModelSection({
     accessMode,
-    activeEngine,
+    // Existing sessions own their Composer engine. During cold start the
+    // global engine can still be the previous/default GPT while the selected
+    // thread is Kimi/Claude/etc.; using it here would rebuild the target from
+    // the wrong catalog before durable session metadata is applied.
+    activeEngine: effectiveActiveEngine,
     activeThreadId,
     activeProviderProfileId: activeThreadProviderProfileId,
     activeWorkspaceId,
@@ -920,6 +1028,7 @@ export function AppShell() {
     modelsReady,
     persistComposerEnginePref,
     persistComposerSelectionForThread,
+    persistSessionExecutionTarget,
     queueSaveSettings,
     selectedCollaborationMode,
     selectedCollaborationModeId,
@@ -944,9 +1053,9 @@ export function AppShell() {
   });
 
   useProviderModelCatalogSync({
-    activeEngine,
+    activeEngine: effectiveActiveEngine,
     activeThreadEngineSource:
-      activeThreadSummary?.engineSource ?? activeThreadSummary?.selectedEngine,
+      activeThreadEngine,
     activeThreadId,
     activeWorkspaceId,
     providerProfileId: activeThreadProviderProfileId,
@@ -955,7 +1064,7 @@ export function AppShell() {
   });
   const { handleRefreshModelConfig, isModelConfigRefreshing } =
     useModelConfigRefresh({
-      activeEngine,
+      activeEngine: effectiveActiveEngine,
       activeProviderProfileId: activeThreadProviderProfileId,
       addDebugEntry,
       refreshEngineModels,
@@ -964,7 +1073,7 @@ export function AppShell() {
 
   const { handleUserInputSubmitWithPlanApply, handleExitPlanModeExecute } =
     usePlanApplyHandlers({
-      activeEngine,
+      activeEngine: effectiveActiveEngine,
       applySelectedCollaborationMode,
       handleSetAccessMode,
       handleUserInputSubmit,
@@ -1080,7 +1189,7 @@ export function AppShell() {
     ? (timelinePlan ?? planByThread[activeThreadId] ?? null)
     : timelinePlan;
   useCollaborationModeThreadSync({
-    activeEngine,
+    activeEngine: effectiveActiveEngine,
     activeThreadId,
     activeThreadIdForModeRef,
     appSettingsLoading,
@@ -1195,7 +1304,7 @@ export function AppShell() {
       : false,
     hasPendingUserInput,
     steerEnabled: appSettings.experimentalSteerEnabled,
-    activeEngine,
+    activeEngine: effectiveActiveEngine,
     getThreadEngine,
     getThreadProviderProfileId,
     // 身份 id-first（fix-shared-session-identity-id-first）：
@@ -1677,7 +1786,7 @@ export function AppShell() {
       activeDiffs,
       activeEditorFilePath,
       activeEditorLineRange,
-      activeEngine,
+      activeEngine: effectiveActiveEngine,
       activeGitRoot,
       activeImages,
       activeFusingMessageId,
@@ -1977,6 +2086,7 @@ export function AppShell() {
       handleSelectCommit,
       handleSelectDiff,
       handleSelectModel,
+      persistNativeSessionTarget,
       handleSelectOpenAppId,
       handleSelectOpenCodeAgent,
       handleSelectOpenCodeVariant,

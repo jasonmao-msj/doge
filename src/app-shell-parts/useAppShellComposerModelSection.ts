@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ModelOption } from "../types";
+import type { EngineType, ModelOption } from "../types";
 import { useCollaborationModeSelection } from "../features/collaboration/hooks/useCollaborationModeSelection";
 import { useComposerMenuActions } from "../features/composer/hooks/useComposerMenuActions";
 import { useComposerShortcuts } from "../features/composer/hooks/useComposerShortcuts";
 import { usePersistComposerSettings } from "../features/app/hooks/usePersistComposerSettings";
+import { isSharedSessionThreadId } from "../features/shared-session/utils/sharedSessionIdentity";
 import {
   enrichScopedCodexReasoningMetadata,
   getEffectiveModels,
@@ -15,8 +16,11 @@ import {
   getReasoningOptionsForModel,
   upsertEngineSelectedModelId,
 } from "./modelSelection";
+import { resolveThreadEngine } from "./selectedComposerSession";
 import { resolveClaudeManagedRuntimeModel } from "../features/models/claudeManagedRuntimeModel";
 import { MANAGED_PROVIDER_PROFILE_ID_V1 } from "../features/account/runtime/engineEntitlementStore";
+import { useProductEntitlementSnapshotV1 } from "../features/account/runtime/productEntitlementStore";
+import { resolveProductManagedExecutionTargetV1 } from "../features/account/runtime/productExecutionTarget";
 
 export function useAppShellComposerModelSection({
   accessMode,
@@ -39,6 +43,7 @@ export function useAppShellComposerModelSection({
   modelsReady,
   persistComposerEnginePref,
   persistComposerSelectionForThread,
+  persistSessionExecutionTarget,
   queueSaveSettings,
   selectedCollaborationMode,
   selectedCollaborationModeId,
@@ -49,6 +54,7 @@ export function useAppShellComposerModelSection({
   setSelectedEffort,
   setSelectedModelId,
 }: any) {
+  const productEntitlement = useProductEntitlementSnapshotV1();
   const [engineSelectedModelIdByType, setEngineSelectedModelIdByType] =
     useState<Record<string, string | null>>({});
   const activeEngineSelectedModelId = engineSelectedModelIdByType[activeEngine] ?? null;
@@ -125,6 +131,95 @@ export function useAppShellComposerModelSection({
   const effectiveSelectedModel = useMemo(() => {
     return effectiveModels.find((model) => model.id === effectiveSelectedModelId) ?? null;
   }, [effectiveModels, effectiveSelectedModelId]);
+  const persistNativeSessionExecutionTarget = useCallback(
+    ({
+      engine,
+      modelCatalogEntryId,
+      model,
+      effort,
+    }: {
+      engine: EngineType;
+      modelCatalogEntryId: string | null | undefined;
+      model: string | null | undefined;
+      effort: string | null | undefined;
+    }) => {
+      if (!activeWorkspaceId || !activeThreadId) {
+        return;
+      }
+      if (isSharedSessionThreadId(activeThreadId)) {
+        return;
+      }
+      const sessionEngine = resolveThreadEngine(activeThreadId);
+      if (sessionEngine && sessionEngine !== engine) {
+        return;
+      }
+      if (!sessionEngine && engine !== activeEngine) {
+        return;
+      }
+      const normalizedModelCatalogEntryId = modelCatalogEntryId?.trim() || null;
+      const normalizedModel = model?.trim() || normalizedModelCatalogEntryId;
+      if (!normalizedModelCatalogEntryId || !normalizedModel) {
+        return;
+      }
+      let persistedModelCatalogEntryId = normalizedModelCatalogEntryId;
+      let persistedModel = normalizedModel;
+      if (
+        activeProviderProfileId?.trim() === MANAGED_PROVIDER_PROFILE_ID_V1 &&
+        productEntitlement.status === "ready"
+      ) {
+        const canonicalTarget = resolveProductManagedExecutionTargetV1({
+          target: {
+            engine,
+            providerProfileId: MANAGED_PROVIDER_PROFILE_ID_V1,
+            modelCatalogEntryId: normalizedModelCatalogEntryId,
+            model: normalizedModel,
+            reasoning: effort?.trim() ? { effort: effort.trim() } : null,
+            providerProfileSource: "managed",
+          },
+          engines: productEntitlement.engines,
+          models: productEntitlement.models,
+        });
+        if (canonicalTarget?.modelCatalogEntryId && canonicalTarget.model) {
+          persistedModelCatalogEntryId = canonicalTarget.modelCatalogEntryId;
+          persistedModel = canonicalTarget.model;
+        }
+      }
+      persistSessionExecutionTarget?.({
+        workspaceId: activeWorkspaceId,
+        sessionId: activeThreadId,
+        engine,
+        modelCatalogEntryId: persistedModelCatalogEntryId,
+        model: persistedModel,
+        reasoningEffort: effort?.trim() || null,
+      });
+    },
+    [
+      activeEngine,
+      activeProviderProfileId,
+      activeThreadId,
+      activeWorkspaceId,
+      productEntitlement.engines,
+      productEntitlement.models,
+      productEntitlement.status,
+      persistSessionExecutionTarget,
+    ],
+  );
+  const persistNativeSessionTarget = useCallback(
+    (target: {
+      engine?: EngineType | null;
+      modelCatalogEntryId?: string | null;
+      model?: string | null;
+      reasoning?: { effort?: string | null } | null;
+    }) => {
+      persistNativeSessionExecutionTarget({
+        engine: target.engine ?? activeEngine,
+        modelCatalogEntryId: target.modelCatalogEntryId,
+        model: target.model,
+        effort: target.reasoning?.effort,
+      });
+    },
+    [activeEngine, persistNativeSessionExecutionTarget],
+  );
   const persistedGlobalComposerModelId = useMemo(() => {
     return getEffectiveSelectedModelId({
       activeEngine: "codex",
@@ -201,7 +296,10 @@ export function useAppShellComposerModelSection({
   const resolvedModel =
     activeEngine === "claude"
       ? claudeRuntimeResolution?.runtime ?? null
-      : (effectiveSelectedModel?.model ?? effectiveSelectedModelId ?? null);
+      : (effectiveSelectedModel?.model ??
+        selectedComposerSelection?.runtimeModel ??
+        effectiveSelectedModelId ??
+        null);
   const resolvedModelSource = effectiveSelectedModel?.source ?? "unknown";
   // Codex: custom/catalog models may carry providerProfileId for first-send binding.
   // Claude (and others): MUST stay null here — session open / Shared hydrate /
@@ -304,6 +402,14 @@ export function useAppShellComposerModelSection({
           effort: nextSelectedEffort,
         });
       }
+      if (!isCrossEngineSelection) {
+        persistNativeSessionExecutionTarget({
+          engine: targetEngine,
+          modelCatalogEntryId: nextSelectedModel.id,
+          model: nextSelectedModel.model,
+          effort: nextSelectedEffort,
+        });
+      }
       handleSelectComposerSelection({
         modelId: nextSelectedModel.id,
         effort: nextSelectedEffort,
@@ -316,6 +422,7 @@ export function useAppShellComposerModelSection({
       handleSelectComposerSelection,
       hasActiveComposerThread,
       persistComposerEnginePref,
+      persistNativeSessionExecutionTarget,
       providerModelCatalogs,
       setSelectedModelId,
     ],
@@ -342,6 +449,12 @@ export function useAppShellComposerModelSection({
       } else if (activeEngine !== "codex") {
         persistComposerEnginePref?.(activeEngine, { effort: nextEffort });
       }
+      persistNativeSessionExecutionTarget({
+        engine: activeEngine,
+        modelCatalogEntryId: effectiveSelectedModelId,
+        model: effectiveSelectedModel?.model ?? effectiveSelectedModelId,
+        effort: nextEffort,
+      });
       handleSelectComposerSelection({
         modelId: effectiveSelectedModelId,
         effort: nextEffort,
@@ -350,10 +463,12 @@ export function useAppShellComposerModelSection({
     [
       activeEngine,
       effectiveSelectedModelId,
+      effectiveSelectedModel?.model,
       effectiveReasoningOptions,
       handleSelectComposerSelection,
       hasActiveComposerThread,
       persistComposerEnginePref,
+      persistNativeSessionExecutionTarget,
       setSelectedEffort,
     ],
   );
@@ -469,6 +584,7 @@ export function useAppShellComposerModelSection({
     engineSelectedModelIdByType,
     handleSelectComposerEffort,
     handleSelectModel,
+    persistNativeSessionTarget,
     providerModelCatalogs,
     resolvedEffort,
     resolvedModel,

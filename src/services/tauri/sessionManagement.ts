@@ -25,6 +25,9 @@ export interface WorkspaceSessionCatalogEntry {
   providerProfileSource?: string | null;
   providerProfileName?: string | null;
   providerAvailability?: string | null;
+  modelCatalogEntryId?: string | null;
+  model?: string | null;
+  reasoningEffort?: string | null;
   sourceCompleteness?: WorkspaceSessionSourceCompleteness | null;
   sourceStatusReason?: string | null;
   sizeBytes?: number | null;
@@ -252,6 +255,46 @@ export async function recordAutoSessionMetadata(
     workspaceId,
     sessionId,
     metadata,
+  });
+}
+
+export type SessionExecutionTargetInput = {
+  workspaceId: string;
+  sessionId: string;
+  engine: string;
+  modelCatalogEntryId: string;
+  model: string;
+  reasoningEffort?: string | null;
+};
+
+export type SessionExecutionTarget = {
+  modelCatalogEntryId: string;
+  model: string;
+  reasoningEffort?: string | null;
+};
+
+export async function recordSessionExecutionTarget(
+  input: SessionExecutionTargetInput,
+): Promise<void> {
+  return invoke<void>("record_session_execution_target", {
+    workspaceId: input.workspaceId,
+    sessionId: input.sessionId,
+    engine: input.engine,
+    modelCatalogEntryId: input.modelCatalogEntryId,
+    model: input.model,
+    reasoningEffort: input.reasoningEffort ?? null,
+  });
+}
+
+export async function getSessionExecutionTarget(input: {
+  workspaceId: string;
+  sessionId: string;
+  engine: string;
+}): Promise<SessionExecutionTarget | null> {
+  return invoke<SessionExecutionTarget | null>("get_session_execution_target", {
+    workspaceId: input.workspaceId,
+    sessionId: input.sessionId,
+    engine: input.engine,
   });
 }
 

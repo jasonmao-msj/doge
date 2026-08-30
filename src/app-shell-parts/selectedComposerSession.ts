@@ -1,8 +1,11 @@
 import { getComposerEnginePrefForEngine } from "../features/composer/hooks/composerEnginePrefsStore";
+import type { EngineType } from "../types";
 
 export type ComposerSessionSelection = {
   modelId: string | null;
   effort: string | null;
+  /** Runtime CLI value for managed catalog entries (e.g. Doubao aliases). */
+  runtimeModel?: string | null;
 };
 
 const THREAD_COMPOSER_SELECTION_STORAGE_KEY_PREFIX = "selectedModelByThread.";
@@ -39,6 +42,30 @@ export function resolveThreadEngine(
   return null;
 }
 
+export function resolveActiveThreadEngine(input: {
+  threadId: string | null;
+  threadEngine?: EngineType | null;
+  selectedEngine?: EngineType | null;
+  fallbackEngine: EngineType;
+}): EngineType {
+  return (
+    input.threadEngine ??
+    input.selectedEngine ??
+    (input.threadId ? resolveThreadEngine(input.threadId) : null) ??
+    input.fallbackEngine
+  );
+}
+
+export function shouldSyncActiveThreadEngine(input: {
+  threadId: string | null;
+  activeEngine: EngineType;
+  activeThreadEngine: EngineType;
+}): boolean {
+  return Boolean(
+    input.threadId && input.activeEngine !== input.activeThreadEngine,
+  );
+}
+
 export function extractClaudeForkParentThreadId(threadId: string): string | null {
   if (!threadId.startsWith(CLAUDE_FORK_THREAD_PREFIX)) {
     return null;
@@ -67,10 +94,11 @@ export function normalizeComposerSessionSelection(
   const record = value as Record<string, unknown>;
   const modelId = normalizeNullableString(record.modelId);
   const effort = normalizeNullableString(record.effort);
-  if (modelId === null && effort === null) {
+  const runtimeModel = normalizeNullableString(record.runtimeModel);
+  if (modelId === null && effort === null && runtimeModel === null) {
     return null;
   }
-  return { modelId, effort };
+  return { modelId, effort, ...(runtimeModel ? { runtimeModel } : {}) };
 }
 
 export function normalizeComposerSessionSelectionForThread(
@@ -98,6 +126,7 @@ export function normalizeComposerSessionSelectionForThread(
   return {
     modelId: normalized.modelId,
     effort,
+    ...(normalized.runtimeModel ? { runtimeModel: normalized.runtimeModel } : {}),
   };
 }
 

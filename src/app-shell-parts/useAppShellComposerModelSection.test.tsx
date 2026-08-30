@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../features/collaboration/hooks/useCollaborationModeSelection", () => ({
   useCollaborationModeSelection: () => ({ collaborationModePayload: null }),
@@ -16,6 +16,16 @@ vi.mock("../features/app/hooks/usePersistComposerSettings", () => ({
 }));
 
 import { useAppShellComposerModelSection } from "./useAppShellComposerModelSection";
+import {
+  clearProductEntitlementV1,
+  publishProductReadyV1,
+} from "../features/account/runtime/productEntitlementStore";
+
+afterEach(() => {
+  act(() => {
+    clearProductEntitlementV1();
+  });
+});
 
 function makeModel(id: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -62,6 +72,7 @@ function renderSection(overrides: Record<string, unknown> = {}) {
       modelsReady: true,
       persistComposerEnginePref: vi.fn(),
       persistComposerSelectionForThread: vi.fn(),
+      persistSessionExecutionTarget: vi.fn(),
       queueSaveSettings: vi.fn(),
       selectedCollaborationMode: null,
       selectedCollaborationModeId: null,
@@ -403,6 +414,96 @@ describe("useAppShellComposerModelSection handleSelectModel", () => {
     expect(setSelectedModelId).not.toHaveBeenCalled();
   });
 
+  it("persists a selected native session target before the next send", () => {
+    const persistSessionExecutionTarget = vi.fn();
+    const { result } = renderSection({
+      activeEngine: "codex",
+      activeThreadId: "codex:session-doubao",
+      activeWorkspaceId: "workspace-1",
+      models: [
+        makeModel("doubao-entry", {
+          model: "doubao-runtime",
+          isDefault: true,
+        }),
+      ],
+      persistSessionExecutionTarget,
+    });
+
+    act(() => {
+      result.current.handleSelectModel("doubao-entry");
+    });
+
+    expect(persistSessionExecutionTarget).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
+      sessionId: "codex:session-doubao",
+      engine: "codex",
+      modelCatalogEntryId: "doubao-entry",
+      model: "doubao-runtime",
+      reasoningEffort: null,
+    });
+  });
+
+  it("canonicalizes a managed Product runtime alias before native persistence", () => {
+    publishProductReadyV1({
+      entitlement: {
+        status: "active",
+        subscriptionId: 9,
+        groupId: 5,
+        groupName: "Doge",
+        planName: "Doge subscription",
+        expiresAt: null,
+        usage: null,
+      },
+      engines: [{ id: "kimi", displayName: "Kimi CLI" }],
+      models: [
+        {
+          id: "doubao-entry",
+          displayName: "豆包",
+          model: "ark-code-latest",
+          apiProtocols: ["openai-chat-completions"],
+          capabilities: ["chat"],
+        },
+      ],
+    });
+    const persistSessionExecutionTarget = vi.fn();
+    const { result } = renderSection({
+      activeEngine: "kimi",
+      activeThreadId: "kimi:session-doubao",
+      activeWorkspaceId: "workspace-1",
+      activeProviderProfileId: "doge-token-matrix",
+      engineModelsAsOptions: [makeModel("豆包", { model: "豆包" })],
+      persistSessionExecutionTarget,
+    });
+
+    act(() => {
+      result.current.handleSelectModel("豆包");
+    });
+
+    expect(persistSessionExecutionTarget).toHaveBeenCalledWith(
+      expect.objectContaining({
+        modelCatalogEntryId: "doubao-entry",
+        model: "豆包",
+      }),
+    );
+  });
+
+  it("does not persist a Shared V2 atomic target as native session metadata", () => {
+    const persistSessionExecutionTarget = vi.fn();
+    const { result } = renderSection({
+      activeEngine: "codex",
+      activeThreadId: "shared:session-1",
+      activeWorkspaceId: "workspace-1",
+      models: [makeModel("doubao-entry", { model: "doubao-runtime" })],
+      persistSessionExecutionTarget,
+    });
+
+    act(() => {
+      result.current.handleSelectModel("doubao-entry");
+    });
+
+    expect(persistSessionExecutionTarget).not.toHaveBeenCalled();
+  });
+
   it("preserves the managed Kimi Doubao alias outside the local CLI catalog", () => {
     const composerSelectionResolverRef: { current: unknown } = { current: null };
     const { result } = renderSection({
@@ -425,6 +526,26 @@ describe("useAppShellComposerModelSection handleSelectModel", () => {
       model: "豆包",
       effort: null,
     });
+  });
+
+  it("uses the active thread engine when the global engine is still GPT during cold start", () => {
+    const { result } = renderSection({
+      activeEngine: "codex",
+      activeThreadEngine: "kimi",
+      activeThreadId: "kimi:session-doubao",
+      activeProviderProfileId: "doge-token-matrix",
+      engineModelsAsOptions: kimiModels,
+      models: [makeModel("gpt-5.6-sol", { isDefault: true })],
+      selectedComposerSelection: {
+        modelId: "豆包",
+        effort: null,
+      },
+    });
+
+    expect(result.current.effectiveSelectedModelId).toBe("豆包");
+    expect(result.current.effectiveModels.map((model) => model.id)).toEqual(
+      kimiModels.map((model) => model.id),
+    );
   });
 
   it("keeps a Native custom Codex model capability-neutral", () => {

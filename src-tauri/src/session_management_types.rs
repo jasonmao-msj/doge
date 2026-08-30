@@ -127,6 +127,12 @@ pub(crate) struct ProviderContinuationProjection {
     pub(crate) lineage_kind: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) lineage_depth: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) model_catalog_entry_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) model: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) reasoning_effort: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -154,6 +160,9 @@ impl From<ProviderContinuationMetadata> for ProviderContinuationProjection {
             lineage_parent_session_id: Some(metadata.lineage_parent_session_id),
             lineage_kind: Some(metadata.lineage_kind),
             lineage_depth: Some(metadata.lineage_depth),
+            model_catalog_entry_id: None,
+            model: None,
+            reasoning_effort: None,
         }
     }
 }
@@ -165,6 +174,15 @@ pub(crate) struct EngineProviderBinding {
     pub(crate) provider_profile_source: String,
     pub(crate) provider_profile_name: String,
     pub(crate) provider_availability: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct SessionExecutionTarget {
+    pub(crate) model_catalog_entry_id: String,
+    pub(crate) model: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) reasoning_effort: Option<String>,
 }
 
 pub(crate) type CodexProviderBinding = EngineProviderBinding;
@@ -400,6 +418,8 @@ pub(crate) struct WorkspaceSessionCatalogMetadata {
     pub(crate) codex_provider_binding_by_session_id: HashMap<String, CodexProviderBinding>,
     #[serde(default)]
     pub(crate) engine_provider_binding_by_session_key: HashMap<String, EngineProviderBinding>,
+    #[serde(default)]
+    pub(crate) execution_target_by_session_key: HashMap<String, SessionExecutionTarget>,
     #[serde(default)]
     pub(crate) provider_continuation_by_session_key: HashMap<String, ProviderContinuationMetadata>,
 }

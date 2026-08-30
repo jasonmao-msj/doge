@@ -113,6 +113,10 @@ React Component
     family 不能替代 `Responses` / `Chat Completions`，`/v1/models` row 也不能替代 endpoint
     callable evidence。跨 engine 共享 model 前，先列 `engine -> endpoint protocol` matrix，再用
     explicit upstream metadata 或 exact endpoint/CLI terminal 证明；缺证据按 endpoint fail closed。
+36. Cold-start repair mutation 必须等 authoritative hydration 完成。`null` / partial / loading
+    不能先经过 catalog/default resolver 再被当成“旧值修复”持久化；generation guard 只保护
+    已有 mutation 的写序，不能证明 mutation 来源合法。双存储并存时必须显式定义 read
+    authority，并保证 read path 不反向写回。
 
 ## 常见失败模式
 

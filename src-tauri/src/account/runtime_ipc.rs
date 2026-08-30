@@ -250,6 +250,7 @@ pub(crate) async fn account_engine_v1_toolchain(
 #[tauri::command]
 pub(crate) async fn account_engine_v1_activate(
     engine_id: String,
+    app: AppHandle,
     state: State<'_, crate::state::AppState>,
     window: tauri::Window,
 ) -> Result<(), String> {
@@ -259,12 +260,37 @@ pub(crate) async fn account_engine_v1_activate(
         "claude-code" => ("claude-code", crate::engine::EngineType::Claude),
         _ => return Err("Account engine activation was rejected".to_string()),
     };
-    let Some(binary) = state
+    let binary = state
         .account_runtime
         .managed_engine_binary_for_launch(managed_engine_id)
-        .await
-    else {
-        return Err("Account engine activation requires verified toolchain".to_string());
+        .await;
+    let binary = if let Some(binary) = binary {
+        binary
+    } else {
+        let settings = state.app_settings.lock().await.clone();
+        let resource_dir = app.path().resource_dir().map_err(|_| {
+            "Account engine activation could not resolve resource directory".to_string()
+        })?;
+        let resolution =
+            super::toolchain::resolve(&resource_dir, managed_engine_id, None, &settings)
+                .await
+                .map_err(|error| {
+                    format!(
+                        "Account engine activation toolchain resolve failed: {}",
+                        error.code()
+                    )
+                })?;
+        let Some(selected_binary) = resolution.selected_binary else {
+            return Err(
+                "Account engine activation requires a selected verified toolchain".to_string(),
+            );
+        };
+        let binary = selected_binary.to_string_lossy().to_string();
+        state
+            .account_runtime
+            .set_managed_engine_binary_for_launch(managed_engine_id, binary.clone())
+            .await;
+        binary
     };
 
     let verified = state

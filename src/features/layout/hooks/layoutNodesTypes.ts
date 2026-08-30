@@ -23,6 +23,7 @@ import type {
 } from "../../threads/hooks/useReviewPrompt";
 import type { WorkspaceLaunchScriptsState } from "../../app/hooks/useWorkspaceLaunchScripts";
 import type { SharedSessionSupportedEngine } from "../../shared-session/utils/sharedSessionEngines";
+import type { ExecutionTarget } from "../../shared-session/target/types";
 import type { HistoryLoadingProgress } from "@/conversation-presentation/historyLoadingProgress";
 import type { OpenAppMenuExtraAction } from "../../app/components/OpenAppMenu";
 import type {
@@ -701,8 +702,10 @@ export type LayoutNodesFlatOptions = {
   models: ModelOption[];
   providerModelCatalogs?: Partial<Record<EngineType, ModelOption[]>>;
   selectedModelId: string | null;
+  selectedModelRuntime?: string | null;
   projectMapDatasetController?: ProjectMapDatasetController;
   onSelectModel: (id: string | null) => void;
+  onPersistNativeSessionTarget?: (target: ExecutionTarget) => void;
   reasoningOptions: string[];
   selectedEffort: string | null;
   onSelectEffort: (effort: string | null) => void;
@@ -1197,8 +1200,10 @@ export type ComposerLayoutNodesOptions = Pick<
   | "models"
   | "providerModelCatalogs"
   | "selectedModelId"
+  | "selectedModelRuntime"
   | "projectMapDatasetController"
   | "onSelectModel"
+  | "onPersistNativeSessionTarget"
   | "intentCanvasOpenRequest"
   | "onOpenIntentCanvas"
   | "onIntentCanvasOpenRequestConsumed"

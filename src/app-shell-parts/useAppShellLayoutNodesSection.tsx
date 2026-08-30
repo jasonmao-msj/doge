@@ -77,6 +77,7 @@ import {
   type AppShellDomainContexts,
 } from "./appShellDomainContexts";
 import { hydrateProviderContinuationTarget } from "./providerContinuationTargetHydration";
+import { resolveThreadEngine } from "./selectedComposerSession";
 
 const accountConvenienceV1Enabled = isAccountConvenienceV1Enabled();
 
@@ -323,6 +324,7 @@ export function useAppShellLayoutNodesSection(
     effectiveReasoningSupported,
     effectiveSelectedModelId,
     providerModelCatalogs,
+    resolvedModel,
     ensureWorkspaceThreadListLoaded,
     errorToasts,
     exitDiffView,
@@ -448,6 +450,7 @@ export function useAppShellLayoutNodesSection(
     handleSelectDiffForPanel,
     handleSelectHomeWorkspace,
     handleSelectModel,
+    persistNativeSessionTarget,
     handleSelectOpenAppId,
     handleSelectOpenCodeAgent,
     handleSelectOpenCodeVariant,
@@ -1403,8 +1406,12 @@ export function useAppShellLayoutNodesSection(
       const thread = threads.find(
         (threadEntry: { id: string }) => threadEntry.id === threadId,
       );
-      if (thread?.engineSource) {
-        setActiveEngine(thread.engineSource);
+      const threadEngine =
+        thread?.engineSource ??
+        thread?.selectedEngine ??
+        resolveThreadEngine(threadId);
+      if (threadEngine) {
+        setActiveEngine(threadEngine);
       }
     },
   );
@@ -2348,8 +2355,10 @@ export function useAppShellLayoutNodesSection(
       models: effectiveModels,
       providerModelCatalogs,
       selectedModelId: effectiveSelectedModelId,
+      selectedModelRuntime: resolvedModel,
       projectMapDatasetController,
       onSelectModel: handleSelectModel,
+      onPersistNativeSessionTarget: persistNativeSessionTarget,
       intentCanvasOpenRequest,
       onOpenIntentCanvas: handleOpenIntentCanvas,
       onIntentCanvasOpenRequestConsumed: handleIntentCanvasOpenRequestConsumed,

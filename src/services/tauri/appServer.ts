@@ -280,6 +280,7 @@ export async function engineSendMessage(
     text: string;
     engine?: EngineType | null;
     model?: string | null;
+    modelCatalogEntryId?: string | null;
     effort?: string | null;
     disableThinking?: boolean | null;
     images?: string[] | null;
@@ -312,6 +313,7 @@ export async function engineSendMessage(
       text: params.text,
       engine: params.engine ?? null,
       model: params.model ?? null,
+      modelCatalogEntryId: params.modelCatalogEntryId ?? null,
       effort: params.effort ?? null,
       disableThinking: params.disableThinking ?? false,
       images: params.images ?? null,

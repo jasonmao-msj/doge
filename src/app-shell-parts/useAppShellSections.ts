@@ -25,6 +25,7 @@ import {
 import { openOrFocusClientDocumentationWindow } from "../features/client-documentation/clientDocumentationWindow";
 import type { WorkspaceHomeDeleteResult } from "../features/workspaces/components/WorkspaceHome";
 import type { EngineType, WorkspaceInfo } from "../types";
+import { resolveThreadEngine } from "./selectedComposerSession";
 import { isRewindSupportedThreadId } from "./useAppShellSections.kanbanHelpers";
 import {
   getThreadSelectDiffCleanupAction,
@@ -268,8 +269,12 @@ export function useAppShellSections(input: UseAppShellSectionsInput) {
       setActiveThreadId(threadId, workspaceId);
       const threads = threadsByWorkspace[workspaceId] ?? [];
       const thread = threads.find((entry: any) => entry.id === threadId);
-      if (thread?.engineSource) {
-        setActiveEngine(thread.engineSource);
+      const threadEngine =
+        thread?.engineSource ??
+        thread?.selectedEngine ??
+        resolveThreadEngine(threadId);
+      if (threadEngine) {
+        setActiveEngine(threadEngine);
       }
     },
     [
