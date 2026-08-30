@@ -449,3 +449,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: 归档模型目标恢复 OpenSpec
+
+**Date**: 2026-08-30
+**Task**: 归档模型目标恢复 OpenSpec
+**Branch**: `codex/fix-managed-session-target-cold-start`
+
+### Summary
+
+归档 fix-managed-session-target-cold-start，向 codex-provider-scoped-session-launch、engine-per-session-provider-binding 与 shared-execution-target 同步 3 条 requirement，并校准 OpenSpec active/archive/spec 索引。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7d71949cc` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

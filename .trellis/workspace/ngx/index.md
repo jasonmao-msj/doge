@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 14
+- **Total Sessions**: 15
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~444 | Active |
+| `journal-1.md` | ~484 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 15 | 2026-08-30 | 归档模型目标恢复 OpenSpec | `7d71949cc` | `codex/fix-managed-session-target-cold-start` |
 | 14 | 2026-08-30 | 修复重启后模型目标恢复 | `712792f47` | `codex/fix-managed-session-target-cold-start` |
 | 12 | 2026-08-28 | OpenSpec 归档与 Kimi bundle PR | `14930420f` | `codex/archive-kimi-windows-shell-runtime` |
 | 13 | 2026-08-28 | 修复工作区会话启动加载 | `9542e4e45` | `codex/fix-workspace-session-startup-hydration` |
