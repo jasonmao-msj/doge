@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 68
-- **Last Active**: 2026-08-28
+- **Total Sessions**: 76
+- **Last Active**: 2026-08-29
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~337 | Active |
+| `journal-2.md` | ~602 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,14 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 76 | 2026-08-29 | 修复 v0.1.11 macOS 发布阻断 | `a47427281`, `9e783eecb` | `codex/fix-macos-release-openssl` |
+| 75 | 2026-08-29 | 校正 v0.1.11 发布日期 | `54599e34a` | `codex/release-v0.1.11` |
+| 74 | 2026-08-29 | 准备 v0.1.11 Release | `856771334` | `codex/release-v0.1.11` |
+| 73 | 2026-08-28 | 精选同步上游稳定性修复 | `699710928` | `codex/sync-upstream-stability-2026-08` |
+| 72 | 2026-08-28 | 完成并收口 doge v0.1.10 Release | `72e016a81` | `codex/close-release-v0.1.10` |
+| 71 | 2026-08-28 | 校准 bounded retry 到 full batched CI | `3436694b3` | `codex/extend-vitest-retry-to-ci` |
+| 70 | 2026-08-28 | 稳定 Unix probe descendant reaping regression | `510d267b2` | `codex/stabilize-probe-process-group-test` |
+| 69 | 2026-08-28 | 稳定 Windows Vitest timing gate | `558d1ac8d` | `codex/stabilize-windows-vitest-timeouts` |
 | 68 | 2026-08-28 | 准备 doge v0.1.10 Release | `0abd0698e` | `codex/release-v0.1.10` |
 | 67 | 2026-08-28 | 统一 Release 变更日志契约 | `82615a873` | `codex/enforce-release-changelog-gate` |
 | 66 | 2026-08-27 | 修复 brand 版本契约测试 | `aaec1fe5b` | `codex/fix-brand-version-contract` |

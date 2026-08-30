@@ -4,6 +4,7 @@ import { claudeRealtimeAdapter } from "../adapters/claudeRealtimeAdapter";
 import { getRealtimeAdapterByEngine } from "../adapters/realtimeAdapterRegistry";
 import {
   CANONICAL_REALTIME_FIXTURES,
+  isSalvageableTerminalAssistantComplete,
   LEGACY_REALTIME_ALIAS_FIXTURES,
   REALTIME_CONTRACT_MATRIX,
 } from "./realtimeEventContract";
@@ -54,6 +55,44 @@ describe("realtime event contract", () => {
       }),
     );
     expect(turnCompleted).not.toHaveProperty("normalizedOperation");
+  });
+
+  it("only treats a non-empty assistant completion as terminal content salvage", () => {
+    const completedFixture = CANONICAL_REALTIME_FIXTURES.find(
+      (fixture) => fixture.semantic === "assistantItemCompleted",
+    );
+    if (!completedFixture) {
+      throw new Error("Missing assistant completion fixture");
+    }
+    const completed = getRealtimeAdapterByEngine(completedFixture.engine).mapEvent({
+      workspaceId: completedFixture.event.workspace_id,
+      message: completedFixture.event.message,
+    });
+    expect(completed).toBeTruthy();
+    if (!completed || completed.item.kind !== "message") {
+      throw new Error("Expected assistant message completion fixture");
+    }
+    expect(isSalvageableTerminalAssistantComplete(completed)).toBe(true);
+
+    expect(
+      isSalvageableTerminalAssistantComplete({
+        ...completed,
+        operation: "appendAgentMessageDelta",
+        delta: "late",
+      }),
+    ).toBe(false);
+    expect(
+      isSalvageableTerminalAssistantComplete({
+        ...completed,
+        item: { ...completed.item, text: "   " },
+      }),
+    ).toBe(false);
+    expect(
+      isSalvageableTerminalAssistantComplete({
+        ...completed,
+        turnId: null,
+      }),
+    ).toBe(false);
   });
 
   it("maps canonical app-server payloads that enter normalized adapters", () => {

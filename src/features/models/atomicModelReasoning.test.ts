@@ -101,6 +101,24 @@ describe("atomicModelReasoning", () => {
     );
   });
 
+  it.each(["provider-custom", "provider-config"])(
+    "enriches user-managed %s Codex rows but keeps runtime rows neutral",
+    (source) => {
+      const enriched = enrichModelInfoWithAtomicReasoning("codex", {
+        id: "relay-only",
+        model: "relay-only",
+        source,
+      });
+      expect(enriched.defaultReasoningEffort).toBe("medium");
+      expect(resolveAtomicReasoningOptions("codex", enriched)).toEqual([
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+      ]);
+    },
+  );
+
   it("keeps unknown runtime Codex models capability-neutral", () => {
     const model = {
       id: "some-runtime-only-model",

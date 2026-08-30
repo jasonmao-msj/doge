@@ -123,3 +123,24 @@ tags，且 `v0.1.4` 指向非 doge release commit。仅检查 GitHub Release 是
 决策：不 destructive retag；doge 选择第一个未占用的 `v0.1.10`。Signed preflight 必须从 canonical
 version构造 exact ref，并在任何 platform build 前通过 remote tag lookup证明不存在；artifact-only lane
 仍允许对任意 ref 做内部构建。
+
+### Batched CI Timing Calibration
+
+`v0.1.10` merge 后的 main CI 三次分别在 `SkillsPage`、`ClaudeSettingsJsonDialog`、`HomeChat`
+发生同型 5000ms Windows timeout；Windows bounded retry合入后，Ubuntu `test-js` 又在
+`ClaudeSettingsJsonDialog` 发生相同 timeout。失败跨 feature与 runner，Rust/build/release gates均通过；
+证据指向 full batched jsdom CI 的瞬时 scheduling jitter，而非单一 feature regression。
+
+决策：保留 5000ms per-test timeout，`test-js` 与 `test-windows` full batched lanes允许 failed test
+retry 1 次；本地/default callers retry=0。这样 transient scheduling有一次恢复机会，deterministic hang仍会在第二次 5000ms 后失败，
+不会通过把全局 timeout扩到 15s 来降低检测灵敏度。
+
+### Unix Probe Descendant Reaping Calibration
+
+Windows timing修复合入后的 main CI 再次暴露既有 Rust regression：probe process group收到
+`SIGKILL` 且 group leader已被 `wait()` 回收后，orphan descendant可能短暂保持 zombie，直到 init异步
+reap；此窗口内 `kill(pid, 0)` 仍返回成功。原测试在 `run_cli_probe()` 返回后立刻要求 `ESRCH`，把
+reaping latency误判为 cleanup失败。
+
+决策：不改变 production timeout/kill path。Regression test用 `DETECTION_CLEANUP_TIMEOUT` 做 bounded
+poll，最终必须观察到 `ESRCH`；若 descendant仍 live或 zombie超过 cleanup budget，测试继续失败。

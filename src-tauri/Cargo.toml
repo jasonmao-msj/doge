@@ -1,6 +1,6 @@
 [package]
 name = "doge"
-version = "0.1.10"
+version = "0.1.11"
 description = "doge — an AI Shiba life and work assistant"
 authors = ["jasonmao-msj"]
 edition = "2021"
@@ -89,6 +89,7 @@ whisper-rs = "0.12"
 
 [target."cfg(target_os = \"windows\")".dependencies]
 windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage_FileSystem", "Win32_UI_WindowsAndMessaging"] }
+webview2-com = "0.38"
 
 [target."cfg(target_os = \"macos\")".dependencies]
 objc2 = "0.6"

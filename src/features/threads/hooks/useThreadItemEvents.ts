@@ -9,6 +9,7 @@ import {
   type RealtimeBatcherFlush,
   type RealtimeBatcherFlushReason,
 } from "../contracts/realtimeEventBatcher";
+import { isSalvageableTerminalAssistantComplete } from "../contracts/realtimeEventContract";
 import { asString } from "../utils/threadNormalize";
 import type { ConversationItem, DebugEntry } from "../../../types";
 import type { ThreadAction } from "./useThreadsReducer";
@@ -767,6 +768,7 @@ export function useThreadItemEvents({
         ensuredThreads?: Set<string>;
         markedProcessingThreads?: Set<string>;
         useTransitionForDispatch?: boolean;
+        allowTerminalCompleteSalvage?: boolean;
       } = {},
     ) => {
       const {
@@ -794,7 +796,13 @@ export function useThreadItemEvents({
         markedProcessingThreads?.add(normalizedEvent.threadId);
       };
       const run = (runOptions: { skipProcessingMark?: boolean } = {}) => {
-        if (isEventTurnTerminal()) {
+        if (
+          isEventTurnTerminal() &&
+          !(
+            options.allowTerminalCompleteSalvage === true &&
+            isSalvageableTerminalAssistantComplete(normalizedEvent)
+          )
+        ) {
           droppedLateRealtimeEventCountRef.current += 1;
           return;
         }
@@ -918,11 +926,14 @@ export function useThreadItemEvents({
         skipMessageActivity?: boolean;
       } = {},
     ) => {
+      const allowTerminalCompleteSalvage =
+        isSalvageableTerminalAssistantComplete(operation.event);
       if (
         isRealtimeTurnTerminal(
           operation.event.threadId,
           extractTurnIdFromNormalizedRealtimeEvent(operation.event),
-        )
+        ) &&
+        !allowTerminalCompleteSalvage
       ) {
         return;
       }
@@ -930,6 +941,7 @@ export function useThreadItemEvents({
         ensuredThreads: options.ensuredThreads,
         markedProcessingThreads: options.markedProcessingThreads,
         useTransitionForDispatch: options.useTransitionForDispatch,
+        allowTerminalCompleteSalvage,
       });
       runNormalizedRealtimeEventSideEffects(operation.event, {
         skipMessageActivity: options.skipMessageActivity,
@@ -1183,7 +1195,34 @@ export function useThreadItemEvents({
   const flushPendingRealtimeEvents = useCallback(() => {
     flushRealtimeDeltaOps();
     flushNormalizedRealtimeOps();
-  }, [flushNormalizedRealtimeOps, flushRealtimeDeltaOps]);
+    const terminalFlush = normalizedRealtimeBatcherRef.current.flush("terminal");
+    if (!terminalFlush || terminalFlush.events.length === 0) {
+      return;
+    }
+    const ensuredThreads = new Set<string>();
+    const markedProcessingThreads = new Set<string>();
+    for (const event of terminalFlush.events) {
+      applyNormalizedRealtimeEventNow(
+        {
+          event,
+          hasCustomName: Boolean(getCustomName(event.workspaceId, event.threadId)),
+        },
+        {
+          ensuredThreads,
+          markedProcessingThreads,
+          useTransitionForDispatch: false,
+          skipMessageActivity: true,
+        },
+      );
+    }
+    safeMessageActivity();
+  }, [
+    applyNormalizedRealtimeEventNow,
+    flushNormalizedRealtimeOps,
+    flushRealtimeDeltaOps,
+    getCustomName,
+    safeMessageActivity,
+  ]);
 
 
   // \u00a76.3 / \u00a76.4: dispatch \u8c03\u5ea6\u4e0e\u4eea\u8868\u62ee\u53d6

@@ -359,12 +359,14 @@ where
         Output = Result<Arc<crate::backend::app_server::WorkspaceSession>, String>,
     >,
 {
-    crate::shared::workspaces_core::restart_all_connected_sessions_core(
-        workspaces,
-        sessions,
-        app_settings,
-        runtime_manager,
-        spawn_session,
+    Box::pin(
+        crate::shared::workspaces_core::restart_all_connected_sessions_core(
+            workspaces,
+            sessions,
+            app_settings,
+            runtime_manager,
+            spawn_session,
+        ),
     )
     .await
 }

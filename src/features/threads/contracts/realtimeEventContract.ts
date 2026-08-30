@@ -102,6 +102,28 @@ export const REALTIME_CONTRACT_MATRIX: readonly RealtimeContractMatrixEntry[] = 
   },
 ] as const;
 
+/**
+ * Terminal quarantine may race with a complete assistant snapshot carried by
+ * the normalized item channel. Only that full, non-empty content snapshot is
+ * salvageable after terminal; incremental/tool/reasoning events remain late.
+ *
+ * This is deliberately content-only evidence. Callers MUST NOT use it to
+ * revive processing or create another terminal settlement.
+ *
+ * Semantic port of upstream `0d8f2426c`.
+ */
+export function isSalvageableTerminalAssistantComplete(
+  event: NormalizedThreadEvent,
+): boolean {
+  return (
+    event.operation === "completeAgentMessage" &&
+    Boolean(event.turnId?.trim()) &&
+    event.item.kind === "message" &&
+    event.item.role === "assistant" &&
+    event.item.text.trim().length > 0
+  );
+}
+
 type CanonicalRealtimeFixture = {
   semantic: RealtimeContractSemantic;
   engine: ConversationEngine;

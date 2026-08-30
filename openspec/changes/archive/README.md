@@ -2,7 +2,7 @@
 
 本页为 `mossx` 已归档 OpenSpec proposal 的完整可点击索引。目录名中的日期是 archive date，不代表 proposal 首次创建时间。
 
-- Indexed proposals: `885`
+- Indexed proposals: `886`
 - Updated At: `2026-08-30`
 - Source of truth: `openspec/changes/archive/<archive-date>-<change-id>/proposal.md`
 - Back to current changes: [`../README.md`](../README.md)
@@ -16,6 +16,7 @@
 
 ### 2026-08-28
 
+- [`2026-08-28-enforce-release-changelog-gate`](2026-08-28-enforce-release-changelog-gate/proposal.md) — `CHANGELOG.md` 统一 App/updater/GitHub Release；tag collision与 bounded CI gates已通过 `v0.1.10` signed Release实证
 - [`2026-08-28-bundle-kimi-windows-shell-runtime`](2026-08-28-bundle-kimi-windows-shell-runtime/proposal.md) — user-authorized waiver archive；已同步 `kimi-engine-runtime`；保留 discovery、跨平台实机、installer/signing 与 L4 release 未完成任务，不代表完整发布验收
 - [`2026-08-28-add-collab-first-stage-main-canvas-context`](2026-08-28-add-collab-first-stage-main-canvas-context/proposal.md) — completed change，已同步 `collab-first-stage-main-canvas-context` 与 `multi-agent-orchestration`
 - [`2026-08-28-add-multi-agent-inspector-inject-context`](2026-08-28-add-multi-agent-inspector-inject-context/proposal.md) — completed change，已同步 `multi-agent-inspector-inject-context` 与 `multi-agent-orchestration`

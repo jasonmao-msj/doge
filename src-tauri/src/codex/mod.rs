@@ -19,6 +19,7 @@ mod installer;
 pub(crate) mod launch_profile;
 mod mcp_config;
 mod model_selection;
+pub(crate) mod provider_env;
 mod provider_fork;
 pub(crate) mod provider_profile;
 pub(crate) mod rewind;
@@ -437,7 +438,7 @@ pub(crate) async fn spawn_workspace_session_with_launch_options(
         app_settings_snapshot.codex_auto_compaction_enabled,
     );
     let event_sink = build_event_sink(app_handle);
-    spawn_workspace_session_inner_with_settings(
+    Box::pin(spawn_workspace_session_inner_with_settings(
         entry,
         default_codex_bin,
         codex_args,
@@ -450,7 +451,7 @@ pub(crate) async fn spawn_workspace_session_with_launch_options(
         provider_runtime_key,
         app_settings_snapshot,
         launch_env,
-    )
+    ))
     .await
 }
 

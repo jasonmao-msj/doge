@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { EngineType, ModelOption } from "../types";
 import {
   CLAUDE_REASONING_OPTIONS,
+  enrichScopedCodexReasoningMetadata,
   getEffectiveReasoningOptions,
   getEffectiveModels,
   getEffectiveSelectedEffort,
@@ -40,6 +41,43 @@ describe("modelSelection", () => {
     createModel("engine-default", { isDefault: true }),
     createModel("engine-alt"),
   ];
+
+  it("fills provider-config Codex reasoning without overriding runtime facts", () => {
+    const scoped = [
+      createModel("relay-only", {
+        source: "provider-config",
+      }),
+      createModel("known", {
+        model: "gpt-5.6-sol",
+        source: "provider-config",
+        supportedReasoningEfforts: [
+          { reasoningEffort: "high", description: "Provider high" },
+        ],
+        defaultReasoningEffort: "high",
+      }),
+    ];
+    const enriched = enrichScopedCodexReasoningMetadata(scoped, [
+      createModel("gpt-5.6-sol", {
+        supportedReasoningEfforts: [
+          { reasoningEffort: "low", description: "Low" },
+          { reasoningEffort: "ultra", description: "Ultra" },
+        ],
+        defaultReasoningEffort: "low",
+      }),
+    ]);
+
+    expect(enriched[0]?.supportedReasoningEfforts.map((item) => item.reasoningEffort)).toEqual([
+      "low",
+      "medium",
+      "high",
+      "xhigh",
+    ]);
+    expect(enriched[0]?.defaultReasoningEffort).toBe("medium");
+    expect(enriched[1]?.supportedReasoningEfforts).toEqual(
+      scoped[1]?.supportedReasoningEfforts,
+    );
+    expect(enriched[1]?.defaultReasoningEffort).toBe("high");
+  });
 
   it("uses codex models directly when codex is active", () => {
     expect(getEffectiveModels("codex", codexModels, engineModels)).toEqual(codexModels);

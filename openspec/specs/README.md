@@ -591,4 +591,3 @@
 - [workspace-sidebar-visual-harmony](./workspace-sidebar-visual-harmony/spec.md)
 - [workspace-topbar-session-tabs](./workspace-topbar-session-tabs/spec.md)
 - [workspaces-corruption-recovery](./workspaces-corruption-recovery/spec.md)
-

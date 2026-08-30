@@ -335,3 +335,268 @@ Semantic merge PR #36 的 create-session engine routing：保留 frozen engineOv
 ### Next Steps
 
 - None - task complete
+
+
+## Session 69: 稳定 Windows Vitest timing gate
+
+**Date**: 2026-08-28
+**Task**: 稳定 Windows Vitest timing gate
+**Branch**: `codex/stabilize-windows-vitest-timeouts`
+
+### Summary
+
+main CI 三次在三个无关 jsdom tests发生 5000ms timeout；保留原 timeout，仅为 Windows batched lane增加一次 bounded Vitest retry，默认/其他 callers保持 retry 0。Parser、args、workflow contract、三个失败 suites、typecheck与 OpenSpec strict通过。任务保持 active，待 PR 合入、green main 与 v0.1.10 Release。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `558d1ac8d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 70: 稳定 Unix probe descendant reaping regression
+
+**Date**: 2026-08-28
+**Task**: 稳定 Unix probe descendant reaping regression
+**Branch**: `codex/stabilize-probe-process-group-test`
+
+### Summary
+
+修复 hanging probe test对 SIGKILL 后 orphan zombie的 immediate ESRCH错误假设；在既有 2s cleanup budget内 bounded poll最终 ESRCH，production probe/kill/deadline不变。Focused Rust regression连续 10/10、cargo check --lib、rustfmt与 release/docs/OpenSpec gates通过。任务保持 active，待 PR 合入、green main 和 v0.1.10 Release。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `510d267b2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 71: 校准 bounded retry 到 full batched CI
+
+**Date**: 2026-08-28
+**Task**: 校准 bounded retry 到 full batched CI
+**Branch**: `codex/extend-vitest-retry-to-ci`
+
+### Summary
+
+Windows gate绿后 Ubuntu test-js在相同 ClaudeSettings suite发生 5s timeout，证明 jitter跨 runner。将 VITEST_RETRY=1覆盖 test-js/test-windows，保留本地/default 0与原 timeout；19条 harness/workflow tests、focused suite、typecheck与 OpenSpec strict通过。任务保持 active，待 PR 合入、green main 与 Release。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3436694b3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 72: 完成并收口 doge v0.1.10 Release
+
+**Date**: 2026-08-28
+**Task**: 完成并收口 doge v0.1.10 Release
+**Branch**: `codex/close-release-v0.1.10`
+
+### Summary
+
+v0.1.10 signed Release 33173561758成功；tag精确指向 cdd7ecb29，macOS/Linux/Windows/Web assets与latest.json完整，四平台 signatures和双语notes一致。同步 doge-release-updater main spec，归档 enforce-release-changelog-gate与release Trellis task，记录CI稳定化证据。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `72e016a81` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 73: 精选同步上游稳定性修复
+
+**Date**: 2026-08-28
+**Task**: 精选同步上游稳定性修复
+**Branch**: `codex/sync-upstream-stability-2026-08`
+
+### Summary
+
+完成 upstream/main@cd362f8cf 相对 doge main 的 476 提交 capability 审计与 OpenSpec explore/propose/apply；语义移植 terminal causal drain/late final salvage、tool output retained budget、Codex context/catalog/reasoning/env facts、Windows stack/F5 guard、Markdown Windows 文件链接、Git index-to-worktree discard 与 build artifact fail-closed。L3 验证覆盖 335 Vitest、14 Rust focused tests、typecheck/ESLint/host bins/runtime/model/branding/docs gates；明确延期网络盘 blanket canonicalize、Session Index/AppShell/Markdown 架构波次与 timeout 猜终态。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `699710928` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 74: 准备 v0.1.11 Release
+
+**Date**: 2026-08-29
+**Task**: 准备 v0.1.11 Release
+**Branch**: `codex/release-v0.1.11`
+
+### Summary
+
+同步七个 canonical version facts，补充 v0.1.11 双语 CHANGELOG，并通过全部 release preparation gate。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `856771334` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 75: 校正 v0.1.11 发布日期
+
+**Date**: 2026-08-29
+**Task**: 校正 v0.1.11 发布日期
+**Branch**: `codex/release-v0.1.11`
+
+### Summary
+
+按 America/Los_Angeles 当前日期将 v0.1.11 CHANGELOG 日期校正为 2026年8月29日，并重跑 release:check。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `54599e34a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 76: 修复 v0.1.11 macOS 发布阻断
+
+**Date**: 2026-08-29
+**Task**: 修复 v0.1.11 macOS 发布阻断
+**Branch**: `codex/fix-macos-release-openssl`
+
+### Summary
+
+补齐 macOS OpenSSL fixup 的 canonical MacOS directory owner，容忍 optional dylib empty match，新增真实 shell fixture regression，回写 OpenSpec/Trellis contract 并归档 upstream sync task。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a47427281` | (see git log) |
+| `9e783eecb` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

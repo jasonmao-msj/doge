@@ -1,6 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { parseVitestBatchConfig, testBatchedInternals } from "./test-batched.mjs";
+
+function workflowJob(workflow, jobName) {
+  const header = `  ${jobName}:\n`;
+  const start = workflow.indexOf(header);
+  assert.notEqual(start, -1, `missing workflow job: ${jobName}`);
+  const remainder = workflow.slice(start + header.length);
+  const nextJob = remainder.search(/^  [a-zA-Z_][a-zA-Z0-9_]*:\n/m);
+  return nextJob === -1 ? remainder : remainder.slice(0, nextJob);
+}
 
 test("enables heavy integration suites via explicit CLI flag", () => {
   const config = parseVitestBatchConfig(["--include-heavy"], {
@@ -10,6 +20,7 @@ test("enables heavy integration suites via explicit CLI flag", () => {
   assert.deepEqual(config, {
     batchSize: 6,
     includeHeavyIntegration: true,
+    retry: 0,
   });
 });
 
@@ -17,11 +28,13 @@ test("keeps env-based heavy integration fallback for CI callers", () => {
   const config = parseVitestBatchConfig([], {
     VITEST_BATCH_SIZE: "4",
     VITEST_INCLUDE_HEAVY: "1",
+    VITEST_RETRY: "1",
   });
 
   assert.deepEqual(config, {
     batchSize: 4,
     includeHeavyIntegration: true,
+    retry: 1,
   });
 });
 
@@ -41,6 +54,39 @@ test("rejects partial and fractional batch sizes", () => {
     () => parseVitestBatchConfig([], { VITEST_BATCH_SIZE: "1.5" }),
     /Invalid VITEST_BATCH_SIZE: 1.5/,
   );
+});
+
+test("rejects invalid or unbounded test retry values", () => {
+  for (const retry of ["-1", "1.5", "4", "abc"]) {
+    assert.throws(
+      () => parseVitestBatchConfig([], { VITEST_BATCH_SIZE: "4", VITEST_RETRY: retry }),
+      new RegExp(`Invalid VITEST_RETRY: ${retry.replace(".", "\\.")}`),
+    );
+  }
+});
+
+test("adds Vitest retry arguments only when explicitly enabled", () => {
+  assert.deepEqual(testBatchedInternals.vitestRetryArgs(0), []);
+  assert.deepEqual(testBatchedInternals.vitestRetryArgs(1), ["--retry", "1"]);
+});
+
+test("enables one retry only for the full batched CI lanes", () => {
+  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+  );
+  const jsJob = workflowJob(workflow, "test-js");
+  const windowsJob = workflowJob(workflow, "test-windows");
+  const withoutBatchedJobs = workflow
+    .replace(`  test-js:\n${jsJob}`, "")
+    .replace(`  test-windows:\n${windowsJob}`, "");
+
+  assert.match(jsJob, /VITEST_RETRY: "1"/);
+  assert.match(jsJob, /run: npm run test/);
+  assert.equal(packageJson.scripts.test, "node scripts/test-batched.mjs");
+  assert.match(windowsJob, /VITEST_RETRY: "1"/);
+  assert.match(windowsJob, /run: node scripts\/test-batched\.mjs/);
+  assert.doesNotMatch(withoutBatchedJobs, /VITEST_RETRY/);
 });
 
 test("normalizes ripgrep file output across line endings", () => {

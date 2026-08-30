@@ -15,11 +15,11 @@ use crate::git_utils::{
     blob_to_base64, build_git_file_blame, build_image_commit_diff, checkout_branch,
     commit_to_entry, diff_patch_to_string, diff_stats_for_identity, find_git_diff_renames,
     git_action_paths_for_file as action_paths_for_file, git_diff_paths_for_file,
-    git_status_path_identity, image_mime_type,
+    git_restore_unstaged_args, git_status_path_identity, image_mime_type,
     list_git_repository_summaries as scan_git_repository_summaries,
     list_git_roots as scan_git_roots, parse_github_repo, path_has_git_repository_marker,
     read_image_base64, resolve_git_root, resolve_git_root_for_scope, GitStatusLayer,
-    GitStatusPathIdentity,
+    GitStatusPathIdentity, GIT_RESTORE_UNSTAGED_PREFIX,
 };
 use crate::state::AppState;
 use crate::types::{
@@ -2396,6 +2396,36 @@ mod tests {
         assert!(unstage_index.get_path(Path::new("a.txt"), 0).is_some());
         assert!(unstage_index.get_path(Path::new("b.txt"), 0).is_none());
         assert!(unstage_index.get_path(Path::new("c.txt"), 0).is_none());
+    }
+
+    #[tokio::test]
+    async fn unstaged_restore_keeps_the_staged_index_content() {
+        let (root, _repo) = create_temp_repo();
+        fs::write(root.join("mixed.txt"), "head\n").expect("write head content");
+        commit_all_with_message(&root, "init mixed fixture").await;
+
+        fs::write(root.join("mixed.txt"), "staged\n").expect("write staged content");
+        run_git_command(&root, &["add", "--", "mixed.txt"])
+            .await
+            .expect("stage mixed file");
+        fs::write(root.join("mixed.txt"), "unstaged\n").expect("write unstaged content");
+
+        let restore_args = git_restore_unstaged_args("mixed.txt");
+        run_git_command(&root, &restore_args)
+            .await
+            .expect("restore working tree from index");
+
+        assert_eq!(
+            fs::read_to_string(root.join("mixed.txt")).expect("read worktree"),
+            "staged\n"
+        );
+        let repo = open_repository_at_root(&root).expect("open repo");
+        let index = repo.index().expect("open index");
+        let entry = index
+            .get_path(Path::new("mixed.txt"), 0)
+            .expect("index entry");
+        let blob = repo.find_blob(entry.id).expect("find index blob");
+        assert_eq!(blob.content(), b"staged\n");
     }
 
     #[test]

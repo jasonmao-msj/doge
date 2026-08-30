@@ -116,6 +116,85 @@ export function toFileLink(path: string) {
   return `${FILE_LINK_PROTOCOL}${encodeURIComponent(path)}`;
 }
 
+function decodeUriComponentSafe(value: string) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
+function isWindowsDriveAbsolutePath(value: string) {
+  return /^[A-Za-z]:[\\/]/.test(value);
+}
+
+const WRAPPED_WINDOWS_FILE_LINK_PATTERN =
+  /^\/?\[([A-Za-z]:[\\/][^\]]+)\]\s*\(\s*codex-file:([^)]+)\)\s*$/;
+const FALSE_POSIX_WRAPPED_WINDOWS_PATH_PATTERN =
+  /^\/\[([A-Za-z]:[\\/][^\]]+)\]$/;
+const MARKDOWN_INLINE_LINK_PATTERN = /(!?)\[([^\]]*)]\(([\s\S]*?)\)/g;
+
+export function recoverLocalFileLinkPath(raw: string, depth = 0): string {
+  const trimmed = raw.trim();
+  if (!trimmed || depth > 4) {
+    return trimmed;
+  }
+  if (isWindowsDriveAbsolutePath(trimmed)) {
+    return trimmed;
+  }
+  if (trimmed.startsWith(FILE_LINK_PROTOCOL)) {
+    return recoverLocalFileLinkPath(
+      decodeUriComponentSafe(trimmed.slice(FILE_LINK_PROTOCOL.length)),
+      depth + 1,
+    );
+  }
+  const wrapped = trimmed.match(WRAPPED_WINDOWS_FILE_LINK_PATTERN);
+  if (wrapped) {
+    const decodedDestination = recoverLocalFileLinkPath(
+      decodeUriComponentSafe(wrapped[2] ?? ""),
+      depth + 1,
+    );
+    if (isWindowsDriveAbsolutePath(decodedDestination)) {
+      return decodedDestination;
+    }
+    const bracketed = wrapped[1] ?? "";
+    if (isWindowsDriveAbsolutePath(bracketed)) {
+      return bracketed;
+    }
+  }
+  const falsePosix = trimmed.match(FALSE_POSIX_WRAPPED_WINDOWS_PATH_PATTERN);
+  if (falsePosix?.[1] && isWindowsDriveAbsolutePath(falsePosix[1])) {
+    return falsePosix[1];
+  }
+  return trimmed;
+}
+
+/** Rewrite drive-letter Markdown destinations before the parser can interpret
+ * `D:` as a URL scheme. Images retain their dedicated path pipeline. */
+export function rewriteWindowsAbsoluteMarkdownLinkDestinations(value: string) {
+  MARKDOWN_INLINE_LINK_PATTERN.lastIndex = 0;
+  return value.replace(
+    MARKDOWN_INLINE_LINK_PATTERN,
+    (match, bang: string, text: string, destination: string) => {
+      if (bang === "!") {
+        return match;
+      }
+      const trimmedDestination = destination.trim();
+      if (
+        !trimmedDestination ||
+        /^(codex-file|file|https?|mailto):/i.test(trimmedDestination)
+      ) {
+        return match;
+      }
+      const unwrapped = trimmedDestination.replace(/^<(.+)>$/, "$1").trim();
+      if (!WINDOWS_ABSOLUTE_PATH_MATCH.test(unwrapped)) {
+        return match;
+      }
+      return `[${text}](${toFileLink(unwrapped)})`;
+    },
+  );
+}
+
 function linkifyText(value: string) {
   FILE_PATH_PATTERN.lastIndex = 0;
   const nodes: MarkdownNode[] = [];
@@ -259,5 +338,7 @@ export function isFileLinkUrl(url: string) {
 }
 
 export function decodeFileLink(url: string) {
-  return decodeURIComponent(url.slice(FILE_LINK_PROTOCOL.length));
+  return recoverLocalFileLinkPath(
+    decodeUriComponentSafe(url.slice(FILE_LINK_PROTOCOL.length)),
+  );
 }

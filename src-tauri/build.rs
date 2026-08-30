@@ -20,6 +20,12 @@ const ALLOWED_LICENSES: &[&str] = &["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-
 
 fn main() {
     tauri_build::build();
+    // Windows defaults the main thread to a 1 MiB stack while the other
+    // desktop targets use a larger reserve. Deep async acquisition chains can
+    // otherwise hit 0xc00000fd before heap growth becomes relevant. Reserve 8
+    // MiB for the canonical doge binary; committed pages still grow on demand.
+    #[cfg(target_os = "windows")]
+    println!("cargo:rustc-link-arg-bin=doge=/STACK:8388608");
     validate_curated_skills_lock();
     validate_curated_skills_bundled_in_conf();
     validate_agent_catalog();

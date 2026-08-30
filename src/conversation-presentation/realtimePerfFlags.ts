@@ -255,6 +255,9 @@ export function getActiveRealtimePerfFlags(): Record<
 export const TOOL_OUTPUT_TAIL_GATE_FLAG_KEY = "doge.perf.toolOutputTailGate";
 const TOOL_OUTPUT_TAIL_GATE_DEFAULT = true;
 const TOOL_OUTPUT_TAIL_GATE_TEST_DEFAULT = true;
+export const TOOL_OUTPUT_BUDGET_FLAG_KEY = "doge.perf.toolOutputBudget";
+const TOOL_OUTPUT_BUDGET_DEFAULT = true;
+const TOOL_OUTPUT_BUDGET_TEST_DEFAULT = true;
 
 function readStringFlag(key: string): string | null {
   if (typeof window === "undefined") {
@@ -277,6 +280,13 @@ export function readStreamingScheduleTier(): RenderScheduleTier {
 
 export function isStreamingScheduleAggressiveEnabled(): boolean {
   return readStreamingScheduleTier() === "aggressive";
+}
+
+export function isToolOutputBudgetEnabled(): boolean {
+  const fallback = isTestMode
+    ? TOOL_OUTPUT_BUDGET_TEST_DEFAULT
+    : TOOL_OUTPUT_BUDGET_DEFAULT;
+  return parseBooleanFlag(readStringFlag(TOOL_OUTPUT_BUDGET_FLAG_KEY)) ?? fallback;
 }
 
 export function isToolOutputTailGateEnabled(): boolean {
@@ -312,6 +322,7 @@ export function resetRealtimePerfFlags(): string[] {
     }
     removeKey(RENDER_TIER_FLAG_KEY);
     removeKey(TOOL_OUTPUT_TAIL_GATE_FLAG_KEY);
+    removeKey(TOOL_OUTPUT_BUDGET_FLAG_KEY);
   }
   __resetRealtimePerfFlagCacheForTests();
   return removedKeys;

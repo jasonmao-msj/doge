@@ -15,6 +15,12 @@ use crate::utils::normalize_git_path;
 
 const MAX_IMAGE_BYTES: usize = 10 * 1024 * 1024;
 
+pub(crate) const GIT_RESTORE_UNSTAGED_PREFIX: &[&str] = &["restore", "--worktree", "--"];
+
+pub(crate) fn git_restore_unstaged_args(path: &str) -> [&str; 4] {
+    ["restore", "--worktree", "--", path]
+}
+
 pub(crate) fn image_mime_type(path: &str) -> Option<&'static str> {
     let ext = Path::new(path)
         .extension()
@@ -477,13 +483,22 @@ mod tests {
     use super::{
         build_git_file_blame, build_image_commit_diff, compact_repository_status,
         diff_stats_for_identity, find_git_diff_renames, git_action_paths_for_file,
-        git_diff_paths_for_file, git_status_path_identity, image_mime_type,
-        list_git_repository_summaries, path_has_git_repository_marker, resolve_git_root_for_scope,
-        GitStatusLayer,
+        git_diff_paths_for_file, git_restore_unstaged_args, git_status_path_identity,
+        image_mime_type, list_git_repository_summaries, path_has_git_repository_marker,
+        resolve_git_root_for_scope, GitStatusLayer, GIT_RESTORE_UNSTAGED_PREFIX,
     };
     use crate::types::{WorkspaceEntry, WorkspaceKind, WorkspaceSettings};
     use git2::{Delta, DiffOptions, Repository, Signature, Status, StatusOptions};
     use std::fs;
+
+    #[test]
+    fn unstaged_restore_arguments_never_mutate_the_index() {
+        assert_eq!(
+            git_restore_unstaged_args("src/main.rs"),
+            ["restore", "--worktree", "--", "src/main.rs"]
+        );
+        assert!(!GIT_RESTORE_UNSTAGED_PREFIX.contains(&"--staged"));
+    }
 
     fn workspace_entry(path: &std::path::Path) -> WorkspaceEntry {
         WorkspaceEntry {

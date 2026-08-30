@@ -398,13 +398,8 @@ pub(crate) async fn revert_git_file(
 
     let repo_root = resolve_git_root_for_scope(&entry, repository_root.as_deref())?;
     for path in action_paths_for_file(&repo_root, &path, GitStatusLayer::Workdir) {
-        if run_git_command(
-            &repo_root,
-            &["restore", "--staged", "--worktree", "--", &path],
-        )
-        .await
-        .is_ok()
-        {
+        let restore_args = git_restore_unstaged_args(&path);
+        if run_git_command(&repo_root, &restore_args).await.is_ok() {
             continue;
         }
         run_git_command(&repo_root, &["clean", "-f", "--", &path]).await?;
@@ -442,13 +437,9 @@ pub(crate) async fn revert_git_paths(
     if expanded.is_empty() {
         return Err("path is required".to_string());
     }
-    // Tracked files restore in one shot; untracked paths may fail restore and fall to clean.
-    let _ = run_git_command_with_paths(
-        &repo_root,
-        &["restore", "--staged", "--worktree", "--"],
-        &expanded,
-    )
-    .await;
+    // Restore tracked working-tree content from the index. `--staged` would
+    // also delete already-staged hunks on mixed files.
+    let _ = run_git_command_with_paths(&repo_root, GIT_RESTORE_UNSTAGED_PREFIX, &expanded).await;
     // Match single-file semantics: clean only when needed, and never fail the batch
     // solely because a tracked path is not cleanable.
     for path in &expanded {

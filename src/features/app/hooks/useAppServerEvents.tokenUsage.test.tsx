@@ -343,6 +343,45 @@ describe("useAppServerEvents token usage", () => {
     });
   });
 
+  it("does not default Codex item/completed usage without a window to 200000", async () => {
+    const handlers: Handlers = {
+      onThreadTokenUsageUpdated: vi.fn(),
+      onItemCompleted: vi.fn(),
+    };
+    const { root } = await mount(handlers);
+
+    await act(async () => {
+      listener?.({
+        workspace_id: "ws-1",
+        message: {
+          method: "item/completed",
+          params: {
+            threadId: "codex:thread-1",
+            item: { id: "tool-1", type: "command", status: "completed" },
+            usage: {
+              input_tokens: 97_000,
+              output_tokens: 0,
+            },
+          },
+        },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(handlers.onThreadTokenUsageUpdated).toHaveBeenCalledWith(
+      "ws-1",
+      "codex:thread-1",
+      expect.objectContaining({
+        modelContextWindow: null,
+        contextUsageSource: "item_completed_usage",
+        contextUsageFreshness: "estimated",
+      }),
+    );
+
+    await act(async () => root.unmount());
+  });
+
   it("prefers token_count last snapshot while keeping total snapshot", async () => {
     const handlers: Handlers = {
       onThreadTokenUsageUpdated: vi.fn(),
