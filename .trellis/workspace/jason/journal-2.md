@@ -634,3 +634,36 @@ v0.1.10 signed Release 33173561758成功；tag精确指向 cdd7ecb29，macOS/Lin
 ### Next Steps
 
 - None - task complete
+
+
+## Session 78: 准备 doge v0.1.12 发布
+
+**Date**: 2026-08-30
+**Task**: 准备 doge v0.1.12 发布
+**Branch**: `codex/release-v0.1.12`
+
+### Summary
+
+从合入 PR #56 后的最新 main 创建 v0.1.12 release commit，统一更新七处版本事实，并以双语 CHANGELOG 汇总 Codex 使用 Claude、会话目标恢复和线程引擎路由修复。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `235eac815` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

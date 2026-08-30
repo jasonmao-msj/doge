@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 77
+- **Total Sessions**: 78
 - **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~636 | Active |
+| `journal-2.md` | ~669 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 78 | 2026-08-30 | 准备 doge v0.1.12 发布 | `235eac815` | `codex/release-v0.1.12` |
 | 77 | 2026-08-30 | Codex 使用 Claude 模型并完成交付 | `f6312d6c9`, `549b6ce92` | `codex/enable-claude-models-in-codex` |
 | 76 | 2026-08-29 | 修复 v0.1.11 macOS 发布阻断 | `a47427281`, `9e783eecb` | `codex/fix-macos-release-openssl` |
 | 75 | 2026-08-29 | 校正 v0.1.11 发布日期 | `54599e34a` | `codex/release-v0.1.11` |

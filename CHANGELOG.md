@@ -1,5 +1,39 @@
 # Changelog
 
+### **2026年8月30日（v0.1.12）**
+
+中文：
+
+#### 新功能
+
+- Codex 现在可以直接使用已验证的 Claude 模型，并在主对话、面板管理与看板中保持一致的模型选择。
+
+#### 改进
+
+- 新用户会在首次发送时自动完成 Codex 托管配置；旧用户升级后也会自动迁移，无需重新设置或等待登录页准备引擎。
+
+#### 修复
+
+- 修复应用重启后会话可能丢失原有引擎、模型和供应商目标的问题。
+- 修复线程切换或首次发送时可能受过期全局引擎状态影响而路由错误的问题。
+
+English:
+
+#### New Features
+
+- Codex can now use verified Claude models directly, with consistent model selection across the main composer, Panel Management, and Kanban.
+
+#### Improvements
+
+- New users receive the managed Codex configuration on first send, while existing users migrate automatically after updating without reconfiguration or login-time engine preparation.
+
+#### Fixes
+
+- Fixed conversations losing their exact engine, model, or provider target after an app restart.
+- Fixed thread switches and first sends being routed by stale global engine state.
+
+---
+
 ### **2026年8月29日（v0.1.11）**
 
 中文：
