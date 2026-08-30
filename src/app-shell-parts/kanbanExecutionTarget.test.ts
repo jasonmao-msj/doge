@@ -34,6 +34,44 @@ const product: ProductEntitlementSnapshotV1 = {
 };
 
 describe("resolveKanbanExecutionTarget", () => {
+  it("keeps a Claude model on the exact managed Codex target", () => {
+    const claudeProduct: ProductEntitlementSnapshotV1 = {
+      ...product,
+      engines: [
+        { id: "codex", displayName: "Codex" },
+        { id: "claude-code", displayName: "Claude" },
+        { id: "kimi", displayName: "Kimi CLI" },
+      ],
+      models: [{
+        id: "claude-opus-4-8",
+        displayName: "Claude Opus 4.8",
+        model: "claude-opus-4-8",
+        apiProtocols: ["openai-responses", "anthropic-messages"],
+        capabilities: [],
+      }],
+    };
+
+    expect(resolveKanbanExecutionTarget({
+      task: {
+        engineType: "codex",
+        modelId: "claude-opus-4-8",
+        executionTarget: null,
+      },
+      product: claudeProduct,
+    })).toEqual({
+      ok: true,
+      target: {
+        engine: "codex",
+        providerProfileId: "doge-token-matrix",
+        modelCatalogEntryId: "claude-opus-4-8",
+        model: "claude-opus-4-8",
+        reasoning: null,
+        providerProfileNameSnapshot: "Doge",
+        providerProfileSource: "managed",
+      },
+    });
+  });
+
   it("upgrades a legacy Product task to an exact managed runtime target", () => {
     expect(resolveKanbanExecutionTarget({
       task: {

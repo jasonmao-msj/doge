@@ -112,7 +112,7 @@ fn compatible_product_api_protocols(value: &ProductModelWire) -> Vec<&'static st
         return PRODUCT_MODEL_API_PROTOCOLS.to_vec();
     }
     if identity.contains("claude") || identity.contains("anthropic") {
-        return vec!["anthropic-messages"];
+        return vec!["openai-responses", "anthropic-messages"];
     }
     if identity.contains("kimi")
         || identity.contains("moonshot")

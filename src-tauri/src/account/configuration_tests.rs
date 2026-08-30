@@ -3,6 +3,11 @@ use serde_json::{json, Value};
 use std::fs;
 
 #[test]
+fn managed_configuration_revision_tracks_claude_responses_routing() {
+    assert_eq!(ACCOUNT_MANAGED_CONFIGURATION_REVISION, 2);
+}
+
+#[test]
 fn atomic_write_replaces_an_existing_user_profile_target() {
     let root = std::env::temp_dir().join(format!(
         "doge-account-existing-config-test-{}",
@@ -126,7 +131,7 @@ fn managed_projection_replaces_legacy_doge_entries_and_preserves_local_profiles(
                     "id": "doge-token-matrix",
                     "name": "Legacy Doge",
                     "source": "legacy-doge",
-                    "managedRevision": 0,
+                    "managedRevision": 1,
                     "configToml": "model_provider = 'legacy'"
                 }
             }
@@ -139,7 +144,7 @@ fn managed_projection_replaces_legacy_doge_entries_and_preserves_local_profiles(
                     "id": "doge-token-matrix",
                     "name": "Legacy Doge",
                     "source": "legacy-doge",
-                    "managedRevision": 0,
+                    "managedRevision": 1,
                     "settingsConfig": {
                         "env": {
                             "ANTHROPIC_BASE_URL": "https://openrouter.ai",
@@ -157,7 +162,7 @@ fn managed_projection_replaces_legacy_doge_entries_and_preserves_local_profiles(
                     "id": "doge-token-matrix",
                     "name": "Legacy Doge",
                     "source": "legacy-doge",
-                    "managedRevision": 0,
+                    "managedRevision": 1,
                     "baseUrl": "https://legacy.invalid/v1",
                     "apiKey": "synthetic-legacy-secret"
                 }
@@ -228,34 +233,63 @@ fn managed_registry_verification_rejects_a_stale_projection_revision() {
     .into_iter()
     .enumerate()
     {
-        let mut value: Value = serde_json::from_str(&content).expect("parse current registry");
-        value[engine]["providers"]["doge-token-matrix"]["managedRevision"] = json!(0);
-        let stale = format!(
-            "{}\n",
-            serde_json::to_string_pretty(&value).expect("serialize stale registry")
-        );
-        let target = root.join(format!("config-{index}.json"));
-        fs::write(&target, &stale).expect("write stale registry");
-        let plan = ConfigurationPlanState {
-            handle: format!("config-plan-revision-{index}"),
-            expires_at_epoch_seconds: i64::MAX,
-            files: vec![PlannedFile {
-                handle: format!("config-file-revision-{index}"),
-                label,
-                path: target,
-                expected_hash: String::new(),
-                content: stale,
-            }],
-            view: json!({}),
-        };
+        for (case, revision) in [("stale", Some(1)), ("missing", None)] {
+            let mut value: Value = serde_json::from_str(&content).expect("parse current registry");
+            let provider = value[engine]["providers"]["doge-token-matrix"]
+                .as_object_mut()
+                .expect("managed provider object");
+            match revision {
+                Some(revision) => {
+                    provider.insert("managedRevision".to_string(), json!(revision));
+                }
+                None => {
+                    provider.remove("managedRevision");
+                }
+            }
+            let invalid = format!(
+                "{}\n",
+                serde_json::to_string_pretty(&value).expect("serialize invalid registry")
+            );
+            let target = root.join(format!("config-{index}-{case}.json"));
+            fs::write(&target, &invalid).expect("write invalid registry");
+            let plan = ConfigurationPlanState {
+                handle: format!("config-plan-revision-{index}-{case}"),
+                expires_at_epoch_seconds: i64::MAX,
+                files: vec![PlannedFile {
+                    handle: format!("config-file-revision-{index}-{case}"),
+                    label,
+                    path: target,
+                    expected_hash: String::new(),
+                    content: invalid,
+                }],
+                view: json!({}),
+            };
 
-        assert!(
-            verify_applied_plan(&plan).is_err(),
-            "{engine} stale managed revision must fail closed"
-        );
+            assert!(
+                verify_applied_plan(&plan).is_err(),
+                "{engine} {case} managed revision must fail closed"
+            );
+        }
     }
 
     let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn current_managed_projection_is_idempotent_for_all_product_engines() {
+    let once_codex = build_doge_config(None).expect("build Codex projection");
+    let twice_codex = build_doge_config(Some(&once_codex)).expect("rebuild Codex projection");
+    assert_eq!(twice_codex, once_codex);
+
+    let once_claude =
+        build_doge_config_for_claude(Some(&once_codex)).expect("build Claude projection");
+    let twice_claude =
+        build_doge_config_for_claude(Some(&once_claude)).expect("rebuild Claude projection");
+    assert_eq!(twice_claude, once_claude);
+
+    let once_kimi = build_doge_config_for_kimi(Some(&once_claude)).expect("build Kimi projection");
+    let twice_kimi = build_doge_config_for_kimi(Some(&once_kimi)).expect("rebuild Kimi projection");
+    assert_eq!(twice_kimi, once_kimi);
 }
 
 #[test]
