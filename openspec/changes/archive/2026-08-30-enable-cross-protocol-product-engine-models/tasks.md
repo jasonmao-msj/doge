@@ -21,4 +21,4 @@
 - [x] 4.1 [P0][Depends:2.3,3.3][Input: provider/protocol change][Output: Trellis contracts + foundation ADR calibration][Verify: current code paths/change id] 回写knowledge。
 - [x] 4.2 [P0][Depends:4.1][Input: Rust/TS/docs changes][Output: L3 focused verification][Verify: focused Vitest/Rust、typecheck、target ESLint、cargo check、contracts/docs/OpenSpec strict、git diff] 自动验证。
 - [x] 4.3 [P0][Depends:1.3,4.2][Input: hot doge clean + legacy config][Output: picker/send visual evidence][Verify: Codex lists/sends Claude；other consumers consistent] 目视验收。
-- [ ] 4.4 [P1][Depends:4.3][Input: reviewed branch][Output: Chinese Conventional Commit、Trellis record、PR][Verify: onboarding matrix、CLI/CI/manual evidence in PR] 交付review。
+- [x] 4.4 [P1][Depends:4.3][Input: reviewed branch][Output: Chinese Conventional Commit、Trellis record、PR][Verify: onboarding matrix、CLI/CI/manual evidence in PR] 交付review。
