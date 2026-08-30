@@ -2,10 +2,10 @@
 
 本页是 `mossx` OpenSpec proposal 的当前入口。它只维护 active change 的执行状态，并把 archived change 路由到完整历史索引；详细治理快照仍以 [`../project.md`](../project.md) 为准。
 
-- Active proposals: `28`
-- Archived proposals: `883`
+- Active proposals: `31`
+- Archived proposals: `885`
 - Main capability specs: `517`
-- Updated At: `2026-08-28`
+- Updated At: `2026-08-30`
 
 ## Active Proposals
 
@@ -18,8 +18,10 @@
 | [`add-shared-squad-worker-execution`](add-shared-squad-worker-execution/proposal.md) | 10/11 tasks | in progress | [proposal](add-shared-squad-worker-execution/proposal.md) · [design](add-shared-squad-worker-execution/design.md) · [tasks](add-shared-squad-worker-execution/tasks.md) · [specs](add-shared-squad-worker-execution/specs/) |
 | [`add-sub2api-relay-quota`](add-sub2api-relay-quota/proposal.md) | 15/18 tasks | in progress | [proposal](add-sub2api-relay-quota/proposal.md) · [design](add-sub2api-relay-quota/design.md) · [tasks](add-sub2api-relay-quota/tasks.md) · [specs](add-sub2api-relay-quota/specs/) |
 | [`doge-unified-product-subscription`](doge-unified-product-subscription/proposal.md) | 107/115 tasks | in progress | [proposal](doge-unified-product-subscription/proposal.md) · [design](doge-unified-product-subscription/design.md) · [tasks](doge-unified-product-subscription/tasks.md) · [specs](doge-unified-product-subscription/specs/) |
+| [`enforce-release-changelog-gate`](enforce-release-changelog-gate/proposal.md) | 8/9 tasks | in progress | [proposal](enforce-release-changelog-gate/proposal.md) · [design](enforce-release-changelog-gate/design.md) · [tasks](enforce-release-changelog-gate/tasks.md) · [specs](enforce-release-changelog-gate/specs/) |
 | [`fix-claude-background-shell-settlement`](fix-claude-background-shell-settlement/proposal.md) | 15/29 tasks | in progress | [proposal](fix-claude-background-shell-settlement/proposal.md) · [design](fix-claude-background-shell-settlement/design.md) · [tasks](fix-claude-background-shell-settlement/tasks.md) · [specs](fix-claude-background-shell-settlement/specs/) |
 | [`fix-codex-collab-subagent-live-parity`](fix-codex-collab-subagent-live-parity/proposal.md) | 17/19 tasks | in progress | [proposal](fix-codex-collab-subagent-live-parity/proposal.md) · [design](fix-codex-collab-subagent-live-parity/design.md) · [tasks](fix-codex-collab-subagent-live-parity/tasks.md) · [specs](fix-codex-collab-subagent-live-parity/specs/) |
+| [`fix-codex-guardian-background-thread-filter`](fix-codex-guardian-background-thread-filter/proposal.md) | 10/11 tasks | in progress | [proposal](fix-codex-guardian-background-thread-filter/proposal.md) · [design](fix-codex-guardian-background-thread-filter/design.md) · [tasks](fix-codex-guardian-background-thread-filter/tasks.md) · [specs](fix-codex-guardian-background-thread-filter/specs/) |
 | [`fix-live-settle-assistant-tool-order`](fix-live-settle-assistant-tool-order/proposal.md) | 19/27 tasks | in progress | [proposal](fix-live-settle-assistant-tool-order/proposal.md) · [design](fix-live-settle-assistant-tool-order/design.md) · [tasks](fix-live-settle-assistant-tool-order/tasks.md) · [specs](fix-live-settle-assistant-tool-order/specs/) |
 | [`fix-messages-boundary-regressions`](fix-messages-boundary-regressions/proposal.md) | 14/15 tasks | in progress | [proposal](fix-messages-boundary-regressions/proposal.md) · [design](fix-messages-boundary-regressions/design.md) · [tasks](fix-messages-boundary-regressions/tasks.md) · [specs](fix-messages-boundary-regressions/specs/) |
 | [`fix-runtime-workspace-switch-main-thread-stall`](fix-runtime-workspace-switch-main-thread-stall/proposal.md) | 17/18 tasks | in progress | [proposal](fix-runtime-workspace-switch-main-thread-stall/proposal.md) · [design](fix-runtime-workspace-switch-main-thread-stall/design.md) · [tasks](fix-runtime-workspace-switch-main-thread-stall/tasks.md) · [specs](fix-runtime-workspace-switch-main-thread-stall/specs/) |
@@ -38,13 +40,14 @@
 | [`render-product-models-by-protocol`](render-product-models-by-protocol/proposal.md) | 16/17 tasks | in progress | [proposal](render-product-models-by-protocol/proposal.md) · [design](render-product-models-by-protocol/design.md) · [tasks](render-product-models-by-protocol/tasks.md) · [specs](render-product-models-by-protocol/specs/) |
 | [`require-account-engine-subscription-onboarding`](require-account-engine-subscription-onboarding/proposal.md) | 41/44 tasks | in progress | [proposal](require-account-engine-subscription-onboarding/proposal.md) · [design](require-account-engine-subscription-onboarding/design.md) · [tasks](require-account-engine-subscription-onboarding/tasks.md) · [specs](require-account-engine-subscription-onboarding/specs/) |
 | [`retire-canvas-subagent-squad-grid`](retire-canvas-subagent-squad-grid/proposal.md) | 18/24 tasks | in progress | [proposal](retire-canvas-subagent-squad-grid/proposal.md) · [design](retire-canvas-subagent-squad-grid/design.md) · [tasks](retire-canvas-subagent-squad-grid/tasks.md) · [specs](retire-canvas-subagent-squad-grid/specs/) |
+| [`unify-product-target-catalog-consumers`](unify-product-target-catalog-consumers/proposal.md) | complete | pending archive | [proposal](unify-product-target-catalog-consumers/proposal.md) · [design](unify-product-target-catalog-consumers/design.md) · [tasks](unify-product-target-catalog-consumers/tasks.md) · [specs](unify-product-target-catalog-consumers/specs/) |
 | [`wire-shared-composer-run-status-strip`](wire-shared-composer-run-status-strip/proposal.md) | 5/6 tasks | in progress | [proposal](wire-shared-composer-run-status-strip/proposal.md) · [design](wire-shared-composer-run-status-strip/design.md) · [tasks](wire-shared-composer-run-status-strip/tasks.md) · [specs](wire-shared-composer-run-status-strip/specs/) |
 
-## Active backlog notes（2026-08-28）
+## Active backlog notes（2026-08-30）
 
-- Active entries are derived from the 28 directories currently under `openspec/changes/`.
+- Active entries are derived from the 31 directories currently under `openspec/changes/`.
 - Completion progress is sourced from each `tasks.md`; `no-tasks` remains active because its scope is not yet defined.
-- The 32 changes archived on 2026-08-28 are listed in the archive index and are no longer active; the latest one was archived under an explicit user waiver.
+- `fix-managed-session-target-cold-start` was archived on 2026-08-30 after strict validation and Windows restart acceptance.
 
 ## Archived Proposals
 

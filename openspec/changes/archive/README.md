@@ -2,13 +2,17 @@
 
 本页为 `mossx` 已归档 OpenSpec proposal 的完整可点击索引。目录名中的日期是 archive date，不代表 proposal 首次创建时间。
 
-- Indexed proposals: `883`
-- Updated At: `2026-08-28`
+- Indexed proposals: `885`
+- Updated At: `2026-08-30`
 - Source of truth: `openspec/changes/archive/<archive-date>-<change-id>/proposal.md`
 - Back to current changes: [`../README.md`](../README.md)
 - Back to workspace overview: [`../../project.md`](../../project.md)
 
 ## 2026-08
+
+### 2026-08-30
+
+- [`2026-08-30-fix-managed-session-target-cold-start`](2026-08-30-fix-managed-session-target-cold-start/proposal.md) — completed change；Windows restart smoke passed；已同步 `codex-provider-scoped-session-launch`、`engine-per-session-provider-binding` 与 `shared-execution-target`
 
 ### 2026-08-28
 

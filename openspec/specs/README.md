@@ -7,7 +7,7 @@
 - 查当前已生效的行为契约：从本索引进入对应 `spec.md`。
 - 查尚未归档、可能仍含未同步 delta 的提案：查看 [Active Changes](../changes/README.md)。
 - 查历史决策与归档证据：查看 [Archived Changes](../changes/archive/README.md)。
-- Updated At: `2026-08-28`（本次 bulk archive 后重建）。
+- Updated At: `2026-08-30`（managed session target cold-start archive 后校准）。
 
 ## A
 

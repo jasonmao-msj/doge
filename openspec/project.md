@@ -1,7 +1,7 @@
 # Project Context
 
 - Type: OpenSpec Workspace
-- Updated At: 2026-08-28T20:00:00+08:00
+- Updated At: 2026-08-30T23:30:00+08:00
 - Scope: governance snapshot for the current `doge` repository workspace
 - Product version fact: `doge@0.1.0` from `config/brand.json`, `package.json`, and `src-tauri/tauri.conf.json`
 
@@ -64,22 +64,22 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 
 ## Current Inventory
 
-- Active changes: `28`
-- Archive changes: `883`
+- Active changes: `31`
+- Archive changes: `885`
 - Main specs: `517`
-- Completed task sets still active: `0`
+- Completed task sets still active: `1`
 - Ready-for-implementation task sets: `0`
 - Demand-pool proposal directories without `proposal.md` / `tasks.md`: `0`
 
 ## Active Changes
 
-Active OpenSpec changes in the current working tree (28; see [`changes/README.md`](changes/README.md)):
+Active OpenSpec changes in the current working tree (31; see [`changes/README.md`](changes/README.md)):
 
 - 当前 active set 保留未完成或 `no-tasks` 的 change；完整清单以 [`changes/README.md`](changes/README.md) 和磁盘目录为准。
 - `add-collab-stage-upstream-feed-mode`、`add-conversation-squad-inspector`、`add-daily-poetry-composer-banner`、`add-linux-native-menu-localization`、`add-shared-squad-worker-execution`、`add-sub2api-relay-quota`
-- `doge-unified-product-subscription`、`fix-claude-background-shell-settlement`、`fix-codex-collab-subagent-live-parity`、`fix-live-settle-assistant-tool-order`、`fix-messages-boundary-regressions`、`fix-runtime-workspace-switch-main-thread-stall`、`fix-shared-collab-context-and-sidebar-spawn`
+- `doge-unified-product-subscription`、`enforce-release-changelog-gate`、`fix-claude-background-shell-settlement`、`fix-codex-collab-subagent-live-parity`、`fix-codex-guardian-background-thread-filter`、`fix-live-settle-assistant-tool-order`、`fix-messages-boundary-regressions`、`fix-runtime-workspace-switch-main-thread-stall`、`fix-shared-collab-context-and-sidebar-spawn`
 - `fix-shared-session-subscription-quota-projection`、`fix-shared-sidebar-hide-set-staleness`、`fix-ui-scale-native-zoom-freeze-all-platforms`、`fix-windows-cold-start-freeze-residual`、`fix-windows-ui-scale-webview2-hang`、`harden-shared-squad-recovery`、`integrate-token2api-account-system`
-- `lazy-engine-provisioning`、`optimize-cold-start-hydration-orchestration`、`rebrand-client-to-doge`、`redesign-startup-diagnostics-timeline`、`render-product-models-by-protocol`、`require-account-engine-subscription-onboarding`、`retire-canvas-subagent-squad-grid`、`wire-shared-composer-run-status-strip`
+- `lazy-engine-provisioning`、`optimize-cold-start-hydration-orchestration`、`rebrand-client-to-doge`、`redesign-startup-diagnostics-timeline`、`render-product-models-by-protocol`、`require-account-engine-subscription-onboarding`、`retire-canvas-subagent-squad-grid`、`unify-product-target-catalog-consumers`、`wire-shared-composer-run-status-strip`
 - 2026-08-28 已归档 32 个内容，其中 bundle change 由用户明确授权 waiver archive，保留未完成 release evidence。
 
 
@@ -88,6 +88,12 @@ Active OpenSpec changes in the current working tree (28; see [`changes/README.md
 The previous v0.5.11 performance and recovery follow-up chain has been archived. Future performance work should open a new chain instead of reusing the archived change directories.
 
 ## Recent Archive / Sync Snapshot
+
+### 2026-08-30 Managed Session Target Cold-Start Archive
+
+Archived `fix-managed-session-target-cold-start` after L3 focused verification and user-confirmed Windows restart smoke. Synced one requirement into each existing main capability: `codex-provider-scoped-session-launch`, `engine-per-session-provider-binding`, and `shared-execution-target`; no new capability directory was created.
+
+Current counts: active=`31`, archive=`885`, specs=`517`.
 
 ### 2026-08-28 Complete Bulk Archive
 
@@ -392,6 +398,8 @@ npm run check:large-files
 - doge contributors
 
 ## Update History
+
+- 2026-08-30: Archived `fix-managed-session-target-cold-start` after strict validation and Windows restart acceptance; synced three requirements into existing main specs and calibrated current indexes to active=31, archive=885, specs=517.
 
 ### 2026-08-03 Shipped Manual-Residual Wave 3
 
