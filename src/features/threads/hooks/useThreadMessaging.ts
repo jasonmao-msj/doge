@@ -2875,13 +2875,13 @@ export function useThreadMessaging({
 
       // Detect engine switch from the selected engine to thread ownership.
       const createSessionTarget = options?.createSessionTarget ?? null;
-      const activeThreadEngine = activeThreadId
-        ? resolveThreadEngine(activeWorkspace.id, activeThreadId)
+      const persistedActiveThreadEngine = activeThreadId
+        ? getThreadEngine(activeWorkspace.id, activeThreadId)
         : null;
       const currentEngine = normalizeEngineSelection(
         createSessionTarget?.engine ??
           options?.engineOverride ??
-          activeThreadEngine ??
+          persistedActiveThreadEngine ??
           activeEngine,
       );
       const resolvedComposerSelection = resolveComposerSelection?.() ?? null;
@@ -2906,10 +2906,7 @@ export function useThreadMessaging({
         providerProfileId: firstSendProviderProfileId,
       });
       if (activeThreadId) {
-        const storedThreadEngine = getThreadEngine(
-          activeWorkspace.id,
-          activeThreadId,
-        );
+        const storedThreadEngine = persistedActiveThreadEngine;
         const threadKind = resolveThreadKind(
           activeWorkspace.id,
           activeThreadId,

@@ -515,3 +515,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: 修复线程引擎判定并提交 PR
+
+**Date**: 2026-08-30
+**Task**: 修复线程引擎判定并提交 PR
+**Branch**: `codex/fix-thread-engine-selection`
+
+### Summary
+
+修复 thread metadata 缺失时的 engine 推断，改用当前选中 engine；补齐 tauri invoke payload 的 modelCatalogEntryId 断言。Vitest 全量通过（1135/1135 files），typecheck、runtime contracts 通过；Rust 全量在 Windows 环境下 2062 passed、32 failed、2 ignored，失败主要为权限、路径、HOME/TEMP 与进程清理相关。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c61f75037` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
