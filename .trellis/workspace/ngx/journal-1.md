@@ -515,3 +515,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: 修复 Kimi managed session catalog 重启恢复
+
+**Date**: 2026-08-30
+**Task**: 修复 Kimi managed session catalog 重启恢复
+**Branch**: `codex/fix-kimi-managed-session-catalog`
+
+### Summary
+
+修复 Kimi managed provider home 在重启后未被 workspace session catalog 枚举的问题；统一 list/load/delete provider-aware root resolver，补充首轮 durable history seed，并完成 OpenSpec 归档与 L3 验证。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cb0812385` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
