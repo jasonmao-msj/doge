@@ -482,3 +482,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: 解决 PR #53 主分支冲突
+
+**Date**: 2026-08-30
+**Task**: 解决 PR #53 主分支冲突
+**Branch**: `codex/fix-managed-session-target-cold-start`
+
+### Summary
+
+语义合并 main，保留 managed session execution target 与 upstream provider/runtime、terminal/realtime 能力；校准 OpenSpec 索引为 active 31、archive 886、specs 517，并完成 L3 focused verification。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ead66f4a8` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
