@@ -409,3 +409,43 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: 修复重启后模型目标恢复
+
+**Date**: 2026-08-30
+**Task**: 修复重启后模型目标恢复
+**Branch**: `codex/fix-managed-session-target-cold-start`
+
+### Summary
+
+修复 Native 与 Shared Session 冷启动时 managed execution target 被默认 GPT 覆盖的问题；补齐 durable target、Shared V2 读取权威、renderer hydration、daemon IPC 与 managed runtime restore，并完成 L3 验证及 Windows 真实重启 smoke。
+
+### Main Changes
+
+- 为 Native session 持久化并恢复 `modelCatalogEntryId`、runtime `model` 与 `reasoningEffort`，补齐 Desktop/daemon IPC。
+- 固定 Shared cold-start 的读取权威为 Shared V2 durable target，并阻止 hydration pending 时写回 Product default GPT。
+- 修复 renderer target hydration、active thread engine 恢复与 managed runtime activation，保留 legacy metadata/cache 兼容。
+- 同步 OpenSpec、cross-layer executable contract 与 multi-CLI foundation ADR calibration。
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `712792f47` | (see git log) |
+
+### Testing
+
+- [OK] L3 focused Vitest：12 files / 346 tests。
+- [OK] TypeScript typecheck、targeted ESLint、runtime contracts 与 OpenSpec strict validation。
+- [OK] Rust execution-target tests（15 tests）、Shared V2 authority regression、library/daemon cargo checks 与 changed-file rustfmt。
+- [OK] Windows debug App 真实退出/重启 smoke；managed 豆包 target 保持，未回落 GPT。
+- [INFO] L4 full suites、packaged multi-platform builds 与 installer smoke 留给 Release/CI。
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
