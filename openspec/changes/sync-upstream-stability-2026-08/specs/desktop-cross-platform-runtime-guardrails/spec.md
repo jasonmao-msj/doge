@@ -48,3 +48,17 @@ Process liveness probing MUST use `kill(pid, 0)` only on Unix. Windows MUST use 
 - **WHEN** the same helper is called on Windows without an authoritative process handle
 - **THEN** it MUST return not-alive and delegate recovery to the scoped runtime owner
 - **AND** it MUST NOT fabricate a live result
+
+### Requirement: macOS OpenSSL fixup MUST use one canonical app-binary directory
+
+The macOS packaging helper MUST derive the main and daemon binary paths from a defined `${app_path}/Contents/MacOS` owner before validating or rewriting dylib references. Optional OpenSSL references MUST tolerate an empty `otool` match under `set -euo pipefail`.
+
+#### Scenario: Complete doge app bundle is fixed and signed
+- **WHEN** `scripts/macos-fix-openssl.sh` receives an app containing `Contents/MacOS/doge` and optional `doge_daemon`
+- **THEN** directory validation and binary discovery MUST use the same defined `macos_dir`
+- **AND** the helper MUST reach reference verification and the selected signing path without an unbound-variable failure
+
+#### Scenario: A binary does not link an optional OpenSSL library directly
+- **WHEN** `otool -L` returns no `libssl` or `libcrypto` match for one binary
+- **THEN** the empty match MUST be treated as no rewrite required
+- **AND** `pipefail` MUST NOT terminate packaging

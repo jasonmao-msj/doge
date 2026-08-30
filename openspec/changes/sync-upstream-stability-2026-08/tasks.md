@@ -42,3 +42,9 @@
 - [x] 7.2 [P0][Depends:7.1][Input: final code/spec/matrix][Output: `verification.md` with commands, results, L4 gaps and platform evidence levels][Verify: no claimed Windows runtime evidence beyond CI/static tests] 记录验证证据与剩余风险。
 - [x] 7.3 [P0][Depends:7.2][Input: completed tasks and specs][Output: strict-valid OpenSpec change, synced index metadata and clean diff][Verify: strict change validation + `git diff --check` + isolation/branding/upstream-sync gates] 收口 apply change。
 - [x] 7.4 [P1][Depends:7.3][Input: reviewed working tree][Output: Chinese Conventional Commit, Trellis session record, pushed branch and PR][Verify: commits present, workspace clean, PR body includes matrix/verification/L4 gaps] 提交交付。
+
+## 8. v0.1.11 Release Regression Recovery
+
+- [x] 8.1 [P0][Depends:7.4][Input: Release run `33241360887`, macOS ARM64/x86_64 failed logs][Output: root cause mapped to semantic merge omission at `scripts/macos-fix-openssl.sh`][Verify: both jobs report `macos_dir: unbound variable` before packaging] 定位双架构一致失败。
+- [x] 8.2 [P0][Depends:8.1][Input: upstream canonical `macos_dir` ownership + doge binary names][Output: defined MacOS directory owner, derived binary paths, pipefail-safe optional dylib lookup][Verify: executable fixture reaches verified ad-hoc signing path] 修复 OpenSSL fixup contract。
+- [x] 8.3 [P0][Depends:8.2][Input: changed shell/test/spec][Output: L3 focused verification and release gate evidence][Verify: build-platform contract + `bash -n` + strict OpenSpec + release checks] 防止同类发布回归。

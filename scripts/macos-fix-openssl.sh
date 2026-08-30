@@ -47,8 +47,9 @@ fi
 libssl="${openssl_prefix}/lib/libssl.3.dylib"
 libcrypto="${openssl_prefix}/lib/libcrypto.3.dylib"
 frameworks_dir="${app_path}/Contents/Frameworks"
-bin_path="${app_path}/Contents/MacOS/doge"
-daemon_path="${app_path}/Contents/MacOS/doge_daemon"
+macos_dir="${app_path}/Contents/MacOS"
+bin_path="${macos_dir}/doge"
+daemon_path="${macos_dir}/doge_daemon"
 
 if [[ ! -f "${libssl}" || ! -f "${libcrypto}" ]]; then
   echo "OpenSSL dylibs not found at ${openssl_prefix}/lib"
@@ -84,13 +85,13 @@ if [[ ${#bins_to_fix[@]} -eq 0 ]]; then
 fi
 
 for bin in "${bins_to_fix[@]}"; do
-  ssl_ref=$(otool -L "${bin}" | grep 'libssl' | awk '{print $1}')
+  ssl_ref=$(otool -L "${bin}" | grep 'libssl' | awk '{print $1}' || true)
   if [[ -n "${ssl_ref}" && "${ssl_ref}" != "@rpath/libssl.3.dylib" ]]; then
     echo "Fixing $(basename "${bin}") -> libssl reference: ${ssl_ref}"
     install_name_tool -change "${ssl_ref}" "@rpath/libssl.3.dylib" "${bin}"
   fi
 
-  crypto_ref=$(otool -L "${bin}" | grep 'libcrypto' | awk '{print $1}')
+  crypto_ref=$(otool -L "${bin}" | grep 'libcrypto' | awk '{print $1}' || true)
   if [[ -n "${crypto_ref}" && "${crypto_ref}" != "@rpath/libcrypto.3.dylib" ]]; then
     echo "Fixing $(basename "${bin}") -> libcrypto reference: ${crypto_ref}"
     install_name_tool -change "${crypto_ref}" "@rpath/libcrypto.3.dylib" "${bin}"
