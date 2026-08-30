@@ -349,6 +349,7 @@ export const APP_SHELL_DOMAIN_CONTEXT_OWNED_KEYS: Record<
     "handleSelectCommit",
     "handleSelectDiff",
     "handleSelectModel",
+    "persistNativeSessionTarget",
     "handleSelectOpenAppId",
     "handleSelectOpenCodeAgent",
     "handleSelectOpenCodeVariant",

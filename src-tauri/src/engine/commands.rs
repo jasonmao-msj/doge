@@ -1670,6 +1670,7 @@ pub async fn engine_send_message(
     text: String,
     engine: Option<EngineType>,
     model: Option<String>,
+    model_catalog_entry_id: Option<String>,
     effort: Option<String>,
     disable_thinking: Option<bool>,
     access_mode: Option<String>,
@@ -1718,6 +1719,7 @@ pub async fn engine_send_message(
                 "text": text,
                 "engine": remote_engine,
                 "model": model,
+                "modelCatalogEntryId": model_catalog_entry_id,
                 "effort": effort,
                 "disableThinking": disable_thinking.unwrap_or(false),
                 "accessMode": access_mode,
@@ -1892,13 +1894,13 @@ pub async fn engine_send_message(
             });
 
             let response_session_id = resolved_session_id.clone();
+            let binding_session_id = response_session_id
+                .as_deref()
+                .or(provider_binding_lookup_session_id.as_deref());
             if let Some(provider_launch_profile) = provider_launch_profile.as_ref() {
-                let binding_session_id = response_session_id
-                    .as_deref()
-                    .or(provider_binding_lookup_session_id.as_deref())
-                    .ok_or_else(|| {
-                        "Claude provider binding requires a session identity".to_string()
-                    })?;
+                let binding_session_id = binding_session_id.ok_or_else(|| {
+                    "Claude provider binding requires a session identity".to_string()
+                })?;
                 crate::session_management::record_engine_provider_binding_core(
                     &state.workspaces,
                     state.storage_path.as_path(),
@@ -1906,6 +1908,19 @@ pub async fn engine_send_message(
                     binding_session_id.to_string(),
                     "claude".to_string(),
                     provider_launch_profile.binding.clone(),
+                )
+                .await?;
+            }
+            if let Some(binding_session_id) = binding_session_id {
+                crate::session_management::record_session_execution_target_if_present(
+                    &state.workspaces,
+                    state.storage_path.as_path(),
+                    workspace_id.clone(),
+                    binding_session_id.to_string(),
+                    "claude".to_string(),
+                    model_catalog_entry_id.as_deref(),
+                    requested_runtime_model.as_deref(),
+                    effort.as_deref(),
                 )
                 .await?;
             }
@@ -2273,7 +2288,7 @@ pub async fn engine_send_message(
             let params = super::SendMessageParams {
                 text,
                 model: model_for_send.clone(),
-                effort,
+                effort: effort.clone(),
                 disable_thinking: false,
                 access_mode,
                 images,
@@ -2303,6 +2318,17 @@ pub async fn engine_send_message(
                 )
                 .await?;
             }
+            crate::session_management::record_session_execution_target_if_present(
+                &state.workspaces,
+                state.storage_path.as_path(),
+                workspace_id.clone(),
+                binding_session_id.to_string(),
+                "opencode".to_string(),
+                model_catalog_entry_id.as_deref(),
+                model_for_send.as_deref(),
+                effort.as_deref(),
+            )
+            .await?;
             let item_id = format!("opencode-item-{}", uuid::Uuid::new_v4());
 
             let mut receiver = session.subscribe();
@@ -2454,8 +2480,8 @@ pub async fn engine_send_message(
 
             let params = super::SendMessageParams {
                 text,
-                model: sanitized_model,
-                effort,
+                model: sanitized_model.clone(),
+                effort: effort.clone(),
                 disable_thinking: false,
                 access_mode,
                 images,
@@ -2470,6 +2496,19 @@ pub async fn engine_send_message(
 
             let turn_id = format!("gemini-turn-{}", uuid::Uuid::new_v4());
             let thread_id = thread_id.unwrap_or_else(|| turn_id.clone());
+            if let Some(binding_session_id) = response_session_id.as_deref() {
+                crate::session_management::record_session_execution_target_if_present(
+                    &state.workspaces,
+                    state.storage_path.as_path(),
+                    workspace_id.clone(),
+                    binding_session_id.to_string(),
+                    "gemini".to_string(),
+                    model_catalog_entry_id.as_deref(),
+                    sanitized_model.as_deref(),
+                    effort.as_deref(),
+                )
+                .await?;
+            }
             let item_id = format!("gemini-item-{}", uuid::Uuid::new_v4());
 
             let mut receiver = session.subscribe();
@@ -2714,8 +2753,8 @@ pub async fn engine_send_message(
 
             let params = super::SendMessageParams {
                 text,
-                model: runtime_model,
-                effort,
+                model: runtime_model.clone(),
+                effort: effort.clone(),
                 disable_thinking: false,
                 access_mode,
                 images,
@@ -2745,6 +2784,17 @@ pub async fn engine_send_message(
                 )
                 .await?;
             }
+            crate::session_management::record_session_execution_target_if_present(
+                &state.workspaces,
+                state.storage_path.as_path(),
+                workspace_id.clone(),
+                binding_session_id.to_string(),
+                "kimi".to_string(),
+                model_catalog_entry_id.as_deref(),
+                runtime_model.as_deref(),
+                effort.as_deref(),
+            )
+            .await?;
             let item_id = format!("kimi-item-{}", uuid::Uuid::new_v4());
 
             let mut receiver = session.subscribe();
@@ -2980,8 +3030,8 @@ pub async fn engine_send_message(
 
             let params = super::SendMessageParams {
                 text,
-                model: runtime_model,
-                effort,
+                model: runtime_model.clone(),
+                effort: effort.clone(),
                 disable_thinking: false,
                 access_mode,
                 images,
@@ -3011,6 +3061,17 @@ pub async fn engine_send_message(
                 )
                 .await?;
             }
+            crate::session_management::record_session_execution_target_if_present(
+                &state.workspaces,
+                state.storage_path.as_path(),
+                workspace_id.clone(),
+                binding_session_id.to_string(),
+                "grok".to_string(),
+                model_catalog_entry_id.as_deref(),
+                runtime_model.as_deref(),
+                effort.as_deref(),
+            )
+            .await?;
             let item_id = format!("grok-item-{}", uuid::Uuid::new_v4());
 
             let mut receiver = session.subscribe();

@@ -27,7 +27,16 @@ describe("sidebarSnapshot", () => {
         },
       ],
       threadsByWorkspace: {
-        "ws-1": [{ id: "t-1", name: "Chat", updatedAt: 123 }],
+        "ws-1": [
+          {
+            id: "t-1",
+            name: "Chat",
+            updatedAt: 123,
+            modelCatalogEntryId: "doubao-entry",
+            model: "doubao-runtime",
+            reasoningEffort: "high",
+          },
+        ],
       },
     });
 
@@ -44,8 +53,43 @@ describe("sidebarSnapshot", () => {
         },
       ],
       threadsByWorkspace: {
-        "ws-1": [{ id: "t-1", name: "Chat", updatedAt: 123 }],
+        "ws-1": [
+          {
+            id: "t-1",
+            name: "Chat",
+            updatedAt: 123,
+            modelCatalogEntryId: "doubao-entry",
+            model: "doubao-runtime",
+            reasoningEffort: "high",
+          },
+        ],
       },
+    });
+  });
+
+  it("normalizes durable target fields for first-paint restore", () => {
+    writeClientStoreValue("threads", "sidebarSnapshot", {
+      version: 1,
+      updatedAt: 123,
+      workspaces: [],
+      threadsByWorkspace: {
+        "ws-1": [
+          {
+            id: "t-1",
+            name: "Chat",
+            updatedAt: 123,
+            modelCatalogEntryId: "  doubao-entry ",
+            model: "  doubao-runtime ",
+            reasoningEffort: " high ",
+          },
+        ],
+      },
+    });
+
+    expect(loadSidebarSnapshot()?.threadsByWorkspace["ws-1"][0]).toMatchObject({
+      modelCatalogEntryId: "doubao-entry",
+      model: "doubao-runtime",
+      reasoningEffort: "high",
     });
   });
 

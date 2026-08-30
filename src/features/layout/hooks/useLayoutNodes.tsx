@@ -1644,7 +1644,9 @@ export function useLayoutNodes(input: LayoutNodesOptions): LayoutNodesResult {
               : activeThreadSummary?.providerProfileName ?? null
           }
           selectedModelId={options.selectedModelId}
+          selectedModelRuntime={options.selectedModelRuntime}
           onSelectModel={options.onSelectModel}
+          onPersistNativeSessionTarget={options.onPersistNativeSessionTarget}
           reasoningOptions={options.reasoningOptions}
           selectedEffort={options.selectedEffort}
           onSelectEffort={options.onSelectEffort}

@@ -277,7 +277,7 @@ vi.mock("./ChatInputBox/ChatInputBoxAdapter", () => ({
           onExecutionTargetChange?.({
             engine: "kimi",
             providerProfileId: "doge-token-matrix",
-            modelCatalogEntryId: "豆包",
+            modelCatalogEntryId: "doubao-entry",
             model: "豆包",
             reasoning: null,
             providerProfileNameSnapshot: "Doge",
@@ -298,6 +298,7 @@ function ComposerHarness({
   onCreationTargetEngineChange,
   onSelectEngine,
   onSelectModel = () => {},
+  onPersistNativeSessionTarget,
   selectedEngine = "claude",
   activeThreadId = "thread-1",
   sharedTargetPickerLocked = false,
@@ -320,6 +321,7 @@ function ComposerHarness({
   onCreationTargetEngineChange?: (engine: EngineType | null) => void;
   onSelectEngine?: (engine: EngineType) => void;
   onSelectModel?: (modelId: string) => void;
+  onPersistNativeSessionTarget?: (target: unknown) => void;
   selectedEngine?: EngineType;
   activeThreadId?: string | null;
   sharedTargetPickerLocked?: boolean;
@@ -405,6 +407,7 @@ function ComposerHarness({
       }
       selectedModelId={sharedTarget?.model ?? selectedModelId}
       onSelectModel={onSelectModel}
+      onPersistNativeSessionTarget={onPersistNativeSessionTarget}
       reasoningOptions={[]}
       selectedEffort={sharedTarget?.effort ?? null}
       onSelectEffort={() => {}}
@@ -841,10 +844,12 @@ describe("Composer file reference token", () => {
       }],
     });
     const onSelectModel = vi.fn();
+    const onPersistNativeSessionTarget = vi.fn();
     const view = render(
       <ComposerHarness
         onSend={() => {}}
         onSelectModel={onSelectModel}
+        onPersistNativeSessionTarget={onPersistNativeSessionTarget}
         selectedEngine="kimi"
         selectedModelId="gpt-5.5"
         providerProfileId="doge-token-matrix"
@@ -854,6 +859,14 @@ describe("Composer file reference token", () => {
     fireEvent.click(view.getByTestId("select-product-doubao-model"));
 
     expect(onSelectModel).toHaveBeenCalledWith("豆包");
+    expect(onPersistNativeSessionTarget).toHaveBeenCalledWith(
+      expect.objectContaining({
+        engine: "kimi",
+        providerProfileId: "doge-token-matrix",
+        modelCatalogEntryId: "doubao-entry",
+        model: "豆包",
+      }),
+    );
     expect(view.getByTestId("composer-target-authority").dataset).toMatchObject({
       pickerMode: "product",
       readinessEngine: "kimi",
@@ -1139,6 +1152,59 @@ describe("Composer file reference token", () => {
     const authority = view.getByTestId("composer-target-authority");
     expect(authority.dataset.atomicTarget).toBe("true");
     expect(authority.dataset.pickerMode).toBe("shared");
+  });
+
+  it("does not persist the Product default while Shared target hydration is pending", async () => {
+    publishProductReadyV1({
+      entitlement: {
+        status: "active",
+        subscriptionId: 9,
+        groupId: 5,
+        groupName: "Doge",
+        planName: "Doge subscription",
+        expiresAt: "2030-02-01T00:00:00Z",
+        usage: null,
+      },
+      engines: [
+        { id: "codex", displayName: "Codex" },
+        { id: "kimi", displayName: "Kimi CLI" },
+      ],
+      models: [
+        {
+          id: "gpt-5.6-sol",
+          displayName: "GPT-5.6 Sol",
+          model: "gpt-5.6-sol",
+          apiProtocols: ["openai-responses"],
+          capabilities: ["chat"],
+        },
+        {
+          id: "k3-256k",
+          displayName: "K3 256K",
+          model: "k3-256k",
+          apiProtocols: ["openai-chat-completions"],
+          capabilities: ["chat"],
+        },
+      ],
+    });
+
+    render(
+      <ComposerHarness
+        onSend={() => {}}
+        sharedTarget={{
+          providerProfileId: "doge-token-matrix",
+          model: "gpt-5.6-sol",
+          effort: "low",
+        }}
+      />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(
+      getSharedTargetState("ws-1", "thread-1").selectedNextTarget,
+    ).toBeNull();
+    expect(invoke).not.toHaveBeenCalled();
   });
 
   it("keeps explicit local Provider and empty reasoning instead of old props", () => {

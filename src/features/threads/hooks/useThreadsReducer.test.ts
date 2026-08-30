@@ -292,6 +292,46 @@ describe("threadReducer", () => {
     expect(refreshed).toBe(loaded);
   });
 
+  it("publishes a thread list refresh when only the durable execution target changes", () => {
+    const loaded = threadReducer(initialState, {
+      type: "setThreads",
+      workspaceId: "ws-1",
+      threads: [
+        {
+          id: "thread-provider-a",
+          name: "3+3",
+          updatedAt: 20,
+          engineSource: "kimi",
+          threadKind: "native",
+        },
+      ],
+    });
+
+    const refreshed = threadReducer(loaded, {
+      type: "setThreads",
+      workspaceId: "ws-1",
+      threads: [
+        {
+          id: "thread-provider-a",
+          name: "3+3",
+          updatedAt: 20,
+          engineSource: "kimi",
+          threadKind: "native",
+          modelCatalogEntryId: "kimi-k3-256k",
+          model: "k3-256k",
+          reasoningEffort: "high",
+        },
+      ],
+    });
+
+    expect(refreshed).not.toBe(loaded);
+    expect(refreshed.threadsByWorkspace["ws-1"]?.[0]).toMatchObject({
+      modelCatalogEntryId: "kimi-k3-256k",
+      model: "k3-256k",
+      reasoningEffort: "high",
+    });
+  });
+
   it("does not churn state when ensureThread repeats identical provider metadata", () => {
     const withProvider = threadReducer(initialState, {
       type: "ensureThread",

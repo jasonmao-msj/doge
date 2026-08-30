@@ -1257,6 +1257,7 @@ pub(crate) async fn send_user_message(
     thread_id: String,
     text: String,
     model: Option<String>,
+    model_catalog_entry_id: Option<String>,
     effort: Option<String>,
     access_mode: Option<String>,
     images: Option<Vec<String>>,
@@ -1303,6 +1304,10 @@ pub(crate) async fn send_user_message(
         payload.insert("threadId".to_string(), json!(thread_id));
         payload.insert("text".to_string(), json!(text));
         payload.insert("model".to_string(), json!(normalized_model));
+        payload.insert(
+            "modelCatalogEntryId".to_string(),
+            json!(model_catalog_entry_id),
+        );
         payload.insert("effort".to_string(), json!(effort));
         payload.insert("accessMode".to_string(), json!(access_mode));
         payload.insert("images".to_string(), json!(images));
@@ -1336,6 +1341,24 @@ pub(crate) async fn send_user_message(
     } else {
         resolve_provider_scoped_fallback_model(&state, &workspace_id, &provider_profile_id).await?
     };
+    if let Some(model) = effective_model.as_deref() {
+        let catalog_entry_id = model_catalog_entry_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .unwrap_or(model);
+        crate::session_management::record_session_execution_target_core(
+            &state.workspaces,
+            state.storage_path.as_path(),
+            workspace_id.clone(),
+            thread_id.clone(),
+            "codex".to_string(),
+            catalog_entry_id.to_string(),
+            model.to_string(),
+            effort.clone(),
+        )
+        .await?;
+    }
     let (mode_enforcement_enabled, extra_developer_instructions) = {
         let settings = state.app_settings.lock().await;
         (
@@ -2571,11 +2594,20 @@ pub(crate) async fn rename_thread_title_key(
 
     thread_titles_core::rename_thread_title_core(
         &state.workspaces,
+        workspace_id.clone(),
+        old_thread_id.clone(),
+        new_thread_id.clone(),
+    )
+    .await?;
+    crate::session_management::migrate_session_execution_target_for_thread_rename_core(
+        &state.workspaces,
+        state.storage_path.as_path(),
         workspace_id,
         old_thread_id,
         new_thread_id,
     )
     .await
+    .map(|_| ())
 }
 
 #[tauri::command]

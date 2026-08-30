@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { MutableRefObject } from "react";
 import { getClientStoreSync, writeClientStoreValue } from "../services/clientStorage";
 import type { DebugEntry } from "../types";
@@ -23,7 +23,11 @@ function selectionsEqual(
   if (!left || !right) {
     return false;
   }
-  return left.modelId === right.modelId && left.effort === right.effort;
+  return (
+    left.modelId === right.modelId &&
+    left.effort === right.effort &&
+    (left.runtimeModel ?? null) === (right.runtimeModel ?? null)
+  );
 }
 
 function readStoredThreadComposerSelectionEntryBySessionKey(
@@ -45,6 +49,13 @@ function readStoredThreadComposerSelectionEntryBySessionKey(
 type UseSelectedComposerSessionOptions = {
   activeThreadId: string | null;
   activeWorkspaceId: string | null;
+  durableSelection?: ComposerSessionSelection | null;
+  activeThreadEngine?: string | null;
+  loadDurableSelection?: (
+    workspaceId: string,
+    threadId: string,
+    engine: string,
+  ) => Promise<ComposerSessionSelection | null>;
   resolveCanonicalThreadId: (threadId: string) => string;
   engineDefaultSelectionReady?: boolean;
   /**
@@ -78,9 +89,13 @@ type UseSelectedComposerSessionResult = {
 export function useSelectedComposerSession({
   activeThreadId,
   activeWorkspaceId,
+  activeThreadEngine = null,
+  durableSelection = null,
+  loadDurableSelection,
   resolveCanonicalThreadId,
   engineDefaultSelectionReady = true,
   resolveEngineDefaultComposerSelection,
+  onDebug,
 }: UseSelectedComposerSessionOptions): UseSelectedComposerSessionResult {
   const [selectedComposerSelectionBySessionKey, setSelectedComposerSelectionBySessionKey] =
     useState<Record<string, ComposerSessionSelection | null>>({});
@@ -110,6 +125,85 @@ export function useSelectedComposerSession({
     },
     [],
   );
+
+  const activeSessionKey = useMemo(
+    () => resolveSelectedComposerSessionKey(activeWorkspaceId, activeThreadId),
+    [activeThreadId, activeWorkspaceId, resolveSelectedComposerSessionKey],
+  );
+  const [loadedDurableSelection, setLoadedDurableSelection] = useState<{
+    sessionKey: string;
+    engine: string;
+    selection: ComposerSessionSelection | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (
+      !loadDurableSelection ||
+      !activeSessionKey ||
+      !activeWorkspaceId ||
+      !activeThreadId ||
+      !activeThreadEngine?.trim()
+    ) {
+      return;
+    }
+    let cancelled = false;
+    void loadDurableSelection(
+      activeWorkspaceId,
+      activeThreadId,
+      activeThreadEngine,
+    )
+      .then((selection) => {
+        if (cancelled) {
+          return;
+        }
+        setLoadedDurableSelection({
+          sessionKey: activeSessionKey,
+          engine: activeThreadEngine.trim().toLowerCase(),
+          selection: normalizeComposerSessionSelection(selection),
+        });
+      })
+      .catch((error) => {
+        onDebug?.({
+          id: `${Date.now()}-session-execution-target-load-failed`,
+          timestamp: Date.now(),
+          source: "error",
+          label: "session/execution-target-load-failed",
+          payload: {
+            workspaceId: activeWorkspaceId,
+            sessionId: activeThreadId,
+            engine: activeThreadEngine,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeSessionKey,
+    activeThreadEngine,
+    activeThreadId,
+    activeWorkspaceId,
+    loadDurableSelection,
+    onDebug,
+  ]);
+
+  const durableSelectionForActive = useMemo(() => {
+    if (
+      activeSessionKey &&
+      loadedDurableSelection?.sessionKey === activeSessionKey &&
+      loadedDurableSelection.engine === activeThreadEngine?.trim().toLowerCase() &&
+      loadedDurableSelection.selection
+    ) {
+      return loadedDurableSelection.selection;
+    }
+    return durableSelection;
+  }, [
+    activeSessionKey,
+    activeThreadEngine,
+    durableSelection,
+    loadedDurableSelection,
+  ]);
 
   const cacheSelectionForSessionKey = useCallback(
     (sessionKey: string, selection: ComposerSessionSelection | null) => {
@@ -212,6 +306,19 @@ export function useSelectedComposerSession({
       if (!sessionKey) {
         return null;
       }
+      const activeSessionKey = resolveSelectedComposerSessionKey(
+        activeWorkspaceId,
+        activeThreadId,
+      );
+      if (sessionKey === activeSessionKey) {
+        const durableCandidate = normalizeComposerSessionSelectionForThread(
+          activeThreadId,
+          durableSelectionForActive,
+        );
+        if (durableCandidate) {
+          return durableCandidate;
+        }
+      }
       if (Object.prototype.hasOwnProperty.call(selectedComposerSelectionBySessionKey, sessionKey)) {
         return normalizeComposerSessionSelectionForThread(
           threadId,
@@ -223,7 +330,13 @@ export function useSelectedComposerSession({
         readStoredThreadComposerSelectionEntryBySessionKey(sessionKey).value,
       );
     },
-    [resolveSelectedComposerSessionKey, selectedComposerSelectionBySessionKey],
+    [
+      activeThreadId,
+      activeWorkspaceId,
+      durableSelectionForActive,
+      resolveSelectedComposerSessionKey,
+      selectedComposerSelectionBySessionKey,
+    ],
   );
 
   const commitSelectedComposerSelection = useCallback(
@@ -254,14 +367,27 @@ export function useSelectedComposerSession({
 
     let candidate: ComposerSessionSelection | null = null;
     let hasCandidate = false;
-    const selectionCache = selectedComposerSelectionBySessionKeyRef.current;
-    if (Object.prototype.hasOwnProperty.call(selectionCache, sessionKey)) {
+    const durableCandidate = normalizeComposerSessionSelectionForThread(
+      activeThreadId,
+      durableSelectionForActive,
+    );
+    if (durableCandidate) {
+      // Native session metadata is authoritative after a cold start. Mirror it
+      // into the client cache for legacy consumers, but never read stale cache
+      // before this branch.
+      candidate = durableCandidate;
+      hasCandidate = true;
+      cacheSelectionForSessionKey(sessionKey, candidate);
+      writeSelectionForSessionKey(sessionKey, candidate);
+    } else {
+      const selectionCache = selectedComposerSelectionBySessionKeyRef.current;
+      if (Object.prototype.hasOwnProperty.call(selectionCache, sessionKey)) {
       candidate = normalizeComposerSessionSelectionForThread(
         activeThreadId,
         selectionCache[sessionKey] ?? null,
       );
       hasCandidate = true;
-    } else {
+      } else {
       const stored = readStoredThreadComposerSelectionEntryBySessionKey(sessionKey);
       candidate = normalizeComposerSessionSelectionForThread(activeThreadId, stored.value);
       hasCandidate = stored.exists;
@@ -324,12 +450,14 @@ export function useSelectedComposerSession({
       if (hasCandidate) {
         cacheSelectionForSessionKey(sessionKey, candidate);
       }
+      }
     }
 
     commitSelectedComposerSelection(candidate);
   }, [
     activeThreadId,
     activeWorkspaceId,
+    durableSelectionForActive,
     commitSelectedComposerSelection,
     draftComposerSelection,
     engineDefaultSelectionReady,

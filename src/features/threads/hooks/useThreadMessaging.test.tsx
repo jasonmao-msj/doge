@@ -2765,6 +2765,37 @@ describe("useThreadMessaging", () => {
     );
   });
 
+  it("uses the existing thread engine when the global engine is stale after restart", async () => {
+    const threadId = "kimi:session-doubao";
+    const { result } = makeThreadMessagingHook("codex", {
+      activeThreadId: threadId,
+      ensuredThreadId: threadId,
+      threadEngineById: { [threadId]: "kimi" },
+      providerProfileByThread: { [threadId]: "doge-token-matrix" },
+      resolveComposerSelection: () => ({
+        id: "豆包",
+        model: "豆包",
+        source: "managed",
+        providerProfileId: "doge-token-matrix",
+        effort: null,
+        collaborationMode: null,
+      }),
+    });
+
+    await act(async () => {
+      await result.current.sendUserMessage("send with restored model");
+    });
+
+    expect(engineSendMessage).toHaveBeenCalledWith(
+      "ws-1",
+      expect.objectContaining({
+        engine: "kimi",
+        threadId,
+        model: "豆包",
+      }),
+    );
+  });
+
   it("does not show create-session loading for follow-up sends on existing threads", async () => {
     const runWithCreateSessionLoading = vi.fn(async (_params, action) => action());
     const { result } = makeThreadMessagingHook("codex", {

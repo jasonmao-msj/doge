@@ -208,6 +208,80 @@ pub(crate) async fn record_auto_session_metadata(
 }
 
 #[tauri::command]
+pub(crate) async fn record_session_execution_target(
+    workspace_id: String,
+    session_id: String,
+    engine: String,
+    model_catalog_entry_id: String,
+    model: String,
+    reasoning_effort: Option<String>,
+    state: State<'_, AppState>,
+    app: AppHandle,
+) -> Result<(), String> {
+    if remote_backend::is_remote_mode(&*state).await {
+        return forward_session_management_remote_unit(
+            &state,
+            app,
+            "record_session_execution_target",
+            json!({
+                "workspaceId": workspace_id,
+                "sessionId": session_id,
+                "engine": engine,
+                "modelCatalogEntryId": model_catalog_entry_id,
+                "model": model,
+                "reasoningEffort": reasoning_effort,
+            }),
+        )
+        .await;
+    }
+
+    record_session_execution_target_core(
+        &state.workspaces,
+        state.storage_path.as_path(),
+        workspace_id,
+        session_id,
+        engine,
+        model_catalog_entry_id,
+        model,
+        reasoning_effort,
+    )
+    .await
+    .map(|_| ())
+}
+
+#[tauri::command]
+pub(crate) async fn get_session_execution_target(
+    workspace_id: String,
+    session_id: String,
+    engine: String,
+    state: State<'_, AppState>,
+    app: AppHandle,
+) -> Result<Option<SessionExecutionTarget>, String> {
+    if remote_backend::is_remote_mode(&*state).await {
+        return forward_session_management_remote(
+            &state,
+            app,
+            "get_session_execution_target",
+            json!({
+                "workspaceId": workspace_id,
+                "sessionId": session_id,
+                "engine": engine,
+            }),
+        )
+        .await;
+    }
+
+    get_session_execution_target_core(
+        &state.workspaces,
+        state.storage_path.as_path(),
+        workspace_id,
+        session_id,
+        engine,
+    )
+    .await
+}
+
+#[tauri::command]
 pub(crate) async fn get_workspace_session_projection_summary(
     workspace_id: String,
     query: Option<WorkspaceSessionCatalogQuery>,
@@ -1456,6 +1530,11 @@ fn finalize_existing_catalog_entry(
     mark_entry_as_existing_on_disk(&mut entry);
     apply_engine_provider_binding(&mut entry, metadata_by_workspace_id);
     apply_provider_continuation_metadata(&mut entry, metadata_by_workspace_id);
+    // Continuation metadata replaces the projection as a whole, so the durable
+    // execution target must be applied last to remain authoritative.
+    if let Some(metadata) = metadata_by_workspace_id.get(&entry.workspace_id) {
+        apply_session_execution_target(&mut entry, metadata);
+    }
     apply_codex_provider_home_binding_fallback(&mut entry);
     apply_folder_assignment(&mut entry, metadata_by_workspace_id);
     apply_auto_session_metadata(&mut entry, metadata_by_workspace_id);
@@ -1479,6 +1558,7 @@ fn append_metadata_orphan_entries(
         .keys()
         .chain(metadata.folder_id_by_session_id.keys())
         .chain(metadata.auto_session_by_session_id.keys())
+        .chain(metadata.execution_target_by_session_key.keys())
         .chain(metadata.provider_continuation_by_session_key.keys())
         .cloned()
         .collect::<Vec<_>>();
@@ -1504,13 +1584,15 @@ fn append_metadata_orphan_entries(
         }
         let folder_id =
             folder_assignment_for_session(metadata, &workspace.id, &session_id, engine).cloned();
-        entries.push(build_metadata_orphan_entry(
+        let mut orphan = build_metadata_orphan_entry(
             workspace,
             &session_id,
             archived_at_for_session(metadata, &workspace.id, &session_id),
             folder_id,
             auto_session,
-        ));
+        );
+        apply_session_execution_target(&mut orphan, metadata);
+        entries.push(orphan);
     }
 }
 
@@ -1927,6 +2009,32 @@ fn catalog_metadata_lookup_keys_for_session(
     keys
 }
 
+fn execution_target_lookup_keys_for_entry(entry: &WorkspaceSessionCatalogEntry) -> Vec<String> {
+    let mut keys = catalog_metadata_lookup_keys_for_entry(entry);
+    if let Some(stable_key) =
+        engine_provider_binding_stable_key(&entry.workspace_id, &entry.session_id, &entry.engine)
+    {
+        keys.push(stable_key);
+    }
+    keys.sort();
+    keys.dedup();
+    keys
+}
+
+fn execution_target_lookup_keys_for_session(
+    workspace_id: &str,
+    session_id: &str,
+    engine: &str,
+) -> Vec<String> {
+    let mut keys = catalog_metadata_lookup_keys_for_session(workspace_id, session_id, engine);
+    if let Some(stable_key) = engine_provider_binding_stable_key(workspace_id, session_id, engine) {
+        keys.push(stable_key);
+    }
+    keys.sort();
+    keys.dedup();
+    keys
+}
+
 pub(crate) fn codex_provider_binding_for_session(
     metadata: &WorkspaceSessionCatalogMetadata,
     workspace_id: &str,
@@ -2019,6 +2127,21 @@ fn apply_engine_provider_binding(
     entry.provider_profile_name = Some(binding.provider_profile_name.clone());
     entry.provider_availability = Some(binding.provider_availability);
     entry.source_label = Some(binding.provider_profile_name);
+}
+
+fn apply_session_execution_target(
+    entry: &mut WorkspaceSessionCatalogEntry,
+    metadata: &WorkspaceSessionCatalogMetadata,
+) {
+    let Some(target) = execution_target_lookup_keys_for_entry(entry)
+        .into_iter()
+        .find_map(|key| metadata.execution_target_by_session_key.get(&key))
+    else {
+        return;
+    };
+    entry.continuation.model_catalog_entry_id = Some(target.model_catalog_entry_id.clone());
+    entry.continuation.model = Some(target.model.clone());
+    entry.continuation.reasoning_effort = target.reasoning_effort.clone();
 }
 
 fn apply_provider_continuation_metadata(
@@ -2187,11 +2310,12 @@ fn remove_catalog_metadata_for_session(
     session_id: &str,
 ) {
     let engine = parse_catalog_identity(session_id).engine_name();
-    for key in catalog_metadata_lookup_keys_for_session(workspace_id, session_id, engine) {
+    for key in execution_target_lookup_keys_for_session(workspace_id, session_id, engine) {
         metadata.archived_at_by_session_id.remove(&key);
         metadata.folder_id_by_session_id.remove(&key);
         metadata.auto_session_by_session_id.remove(&key);
         metadata.engine_provider_binding_by_session_key.remove(&key);
+        metadata.execution_target_by_session_key.remove(&key);
         metadata.codex_provider_binding_by_session_id.remove(&key);
         metadata.provider_continuation_by_session_key.remove(&key);
     }
@@ -2206,6 +2330,7 @@ fn remove_catalog_metadata_for_target(
         metadata.folder_id_by_session_id.remove(key);
         metadata.auto_session_by_session_id.remove(key);
         metadata.engine_provider_binding_by_session_key.remove(key);
+        metadata.execution_target_by_session_key.remove(key);
         metadata.codex_provider_binding_by_session_id.remove(key);
         metadata.provider_continuation_by_session_key.remove(key);
     }
@@ -2352,6 +2477,160 @@ pub(crate) async fn record_engine_provider_binding_core(
         &engine,
         &binding,
     )
+}
+
+pub(crate) async fn record_session_execution_target_core(
+    workspaces: &Mutex<HashMap<String, WorkspaceEntry>>,
+    storage_path: &Path,
+    workspace_id: String,
+    session_id: String,
+    engine: String,
+    model_catalog_entry_id: String,
+    model: String,
+    reasoning_effort: Option<String>,
+) -> Result<bool, String> {
+    let workspace_id = normalize_workspace_id(&workspace_id)?;
+    ensure_workspace_exists(workspaces, &workspace_id).await?;
+    let model_catalog_entry_id = model_catalog_entry_id.trim();
+    let model = model.trim();
+    if model_catalog_entry_id.is_empty() || model.is_empty() {
+        return Err("execution target requires modelCatalogEntryId and model".to_string());
+    }
+    let stable_key = engine_provider_binding_stable_key(&workspace_id, &session_id, &engine)
+        .ok_or_else(|| "engine is required".to_string())?;
+    let target = SessionExecutionTarget {
+        model_catalog_entry_id: model_catalog_entry_id.to_string(),
+        model: model.to_string(),
+        reasoning_effort: reasoning_effort
+            .map(|value| value.trim().to_string())
+            .filter(|value| !value.is_empty()),
+    };
+    let path = catalog_metadata_path(storage_path, &workspace_id)?;
+    with_storage_lock(&path, || {
+        let mut metadata = read_catalog_metadata_from_path(&path)?;
+        if metadata.execution_target_by_session_key.get(&stable_key) == Some(&target) {
+            return Ok(false);
+        }
+        metadata
+            .execution_target_by_session_key
+            .insert(stable_key, target);
+        write_catalog_metadata_unlocked(&path, &metadata)?;
+        Ok(true)
+    })
+}
+
+/// Move a target written while a CLI session still had a provisional thread id
+/// to the canonical id announced by the CLI. The move is atomic with the
+/// catalog metadata write and keeps an already-created canonical target.
+pub(crate) fn migrate_session_execution_target_at_path(
+    storage_path: &Path,
+    workspace_id: &str,
+    old_session_id: &str,
+    new_session_id: &str,
+    engine: &str,
+) -> Result<bool, String> {
+    let workspace_id = normalize_workspace_id(workspace_id)?;
+    let old_key = engine_provider_binding_stable_key(&workspace_id, old_session_id, engine)
+        .ok_or_else(|| "engine is required".to_string())?;
+    let new_key = engine_provider_binding_stable_key(&workspace_id, new_session_id, engine)
+        .ok_or_else(|| "engine is required".to_string())?;
+    if old_key == new_key {
+        return Ok(false);
+    }
+    let path = catalog_metadata_path(storage_path, &workspace_id)?;
+    with_storage_lock(&path, || {
+        let mut metadata = read_catalog_metadata_from_path(&path)?;
+        let Some(target) = metadata.execution_target_by_session_key.remove(&old_key) else {
+            return Ok(false);
+        };
+        metadata
+            .execution_target_by_session_key
+            .entry(new_key)
+            .or_insert(target);
+        write_catalog_metadata_unlocked(&path, &metadata)?;
+        Ok(true)
+    })
+}
+
+pub(crate) async fn migrate_session_execution_target_for_thread_rename_core(
+    workspaces: &Mutex<HashMap<String, WorkspaceEntry>>,
+    storage_path: &Path,
+    workspace_id: String,
+    old_thread_id: String,
+    new_thread_id: String,
+) -> Result<bool, String> {
+    let workspace_id = normalize_workspace_id(&workspace_id)?;
+    ensure_workspace_exists(workspaces, &workspace_id).await?;
+    let engine = ["claude", "gemini", "grok", "kimi", "opencode", "codex"]
+        .into_iter()
+        .find(|engine| {
+            old_thread_id.starts_with(&format!("{engine}:"))
+                || old_thread_id.starts_with(&format!("{engine}-pending-"))
+                || new_thread_id.starts_with(&format!("{engine}:"))
+                || new_thread_id.starts_with(&format!("{engine}-pending-"))
+        });
+    let Some(engine) = engine else {
+        return Ok(false);
+    };
+    migrate_session_execution_target_at_path(
+        storage_path,
+        &workspace_id,
+        &old_thread_id,
+        &new_thread_id,
+        engine,
+    )
+}
+
+pub(crate) async fn get_session_execution_target_core(
+    workspaces: &Mutex<HashMap<String, WorkspaceEntry>>,
+    storage_path: &Path,
+    workspace_id: String,
+    session_id: String,
+    engine: String,
+) -> Result<Option<SessionExecutionTarget>, String> {
+    let workspace_id = normalize_workspace_id(&workspace_id)?;
+    ensure_workspace_exists(workspaces, &workspace_id).await?;
+    let engine = engine.trim();
+    if engine.is_empty() {
+        return Err("engine is required".to_string());
+    }
+    let metadata = read_catalog_metadata(storage_path, &workspace_id)?;
+    Ok(
+        execution_target_lookup_keys_for_session(&workspace_id, &session_id, engine)
+            .into_iter()
+            .find_map(|key| metadata.execution_target_by_session_key.get(&key).cloned()),
+    )
+}
+
+pub(crate) async fn record_session_execution_target_if_present(
+    workspaces: &Mutex<HashMap<String, WorkspaceEntry>>,
+    storage_path: &Path,
+    workspace_id: String,
+    session_id: String,
+    engine: String,
+    model_catalog_entry_id: Option<&str>,
+    model: Option<&str>,
+    reasoning_effort: Option<&str>,
+) -> Result<(), String> {
+    let Some(model) = model.map(str::trim).filter(|value| !value.is_empty()) else {
+        return Ok(());
+    };
+    let model_catalog_entry_id = model_catalog_entry_id
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or(model);
+    record_session_execution_target_core(
+        workspaces,
+        storage_path,
+        workspace_id,
+        session_id,
+        engine,
+        model_catalog_entry_id.to_string(),
+        model.to_string(),
+        reasoning_effort.map(str::to_string),
+    )
+    .await
+    .map(|_| ())
 }
 
 pub(crate) async fn record_provider_continuation_metadata_core(
@@ -3295,6 +3574,11 @@ fn build_global_codex_catalog_entry(
         }
     }
     mark_entry_as_existing_on_disk(&mut entry);
+    if let Some(owner_workspace_id) = entry.matched_workspace_id.as_deref() {
+        if let Some(metadata) = metadata_by_workspace_id.get(owner_workspace_id) {
+            apply_session_execution_target(&mut entry, metadata);
+        }
+    }
     apply_codex_provider_home_binding_fallback(&mut entry);
     entry
 }
@@ -3562,6 +3846,7 @@ mod tests {
     include!("session_management_tests.rs");
     include!("session_management_metadata_provider_tests.rs");
     include!("session_management_provider_binding_tests.rs");
+    include!("session_management_execution_target_tests.rs");
     include!("session_management_provider_continuation_tests.rs");
     include!("session_management_folder_tests.rs");
     include!("session_management_folder_assignment_tests.rs");

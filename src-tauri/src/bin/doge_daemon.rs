@@ -2168,6 +2168,34 @@ async fn handle_rpc_request(
                 .await?;
             serde_json::to_value(page).map_err(|err| err.to_string())
         }
+        "record_session_execution_target" => {
+            let workspace_id = parse_string(&params, "workspaceId")?;
+            let session_id = parse_string(&params, "sessionId")?;
+            let engine = parse_string(&params, "engine")?;
+            let model_catalog_entry_id = parse_string(&params, "modelCatalogEntryId")?;
+            let model = parse_string(&params, "model")?;
+            let reasoning_effort = parse_optional_string(&params, "reasoningEffort");
+            state
+                .record_session_execution_target(
+                    workspace_id,
+                    session_id,
+                    engine,
+                    model_catalog_entry_id,
+                    model,
+                    reasoning_effort,
+                )
+                .await?;
+            Ok(json!({ "ok": true }))
+        }
+        "get_session_execution_target" => {
+            let workspace_id = parse_string(&params, "workspaceId")?;
+            let session_id = parse_string(&params, "sessionId")?;
+            let engine = parse_string(&params, "engine")?;
+            let target = state
+                .get_session_execution_target(workspace_id, session_id, engine)
+                .await?;
+            serde_json::to_value(target).map_err(|err| err.to_string())
+        }
         "list_global_codex_sessions" => {
             let query = parse_optional_value(&params, "query")
                 .filter(|value| !value.is_null())

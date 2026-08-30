@@ -168,6 +168,8 @@ export type {
   ProviderContinuationTargetInput,
   NativeProviderContinuationInput,
   NativeProviderContinuationResponse,
+  SessionExecutionTargetInput,
+  SessionExecutionTarget,
 } from "./tauri/sessionManagement";
 export {
   assignWorkspaceSessionFolders,
@@ -188,6 +190,8 @@ export {
   listWorkspaceSessions,
   moveWorkspaceSessionFolder,
   recordAutoSessionMetadata,
+  recordSessionExecutionTarget,
+  getSessionExecutionTarget,
   renameWorkspaceSessionFolder,
   unarchiveWorkspaceSessions,
 } from "./tauri/sessionManagement";

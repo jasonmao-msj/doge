@@ -558,6 +558,22 @@ async fn persist_target_metadata(
         }
         _ => return Err("unsupported target engine".to_string()),
     }
+    if let (Some(model_catalog_entry_id), Some(model)) = (
+        destination.model_catalog_entry_id.as_deref(),
+        destination.model.as_deref(),
+    ) {
+        crate::session_management::record_session_execution_target_core(
+            &state.workspaces,
+            state.storage_path.as_path(),
+            workspace_id.to_string(),
+            target_session_id.to_string(),
+            destination.engine.icon().to_string(),
+            model_catalog_entry_id.to_string(),
+            model.to_string(),
+            destination.reasoning_effort.clone(),
+        )
+        .await?;
+    }
     crate::session_management::record_provider_continuation_metadata_core(
         &state.workspaces,
         state.storage_path.as_path(),

@@ -5,6 +5,8 @@ import {
   createNativeProviderContinuation,
   discardPreparedNativeProviderContinuation,
   prepareNativeProviderContinuation,
+  getSessionExecutionTarget,
+  recordSessionExecutionTarget,
   type NativeProviderContinuationInput,
 } from "./sessionManagement";
 
@@ -66,5 +68,57 @@ describe("native Provider continuation commands", () => {
         confirmDegraded: true,
       },
     );
+  });
+});
+
+describe("session execution target command", () => {
+  beforeEach(() => {
+    vi.mocked(invoke).mockReset();
+    vi.mocked(invoke).mockResolvedValue(undefined);
+  });
+
+  it("maps the selected session target with a nullable effort", async () => {
+    await recordSessionExecutionTarget({
+      workspaceId: "workspace-1",
+      sessionId: "codex:session-1",
+      engine: "codex",
+      modelCatalogEntryId: "doubao-entry",
+      model: "doubao-runtime",
+      reasoningEffort: null,
+    });
+
+    expect(invoke).toHaveBeenCalledWith("record_session_execution_target", {
+      workspaceId: "workspace-1",
+      sessionId: "codex:session-1",
+      engine: "codex",
+      modelCatalogEntryId: "doubao-entry",
+      model: "doubao-runtime",
+      reasoningEffort: null,
+    });
+  });
+
+  it("reads the targeted session target without scanning the catalog", async () => {
+    vi.mocked(invoke).mockResolvedValue({
+      modelCatalogEntryId: "doubao-entry",
+      model: "doubao-runtime",
+      reasoningEffort: "high",
+    });
+
+    await expect(
+      getSessionExecutionTarget({
+        workspaceId: "workspace-1",
+        sessionId: "kimi:session-1",
+        engine: "kimi",
+      }),
+    ).resolves.toEqual({
+      modelCatalogEntryId: "doubao-entry",
+      model: "doubao-runtime",
+      reasoningEffort: "high",
+    });
+    expect(invoke).toHaveBeenCalledWith("get_session_execution_target", {
+      workspaceId: "workspace-1",
+      sessionId: "kimi:session-1",
+      engine: "kimi",
+    });
   });
 });

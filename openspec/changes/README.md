@@ -2,10 +2,10 @@
 
 本页是 `mossx` OpenSpec proposal 的当前入口。它只维护 active change 的执行状态，并把 archived change 路由到完整历史索引；详细治理快照仍以 [`../project.md`](../project.md) 为准。
 
-- Active proposals: `32`
-- Archived proposals: `885`
-- Main capability specs: `502`
-- Updated At: `2026-08-28`
+- Active proposals: `31`
+- Archived proposals: `886`
+- Main capability specs: `517`
+- Updated At: `2026-08-30`
 
 ## Active Proposals
 
@@ -14,7 +14,6 @@
 | [`add-collab-stage-upstream-feed-mode`](add-collab-stage-upstream-feed-mode/proposal.md) | 7/8 tasks | in progress | [proposal](add-collab-stage-upstream-feed-mode/proposal.md) · [design](add-collab-stage-upstream-feed-mode/design.md) · [tasks](add-collab-stage-upstream-feed-mode/tasks.md) · [specs](add-collab-stage-upstream-feed-mode/specs/) |
 | [`add-conversation-squad-inspector`](add-conversation-squad-inspector/proposal.md) | 11/12 tasks | in progress | [proposal](add-conversation-squad-inspector/proposal.md) · [design](add-conversation-squad-inspector/design.md) · [tasks](add-conversation-squad-inspector/tasks.md) · [specs](add-conversation-squad-inspector/specs/) |
 | [`add-daily-poetry-composer-banner`](add-daily-poetry-composer-banner/proposal.md) | 7/8 tasks | in progress | [proposal](add-daily-poetry-composer-banner/proposal.md) · [design](add-daily-poetry-composer-banner/design.md) · [tasks](add-daily-poetry-composer-banner/tasks.md) · [specs](add-daily-poetry-composer-banner/specs/) |
-| [`add-doubao-to-managed-codex`](add-doubao-to-managed-codex/proposal.md) | no tasks | pending definition | [proposal](add-doubao-to-managed-codex/proposal.md) |
 | [`add-linux-native-menu-localization`](add-linux-native-menu-localization/proposal.md) | 4/5 tasks | not ready to archive | [proposal](add-linux-native-menu-localization/proposal.md) · [design](add-linux-native-menu-localization/design.md) · [tasks](add-linux-native-menu-localization/tasks.md) · [specs](add-linux-native-menu-localization/specs/) · [verification](add-linux-native-menu-localization/verification.md) |
 | [`add-shared-squad-worker-execution`](add-shared-squad-worker-execution/proposal.md) | 10/11 tasks | in progress | [proposal](add-shared-squad-worker-execution/proposal.md) · [design](add-shared-squad-worker-execution/design.md) · [tasks](add-shared-squad-worker-execution/tasks.md) · [specs](add-shared-squad-worker-execution/specs/) |
 | [`add-sub2api-relay-quota`](add-sub2api-relay-quota/proposal.md) | 15/18 tasks | in progress | [proposal](add-sub2api-relay-quota/proposal.md) · [design](add-sub2api-relay-quota/design.md) · [tasks](add-sub2api-relay-quota/tasks.md) · [specs](add-sub2api-relay-quota/specs/) |
@@ -44,11 +43,11 @@
 | [`unify-product-target-catalog-consumers`](unify-product-target-catalog-consumers/proposal.md) | 11/11 tasks | ready for verification/closure | [proposal](unify-product-target-catalog-consumers/proposal.md) · [design](unify-product-target-catalog-consumers/design.md) · [tasks](unify-product-target-catalog-consumers/tasks.md) · [specs](unify-product-target-catalog-consumers/specs/) |
 | [`wire-shared-composer-run-status-strip`](wire-shared-composer-run-status-strip/proposal.md) | 5/6 tasks | in progress | [proposal](wire-shared-composer-run-status-strip/proposal.md) · [design](wire-shared-composer-run-status-strip/design.md) · [tasks](wire-shared-composer-run-status-strip/tasks.md) · [specs](wire-shared-composer-run-status-strip/specs/) |
 
-## Active backlog notes（2026-08-28）
+## Active backlog notes（2026-08-30）
 
-- Active entries are derived from the 32 directories currently under `openspec/changes/`.
+- Active entries are derived from the 31 directories currently under `openspec/changes/`.
 - Completion progress is sourced from each `tasks.md`; `no-tasks` remains active because its scope is not yet defined.
-- The 32 changes archived on 2026-08-28 are listed in the archive index and are no longer active; the latest one was archived under an explicit user waiver.
+- `fix-managed-session-target-cold-start` was archived on 2026-08-30 after strict validation and Windows restart acceptance.
 
 ## Archived Proposals
 

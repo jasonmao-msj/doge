@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 13
-- **Last Active**: 2026-08-28
+- **Total Sessions**: 16
+- **Last Active**: 2026-08-30
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~434 | Active |
+| `journal-1.md` | ~517 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,9 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 16 | 2026-08-30 | 解决 PR #53 主分支冲突 | `ead66f4a8` | `codex/fix-managed-session-target-cold-start` |
+| 15 | 2026-08-30 | 归档模型目标恢复 OpenSpec | `7d71949cc` | `codex/fix-managed-session-target-cold-start` |
+| 14 | 2026-08-30 | 修复重启后模型目标恢复 | `712792f47` | `codex/fix-managed-session-target-cold-start` |
 | 12 | 2026-08-28 | OpenSpec 归档与 Kimi bundle PR | `14930420f` | `codex/archive-kimi-windows-shell-runtime` |
 | 13 | 2026-08-28 | 修复工作区会话启动加载 | `9542e4e45` | `codex/fix-workspace-session-startup-hydration` |
 | 11 | 2026-08-27 | 修复账户侧边栏入口 React 更新深度循环 | `bef37b6a9` | `fix/create-session-engine-routing` |

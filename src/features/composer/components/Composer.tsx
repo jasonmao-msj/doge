@@ -287,7 +287,10 @@ type ComposerProps = {
   /** 当前会话创建时的供应商显示名（切老会话时底栏渠道芯片用，避免回落到列表首项 DeepSeek） */
   providerProfileName?: string | null;
   selectedModelId: string | null;
+  selectedModelRuntime?: string | null;
   onSelectModel: (id: string) => void;
+  /** Native session picker must persist the complete catalog/runtime identity. */
+  onPersistNativeSessionTarget?: (target: ExecutionTarget) => void;
   reasoningOptions: string[];
   selectedEffort: string | null;
   onSelectEffort: (effort: string | null) => void;
@@ -589,7 +592,9 @@ function ComposerImpl({
   providerProfileId,
   providerProfileName,
   selectedModelId,
+  selectedModelRuntime,
   onSelectModel,
+  onPersistNativeSessionTarget,
   reasoningOptions,
   selectedEffort,
   onSelectEffort,
@@ -865,7 +870,9 @@ function ComposerImpl({
   );
   const productManagedSharedTarget = useMemo(
     () =>
-      usesProductTargetCatalog && isSharedSessionResolved
+      usesProductTargetCatalog &&
+      isSharedSessionResolved &&
+      isResolvedExecutionTarget(selectedSharedTarget)
         ? resolveProductManagedExecutionTargetV1({
             target: selectedSharedTarget,
             engines: productEntitlement.engines,
@@ -883,6 +890,7 @@ function ComposerImpl({
   const productManagedSharedTargetNeedsRepair =
     usesProductTargetCatalog &&
     isSharedSessionResolved &&
+    isResolvedExecutionTarget(selectedSharedTarget) &&
     !isSameProductExecutionTargetV1(
       selectedSharedTarget,
       productManagedSharedTarget,
@@ -1030,7 +1038,10 @@ function ComposerImpl({
           null)
         : null;
     const catalogRuntime = catalogEntry?.model?.trim() || null;
-    const atomicRuntime = nativeAtomicSelection?.model?.trim() || null;
+    const atomicRuntime =
+      nativeAtomicSelection?.model?.trim() ||
+      selectedModelRuntime?.trim() ||
+      null;
     const runtimeModel =
       catalogRuntime ||
       (atomicRuntime &&
@@ -1059,9 +1070,50 @@ function ComposerImpl({
     nativeAtomicSelection,
     providerProfileId,
     providerProfileName,
+    selectedModelRuntime,
     selectedEffort,
     selectedEngine,
     selectedModelId,
+  ]);
+  const nativeProductTarget = useMemo(() => {
+    if (
+      !usesProductTargetCatalog ||
+      isSharedSessionResolved ||
+      createSessionTargetPicker ||
+      nativeSessionTarget?.providerProfileId?.trim() !==
+        MANAGED_PROVIDER_PROFILE_ID_V1
+    ) {
+      return null;
+    }
+    return resolveProductManagedExecutionTargetV1({
+      target: nativeSessionTarget,
+      engines: productEntitlement.engines,
+      models: productEntitlement.models,
+    });
+  }, [
+    createSessionTargetPicker,
+    isSharedSessionResolved,
+    nativeSessionTarget,
+    productEntitlement.engines,
+    productEntitlement.models,
+    usesProductTargetCatalog,
+  ]);
+  useEffect(() => {
+    if (
+      !nativeSessionTarget ||
+      !nativeProductTarget ||
+      !isResolvedExecutionTarget(nativeProductTarget) ||
+      isSameProductExecutionTargetV1(nativeSessionTarget, nativeProductTarget)
+    ) {
+      return;
+    }
+    // Repair targets written by older builds that stored a runtime alias (for
+    // example "豆包") as both catalog id and runtime model.
+    onPersistNativeSessionTarget?.(nativeProductTarget);
+  }, [
+    nativeProductTarget,
+    nativeSessionTarget,
+    onPersistNativeSessionTarget,
   ]);
   // 身份 id-first 纵深防御（fix-shared-session-identity-id-first）：
   // prop 链收敛正确时与 isSharedSession 一致；prop 过期时 shared: id 仍兜底，
@@ -1538,6 +1590,7 @@ function ComposerImpl({
             modelCatalogEntryId: catalogEntryId,
             model: runtimeModel,
           });
+          onPersistNativeSessionTarget?.(target);
           // Native send 读取 per-thread model selection。Product picker 必须
           // 持久化 callable runtime model；display/catalog identity 由本地
           // nativeAtomicSelection 保留，禁止 UI 显示豆包但实际发送默认模型。
@@ -1585,6 +1638,7 @@ function ComposerImpl({
       onSelectEffort,
       onSelectEngine,
       onSelectModel,
+      onPersistNativeSessionTarget,
       providerProfileId,
       requestManagedEngineAccess,
       selectedEffort,
