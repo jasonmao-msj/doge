@@ -279,8 +279,10 @@ type ProductModelViewV1 = {
   Responses、Kimi 支持 Chat Completions、Claude 支持 Anthropic Messages。禁止把
   Responses 与 Chat Completions 折叠为 broad `openai`。
 - 缺 metadata 时，fallback MUST 基于 exact endpoint evidence：GPT/OpenAI 与
-  Kimi/Moonshot/K3 可归 Responses + Chat Completions，Claude/Anthropic 只归 Anthropic
-  Messages，已有三 endpoint evidence 的 Doubao/Ark 可归全部三种；unknown family fail closed。
+  Kimi/Moonshot/K3 可归 Responses + Chat Completions；Claude/Anthropic 在 production
+  `claude-*` Responses→Anthropic route 与真实 Codex terminal 证明后归 Responses +
+  Anthropic Messages；已有三 endpoint evidence 的 Doubao/Ark 可归全部三种；unknown
+  family fail closed。
 - `/v1/models` 只证明 entitlement ceiling，不证明每个 endpoint callable。只要 row 没有
   explicit protocol metadata，release/debug 结论必须来自 exact endpoint probe 或真实 CLI
   typed terminal；一个 endpoint 200 不得扩权另一个 endpoint。
@@ -297,6 +299,7 @@ type ProductModelViewV1 = {
 | `supported_protocols=[anthropic-messages]` | `anthropic-messages` | Claude | 按 `claude-*` 名称决定 |
 | explicit all three | 三者，稳定去重 | 三引擎 | 复制 model row |
 | metadata absent + K3 family | Responses + Chat Completions | Codex + Kimi | 忽略 production route/probe evidence |
+| metadata absent + Claude family | Responses + Anthropic Messages | Codex + Claude | 未经 route/CLI evidence 扩到 Kimi 或其他 endpoint |
 | explicit unknown protocol | row rejected | none | family fallback 扩权 |
 | metadata absent + unknown family | row rejected | none | Renderer presentation guess |
 
@@ -319,11 +322,12 @@ type ProductModelViewV1 = {
 - `productOnboardingClient.test.ts` MUST 覆盖 `api_protocols -> apiProtocols` boundary 和
   unknown protocol `protocolMismatch`。
 - `productModelCompatibility.test.ts` MUST 断言 GPT 与 K3/Kimi row 可进入 Codex/Kimi，
-  Claude row 只进入 Claude，三 endpoint row 同时出现。
+  verified Claude row进入Codex/Claude但不进入Kimi，三 endpoint row同时出现。
 - `ProductEngineModelSelect.test.tsx` MUST 断言 Codex 下 Kimi-family row 可见并提交
   `engine=codex` + exact model + managed Provider identity；Kimi 下仍可提交同一 row。
 - Runtime evidence MUST 至少覆盖一组相同 model 的两个 endpoint；2026-08-27 production
-  route 修复后 `k3` / `k3-256k` / `kimi-for-coding` Responses 全部 200，K3 Chat Completions 亦 200。
+  route 修复后 `k3` / `k3-256k` / `kimi-for-coding` Responses 全部 200，K3 Chat Completions
+  亦200；2026-08-30 `claude-opus-4-8` 经Responses→Anthropic route完成真实Codex CLI turn。
 - L3 必跑 focused Vitest、Rust module tests、`npm run typecheck`、target ESLint、
   `cargo check --lib`、catalog/runtime contract checks 与 OpenSpec strict validation。
 

@@ -12,7 +12,7 @@ pub(crate) const ACCOUNT_RECIPE_ID: &str = "doge.account.codex-token-service";
 /// provider projection changes. A missing or stale revision is fail-closed so
 /// account preparation deterministically replaces legacy Doge entries while
 /// preserving unrelated user-managed providers.
-pub(crate) const ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64 = 1;
+pub(crate) const ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64 = 2;
 /// kimi CLI resolves OpenAI-compatible endpoints relative to the configured
 /// base URL, so the managed entry must carry the `/v1` path segment.
 pub(crate) const ACCOUNT_MANAGED_KIMI_BASE_URL: &str = "https://token-matrix.com/v1";

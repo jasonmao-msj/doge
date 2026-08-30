@@ -9,7 +9,7 @@ import {
 
 const models: ProductModelViewV1[] = [
   model("gpt-5.6-sol", ["openai-responses", "openai-chat-completions"]),
-  model("claude-sonnet-4-8", ["anthropic-messages"]),
+  model("claude-sonnet-4-8", ["openai-responses", "anthropic-messages"]),
   model("kimi-for-coding", ["openai-responses", "openai-chat-completions"]),
   {
     ...model("doubao-entry", [
@@ -26,7 +26,12 @@ describe("productModelCompatibility", () => {
   it("projects dynamic upstream rows by API protocol and keeps upstream order", () => {
     expect(
       compatibleProductModelsForEngineV1("codex", models).map((item) => item.id),
-    ).toEqual(["gpt-5.6-sol", "kimi-for-coding", "doubao-entry"]);
+    ).toEqual([
+      "gpt-5.6-sol",
+      "claude-sonnet-4-8",
+      "kimi-for-coding",
+      "doubao-entry",
+    ]);
     expect(
       compatibleProductModelsForEngineV1("claude", models).map((item) => item.id),
     ).toEqual(["claude-sonnet-4-8", "doubao-entry"]);

@@ -1,0 +1,53 @@
+{
+  "id": "enable-cross-protocol-product-engine-models",
+  "name": "enable-cross-protocol-product-engine-models",
+  "title": "Codex 跨协议使用 Claude 模型（OpenSpec: enable-cross-protocol-product-engine-models）",
+  "description": "协调 token2api Claude Responses route、Product endpoint protocol facts 与 managedRevision migration，使 Codex 可用 Claude 模型，并让新老用户自动收敛。",
+  "status": "planning",
+  "dev_type": "fullstack",
+  "scope": null,
+  "package": null,
+  "priority": "P0",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-30",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 2,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "OpenSpec explore/propose complete；production Claude Responses route与minimal probe通过，进入Doge实现和真实Codex CLI验证。",
+  "meta": {}
+}

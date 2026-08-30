@@ -19,6 +19,7 @@ const models: ProductModelViewV1[] = [
     "openai-chat-completions",
   ]),
   productModel("claude-sonnet-4-8", "Claude Sonnet 4.8", [
+    "openai-responses",
     "anthropic-messages",
   ]),
   productModel("kimi-for-coding", "Kimi for Coding", [
@@ -40,11 +41,12 @@ describe("resolveProductManagedExecutionTargetV1", () => {
         preferredEngine: "codex",
         engines: [engines[1], engines[2], engines[0]],
         models: [
-          productModel("claude-opus-4-8", "Claude Opus 4.8", [
-            "anthropic-messages",
-          ]),
           productModel("gpt-5.6-luna", "GPT-5.6 Luna", ["openai-responses"]),
           productModel("gpt-5.6-sol", "GPT-5.6 Sol", ["openai-responses"]),
+          productModel("claude-opus-4-8", "Claude Opus 4.8", [
+            "openai-responses",
+            "anthropic-messages",
+          ]),
         ],
       }),
     ).toMatchObject({
@@ -52,6 +54,22 @@ describe("resolveProductManagedExecutionTargetV1", () => {
       providerProfileId: "doge-token-matrix",
       modelCatalogEntryId: "gpt-5.6-luna",
       model: "gpt-5.6-luna",
+    });
+  });
+
+  it("keeps an exact Claude model on the managed Codex target", () => {
+    expect(
+      resolveProductManagedExecutionTargetV1({
+        preferredEngine: "codex",
+        preferredModelId: "claude-sonnet-4-8",
+        engines,
+        models,
+      }),
+    ).toMatchObject({
+      engine: "codex",
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "claude-sonnet-4-8",
+      model: "claude-sonnet-4-8",
     });
   });
 

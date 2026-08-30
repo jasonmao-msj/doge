@@ -1,0 +1,15 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/backend/account-convenience-native-contract.md", "reason": "managedRevision、Product prepare 与新老用户幂等配置收敛"}
+{"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "endpoint protocol normalization 与单一 Product catalog owner"}
+{"file": ".trellis/spec/backend/codex-provider-scoped-runtime.md", "reason": "Codex managed Responses runtime、exact model 与 provider binding"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "upstream route→Native→Renderer→runtime 的 L3 mapping"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "禁止新建平行 compatibility/catalog owner"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 focused verification 与 L4 CI 边界"}
+{"file": "docs/research/mossx-multi-cli-provider-session-foundation-design.md", "reason": "Engine/Provider/Model/Protocol 分层与 ADR校准 gate"}
+{"file": "docs/research/mossx-new-cli-onboarding-guide.md", "reason": "Engine onboarding matrix与真实 CLI evidence要求"}
+{"file": "openspec/changes/enable-cross-protocol-product-engine-models/design.md", "reason": "当前 change 的 route、migration、rollback 决策"}
+{"file": "src-tauri/src/account/runtime/runtime_product_models.rs", "reason": "Native Product protocol normalization owner"}
+{"file": "src-tauri/src/account/configuration.rs", "reason": "managedRevision deterministic builders"}
+{"file": "src/features/account/runtime/productModelCompatibility.ts", "reason": "Renderer engine-to-protocol mapping consumer"}
+{"file": "src/features/account/runtime/productTargetCatalog.ts", "reason": "Product target catalog single projection"}

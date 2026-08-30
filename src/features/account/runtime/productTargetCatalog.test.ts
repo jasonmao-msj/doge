@@ -18,7 +18,10 @@ describe("projectProductTargetCatalogV1", () => {
           "openai-responses",
           "openai-chat-completions",
         ]),
-        model("claude-sonnet-4-8", ["anthropic-messages"]),
+        model("claude-sonnet-4-8", [
+          "openai-responses",
+          "anthropic-messages",
+        ]),
         model("kimi-code/kimi-for-coding", [
           "openai-responses",
           "openai-chat-completions",
@@ -33,6 +36,7 @@ describe("projectProductTargetCatalogV1", () => {
     ]);
     expect(catalog.engines[0]?.models.map((entry) => entry.id)).toEqual([
       "gpt-5.6-sol",
+      "claude-sonnet-4-8",
       "kimi-code/kimi-for-coding",
     ]);
     expect(catalog.engines[1]?.models.map((entry) => entry.id)).toEqual([
@@ -88,4 +92,3 @@ function model(
     capabilities: [],
   };
 }
-
