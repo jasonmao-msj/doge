@@ -2,7 +2,7 @@
 
 本页为 `mossx` 已归档 OpenSpec proposal 的完整可点击索引。目录名中的日期是 archive date，不代表 proposal 首次创建时间。
 
-- Indexed proposals: `886`
+- Indexed proposals: `887`
 - Updated At: `2026-08-30`
 - Source of truth: `openspec/changes/archive/<archive-date>-<change-id>/proposal.md`
 - Back to current changes: [`../README.md`](../README.md)
@@ -12,6 +12,7 @@
 
 ### 2026-08-30
 
+- [`2026-08-30-fix-kimi-managed-session-catalog`](2026-08-30-fix-kimi-managed-session-catalog/proposal.md) — completed change；已同步 `kimi-engine-runtime` 与 `workspace-session-catalog-projection`，修复 managed Kimi history 重启后 workspace catalog 丢失
 - [`2026-08-30-fix-managed-session-target-cold-start`](2026-08-30-fix-managed-session-target-cold-start/proposal.md) — completed change；Windows restart smoke passed；已同步 `codex-provider-scoped-session-launch`、`engine-per-session-provider-binding` 与 `shared-execution-target`
 
 ### 2026-08-28

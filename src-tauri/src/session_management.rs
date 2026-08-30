@@ -3347,8 +3347,11 @@ async fn build_global_engine_catalog_entries(
                             thread_kind: "native".to_string(),
                             source: None,
                             source_label: None,
-                            provider_profile_id: None,
-                            provider_profile_source: None,
+                            provider_profile_id: session.provider_profile_id.clone(),
+                            provider_profile_source: session
+                                .provider_profile_id
+                                .as_ref()
+                                .map(|_| "managed".to_string()),
                             provider_profile_name: None,
                             provider_availability: None,
                             source_completeness: None,

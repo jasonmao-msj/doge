@@ -60,6 +60,9 @@
 - Codex catalog source discovery MUST include managed provider homes under `codex-provider-homes/*/{sessions,archived_sessions}` in addition to disk/default and workspace Codex homes. Provider-home rows still MUST prove workspace ownership through source evidence such as `cwd`; provider id alone MUST NOT prove membership.
 - Codex provider binding metadata MAY overlay `providerProfileId/source/name/availability` on an already discovered row. Metadata alone MUST NOT create an active strict catalog row. If a session is discovered from a provider home whose provider profile is no longer configured, the row MUST remain visible as managed provider history with `providerAvailability=unavailable`; it MUST NOT be rewritten to disk.
 - Codex source completeness MUST distinguish disk/default/workspace roots from managed provider-home roots via `WorkspaceSessionCatalogSourceStatus.sourceKind` values such as `disk` and `provider-home`. Provider-home source diagnostics MUST degrade the Codex `provider-home` status and surface through `sourceStatuses[].diagnostics` instead of converting omitted provider-backed rows into authoritative deletion evidence. Frontend continuity may retain last-good provider-backed Codex rows while this Codex status is partial/degraded.
+- Kimi catalog discovery MUST scan the configured/default Kimi home plus app-local `kimi-provider-homes/*` when `home_dir` is absent. Each managed root's directory name is exposed as optional `providerProfileId`; workspace membership still MUST come from `session_index.jsonl.workDir` matching, never from provider-home ownership alone.
+- Kimi `list`, `load`, `delete`, and native continuation path resolution MUST share the same provider-aware root resolver. A discovered `sessionDir` MUST be resolved relative to its discovered root when it is not absolute, and delete MUST rewrite that root's `session_index.jsonl` without removing the provider home or unrelated sessions.
+- Kimi managed-root enumeration failure MUST return a contextual error so catalog projection emits a degraded/partial Kimi source status; it MUST NOT be converted into `authoritative_empty`. An absent managed-root parent is a compatible empty result and does not hide the default Kimi root.
 - Codex rollout `session_meta.payload.source.subagent.thread_spawn` 是 parent relationship 的 source fact。scanner MUST 兼容 snake_case / camelCase，保留首次有效 `parent_thread_id`，且后续 copied parent `session_meta` MUST NOT 覆盖 child canonical UUID 或 relationship。
 - Codex child display title MUST 按 `agent_nickname` → `agent_path` basename → existing user-summary fallback 的顺序解析。不同 child UUID MUST NOT 因标题相同被合并；同一 canonical child UUID 的多个 physical rollout files MUST 在 usage aggregation 与 bounded truncation 前收敛为一个 source fact，usage/cost 不求和，并合并 aliases 与 relationship/title evidence。
 - Codex workspace/global catalog、native local-thread fallback 与 daemon adapter MUST 输出 `parentSessionId`；frontend boundary MUST normalize 为 `ThreadSummary.parentThreadId`，并复用既有 Sidebar tree projection。local/live merge 若保留 rollout filename alias 作为 visible row id，MUST 同时保留 canonical `canonicalSessionId`，并把当前可见 parent 的 canonical UUID 解析为 visible parent id。child usage/cost/transcript 仍属于 child 自己，禁止改写为 parent UUID 或从统计中删除。
@@ -92,6 +95,9 @@
 | Sidebar `limit=5` + large Codex archive | bounded recent-first preview，单文件 ≤256 KiB，fixed candidate lookahead | 完整读取全部 archive 或先 full scan 后 `.take(5)` |
 | daemon live list unavailable | 使用同一 bounded preview fallback | daemon 独立走 full JSONL parser |
 | Session Management / usage explicit scan | 使用 `Full` parser，保留完整 usage/cost | 把 preview partial usage 当 authoritative |
+| Kimi managed provider home exists after restart | scan default + `kimi-provider-homes/*`, then filter by `workDir` | repeat scan of only the empty in-memory/default `home_dir` |
+| Kimi managed provider root enumeration fails | preserve catalog continuity and mark Kimi source degraded/partial | treat missing provider rows as authoritative deletion |
+| Kimi native load/delete | use the discovered root descriptor for wire path and index rewrite | resolve delete index from the current global/default home |
 | visible parent id is a rollout filename alias | child link resolves canonical parent UUID to visible parent id | child remains a root because ids differ |
 | runtime native rename looks like `Agent 12` / `Claude Session` / short hex | `nativeTitle` bypasses fallback strength heuristic，仍低于 GUI custom/mapped title | 仅传普通 `title`，导致旧 first-message title 被保留 |
 | old backend omits `nativeTitle` | normalize 为 absent，继续既有 title projection | 把 optional field 当 required 而丢弃 catalog row |
@@ -119,6 +125,7 @@
 - Rust bounded scanner tests MUST assert recent candidate order、duplicate 不消费 unique budget、fixed candidate cap、preview 读不到 256 KiB 之后的 usage event，并使用 mtime timestamp。
 - Rust unified list tests MUST assert cursor offset + limit + fixed lookahead 的 scan target；source review MUST assert Desktop 与 daemon fallback 都调用 `list_codex_session_previews_for_workspace`。
 - Rust catalog/native/daemon mapping tests MUST assert `parentSessionId` survives every local projection。
+- Rust Kimi history tests MUST assert default + managed root discovery, explicit custom-home isolation, workspace `workDir` filtering, relative `sessionDir` resolution, and load/delete targeting the discovered root while preserving unrelated sessions/provider-home directories. Frontend Vitest MUST assert native Kimi `providerProfileId` survives normalization and merge into `ThreadSummary`.
 - Rust event-store test MUST assert all Binding rows for one Shared Session are queryable; frontend
   catalog test MUST assert a V2-only Native identity is removed from ordinary rows while the Shared
   row remains.
@@ -254,4 +261,21 @@ let (_, sessions) = list_codex_session_previews_for_workspace(
 )
 .await?;
 // Sidebar/daemon preview bounded；显式 catalog 仍走 Full parser。
+```
+
+#### Kimi Provider-Home Routing
+
+##### Wrong
+
+```rust
+let index_path = resolve_kimi_base_dir(custom_home).join("session_index.jsonl");
+// restart 后 managed Kimi session 已从 provider home 发现，但 delete 仍写默认 home。
+```
+
+##### Correct
+
+```rust
+let location = find_workspace_index_entry(workspace, session_id, custom_home).await?;
+let index_path = location.root.base_dir.join("session_index.jsonl");
+// list/load/delete 使用同一 discovered root，provider metadata 只作为 overlay。
 ```

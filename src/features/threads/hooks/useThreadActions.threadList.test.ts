@@ -10,6 +10,7 @@ import {
   normalizeProjectCatalogSession,
   resolveInitialThreadListTargetCount,
   resolveThreadListCursorForDisplay,
+  shouldRefreshKimiSessions,
 } from "./useThreadActions.threadList";
 import type { WorkspaceInfo } from "../../../types";
 
@@ -161,5 +162,27 @@ describe("useThreadActions.threadList", () => {
       settings: { sidebarCollapsed: false },
     } as WorkspaceInfo;
     expect(resolveInitialThreadListTargetCount(workspace)).toBe(5);
+  });
+
+  it("seeds durable Kimi history during first-paint after restart", () => {
+    expect(
+      shouldRefreshKimiSessions({
+        isLatestRequest: true,
+        hasKimiSignal: false,
+        hasCachedKimiSessions: false,
+        hasAttemptedRefresh: false,
+      }),
+    ).toBe(true);
+  });
+
+  it("does not repeat a Kimi seed after a completed attempt without a signal", () => {
+    expect(
+      shouldRefreshKimiSessions({
+        isLatestRequest: true,
+        hasKimiSignal: false,
+        hasCachedKimiSessions: false,
+        hasAttemptedRefresh: true,
+      }),
+    ).toBe(false);
   });
 });

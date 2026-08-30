@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change add-kimi-engine. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Kimi Canonical Session Identity Convergence
 
 Kimi realtime runtime SHALL keep one user-visible conversation while a new turn
@@ -193,3 +195,21 @@ Kimi provider TOML materialization MUST 对同一路径串行化，并保证包�
 - **WHEN** provider home 已包含完全相同的 TOML
 - **THEN** materializer MUST 避免不必要的 replace
 - **AND** Unix final file mode MUST 仍为 0600
+
+### Requirement: Managed Kimi History MUST Remain Restart-Compatible
+
+Managed Kimi runtime history MUST remain readable after restart even when provider launch state is reconstructed lazily and the global engine configuration has no single `home_dir`.
+
+#### Scenario: force refresh finds a managed Kimi session
+
+- **WHEN** a managed Kimi session was created before restart
+- **AND** its history remains under the app-local provider home
+- **AND** the user invokes force refresh
+- **THEN** the returned session list MUST contain that session
+- **AND** the session MUST retain its Kimi engine identity
+
+#### Scenario: explicit custom home remains isolated
+
+- **WHEN** a Kimi history API receives an explicit custom home
+- **THEN** it MUST scan only that home
+- **AND** it MUST NOT implicitly scan unrelated managed provider homes
