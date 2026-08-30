@@ -566,3 +566,37 @@ v0.1.10 signed Release 33173561758成功；tag精确指向 cdd7ecb29，macOS/Lin
 ### Next Steps
 
 - None - task complete
+
+
+## Session 76: 修复 v0.1.11 macOS 发布阻断
+
+**Date**: 2026-08-29
+**Task**: 修复 v0.1.11 macOS 发布阻断
+**Branch**: `codex/fix-macos-release-openssl`
+
+### Summary
+
+补齐 macOS OpenSSL fixup 的 canonical MacOS directory owner，容忍 optional dylib empty match，新增真实 shell fixture regression，回写 OpenSpec/Trellis contract 并归档 upstream sync task。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a47427281` | (see git log) |
+| `9e783eecb` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

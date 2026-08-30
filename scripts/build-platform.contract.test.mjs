@@ -1,5 +1,15 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
 
 function read(relativePath) {
@@ -12,6 +22,11 @@ function sourceSection(source, startMarker, endMarker) {
   const end = source.indexOf(endMarker, start + startMarker.length);
   assert.notEqual(end, -1, `missing source marker: ${endMarker}`);
   return source.slice(start, end);
+}
+
+function writeExecutable(path, contents) {
+  writeFileSync(path, contents);
+  chmodSync(path, 0o755);
 }
 
 test("Cargo and platform builds only produce current doge binaries and artifacts", () => {
@@ -113,6 +128,57 @@ test("platform builds fail closed when expected doge artifacts are missing", () 
   assert.match(fixOpenSsl, /no doge binaries found under/);
   assert.match(fixOpenSsl, /incomplete app bundle/);
 });
+
+test(
+  "macOS OpenSSL fixup executes with the canonical app MacOS directory",
+  { skip: process.platform === "win32" },
+  () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), "doge-macos-openssl-"));
+    const appPath = join(fixtureRoot, "doge.app");
+    const macosDir = join(appPath, "Contents", "MacOS");
+    const opensslDir = join(fixtureRoot, "openssl");
+    const stubsDir = join(fixtureRoot, "bin");
+
+    try {
+      mkdirSync(macosDir, { recursive: true });
+      mkdirSync(join(opensslDir, "lib"), { recursive: true });
+      mkdirSync(stubsDir, { recursive: true });
+      writeFileSync(join(macosDir, "doge"), "doge");
+      writeFileSync(join(macosDir, "doge_daemon"), "doge-daemon");
+      writeFileSync(join(opensslDir, "lib", "libssl.3.dylib"), "ssl");
+      writeFileSync(join(opensslDir, "lib", "libcrypto.3.dylib"), "crypto");
+
+      writeExecutable(join(stubsDir, "install_name_tool"), "#!/bin/sh\nexit 0\n");
+      writeExecutable(join(stubsDir, "codesign"), "#!/bin/sh\nexit 0\n");
+      writeExecutable(join(stubsDir, "bash"), "#!/bin/sh\nexit 0\n");
+      writeExecutable(
+        join(stubsDir, "otool"),
+        '#!/bin/sh\nif [ "$1" = "-L" ]; then\n  printf "%s:\\n\\t@rpath/libcrypto.3.dylib (compatibility version 3.0.0, current version 3.0.0)\\n" "$2"\nfi\n',
+      );
+
+      const result = spawnSync(
+        "/bin/bash",
+        ["scripts/macos-fix-openssl.sh", appPath],
+        {
+          cwd: new URL("..", import.meta.url),
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            OPENSSL_DIR: opensslDir,
+            PATH: `${stubsDir}:${process.env.PATH ?? ""}`,
+            SKIP_CODESIGN: "1",
+          },
+        },
+      );
+
+      assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+      assert.match(result.stdout, /applied a verified ad-hoc signature/);
+      assert.doesNotMatch(result.stderr, /unbound variable/);
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  },
+);
 
 test("DMG Finder automation is bounded and keeps headless fallbacks", () => {
   const dmg = read("scripts/create-dmg.sh");

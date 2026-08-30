@@ -174,3 +174,33 @@ Result: current change passed; workspace totals **529 passed / 4 failed**. All f
 - No Claude full-turn idle hard kill was imported.
 - No `canonicalize_or_original` fallback was added to external absolute read/write/delete boundaries.
 - No PI/DSH/Qoder/wallpaper/upstream brand/release product surface was introduced.
+
+## v0.1.11 Release Regression Recovery（2026-08-29）
+
+Release run [`33241360887`](https://github.com/jasonmao-msj/doge/actions/runs/33241360887) proved that Windows、Linux AppImage 与 Web assets succeeded, while both macOS architectures failed in `Bundle OpenSSL with ad-hoc signing` before artifact upload:
+
+- ARM64 job `99071174884`: `scripts/macos-fix-openssl.sh: line 73: macos_dir: unbound variable`
+- x86_64 job `99071174895`: identical unbound-variable failure
+
+Root cause：selective sync adapted upstream fail-closed binary discovery but omitted upstream's `macos_dir="${app_path}/Contents/MacOS"` owner. The previous static contract only matched error copy, so it could not execute the shell path or detect `set -u` failures.
+
+Recovery contract：
+
+- `macos_dir` is defined once; `doge` and `doge_daemon` paths derive from it.
+- optional per-binary `libssl` / `libcrypto` lookups use explicit `|| true`, preserving legitimate empty matches under `set -euo pipefail`.
+- `scripts/build-platform.contract.test.mjs` now runs the real helper against a temporary app/OpenSSL fixture with only platform tools stubbed, and asserts successful traversal through verified ad-hoc signing plus absence of unbound-variable errors.
+
+Focused evidence：
+
+```bash
+node --test scripts/build-platform.contract.test.mjs
+# 9 passed
+
+bash -n scripts/macos-fix-openssl.sh
+openspec validate sync-upstream-stability-2026-08 --type change --strict --no-interactive
+npm run check:docs
+npm run release:check
+npm run release:check:test
+node --test scripts/release-workflow.contract.test.mjs
+git diff --check
+```

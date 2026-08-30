@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 75
+- **Total Sessions**: 76
 - **Last Active**: 2026-08-29
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~568 | Active |
+| `journal-2.md` | ~602 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 76 | 2026-08-29 | 修复 v0.1.11 macOS 发布阻断 | `a47427281`, `9e783eecb` | `codex/fix-macos-release-openssl` |
 | 75 | 2026-08-29 | 校正 v0.1.11 发布日期 | `54599e34a` | `codex/release-v0.1.11` |
 | 74 | 2026-08-29 | 准备 v0.1.11 Release | `856771334` | `codex/release-v0.1.11` |
 | 73 | 2026-08-28 | 精选同步上游稳定性修复 | `699710928` | `codex/sync-upstream-stability-2026-08` |

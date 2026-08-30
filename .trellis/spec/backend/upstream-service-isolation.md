@@ -15,6 +15,7 @@
 - Release preflight inputs：`TAURI_SIGNING_PRIVATE_KEY_B64`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` plus enabled updater config/public key/canonical endpoint。
 - Release changelog commands：`npm run release:check`；`node scripts/check-release-changelog.mjs --extract-current <output>`。
 - Release tag collision probe：`git ls-remote --tags origin "refs/tags/v${VERSION}"`，network failure 与 non-empty exact-ref result 都 MUST fail closed。
+- macOS OpenSSL fixup：`scripts/macos-fix-openssl.sh <app_path>`；`macos_dir="${app_path}/Contents/MacOS"` MUST 是 `doge` / `doge_daemon` binary path 的唯一 owner，`SKIP_CODESIGN=1` 仍须完成 dylib rewrite、ad-hoc signing 与 `codesign --verify`。
 - Batched CI test recovery：`VITEST_RETRY`（integer `0..3`）→ `parseVitestBatchConfig(...).retry` → Vitest `--retry <n>`；default `0`，shipping `test-js` / `test-windows` lanes固定 `1`。
 - Internal artifact inputs：`workflow_dispatch.inputs.windows_artifact_only: boolean` 与 `workflow_dispatch.inputs.macos_artifact_only: boolean`；true 时只允许对应平台的 unsigned installer artifact build。
 - Default manual packaging：上述两个 input MUST both default to `true`，因此未改参数的 `workflow_dispatch` MUST 在同一个 workflow run 内并行产出 macOS 与 Windows internal artifacts。Agent MUST prefer this combined default；只有用户明确要求单平台，或某个平台失败后做 targeted retry，才 MAY 把另一平台 input 设为 `false`。正式 signed release MUST 显式把两个 input 都设为 `false`，并继续通过 release preflight。
@@ -36,6 +37,8 @@
 - `windows_artifact_only=true` MAY bypass release preflight only for an internal test installer job；该 job MUST use `contents: read`、MUST NOT reference release environment/secrets、MUST NOT generate `.sig`/`latest.json` or call `gh release`，且只能上传 NSIS EXE + SHA-256 Actions artifact。
 - `macos_artifact_only=true` MAY bypass release preflight only for internal Apple Silicon / Intel test DMG jobs；jobs MUST use `contents: read`、MUST NOT reference release environment/secrets、MUST use explicit `--skip-sign --skip-notarize`、MUST verify each DMG with `hdiutil verify`，且只能上传 DMG + SHA-256 Actions artifacts。
 - Credential helper MUST NOT export、encode、persist or print password/private key/certificate content。
+- 在 `set -euo pipefail` shell helper 中，所有 ported guard 使用的变量 MUST 在首次引用前由 canonical input 派生；optional tool lookup 的 empty match MUST 显式容忍，不能把“不需要 rewrite”误判为 packaging failure。
+- 从 upstream semantic merge shell hunk 时 MUST 同步其 dependency closure（path owner、helper/variable definition、failure fallback），并以 executable fixture 覆盖真实 control flow；只匹配错误文案或 symbol 存在不能作为完整证据。
 
 ### 4. Validation & Error Matrix
 
@@ -59,6 +62,8 @@
 | `test-js` / `test-windows` transient timeout | Vitest retry failed test once | rerun entire 40min job或全局增大 timeout |
 | deterministic CI test hang | second attempt仍在原 timeout失败 | unbounded retry掩盖缺陷 |
 | some platform signature missing | metadata job fail | omit platform and publish partial feed |
+| macOS app bundle含 canonical `doge` binary | OpenSSL fixup 走到 reference verification + selected signing path | undefined path variable、因 optional dylib empty match 被 `pipefail` 中止 |
+| semantic merge 引入 shell guard | executable fixture 覆盖 guard、正常路径与 `set -u` variable expansion | 只用 regex 证明错误文案存在 |
 | custom provider URL | accept through generic path | replace with removed relay |
 | removed analytics token returns in shipping source | exact negative test fail | allowlist runtime service |
 
@@ -81,6 +86,7 @@
 
 - `npx vitest run src/features/brand/contracts/upstreamServiceIsolation.test.ts src/features/brand/contracts/externalServiceContracts.test.ts src/features/brand/contracts/productLinks.test.tsx`
 - `node --test scripts/upstream-sync-audit.test.mjs scripts/release-workflow.contract.test.mjs`；release contract MUST assert both artifact inputs default to `true`、combined dispatch reaches both platform jobs、artifact-only jobs have read-only permissions and no secret/signature/publish surface。
+- `node --test scripts/build-platform.contract.test.mjs` MUST execute `scripts/macos-fix-openssl.sh` against a temporary canonical app/OpenSSL fixture（platform tools MAY stub）and assert that the helper reaches verified signing without unbound-variable or empty-match `pipefail` termination。
 - `npm run check:upstream-sync && npm run check:branding && npm run check:docs`
 - `npm run release:check && npm run release:check:test && node --test scripts/release-workflow.contract.test.mjs`
 - Contract test MUST assert exact-ref remote lookup、lookup error fail-closed、non-empty collision fail-closed，以及无 tag mutation command。
