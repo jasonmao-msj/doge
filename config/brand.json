@@ -3,7 +3,7 @@
   "name": "doge",
   "tagline": "把复杂的事，叼回来做好。",
   "story": "doge 是一只住在电脑里的拟人化 AI 小柴犬。它会把散落在文件、终端、任务和灵感里的事情一件件叼回来，陪你处理工作，也逐步学会照看生活里的计划与琐事。",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "repository": {
     "owner": "jasonmao-msj",
     "name": "doge",
