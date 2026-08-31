@@ -548,3 +548,40 @@
 ### Next Steps
 
 - None - task complete
+
+## Session 18: 修复 guardian 后台会话重新出现在侧边栏
+
+**Date**: 2026-08-31
+**Task**: 归档并提交 fix-codex-guardian-session-catalog-visibility
+**Branch**: `fix/codex-guardian-session-catalog-visibility`
+
+### Summary
+
+诊断 v0.1.12 guardian 会话复发根因：PR #38 只覆盖运行时 `list_threads`；启动 full-catalog hydration 走 `list_workspace_sessions`，catalog projection 丢弃 `background_kind`。修复：background 分类 helpers 下沉到 `local_usage.rs`（lib 与 daemon 共享），catalog projection 映射前过滤，daemon local fallback 与 live 透传两分支均过滤。OpenSpec change 已归档，PR #59 已创建。
+
+### Main Changes
+
+- `src-tauri/src/local_usage.rs` 承接分类 helpers；`thread_listing.rs` 改为复用
+- `session_management_catalog_projection.rs` 过滤 background 会话
+- `doge_daemon` codex_local_threads / daemon_state 两分支过滤 + 降级
+- 新增 3 个回归测试；归档 `openspec/changes/archive/2026-08-31-fix-codex-guardian-session-catalog-visibility/`
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5997fb563` | fix(codex): 过滤后台会话的 catalog 投影与 daemon list_threads |
+
+### Testing
+
+- [OK] 新增 3 个回归测试通过；PR #38 回归（20 parse + 10 merge）通过；daemon_state_tests 13 通过
+- [OK] `cargo check --all-targets` / `npm run typecheck` / `npm run check:runtime-contracts` / `openspec validate --strict`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- 人工 UI 验收：重启后 catalog hydration 不再出现 guardian 会话（tasks.md 4.3）
+- 本机无 Python（WindowsApps stub），Trellis record 为手工补录，未运行 get_context.py
