@@ -1,4 +1,4 @@
-# Workspace Index - ngx
+﻿# Workspace Index - ngx
 
 > Journal tracking for AI development sessions.
 
@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 17
-- **Last Active**: 2026-08-30
+- **Total Sessions**: 18
+- **Last Active**: 2026-08-31
 <!-- @@@/auto:current-status -->
 
 ---
@@ -29,23 +29,24 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
-| 17 | 2026-08-30 | 修复 Kimi managed session catalog 重启恢复 | `cb0812385` | `codex/fix-kimi-managed-session-catalog` |
-| 16 | 2026-08-30 | 解决 PR #53 主分支冲突 | `ead66f4a8` | `codex/fix-managed-session-target-cold-start` |
-| 15 | 2026-08-30 | 归档模型目标恢复 OpenSpec | `7d71949cc` | `codex/fix-managed-session-target-cold-start` |
-| 14 | 2026-08-30 | 修复重启后模型目标恢复 | `712792f47` | `codex/fix-managed-session-target-cold-start` |
-| 12 | 2026-08-28 | OpenSpec 归档与 Kimi bundle PR | `14930420f` | `codex/archive-kimi-windows-shell-runtime` |
-| 13 | 2026-08-28 | 修复工作区会话启动加载 | `9542e4e45` | `codex/fix-workspace-session-startup-hydration` |
-| 11 | 2026-08-27 | 修复账户侧边栏入口 React 更新深度循环 | `bef37b6a9` | `fix/create-session-engine-routing` |
-| 10 | 2026-08-27 | 修复新建会话及页面切换后的引擎路由与显示 | `3e1776daf1ac1d1e8d3d818726299703f45514ea` | `fix/create-session-engine-routing` |
-| 9 | 2026-08-27 | 修正 updater 验签公钥 | `644ba4b74` | `codex/fix-updater-public-key` |
-| 8 | 2026-08-27 | 修复 macOS daemon 编译错误 | `a8cf0021a` | `codex/enable-doge-updater` |
-| 7 | 2026-08-26 | 解决 PR 合并冲突 | `3569a6039` | `codex/enable-doge-updater` |
-| 6 | 2026-08-26 | 移除 macOS 系统签名校验 | `c8d47a420` | `codex/enable-doge-updater` |
-| 5 | 2026-08-26 | 合并远端更新并移除一次性 workflow | `71db4b825`, `c360482a7` | `codex/enable-doge-updater` |
-| 4 | 2026-08-26 | 收口 doge 更新版本记录 | `c360482a7` | `codex/enable-doge-updater` |
-| 3 | 2026-08-26 | 启用 doge 远端更新并归档 OpenSpec | `09692cd2f`, `dd3bf2e32` | `codex/enable-doge-updater` |
+| 18 | 2026-08-31 | 修复 guardian 后台会话重新出现在侧边栏 | `5997fb563` | `fix/codex-guardian-session-catalog-visibility` |
+| 17 | 2026-08-30 | 淇 Kimi managed session catalog 閲嶅惎鎭㈠ | `cb0812385` | `codex/fix-kimi-managed-session-catalog` |
+| 16 | 2026-08-30 | 瑙ｅ喅 PR #53 涓诲垎鏀啿绐?| `ead66f4a8` | `codex/fix-managed-session-target-cold-start` |
+| 15 | 2026-08-30 | 褰掓。妯″瀷鐩爣鎭㈠ OpenSpec | `7d71949cc` | `codex/fix-managed-session-target-cold-start` |
+| 14 | 2026-08-30 | 淇閲嶅惎鍚庢ā鍨嬬洰鏍囨仮澶?| `712792f47` | `codex/fix-managed-session-target-cold-start` |
+| 12 | 2026-08-28 | OpenSpec 褰掓。涓?Kimi bundle PR | `14930420f` | `codex/archive-kimi-windows-shell-runtime` |
+| 13 | 2026-08-28 | 淇宸ヤ綔鍖轰細璇濆惎鍔ㄥ姞杞?| `9542e4e45` | `codex/fix-workspace-session-startup-hydration` |
+| 11 | 2026-08-27 | 淇璐︽埛渚ц竟鏍忓叆鍙?React 鏇存柊娣卞害寰幆 | `bef37b6a9` | `fix/create-session-engine-routing` |
+| 10 | 2026-08-27 | 淇鏂板缓浼氳瘽鍙婇〉闈㈠垏鎹㈠悗鐨勫紩鎿庤矾鐢变笌鏄剧ず | `3e1776daf1ac1d1e8d3d818726299703f45514ea` | `fix/create-session-engine-routing` |
+| 9 | 2026-08-27 | 淇 updater 楠岀鍏挜 | `644ba4b74` | `codex/fix-updater-public-key` |
+| 8 | 2026-08-27 | 淇 macOS daemon 缂栬瘧閿欒 | `a8cf0021a` | `codex/enable-doge-updater` |
+| 7 | 2026-08-26 | 瑙ｅ喅 PR 鍚堝苟鍐茬獊 | `3569a6039` | `codex/enable-doge-updater` |
+| 6 | 2026-08-26 | 绉婚櫎 macOS 绯荤粺绛惧悕鏍￠獙 | `c8d47a420` | `codex/enable-doge-updater` |
+| 5 | 2026-08-26 | 鍚堝苟杩滅鏇存柊骞剁Щ闄や竴娆℃€?workflow | `71db4b825`, `c360482a7` | `codex/enable-doge-updater` |
+| 4 | 2026-08-26 | 鏀跺彛 doge 鏇存柊鐗堟湰璁板綍 | `c360482a7` | `codex/enable-doge-updater` |
+| 3 | 2026-08-26 | 鍚敤 doge 杩滅鏇存柊骞跺綊妗?OpenSpec | `09692cd2f`, `dd3bf2e32` | `codex/enable-doge-updater` |
 | 2 | 2026-08-25 | Fix Codex managed CLI routing | `c661f0162` | `codex/fix-codex-managed-routing` |
-| 1 | 2026-08-19 | 修复本地开发内置引擎资源 | `0386e1de1`, `f2f1e264e` | `codex/fix-local-dev-managed-engine-resources` |
+| 1 | 2026-08-19 | 淇鏈湴寮€鍙戝唴缃紩鎿庤祫婧?| `0386e1de1`, `f2f1e264e` | `codex/fix-local-dev-managed-engine-resources` |
 <!-- @@@/auto:session-history -->
 
 ---

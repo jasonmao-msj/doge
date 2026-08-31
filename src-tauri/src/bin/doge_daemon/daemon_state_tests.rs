@@ -302,3 +302,91 @@ async fn daemon_disk_start_redacts_persistent_broken_pipe() {
     assert!(!error.to_ascii_lowercase().contains("broken pipe"));
     assert!(!error.contains("os error 32"));
 }
+
+#[test]
+fn daemon_codex_local_thread_response_excludes_background_sessions() {
+    let mut guardian = codex_summary("guardian-1", 30);
+    guardian.background_kind = Some("guardian-review".to_string());
+    let visible = codex_summary("visible-1", 20);
+
+    let response = build_codex_daemon_local_thread_response(
+        "/repo",
+        vec![guardian, visible],
+        None,
+        Some(10),
+        &HashMap::new(),
+    );
+    let data = response["result"]["data"].as_array().expect("data array");
+
+    assert_eq!(data.len(), 1);
+    assert_eq!(data[0].get("id").and_then(Value::as_str), Some("visible-1"));
+}
+
+#[tokio::test]
+async fn daemon_live_thread_entries_filter_background_by_id_and_text() {
+    let base =
+        std::env::temp_dir().join(format!("daemon-guardian-filter-{}", uuid::Uuid::new_v4()));
+    let day_dir = base
+        .join("codex-home")
+        .join("sessions")
+        .join("2026")
+        .join("08")
+        .join("31");
+    std::fs::create_dir_all(&day_dir).expect("create day dir");
+    let workspace_path = base.join("workspace");
+    std::fs::create_dir_all(&workspace_path).expect("create workspace dir");
+    let cwd = workspace_path.to_string_lossy().to_string();
+    let guardian_meta = serde_json::json!({
+        "timestamp": "2026-08-31T01:00:00.000Z",
+        "type": "session_meta",
+        "payload": {
+            "id": "guardian-live-test",
+            "cwd": cwd,
+            "originator": "Codex Desktop",
+            "source": {"subagent": {"other": "guardian"}},
+            "thread_source": "guardian_review"
+        }
+    })
+    .to_string();
+    std::fs::write(
+        day_dir.join("rollout-2026-08-31T01-00-00-guardian-live-test.jsonl"),
+        guardian_meta + "\n",
+    )
+    .expect("write guardian fixture");
+
+    let mut settings = crate::types::WorkspaceSettings::default();
+    settings.codex_home = Some(base.join("codex-home").to_string_lossy().to_string());
+    let workspace = crate::types::WorkspaceEntry {
+        id: "main".to_string(),
+        name: "Main".to_string(),
+        path: cwd.clone(),
+        codex_bin: None,
+        kind: crate::types::WorkspaceKind::Main,
+        parent_id: None,
+        worktree: None,
+        settings,
+    };
+    let workspaces = Mutex::new(HashMap::from([(workspace.id.clone(), workspace)]));
+
+    let response = json!({
+        "result": {
+            "data": [
+                {"id": "guardian-live-test", "preview": "some guardian preview"},
+                {"id": "legacy-helper", "preview": "Generate a concise title for a coding chat thread from the first user message."},
+                {"id": "normal-live", "preview": "fix the bug"}
+            ],
+            "nextCursor": Value::Null
+        }
+    });
+    let filtered =
+        filter_codex_daemon_background_thread_entries(&workspaces, "main", response, 10).await;
+    let data = filtered["result"]["data"].as_array().expect("data array");
+    let ids: Vec<&str> = data
+        .iter()
+        .filter_map(|entry| entry.get("id").and_then(Value::as_str))
+        .collect();
+
+    assert_eq!(ids, vec!["normal-live"]);
+
+    std::fs::remove_dir_all(base).ok();
+}

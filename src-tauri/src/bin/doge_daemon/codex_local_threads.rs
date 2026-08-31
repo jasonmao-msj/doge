@@ -1,4 +1,6 @@
 use super::*;
+use std::collections::HashSet;
+use tokio::time::timeout;
 
 pub const CODEX_DAEMON_LOCAL_THREAD_LIST_TIMEOUT_MS: u64 = 5_000;
 pub const CODEX_DAEMON_LOCAL_THREAD_LIST_PARTIAL_SOURCE: &str = "live-thread-list-unavailable";
@@ -108,6 +110,66 @@ pub(super) fn apply_codex_daemon_thread_folder_assignments(
     }
 }
 
+/// Remote 模式 live thread/list 透传前的 background 过滤：
+/// 用有界 local preview scan 的结构化分类构造 id 集合，文本前缀作 legacy 兜底；
+/// scan 失败时降级为仅文本过滤，不阻塞列表返回。
+pub(super) async fn filter_codex_daemon_background_thread_entries(
+    workspaces: &Mutex<HashMap<String, WorkspaceEntry>>,
+    workspace_id: &str,
+    mut response: Value,
+    requested_scan_limit: usize,
+) -> Value {
+    let background_ids: HashSet<String> = match timeout(
+        Duration::from_millis(CODEX_DAEMON_LOCAL_THREAD_LIST_TIMEOUT_MS),
+        local_usage::list_codex_session_previews_for_workspace(
+            workspaces,
+            workspace_id,
+            requested_scan_limit,
+        ),
+    )
+    .await
+    {
+        Ok(Ok((_, sessions))) => sessions
+            .iter()
+            .filter(|session| local_usage::is_codex_background_helper_session(session))
+            .flat_map(local_usage::codex_session_identifier_candidates)
+            .collect(),
+        Ok(Err(error)) => {
+            log::debug!(
+                "[daemon:list_threads] background id scan unavailable for {}: {}",
+                workspace_id,
+                error
+            );
+            HashSet::new()
+        }
+        Err(_) => {
+            log::debug!(
+                "[daemon:list_threads] background id scan timed out for {} after {}ms",
+                workspace_id,
+                CODEX_DAEMON_LOCAL_THREAD_LIST_TIMEOUT_MS
+            );
+            HashSet::new()
+        }
+    };
+    let Some(data) = response
+        .pointer_mut("/result/data")
+        .and_then(Value::as_array_mut)
+    else {
+        return response;
+    };
+    data.retain(|entry| {
+        let id = entry
+            .get("id")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .unwrap_or("");
+        if !id.is_empty() && background_ids.contains(id) {
+            return false;
+        }
+        !local_usage::is_codex_background_helper_thread_entry(entry)
+    });
+    response
+}
 pub(super) fn build_codex_daemon_local_thread_response(
     workspace_path: &str,
     sessions: Vec<crate::types::LocalUsageSessionSummary>,
@@ -119,6 +181,8 @@ pub(super) fn build_codex_daemon_local_thread_response(
     let offset = parse_codex_daemon_local_thread_cursor(cursor);
     let entries: Vec<Value> = sessions
         .iter()
+        // guardian 等 background 会话与桌面端 list_threads 统一口径：不进 daemon 本地列表。
+        .filter(|session| !local_usage::is_codex_background_helper_session(session))
         .map(|session| build_codex_daemon_local_thread_entry(workspace_path, session))
         .collect();
     let mut data: Vec<Value> = entries
