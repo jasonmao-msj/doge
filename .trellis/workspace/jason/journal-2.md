@@ -733,3 +733,36 @@ PR #58 创建后完成任务清单、同步 managed-codex-image-generation 主�
 ### Next Steps
 
 - None - task complete
+
+
+## Session 81: 准备 doge v0.1.13 发布
+
+**Date**: 2026-08-31
+**Task**: 准备 doge v0.1.13 发布
+**Branch**: `codex/release-v0.1.13`
+
+### Summary
+
+同步七处 canonical version 为 v0.1.13，新增双语 CHANGELOG，内容覆盖 Codex 托管生图与 Kimi 重启会话恢复；release:check、contract tests、branding 与 notes extraction 全部通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `121a487c5` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
