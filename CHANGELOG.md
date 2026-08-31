@@ -12,6 +12,7 @@
 
 - 修复上游已支持生图时，Codex 仍错误提示“图像生成工具不可用”的问题；托管配置会随实际 Codex 版本自动适配。
 - 修复应用重启后托管 Kimi 会话可能从工作区会话列表消失的问题，并统一会话的读取、加载与删除来源。
+- 修复应用重启或完整会话目录加载后，Guardian 后台线程可能重新出现在侧边栏的问题，并统一桌面端与 daemon 的过滤行为。
 
 English:
 
@@ -23,6 +24,7 @@ English:
 
 - Fixed Codex incorrectly reporting that image generation was unavailable even when the upstream service supported it; managed configuration now adapts automatically to the actual Codex version.
 - Fixed managed Kimi conversations disappearing from workspace session lists after an app restart, with listing, loading, and deletion now using the same discovered source.
+- Fixed Guardian background threads reappearing in the sidebar after an app restart or full session-catalog hydration, with consistent filtering across the desktop app and daemon.
 
 ---
 
