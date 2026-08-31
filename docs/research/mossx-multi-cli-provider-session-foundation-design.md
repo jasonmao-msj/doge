@@ -12,6 +12,7 @@ status: implemented
 > 内容类型：Architecture Decision Record
 > 生命周期：accepted / implemented in slices；原始 A–D 路线已归档，后续修复与收口 change 独立演进
 > 初始日期：2026-07-27
+> 最近校准：2026-08-31 · `fix-shared-event-log-wal-recovery-probe`：Shared Event Log startup integrity probe 继续优先 `READ_ONLY + quick_check(1)`；只有 typed SQLite `READONLY`（hot WAL recovery 需要 pager write）才升级为 `READ_WRITE|NO_CREATE + query_only=ON` 复检，避免把 healthy crash recovery 误判为 corruption。`CORRUPT`/`NOTADB`/其他 error 与 fallback failure 仍 fail closed 到 `ReadOnlyRecovery`，禁止覆盖原 DB。事实源：`src-tauri/src/shared_event_log/recovery.rs`、`src-tauri/tests/shared_event_log_crash.rs`、OpenSpec `fix-shared-event-log-wal-recovery-probe`。
 > 最近校准：2026-08-30 · `enable-managed-codex-image-generation`：managed custom-provider Codex 的 GPT-5.6 `use_responses_lite` 不能沿用 ChatGPT backend bundled metadata；Doge 在 exact binary cold-launch boundary 执行 `debug models --bundled`，bounded/strict patch `gpt-5.6-sol/terra/luna.use_responses_lite=false`，以 isolated provider-home atomic artifact + launch-scoped `model_catalog_json` 生效。export/shape/size/write失败在Session/Binding/Turn side effect前fail closed，local/custom Provider不受影响；图片成功只信native `image_generation_call` + payload，既有realtime/history generated-image projection继续作为唯一幕布路径。事实源：`src-tauri/src/codex/{managed_model_catalog.rs,session_runtime.rs,provider_profile.rs}`、OpenSpec `enable-managed-codex-image-generation`。
 > 最近校准：2026-08-30 · `fix-managed-session-target-cold-start`：Native Session 的可变 model/reasoning selection 以 durable execution target 恢复，authority 为 durable session metadata > renderer cache > catalog default；用户明确选择与 send/continuation boundary 均写入完整 `modelCatalogEntryId + model + reasoningEffort`，Desktop/daemon 使用同一 IPC contract。Shared Session 冷启动 authority 固定为 `shared_sessions_v2.selected_target_json > legacy meta.selectedTarget`，read path 不写回；existing Shared target 未 hydrate 或字段不完整时，Product automatic repair 不得解析并持久化 global/default model。managed engine 进程缓存缺失时重新 resolve/verify toolchain 后 activation，禁止静默回落 generic disk engine。事实源：`src-tauri/src/{session_management.rs,shared_sessions.rs,account/runtime_ipc.rs}`、`src/{app-shell.tsx,app-shell-parts/useSelectedComposerSession.ts,features/composer/components/Composer.tsx}`、OpenSpec `fix-managed-session-target-cold-start`。
 > 最近校准：2026-08-30 · `fix-kimi-managed-session-catalog`：Kimi native history 在 `custom_home=None` 时必须扫描 default Kimi home 与 `.doge/kimi-provider-homes/<provider-id>`，并以 `session_index.jsonl.workDir` 作为 workspace ownership authority；managed provider-home 枚举失败只能形成 partial/degraded source，不能被当作 authoritative deletion。list/load/delete 必须消费同一 discovered root；首轮 sidebar hydration 在无 live signal/cache 时执行一次异步 durable-history seed，避免重启后只显示运行时会话。事实源：`src-tauri/src/engine/kimi_history.rs`、`src-tauri/src/session_management.rs`、`src-tauri/src/session_management_catalog_projection.rs`、`src/features/threads/hooks/useThreadActions.ts`、`src/features/threads/hooks/useThreadActions.threadList.ts`、OpenSpec `2026-08-30-fix-kimi-managed-session-catalog`。
@@ -2540,8 +2541,9 @@ UI Projection
 
 Integrity：
 
-- 检测到 unclean shutdown 或 SQLite error 时执行 bounded `PRAGMA quick_check`。
-- Integrity failure 时进入 read-only recovery mode，不自动创建空 DB 覆盖。
+- Existing non-empty DB 先执行 `READ_ONLY + PRAGMA quick_check(1)`；`1` 只限制错误输出，不承诺 wall-clock timeout。
+- 只有 typed SQLite `READONLY` 才允许 `READ_WRITE|NO_CREATE + query_only=ON` 复检，以完成 hot WAL recovery；不得按错误文案或其他 SQLite failure 扩权。
+- Integrity failure 或 fallback failure 时进入 read-only recovery mode，不自动创建空 DB 覆盖。
 - 允许用户导出可读 Event/Artifact，并保留损坏文件用于诊断。
 
 Legacy：
@@ -3476,7 +3478,8 @@ OpenSpec 验收不得只检查字段存在。必须同时验证：
 | Subagent metadata 延迟到达 | 不闪现为顶层 Provider Continuation |
 | Legacy snapshot 打开 | 以 presentation-only fidelity 读取，不伪造缺失协议事实 |
 | SQLite Projection 被删除 | 从 Event Log 重建，不读取 frontend snapshot 反向修复 |
-| SQLite Integrity 失败 | 进入 read-only recovery，不创建空库覆盖 |
+| SQLite hot WAL 令 read-only probe 返回 `READONLY` | 用 RW/no-create + query-only 复检；通过后正常打开，不误报 corruption |
+| SQLite Integrity 失败或 WAL fallback 失败 | 进入 read-only recovery，不创建空库覆盖 |
 | Canonical row 缺少 payload type | 仅在 decode 内存副本中使用 row `fact_type` 补齐；不改写 row/checksum |
 | Canonical row type 冲突 | Projection fail closed，不用 Legacy empty 伪装成功 |
 | Shared Projection 加载失败 | 保持可重试，不调用 Native resume，不显示 Native recovery card |

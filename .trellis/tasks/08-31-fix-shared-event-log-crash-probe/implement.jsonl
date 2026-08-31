@@ -1,0 +1,4 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "SQLite crash recovery and persistence contract"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 persistence verification gate"}

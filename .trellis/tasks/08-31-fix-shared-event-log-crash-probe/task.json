@@ -1,0 +1,55 @@
+{
+  "id": "fix-shared-event-log-crash-probe",
+  "name": "fix-shared-event-log-crash-probe",
+  "title": "修复 Shared Event Log 崩溃恢复探测",
+  "description": "修复 WAL 非干净退出后 READ_ONLY quick_check 被误判为损坏，恢复 v0.1.13 Release gate。",
+  "status": "planning",
+  "dev_type": "backend",
+  "scope": "src-tauri/src/shared_event_log/recovery.rs; src-tauri/tests/shared_event_log_crash.rs; OpenSpec shared-event-storage",
+  "package": null,
+  "priority": "P0",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-31",
+  "completedAt": null,
+  "branch": "codex/fix-shared-event-log-crash-probe",
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "openSpecChange": "fix-shared-event-log-wal-recovery-probe"
+  }
+}

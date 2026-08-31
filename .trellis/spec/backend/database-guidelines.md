@@ -298,3 +298,73 @@ file.write_all(content.as_bytes())?;
 ## 测试建议
 
 - 覆盖并发写、锁冲突、stale lock、损坏 JSON、fallback default 场景。
+
+## Scenario: SQLite WAL Crash Recovery Probe MUST Distinguish Access Mode From Corruption
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `src-tauri/src/shared_event_log/recovery.rs::open()`、SQLite WAL startup probe、`ReadOnlyRecovery` classification 或 crash harness。
+- 目标：unclean shutdown 后 hot WAL 需要内部 recovery 时，纯 read-only `quick_check` 的 `SQLITE_READONLY` 不能被误判为 logical corruption；真实损坏仍须 fail closed。
+
+### 2. Signatures
+
+- startup owner：`shared_event_log::recovery::open(path: &Path) -> Result<OpenOutcome, StoreError>`
+- primary probe：`probe_integrity(path: &Path) -> Result<(), RecoveryReason>`
+- fallback opener：`open_wal_recovery_probe(path: &Path) -> Result<Connection, RecoveryReason>`
+- typed classification：`is_readonly_sqlite_error(error: &rusqlite::Error) -> bool`
+
+### 3. Contracts
+
+- Existing non-empty DB MUST 先用 `SQLITE_OPEN_READ_ONLY` 执行 `PRAGMA quick_check(1)`。
+- 只有 base SQLite code 为 `ErrorCode::ReadOnly` 时，MAY fallback；禁止按英文 message substring 或所有 query error 宽泛 fallback。
+- Fallback MUST 使用 `SQLITE_OPEN_READ_WRITE` 且 MUST NOT 带 `SQLITE_OPEN_CREATE`，随后在任何 integrity SQL 前设置 `PRAGMA query_only = ON`。
+- `query_only` 禁止 application SQL mutation；SQLite pager 为恢复 WAL journal/sidecar 执行的内部 I/O 不得被当作业务写入。
+- `CORRUPT`、`NOTADB`、`BUSY`、`LOCKED`、fallback open/config/check failure MUST 继续返回 `IntegrityCheckFailed`，由 `open()` 进入 `ReadOnlyRecovery`；原 DB 禁止删除、重命名或覆盖。
+
+### 4. Validation & Error Matrix
+
+| Primary read-only probe | Fallback | Result |
+|---|---|---|
+| `ok` | 不执行 | writable `Ready` |
+| non-`ok` integrity row | 不执行 | `ReadOnlyRecovery` |
+| `SQLITE_READONLY` | RW/no-create + query-only `ok` | writable `Ready` |
+| `SQLITE_READONLY` | fallback failure / non-`ok` | `ReadOnlyRecovery` with both contexts |
+| `CORRUPT` / `NOTADB` / other error | 不执行 | `ReadOnlyRecovery` |
+| path missing | 不走 existing-file probe | normal fresh-create path owns creation |
+
+### 5. Good / Base / Bad Cases
+
+- Good：macOS runner kill 后 read-only probe 返回 `attempt to write a readonly database`；typed `ReadOnly` fallback 恢复 WAL，`quick_check` 通过，restart 保留 committed facts。
+- Base：clean existing DB 的 read-only probe 直接 `ok`，不升级权限。
+- Bad：任何 `quick_check` error 都用 writable connection 再试；这会弱化 corruption fail-closed boundary。
+- Bad：fallback 复用 `Connection::open()`；默认 flags 包含 `CREATE`，可能在 path race 中创建空库。
+
+### 6. Tests Required
+
+- Unit MUST assert only `ErrorCode::ReadOnly` matches fallback classification。
+- Unit MUST assert fallback missing path 返回 error 且不创建 DB。
+- Unit MUST assert fallback connection 的 `query_only=1`，并拒绝 test INSERT。
+- Integration MUST run `shared_event_log_crash`：transaction boundaries + randomized kills ≥50，断言 `quick_check=ok`、sequence 连续、ack replay idempotent。
+- Integration MUST keep damaged-database test，断言 corruption 仍进入 read-only recovery 且文件未覆盖。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```rust
+// READ_ONLY 可能只是无法完成 hot WAL recovery；不能直接判 corruption。
+let conn = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+conn.query_row("PRAGMA quick_check(1)", [], |row| row.get(0))?;
+```
+
+#### Correct
+
+```rust
+match quick_check(&read_only_conn) {
+    Err(error) if is_readonly_sqlite_error(&error) => {
+        let conn = open_wal_recovery_probe(path)?; // READ_WRITE, no CREATE, query_only=ON
+        require_quick_check_ok(&conn)
+    }
+    result => require_quick_check_ok_result(result),
+}
+```
