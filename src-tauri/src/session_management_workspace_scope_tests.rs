@@ -686,3 +686,87 @@
 
         std::fs::remove_dir_all(base).ok();
     }
+
+    #[tokio::test]
+    async fn codex_background_guardian_session_is_excluded_from_catalog_projection() {
+        let base = std::env::temp_dir().join(format!("codex-guardian-catalog-{}", Uuid::new_v4()));
+        let day_dir = base
+            .join("codex-home")
+            .join("sessions")
+            .join("2026")
+            .join("08")
+            .join("31");
+        std::fs::create_dir_all(&day_dir).expect("create sessions day dir");
+        let workspace_path = base.join("workspace");
+        std::fs::create_dir_all(&workspace_path).expect("create workspace dir");
+        let storage_path = base.join("workspaces.json");
+        std::fs::write(&storage_path, "[]").expect("seed storage path");
+
+        let cwd = workspace_path.to_string_lossy().to_string();
+        let guardian_meta = serde_json::json!({
+            "timestamp": "2026-08-31T01:00:00.000Z",
+            "type": "session_meta",
+            "payload": {
+                "id": "guardian-catalog-test",
+                "cwd": cwd,
+                "originator": "Codex Desktop",
+                "source": {"subagent": {"other": "guardian"}},
+                "thread_source": "guardian_review"
+            }
+        })
+        .to_string();
+        let normal_meta = serde_json::json!({
+            "timestamp": "2026-08-31T01:01:00.000Z",
+            "type": "session_meta",
+            "payload": {
+                "id": "normal-catalog-test",
+                "cwd": cwd,
+                "originator": "Codex Desktop",
+                "source": "cli"
+            }
+        })
+        .to_string();
+        std::fs::write(
+            day_dir.join("rollout-2026-08-31T01-00-00-guardian-catalog-test.jsonl"),
+            guardian_meta + "\n",
+        )
+        .expect("write guardian fixture");
+        std::fs::write(
+            day_dir.join("rollout-2026-08-31T01-01-00-normal-catalog-test.jsonl"),
+            normal_meta + "\n",
+        )
+        .expect("write normal fixture");
+
+        let mut workspace =
+            workspace_entry("main", "Main", &cwd, WorkspaceKind::Main, None);
+        workspace.settings.codex_home =
+            Some(base.join("codex-home").to_string_lossy().to_string());
+        let workspaces = Mutex::new(HashMap::from([(workspace.id.clone(), workspace)]));
+        let engine_manager = engine::EngineManager::new();
+
+        let data = build_workspace_scope_catalog_data(
+            &workspaces,
+            &engine_manager,
+            &storage_path,
+            "main",
+            SessionCatalogScanMode::Bounded(20),
+            WorkspaceSessionAttributionMode::Related,
+        )
+        .await
+        .expect("build catalog data");
+
+        assert!(
+            data.entries
+                .iter()
+                .any(|entry| entry.session_id == "normal-catalog-test"),
+            "visible session should produce a catalog entry"
+        );
+        assert!(
+            !data.entries
+                .iter()
+                .any(|entry| entry.session_id == "guardian-catalog-test"),
+            "guardian background session must not produce a catalog entry"
+        );
+
+        std::fs::remove_dir_all(base).ok();
+    }

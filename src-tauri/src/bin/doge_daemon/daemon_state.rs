@@ -113,8 +113,9 @@ where
 mod codex_local_threads;
 use codex_local_threads::{
     build_codex_daemon_empty_thread_response, build_codex_daemon_local_thread_response,
-    parse_codex_daemon_local_thread_cursor, prefixed_session_id,
-    CODEX_DAEMON_LOCAL_THREAD_LIST_PARTIAL_SOURCE, CODEX_DAEMON_LOCAL_THREAD_LIST_TIMEOUT_MS,
+    filter_codex_daemon_background_thread_entries, parse_codex_daemon_local_thread_cursor,
+    prefixed_session_id, CODEX_DAEMON_LOCAL_THREAD_LIST_PARTIAL_SOURCE,
+    CODEX_DAEMON_LOCAL_THREAD_LIST_TIMEOUT_MS,
 };
 use runtime_helpers::{
     create_session_runtime_recovering_error, is_create_session_runtime_recovery_error,
@@ -2965,7 +2966,17 @@ impl DaemonState {
         .and_then(|value| value);
 
         match live_result {
-            Ok(response) => Ok(response),
+            Ok(response) => {
+                // live 透传也要过滤 guardian 等 background 会话，与本地统一路径口径一致。
+                let scan_limit = limit.unwrap_or(50).clamp(1, 200) as usize + 21;
+                Ok(filter_codex_daemon_background_thread_entries(
+                    &self.workspaces,
+                    &workspace_id,
+                    response,
+                    scan_limit,
+                )
+                .await)
+            }
             Err(live_error) => {
                 log::debug!(
                     "[daemon:list_threads] Live Codex thread list unavailable for {}: {}",

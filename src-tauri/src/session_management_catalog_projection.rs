@@ -439,57 +439,71 @@ async fn build_workspace_scope_catalog_data(
                     provider_home_status.source_kind = Some("provider-home".to_string());
                     source_statuses.push(provider_home_status);
                 }
-                entries.extend(summary_list.sessions.into_iter().map(|summary| {
-                    let session_id = summary.session_id.clone();
-                    let archived_at =
-                        archived_at_for_session(&owner_metadata, &owner_workspace_id, &session_id);
-                    let source_label =
-                        build_source_label(summary.source.as_deref(), summary.provider.as_deref());
-                    let entry = WorkspaceSessionCatalogEntry {
-                        session_id,
-                        stable_session_key: None,
-                        canonical_session_id: Some(summary.session_id.clone()),
-                        parent_session_id: summary.parent_session_id,
-                        workspace_id: owner_workspace_id.clone(),
-                        workspace_label: Some(workspace.name.clone()),
-                        engine: "codex".to_string(),
-                        title: summary
-                            .summary
-                            .unwrap_or_else(|| "Codex Session".to_string()),
-                        native_title: summary.native_title,
-                        updated_at: summary.timestamp.max(0),
-                        archived_at,
-                        thread_kind: "native".to_string(),
-                        source: summary.source,
-                        source_label,
-                        provider_profile_id: summary.provider_profile_id,
-                        provider_profile_source: summary.provider_profile_source,
-                        provider_profile_name: summary.provider_profile_name,
-                        provider_availability: summary.provider_availability,
-                        source_completeness: None,
-                        source_status_reason: None,
-                        size_bytes: summary.file_size_bytes,
-                        cwd: summary.cwd,
-                        attribution_status: Some(
-                            SessionCatalogAttributionStatus::StrictMatch
-                                .as_str()
-                                .to_string(),
-                        ),
-                        attribution_reason: None,
-                        attribution_confidence: None,
-                        matched_workspace_id: Some(owner_workspace_id.clone()),
-                        matched_workspace_label: Some(workspace.name.clone()),
-                        folder_id: None,
-                        auto_session: None,
-                        exists_on_disk: false,
-                        inconsistency_code: None,
-                        delete_mode: None,
-                        physical_path: summary.physical_path,
-                        children_count: None,
-                        continuation: ProviderContinuationProjection::default(),
-                    };
-                    finalize_existing_catalog_entry(entry, &metadata_by_workspace_id)
-                }));
+                entries.extend(
+                    summary_list
+                        .sessions
+                        .into_iter()
+                        // guardian 等 background 会话与 list_threads 统一口径：不进 catalog。
+                        .filter(|summary| {
+                            !crate::local_usage::is_codex_background_helper_session(summary)
+                        })
+                        .map(|summary| {
+                            let session_id = summary.session_id.clone();
+                            let archived_at = archived_at_for_session(
+                                &owner_metadata,
+                                &owner_workspace_id,
+                                &session_id,
+                            );
+                            let source_label = build_source_label(
+                                summary.source.as_deref(),
+                                summary.provider.as_deref(),
+                            );
+                            let entry = WorkspaceSessionCatalogEntry {
+                                session_id,
+                                stable_session_key: None,
+                                canonical_session_id: Some(summary.session_id.clone()),
+                                parent_session_id: summary.parent_session_id,
+                                workspace_id: owner_workspace_id.clone(),
+                                workspace_label: Some(workspace.name.clone()),
+                                engine: "codex".to_string(),
+                                title: summary
+                                    .summary
+                                    .unwrap_or_else(|| "Codex Session".to_string()),
+                                native_title: summary.native_title,
+                                updated_at: summary.timestamp.max(0),
+                                archived_at,
+                                thread_kind: "native".to_string(),
+                                source: summary.source,
+                                source_label,
+                                provider_profile_id: summary.provider_profile_id,
+                                provider_profile_source: summary.provider_profile_source,
+                                provider_profile_name: summary.provider_profile_name,
+                                provider_availability: summary.provider_availability,
+                                source_completeness: None,
+                                source_status_reason: None,
+                                size_bytes: summary.file_size_bytes,
+                                cwd: summary.cwd,
+                                attribution_status: Some(
+                                    SessionCatalogAttributionStatus::StrictMatch
+                                        .as_str()
+                                        .to_string(),
+                                ),
+                                attribution_reason: None,
+                                attribution_confidence: None,
+                                matched_workspace_id: Some(owner_workspace_id.clone()),
+                                matched_workspace_label: Some(workspace.name.clone()),
+                                folder_id: None,
+                                auto_session: None,
+                                exists_on_disk: false,
+                                inconsistency_code: None,
+                                delete_mode: None,
+                                physical_path: summary.physical_path,
+                                children_count: None,
+                                continuation: ProviderContinuationProjection::default(),
+                            };
+                            finalize_existing_catalog_entry(entry, &metadata_by_workspace_id)
+                        }),
+                );
             }
             Err(error) => {
                 log::warn!(

@@ -7,6 +7,10 @@ use tokio::time::timeout;
 
 use super::{config, pick_model_from_model_list_response};
 use crate::local_usage;
+pub(crate) use crate::local_usage::codex_session_identifier_candidates;
+use crate::local_usage::{
+    is_codex_background_helper_session, is_codex_background_helper_thread_entry,
+};
 use crate::session_management;
 use crate::shared::codex_core;
 use crate::state::AppState;
@@ -21,14 +25,6 @@ const UNIFIED_CODEX_SCAN_LOOKAHEAD: usize = 20;
 const LOCAL_SESSION_SCAN_FALLBACK_TIMEOUT_MS: u64 = 5_000;
 const LOCAL_SESSION_SCAN_UNAVAILABLE_PARTIAL_SOURCE: &str = "local-session-scan-unavailable";
 const LIVE_THREAD_LIST_UNAVAILABLE_PARTIAL_SOURCE: &str = "live-thread-list-unavailable";
-const CODEX_BACKGROUND_HELPER_PROMPT_PREFIXES: &[&str] = &[
-    "Generate a concise title for a coding chat thread from the first user message.",
-    "You create concise run metadata for a coding task.",
-    "You are generating OpenSpec project context.",
-    "## Memory Writing Agent: Phase 2",
-    "Memory Writing Agent: Phase 2",
-];
-
 static WORKSPACE_CODEX_SESSION_ID_CACHE: OnceLock<Mutex<HashMap<String, HashSet<String>>>> =
     OnceLock::new();
 
@@ -239,57 +235,6 @@ fn apply_thread_entry_provider_bindings(
     }
 }
 
-fn is_codex_background_helper_text(value: &str) -> bool {
-    let preview = value.trim();
-    if preview.is_empty() {
-        return false;
-    }
-    if CODEX_BACKGROUND_HELPER_PROMPT_PREFIXES
-        .iter()
-        .any(|prefix| preview.starts_with(prefix))
-    {
-        return true;
-    }
-    let lower = preview.to_ascii_lowercase();
-    let starts_with_memory_agent_header =
-        lower.starts_with("## memory writing agent:") || lower.starts_with("memory writing agent:");
-    starts_with_memory_agent_header
-        && (lower.contains("consolidation") || lower.contains("phase 2"))
-}
-
-fn is_codex_background_helper_thread_entry(entry: &Value) -> bool {
-    if entry
-        .get("nativeTitle")
-        .and_then(Value::as_str)
-        .is_some_and(|value| !value.trim().is_empty())
-    {
-        return false;
-    }
-    ["preview", "title", "name"].iter().any(|key| {
-        entry
-            .get(*key)
-            .and_then(Value::as_str)
-            .map(is_codex_background_helper_text)
-            .unwrap_or(false)
-    })
-}
-
-fn is_codex_background_helper_session(session: &LocalUsageSessionSummary) -> bool {
-    // 结构化信号优先：guardian 审批评估等非用户发起的后台线程在 session_meta
-    // 中带有 thread_source / source.subagent 标记，prompt 前缀仅作 legacy 兜底。
-    if session.background_kind.is_some() {
-        return true;
-    }
-    if session.native_title.is_some() {
-        return false;
-    }
-    session
-        .summary
-        .as_deref()
-        .map(is_codex_background_helper_text)
-        .unwrap_or(false)
-}
-
 fn collect_codex_background_helper_session_identifiers(
     local_sessions: &[LocalUsageSessionSummary],
 ) -> HashSet<String> {
@@ -425,24 +370,6 @@ mod tests {
         assert_eq!(entry["parentSessionId"], "parent-session");
         assert_eq!(entry["nativeTitle"], "Agent 12");
     }
-}
-
-pub(crate) fn codex_session_identifier_candidates(
-    session: &LocalUsageSessionSummary,
-) -> Vec<String> {
-    let mut ids = Vec::new();
-    let canonical = session.session_id.trim();
-    if !canonical.is_empty() {
-        ids.push(canonical.to_string());
-    }
-    for alias in &session.session_id_aliases {
-        let normalized = alias.trim();
-        if normalized.is_empty() || ids.iter().any(|existing| existing == normalized) {
-            continue;
-        }
-        ids.push(normalized.to_string());
-    }
-    ids
 }
 
 fn collect_codex_session_identifiers(

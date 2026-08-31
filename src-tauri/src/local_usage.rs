@@ -1498,6 +1498,85 @@ fn classify_codex_background_helper_from_session_value(value: &Value) -> Option<
     None
 }
 
+// 以下五个 background 分类 helpers 同时服务三条链路：本地 `list_threads` 统一 merge、
+// workspace session catalog 投影、daemon remote `list_threads`。lib 与 doge_daemon bin
+// 都编译本文件，集中在此避免跨 crate 重复定义。
+pub(crate) const CODEX_BACKGROUND_HELPER_PROMPT_PREFIXES: &[&str] = &[
+    "Generate a concise title for a coding chat thread from the first user message.",
+    "You create concise run metadata for a coding task.",
+    "You are generating OpenSpec project context.",
+    "## Memory Writing Agent: Phase 2",
+    "Memory Writing Agent: Phase 2",
+];
+
+pub(crate) fn is_codex_background_helper_text(value: &str) -> bool {
+    let preview = value.trim();
+    if preview.is_empty() {
+        return false;
+    }
+    if CODEX_BACKGROUND_HELPER_PROMPT_PREFIXES
+        .iter()
+        .any(|prefix| preview.starts_with(prefix))
+    {
+        return true;
+    }
+    let lower = preview.to_ascii_lowercase();
+    let starts_with_memory_agent_header =
+        lower.starts_with("## memory writing agent:") || lower.starts_with("memory writing agent:");
+    starts_with_memory_agent_header
+        && (lower.contains("consolidation") || lower.contains("phase 2"))
+}
+
+pub(crate) fn is_codex_background_helper_thread_entry(entry: &Value) -> bool {
+    if entry
+        .get("nativeTitle")
+        .and_then(Value::as_str)
+        .is_some_and(|value| !value.trim().is_empty())
+    {
+        return false;
+    }
+    ["preview", "title", "name"].iter().any(|key| {
+        entry
+            .get(*key)
+            .and_then(Value::as_str)
+            .map(is_codex_background_helper_text)
+            .unwrap_or(false)
+    })
+}
+
+pub(crate) fn is_codex_background_helper_session(session: &LocalUsageSessionSummary) -> bool {
+    // 结构化信号优先：guardian 审批评审等非用户发起的后台线程在 session_meta
+    // 中带有 thread_source / source.subagent 标记，prompt 前缀仅作 legacy 兜底。
+    if session.background_kind.is_some() {
+        return true;
+    }
+    if session.native_title.is_some() {
+        return false;
+    }
+    session
+        .summary
+        .as_deref()
+        .map(is_codex_background_helper_text)
+        .unwrap_or(false)
+}
+
+pub(crate) fn codex_session_identifier_candidates(
+    session: &LocalUsageSessionSummary,
+) -> Vec<String> {
+    let mut ids = Vec::new();
+    let canonical = session.session_id.trim();
+    if !canonical.is_empty() {
+        ids.push(canonical.to_string());
+    }
+    for alias in &session.session_id_aliases {
+        let normalized = alias.trim();
+        if normalized.is_empty() || ids.iter().any(|existing| existing == normalized) {
+            continue;
+        }
+        ids.push(normalized.to_string());
+    }
+    ids
+}
 fn portable_path_basename(path: &str) -> Option<String> {
     let trimmed = path
         .trim()
