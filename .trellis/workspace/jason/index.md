@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 80
-- **Last Active**: 2026-08-30
+- **Total Sessions**: 81
+- **Last Active**: 2026-08-31
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~735 | Active |
+| `journal-2.md` | ~768 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 81 | 2026-08-31 | 准备 doge v0.1.13 发布 | `121a487c5` | `codex/release-v0.1.13` |
 | 80 | 2026-08-30 | 归档 managed Codex 生图 OpenSpec | `78862a0fa` | `codex/enable-codex-image-generation` |
 | 79 | 2026-08-30 | 启用 managed Codex 生图 | `7955d25dd` | `codex/enable-codex-image-generation` |
 | 78 | 2026-08-30 | 准备 doge v0.1.12 发布 | `235eac815` | `codex/release-v0.1.12` |

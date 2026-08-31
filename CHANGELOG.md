@@ -1,5 +1,31 @@
 # Changelog
 
+### **2026年8月31日（v0.1.13）**
+
+中文：
+
+#### 新功能
+
+- Codex 现在可以在 GPT-5.6 Sol、Terra 和 Luna 对话中直接生成图片，并在原问题旁显示生成进度、完成预览和历史结果，无需用户手动配置 OpenAI API Key。
+
+#### 修复
+
+- 修复上游已支持生图时，Codex 仍错误提示“图像生成工具不可用”的问题；托管配置会随实际 Codex 版本自动适配。
+- 修复应用重启后托管 Kimi 会话可能从工作区会话列表消失的问题，并统一会话的读取、加载与删除来源。
+
+English:
+
+#### New Features
+
+- Codex can now generate images directly in GPT-5.6 Sol, Terra, and Luna conversations, showing progress, completed previews, and restored history next to the original request without requiring users to configure an OpenAI API key.
+
+#### Fixes
+
+- Fixed Codex incorrectly reporting that image generation was unavailable even when the upstream service supported it; managed configuration now adapts automatically to the actual Codex version.
+- Fixed managed Kimi conversations disappearing from workspace session lists after an app restart, with listing, loading, and deletion now using the same discovered source.
+
+---
+
 ### **2026年8月30日（v0.1.12）**
 
 中文：
