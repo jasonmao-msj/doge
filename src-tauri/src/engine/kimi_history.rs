@@ -17,6 +17,7 @@
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use tokio::fs;
@@ -54,6 +55,8 @@ pub struct KimiSessionSummary {
     pub canonical_session_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub attribution_status: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider_profile_id: Option<String>,
 }
 
 /// Single normalized message row used by frontend history parser.
@@ -102,6 +105,18 @@ struct KimiSessionIndexEntry {
     session_id: String,
     session_dir: String,
     work_dir: String,
+}
+
+#[derive(Debug, Clone)]
+struct KimiHistoryRoot {
+    base_dir: PathBuf,
+    provider_profile_id: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+struct KimiSessionLocation {
+    root: KimiHistoryRoot,
+    entry: KimiSessionIndexEntry,
 }
 
 fn parse_timestamp_millis(value: &str) -> Option<i64> {
@@ -237,6 +252,115 @@ fn resolve_kimi_base_dir(custom_home: Option<&str>) -> PathBuf {
     dirs::home_dir().unwrap_or_default().join(".kimi-code")
 }
 
+fn push_unique_kimi_root(
+    roots: &mut Vec<KimiHistoryRoot>,
+    base_dir: PathBuf,
+    provider_profile_id: Option<String>,
+) {
+    if roots.iter().any(|root| root.base_dir == base_dir) {
+        return;
+    }
+    roots.push(KimiHistoryRoot {
+        base_dir,
+        provider_profile_id,
+    });
+}
+
+fn build_kimi_history_roots(
+    default_base_dir: PathBuf,
+    managed_provider_home_dirs: impl IntoIterator<Item = (PathBuf, String)>,
+    custom_home: Option<&str>,
+) -> Vec<KimiHistoryRoot> {
+    if let Some(custom_home) = custom_home.map(str::trim).filter(|value| !value.is_empty()) {
+        return vec![KimiHistoryRoot {
+            base_dir: resolve_kimi_base_dir(Some(custom_home)),
+            provider_profile_id: None,
+        }];
+    }
+
+    let mut roots = Vec::new();
+    push_unique_kimi_root(&mut roots, default_base_dir, None);
+    for (base_dir, provider_profile_id) in managed_provider_home_dirs {
+        if provider_profile_id.trim().is_empty() {
+            continue;
+        }
+        push_unique_kimi_root(
+            &mut roots,
+            base_dir,
+            Some(provider_profile_id.trim().to_string()),
+        );
+    }
+    roots
+}
+
+async fn resolve_kimi_history_roots(
+    custom_home: Option<&str>,
+) -> Result<Vec<KimiHistoryRoot>, String> {
+    let default_base_dir = resolve_kimi_base_dir(custom_home);
+    if custom_home
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .is_some()
+    {
+        return Ok(build_kimi_history_roots(
+            default_base_dir,
+            std::iter::empty(),
+            custom_home,
+        ));
+    }
+
+    let managed_parent = crate::app_paths::kimi_provider_homes_dir()?;
+    let mut managed_provider_home_dirs = Vec::new();
+    let mut entries = match fs::read_dir(&managed_parent).await {
+        Ok(entries) => entries,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(build_kimi_history_roots(
+                default_base_dir,
+                managed_provider_home_dirs,
+                custom_home,
+            ));
+        }
+        Err(error) => {
+            return Err(format!(
+                "Failed to enumerate managed Kimi provider homes {}: {}",
+                managed_parent.display(),
+                error
+            ));
+        }
+    };
+
+    while let Some(entry) = entries.next_entry().await.map_err(|error| {
+        format!(
+            "Failed to enumerate managed Kimi provider homes {}: {}",
+            managed_parent.display(),
+            error
+        )
+    })? {
+        let file_type = entry.file_type().await.map_err(|error| {
+            format!(
+                "Failed to inspect managed Kimi provider home {}: {}",
+                entry.path().display(),
+                error
+            )
+        })?;
+        if !file_type.is_dir() {
+            continue;
+        }
+        let provider_profile_id = entry.file_name().to_string_lossy().trim().to_string();
+        if provider_profile_id.is_empty() {
+            continue;
+        }
+        managed_provider_home_dirs.push((entry.path(), provider_profile_id));
+    }
+    managed_provider_home_dirs.sort_by(|a, b| a.1.cmp(&b.1));
+
+    Ok(build_kimi_history_roots(
+        default_base_dir,
+        managed_provider_home_dirs,
+        custom_home,
+    ))
+}
+
 async fn read_index_entries(base_dir: &Path) -> Vec<KimiSessionIndexEntry> {
     let index_path = base_dir.join("session_index.jsonl");
     let raw = match fs::read_to_string(&index_path).await {
@@ -275,8 +399,20 @@ fn extract_input_text(input: Option<&Value>) -> String {
 /// Build a sidebar summary from one index entry. Best-effort: missing
 /// `state.json` or `wire.jsonl` degrade individual fields instead of
 /// dropping the session.
-async fn build_summary_from_entry(entry: &KimiSessionIndexEntry) -> KimiSessionSummary {
+fn resolve_kimi_session_dir(root: &KimiHistoryRoot, entry: &KimiSessionIndexEntry) -> PathBuf {
     let session_dir = PathBuf::from(entry.session_dir.trim());
+    if session_dir.is_absolute() {
+        session_dir
+    } else {
+        root.base_dir.join(session_dir)
+    }
+}
+
+async fn build_summary_from_entry(
+    root: &KimiHistoryRoot,
+    entry: &KimiSessionIndexEntry,
+) -> KimiSessionSummary {
+    let session_dir = resolve_kimi_session_dir(root, entry);
     let state_path = session_dir.join("state.json");
     let wire_path = wire_log_path(&session_dir);
 
@@ -370,6 +506,7 @@ async fn build_summary_from_entry(entry: &KimiSessionIndexEntry) -> KimiSessionS
         file_size_bytes,
         engine: Some("kimi".to_string()),
         attribution_status: Some("strict-match".to_string()),
+        provider_profile_id: root.provider_profile_id.clone(),
     }
 }
 
@@ -619,14 +756,23 @@ fn parse_messages_from_wire(raw: &str) -> KimiSessionLoadResult {
 async fn resolve_workspace_index_entries(
     workspace_path: &Path,
     custom_home: Option<&str>,
-) -> Vec<KimiSessionIndexEntry> {
-    let base_dir = resolve_kimi_base_dir(custom_home);
+) -> Result<Vec<KimiSessionLocation>, String> {
+    let roots = resolve_kimi_history_roots(custom_home).await?;
     let workspace_variants = build_workspace_path_variants(workspace_path);
-    read_index_entries(&base_dir)
-        .await
-        .into_iter()
-        .filter(|entry| matches_workspace_path(&entry.work_dir, &workspace_variants))
-        .collect()
+    let mut locations = Vec::new();
+    for root in roots {
+        let entries = read_index_entries(&root.base_dir).await;
+        locations.extend(
+            entries
+                .into_iter()
+                .filter(|entry| matches_workspace_path(&entry.work_dir, &workspace_variants))
+                .map(|entry| KimiSessionLocation {
+                    root: root.clone(),
+                    entry,
+                }),
+        );
+    }
+    Ok(locations)
 }
 
 /// List Kimi sessions for a workspace path.
@@ -636,11 +782,20 @@ pub async fn list_kimi_sessions(
     custom_home: Option<&str>,
 ) -> Result<Vec<KimiSessionSummary>, String> {
     timeout(LOCAL_SESSION_SCAN_TIMEOUT, async {
-        let entries = resolve_workspace_index_entries(workspace_path, custom_home).await;
-        let mut sessions = Vec::new();
-        for entry in entries {
-            sessions.push(build_summary_from_entry(&entry).await);
+        let locations = resolve_workspace_index_entries(workspace_path, custom_home).await?;
+        let mut sessions_by_id = HashMap::new();
+        for location in locations {
+            let summary = build_summary_from_entry(&location.root, &location.entry).await;
+            let replace = sessions_by_id
+                .get(&summary.session_id)
+                .map_or(true, |existing: &KimiSessionSummary| {
+                    summary.updated_at > existing.updated_at
+                });
+            if replace {
+                sessions_by_id.insert(summary.session_id.clone(), summary);
+            }
         }
+        let mut sessions: Vec<KimiSessionSummary> = sessions_by_id.into_values().collect();
         sessions.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
         sessions.truncate(limit.unwrap_or(200));
         Ok(sessions)
@@ -653,17 +808,17 @@ async fn find_workspace_index_entry(
     workspace_path: &Path,
     session_id: &str,
     custom_home: Option<&str>,
-) -> Result<KimiSessionIndexEntry, String> {
+) -> Result<KimiSessionLocation, String> {
     let normalized_session_id = normalize_session_id(session_id)?;
     let entries = timeout(
         LOCAL_SESSION_SCAN_TIMEOUT,
         resolve_workspace_index_entries(workspace_path, custom_home),
     )
     .await
-    .map_err(|_| "Kimi session scan timed out".to_string())?;
+    .map_err(|_| "Kimi session scan timed out".to_string())??;
     entries
         .into_iter()
-        .find(|entry| entry.session_id.trim() == normalized_session_id)
+        .find(|location| location.entry.session_id.trim() == normalized_session_id)
         .ok_or_else(|| format!("Kimi session not found: {}", normalized_session_id))
 }
 
@@ -672,8 +827,9 @@ pub(crate) async fn resolve_kimi_session_history_path(
     session_id: &str,
     custom_home: Option<&str>,
 ) -> Result<PathBuf, String> {
-    let entry = find_workspace_index_entry(workspace_path, session_id, custom_home).await?;
-    Ok(wire_log_path(Path::new(entry.session_dir.trim())))
+    let location = find_workspace_index_entry(workspace_path, session_id, custom_home).await?;
+    let session_dir = resolve_kimi_session_dir(&location.root, &location.entry);
+    Ok(wire_log_path(&session_dir))
 }
 
 /// Load full Kimi session messages by session id.
@@ -682,8 +838,9 @@ pub async fn load_kimi_session(
     session_id: &str,
     custom_home: Option<&str>,
 ) -> Result<KimiSessionLoadResult, String> {
-    let entry = find_workspace_index_entry(workspace_path, session_id, custom_home).await?;
-    let wire_path = wire_log_path(Path::new(entry.session_dir.trim()));
+    let location = find_workspace_index_entry(workspace_path, session_id, custom_home).await?;
+    let session_dir = resolve_kimi_session_dir(&location.root, &location.entry);
+    let wire_path = wire_log_path(&session_dir);
     let raw = fs::read_to_string(&wire_path).await.map_err(|error| {
         format!(
             "Failed to read Kimi session wire log {}: {}",
@@ -701,10 +858,10 @@ pub async fn delete_kimi_session(
     custom_home: Option<&str>,
 ) -> Result<(), String> {
     let normalized_session_id = normalize_session_id(session_id)?;
-    let entry =
+    let location =
         find_workspace_index_entry(workspace_path, &normalized_session_id, custom_home).await?;
 
-    let session_dir = PathBuf::from(entry.session_dir.trim());
+    let session_dir = resolve_kimi_session_dir(&location.root, &location.entry);
     if session_dir.exists() {
         fs::remove_dir_all(&session_dir).await.map_err(|error| {
             format!(
@@ -715,7 +872,7 @@ pub async fn delete_kimi_session(
         })?;
     }
 
-    let index_path = resolve_kimi_base_dir(custom_home).join("session_index.jsonl");
+    let index_path = location.root.base_dir.join("session_index.jsonl");
     if let Ok(raw) = fs::read_to_string(&index_path).await {
         let kept: Vec<&str> = raw
             .lines()
@@ -749,8 +906,103 @@ pub async fn delete_kimi_session(
 
 #[cfg(test)]
 mod tests {
-    use super::{matches_workspace_path, parse_messages_from_wire, parse_timestamp_millis};
-    use std::path::Path;
+    use super::{
+        build_kimi_history_roots, matches_workspace_path, parse_messages_from_wire,
+        parse_timestamp_millis, resolve_kimi_session_dir, KimiHistoryRoot, KimiSessionIndexEntry,
+    };
+    use std::path::{Path, PathBuf};
+
+    #[test]
+    fn builds_default_and_managed_roots_with_stable_provider_metadata() {
+        let roots = build_kimi_history_roots(
+            PathBuf::from("default"),
+            vec![
+                (PathBuf::from("provider-b"), "provider-b".to_string()),
+                (PathBuf::from("provider-a"), "provider-a".to_string()),
+                (PathBuf::from("ignored"), String::new()),
+            ],
+            None,
+        );
+
+        assert_eq!(roots.len(), 3);
+        assert_eq!(roots[0].base_dir, PathBuf::from("default"));
+        assert_eq!(roots[1].provider_profile_id.as_deref(), Some("provider-b"));
+        assert_eq!(roots[2].provider_profile_id.as_deref(), Some("provider-a"));
+    }
+
+    #[test]
+    fn explicit_custom_home_does_not_add_managed_roots() {
+        let roots = build_kimi_history_roots(
+            PathBuf::from("default"),
+            vec![(PathBuf::from("provider-a"), "provider-a".to_string())],
+            Some("custom"),
+        );
+
+        assert_eq!(roots.len(), 1);
+        assert_eq!(roots[0].base_dir, PathBuf::from("custom"));
+        assert_eq!(roots[0].provider_profile_id, None);
+    }
+
+    #[test]
+    fn resolves_relative_session_dir_against_discovered_root() {
+        let root = KimiHistoryRoot {
+            base_dir: PathBuf::from("provider-home"),
+            provider_profile_id: Some("provider-a".to_string()),
+        };
+        let entry = KimiSessionIndexEntry {
+            session_id: "session-1".to_string(),
+            session_dir: "sessions/workspace/session-1".to_string(),
+            work_dir: "/workspace".to_string(),
+        };
+
+        assert_eq!(
+            resolve_kimi_session_dir(&root, &entry),
+            PathBuf::from("provider-home/sessions/workspace/session-1")
+        );
+    }
+
+    #[tokio::test]
+    async fn load_and_delete_use_the_selected_history_root() {
+        let base_dir =
+            std::env::temp_dir().join(format!("doge-kimi-history-{}", uuid::Uuid::new_v4()));
+        let session_dir = base_dir.join("sessions").join("session-1");
+        let other_session_dir = base_dir.join("sessions").join("session-2");
+        std::fs::create_dir_all(session_dir.join("agents/main")).expect("session directory");
+        std::fs::create_dir_all(&other_session_dir).expect("unrelated session directory");
+        std::fs::write(
+            session_dir.join("agents/main/wire.jsonl"),
+            "{\"type\":\"turn.prompt\",\"input\":[{\"type\":\"text\",\"text\":\"hello\"}]}\n",
+        )
+        .expect("wire log");
+        std::fs::write(
+            base_dir.join("session_index.jsonl"),
+            concat!(
+                "{\"sessionId\":\"session-1\",\"sessionDir\":\"sessions/session-1\",\"workDir\":\"workspace\"}\n",
+                "{\"sessionId\":\"session-2\",\"sessionDir\":\"sessions/session-2\",\"workDir\":\"workspace\"}\n"
+            ),
+        )
+        .expect("session index");
+
+        let workspace = Path::new("workspace");
+        let custom_home = base_dir.to_string_lossy().to_string();
+        let loaded = super::load_kimi_session(workspace, "session-1", Some(&custom_home))
+            .await
+            .expect("load selected root");
+        assert_eq!(loaded.messages[0].text, "hello");
+
+        super::delete_kimi_session(workspace, "session-1", Some(&custom_home))
+            .await
+            .expect("delete selected root");
+        assert!(!session_dir.exists());
+        assert!(other_session_dir.exists());
+        assert!(base_dir.exists());
+        let remaining_index = std::fs::read_to_string(base_dir.join("session_index.jsonl"))
+            .expect("rewritten session index");
+        assert!(!remaining_index.contains("session-1"));
+        assert!(remaining_index.contains("session-2"));
+
+        std::fs::remove_dir_all(base_dir).expect("test cleanup");
+    }
 
     #[test]
     fn parses_wire_user_assistant_reasoning_tool_and_usage() {

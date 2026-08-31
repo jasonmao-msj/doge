@@ -110,6 +110,7 @@ import {
   resolveInitialThreadListTargetCount,
   resolveNativeSessionListLimit,
   resolveThreadListCursorForDisplay,
+  shouldRefreshKimiSessions,
   type StartupThreadHydrationMode,
 } from "./useThreadActions.threadList";
 import {
@@ -1639,10 +1640,16 @@ export function useThreadActions({
 
         const hasAttemptedKimiRefresh =
           kimiRefreshAttemptedRef.current[workspace.id] === true;
-        const shouldRefreshKimiSessions =
-          isLatestThreadListRequest() &&
-          !isFirstPaintHydration &&
-          (hasKimiSignal || !!cachedKimi || !hasAttemptedKimiRefresh);
+        // Kimi history lives in durable provider homes, while list_threads can
+        // only return live/runtime sessions after a restart. Seed it during
+        // first-paint as an async merge so a workspace with no live Kimi
+        // signal still recovers its persisted sessions.
+        const shouldRefreshKimiSessionsNow = shouldRefreshKimiSessions({
+          isLatestRequest: isLatestThreadListRequest(),
+          hasKimiSignal,
+          hasCachedKimiSessions: !!cachedKimi,
+          hasAttemptedRefresh: hasAttemptedKimiRefresh,
+        });
         const hasAttemptedGrokRefresh =
           grokRefreshAttemptedRef.current[workspace.id] === true;
         const shouldRefreshGrokSessions =
@@ -1749,7 +1756,7 @@ export function useThreadActions({
             }
           })();
         }
-        if (shouldRefreshKimiSessions) {
+        if (shouldRefreshKimiSessionsNow) {
           void (async () => {
             kimiRefreshAttemptedRef.current[workspace.id] = true;
             const kimiResult = await withTimeout(

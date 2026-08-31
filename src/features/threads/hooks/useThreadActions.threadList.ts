@@ -59,6 +59,26 @@ export const SESSION_CATALOG_PAGE_SIZE = 100;
 export const SESSION_CATALOG_INITIAL_PAGE_SIZE =
   DEFAULT_VISIBLE_THREAD_ROOT_COUNT;
 
+/**
+ * Kimi history is durable on disk and is not included in the runtime
+ * `list_threads` response after restart. It therefore needs one asynchronous
+ * seed attempt even during first-paint hydration when there is no live Kimi
+ * signal or in-memory cache yet.
+ */
+export function shouldRefreshKimiSessions(params: {
+  isLatestRequest: boolean;
+  hasKimiSignal: boolean;
+  hasCachedKimiSessions: boolean;
+  hasAttemptedRefresh: boolean;
+}): boolean {
+  return (
+    params.isLatestRequest &&
+    (params.hasKimiSignal ||
+      params.hasCachedKimiSessions ||
+      !params.hasAttemptedRefresh)
+  );
+}
+
 const MIN_NATIVE_SESSION_LIST_LIMIT = Math.min(
   SESSION_CATALOG_PAGE_SIZE,
   DEFAULT_VISIBLE_THREAD_ROOT_COUNT,

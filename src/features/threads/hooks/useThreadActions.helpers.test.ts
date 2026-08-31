@@ -17,6 +17,7 @@ import {
   mergeGrokSessionSummaries,
   mergeKimiSessionSummaries,
   mergeThreadSummaryPreservingStableIdentity,
+  normalizeKimiSessionSummaries,
   resolveThreadSourceMeta,
   seedLastGoodEngineIntoMerged,
   selectRecoveredNewThreadDecision,
@@ -1187,6 +1188,31 @@ describe("useThreadActions.helpers", () => {
       hidden,
     );
     expect(merged.map((row) => row.id)).toEqual(["kimi:ok"]);
+  });
+
+  it("projects managed Kimi provider metadata through native history merge", () => {
+    const summaries = normalizeKimiSessionSummaries([
+      {
+        sessionId: "session-1",
+        firstMessage: "Managed Kimi session",
+        updatedAt: 20,
+        providerProfileId: "provider-kimi",
+      },
+    ]);
+
+    const merged = mergeKimiSessionSummaries(
+      [],
+      summaries,
+      "ws-1",
+      {},
+      () => undefined,
+    );
+
+    expect(merged[0]).toMatchObject({
+      id: "kimi:session-1",
+      engineSource: "kimi",
+      providerProfileId: "provider-kimi",
+    });
   });
 
 });

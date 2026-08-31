@@ -61,8 +61,11 @@ export type GeminiSessionSummary = {
   fileSizeBytes?: number;
 };
 
-// Kimi session summaries share the Gemini summary shape (id/message/updatedAt/size).
-export type KimiSessionSummary = GeminiSessionSummary;
+// Kimi session summaries share the Gemini summary shape and may identify the
+// managed provider home that supplied the history row.
+export type KimiSessionSummary = GeminiSessionSummary & {
+  providerProfileId?: string | null;
+};
 
 // Grok：在 Gemini 形状上扩展 parent / sessionKind（子代理树）
 export type GrokSessionSummary = GeminiSessionSummary & {
@@ -1144,8 +1147,25 @@ export function normalizeGeminiSessionSummaries(
 export function normalizeKimiSessionSummaries(
   value: unknown,
 ): KimiSessionSummary[] {
-  // Kimi session summaries share the Gemini summary shape.
-  return normalizeGeminiSessionSummaries(value);
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const summaries: KimiSessionSummary[] = [];
+  value.forEach((entry) => {
+    const base = normalizeGeminiSessionSummary(entry);
+    if (!base) {
+      return;
+    }
+    const record = entry as Record<string, unknown>;
+    const providerProfileId = asString(
+      record.providerProfileId ?? record.provider_profile_id,
+    ).trim();
+    summaries.push({
+      ...base,
+      ...(providerProfileId ? { providerProfileId } : {}),
+    });
+  });
+  return summaries;
 }
 
 function normalizeGrokSessionSummary(value: unknown): GrokSessionSummary | null {
@@ -1360,6 +1380,7 @@ function mergeNativeCliSessionSummaries(params: {
     GeminiSessionSummary & {
       parentSessionId?: string | null;
       sessionKind?: string | null;
+      providerProfileId?: string | null;
     }
   >;
   idPrefix: "gemini" | "grok" | "kimi";
@@ -1442,6 +1463,9 @@ function mergeNativeCliSessionSummaries(params: {
       updatedAt,
       sizeBytes: session.fileSizeBytes,
       engineSource,
+      ...(session.providerProfileId?.trim()
+        ? { providerProfileId: session.providerProfileId.trim() }
+        : {}),
       ...(parentThreadId ? { parentThreadId } : {}),
     };
     if (!prev || next.updatedAt >= prev.updatedAt) {
@@ -1454,12 +1478,20 @@ function mergeNativeCliSessionSummaries(params: {
         ...merged,
         parentThreadId:
           next.parentThreadId ?? merged.parentThreadId ?? prev?.parentThreadId ?? null,
+        providerProfileId:
+          next.providerProfileId ?? prev?.providerProfileId ?? undefined,
       });
-    } else if (parentThreadId && !prev.parentThreadId) {
+    } else if (
+      (parentThreadId && !prev.parentThreadId) ||
+      (session.providerProfileId?.trim() && !prev.providerProfileId)
+    ) {
       // 本地 live 线程 updatedAt 更新时，仍要把 list 扫到的 parent 补回去
       mergedById.set(id, {
         ...prev,
         parentThreadId,
+        ...(session.providerProfileId?.trim()
+          ? { providerProfileId: session.providerProfileId.trim() }
+          : {}),
       });
     }
   });

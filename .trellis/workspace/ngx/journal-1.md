@@ -517,15 +517,15 @@
 - None - task complete
 
 
-## Session 17: 修复线程引擎判定并提交 PR
+## Session 17: 修复 Kimi managed session catalog 重启恢复
 
 **Date**: 2026-08-30
-**Task**: 修复线程引擎判定并提交 PR
-**Branch**: `codex/fix-thread-engine-selection`
+**Task**: 修复 Kimi managed session catalog 重启恢复
+**Branch**: `codex/fix-kimi-managed-session-catalog`
 
 ### Summary
 
-修复 thread metadata 缺失时的 engine 推断，改用当前选中 engine；补齐 tauri invoke payload 的 modelCatalogEntryId 断言。Vitest 全量通过（1135/1135 files），typecheck、runtime contracts 通过；Rust 全量在 Windows 环境下 2062 passed、32 failed、2 ignored，失败主要为权限、路径、HOME/TEMP 与进程清理相关。
+修复 Kimi managed provider home 在重启后未被 workspace session catalog 枚举的问题；统一 list/load/delete provider-aware root resolver，补充首轮 durable history seed，并完成 OpenSpec 归档与 L3 验证。
 
 ### Main Changes
 
@@ -535,7 +535,7 @@
 
 | Hash | Message |
 |------|---------|
-| `c61f75037` | (see git log) |
+| `cb0812385` | (see git log) |
 
 ### Testing
 

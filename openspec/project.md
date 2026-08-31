@@ -65,7 +65,7 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 ## Current Inventory
 
 - Active changes: `31`
-- Archive changes: `886`
+- Archive changes: `887`
 - Main specs: `517`
 - Completed task sets still active: `1`
 - Ready-for-implementation task sets: `0`
@@ -94,6 +94,12 @@ The previous v0.5.11 performance and recovery follow-up chain has been archived.
 Archived `fix-managed-session-target-cold-start` after L3 focused verification and user-confirmed Windows restart smoke. Synced one requirement into each existing main capability: `codex-provider-scoped-session-launch`, `engine-per-session-provider-binding`, and `shared-execution-target`; no new capability directory was created.
 
 Current counts: active=`31`, archive=`886`, specs=`517`.
+
+### 2026-08-30 Managed Kimi Session Catalog Archive
+
+Archived `fix-kimi-managed-session-catalog` after L3 focused verification and strict OpenSpec validation. Synced managed Kimi provider-home discovery and restart recovery requirements into `kimi-engine-runtime` and `workspace-session-catalog-projection`; calibrated the session foundation ADR with the shared root/ownership facts.
+
+Current counts: active=`31`, archive=`887`, specs=`517`.
 
 ### 2026-08-28 Complete Bulk Archive
 

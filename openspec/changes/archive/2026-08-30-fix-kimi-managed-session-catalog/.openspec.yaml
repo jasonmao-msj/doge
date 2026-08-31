@@ -1,0 +1,4 @@
+schema: spec-driven
+created: 2026-08-30
+goal: 让 managed Kimi provider home 中的历史会话在重启和 force refresh 后稳定出现在 workspace
+  session catalog

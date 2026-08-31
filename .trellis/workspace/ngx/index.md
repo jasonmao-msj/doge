@@ -29,7 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
-| 17 | 2026-08-30 | 修复线程引擎判定并提交 PR | `c61f75037` | `codex/fix-thread-engine-selection` |
+| 17 | 2026-08-30 | 修复 Kimi managed session catalog 重启恢复 | `cb0812385` | `codex/fix-kimi-managed-session-catalog` |
 | 16 | 2026-08-30 | 解决 PR #53 主分支冲突 | `ead66f4a8` | `codex/fix-managed-session-target-cold-start` |
 | 15 | 2026-08-30 | 归档模型目标恢复 OpenSpec | `7d71949cc` | `codex/fix-managed-session-target-cold-start` |
 | 14 | 2026-08-30 | 修复重启后模型目标恢复 | `712792f47` | `codex/fix-managed-session-target-cold-start` |
