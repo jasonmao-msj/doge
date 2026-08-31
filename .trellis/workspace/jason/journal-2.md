@@ -799,3 +799,36 @@ PR #58 创建后完成任务清单、同步 managed-codex-image-generation 主�
 ### Next Steps
 
 - None - task complete
+
+
+## Session 83: 修复 Shared Event Log WAL 恢复误判
+
+**Date**: 2026-08-31
+**Task**: 修复 Shared Event Log WAL 恢复误判
+**Branch**: `codex/fix-shared-event-log-crash-probe`
+
+### Summary
+
+修复 unclean shutdown 后 read-only quick_check 将 healthy hot WAL 误判为 corruption：仅对 typed SQLITE_READONLY 使用 READ_WRITE|NO_CREATE + query_only fallback；补齐 no-create/query-only/unit regression、5×50 随机强杀与损坏库回归，同步 OpenSpec、backend code-spec 与 foundation ADR。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cad06e11c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
