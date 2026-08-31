@@ -22,4 +22,4 @@
 - [x] 4.1 [P0][Depends:3.3][Input: launch contract][Output: Trellis Codex runtime contract + foundation ADR calibration][Verify: code paths/change id] 回写knowledge。
 - [x] 4.2 [P0][Depends:4.1][Input: Rust/docs changes][Output: L3 focused verification][Verify: focused tests、rustfmt、cargo check、OpenSpec strict、git diff] 自动验证。
 - [x] 4.3 [P0][Depends:4.2][Input: managed Hot Doge][Output: real generated image artifact][Verify: bundled Codex remote image accounting + existing native image realtime/history/reducer 89-test suite] 端到端验收。
-- [ ] 4.4 [P1][Depends:4.3][Input: reviewed branch][Output: Chinese Conventional Commit、Trellis record、PR][Verify: matrix decision、evidence and CI gates in PR] 交付review。
+- [x] 4.4 [P1][Depends:4.3][Input: reviewed branch][Output: Chinese Conventional Commit、Trellis record、PR #58][Verify: matrix decision、evidence and CI gates in PR] 交付review。
