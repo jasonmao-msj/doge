@@ -766,3 +766,36 @@ PR #58 创建后完成任务清单、同步 managed-codex-image-generation 主�
 ### Next Steps
 
 - None - task complete
+
+
+## Session 82: 补齐 v0.1.13 并行修复说明
+
+**Date**: 2026-08-31
+**Task**: 补齐 v0.1.13 并行修复说明
+**Branch**: `codex/release-v0.1.13-changelog-followup`
+
+### Summary
+
+并行 PR #59 在版本 PR 后合入，补充 Guardian 后台线程重启后侧栏可见性修复的中英文 release notes；重新通过全部 release preparation gates。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5a266f09c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
