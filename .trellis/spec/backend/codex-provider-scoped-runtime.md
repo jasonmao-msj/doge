@@ -138,6 +138,79 @@ if is_thread_not_found_error_message(&error) {
 }
 ```
 
+## Scenario: Managed Codex image-capable catalog materialization
+
+### 1. Scope / Trigger
+
+- Trigger: 修改 `src-tauri/src/codex/managed_model_catalog.rs`、managed `ensure_codex_session_for_provider`、Codex binary selection 或 `model_catalog_json` launch override。
+- 目标：custom API-key provider 使用 `gpt-5.6-sol/terra/luna` 时必须退出 ChatGPT-only Responses Lite，使 token2api hosted `image_generation` bridge 可提供真实图片工具；不得维护一份与 Codex binary 漂移的 hardcoded full catalog。
+
+### 2. Signatures
+
+- `materialize_managed_codex_model_catalog(codex_bin: Option<&str>, codex_home: &Path) -> Result<PathBuf, String>`
+- `managed_model_catalog_codex_args(path: &Path) -> String`
+- exporter command：`<exact-codex-bin> debug models --bundled`
+- artifact：`<isolated CODEX_HOME>/managed-model-catalog.json`
+- launch override：`-c model_catalog_json="<absolute-path>"`
+- stable error prefix：`[MANAGED_CODEX_MODEL_CATALOG]`
+
+### 3. Contracts
+
+- 仅 `providerProfileId=doge-token-matrix` 的 managed cold launch执行；disk/local/custom provider MUST NOT 注入该 catalog。
+- exporter 必须复用 exact launch binary/wrapper/PATH resolution，15s bounded timeout，stdout ≤ 4 MiB、stderr ≤ 64 KiB；timeout 必须终止并 reap process owner。
+- catalog 必须是 top-level object + `models` array，且三个 exact slug 各出现一次；只写 `use_responses_lite=false`，unknown entries/fields 全部保留。
+- patched catalog 以 owner-only `0600` staged file + same-directory atomic replace 发布；相同内容重复 materialize 是 no-op/equivalent。
+- `model_catalog_json` override 必须追加在 workspace/provider args 之后，以 managed authority 胜出；不得修改 terminal global `~/.codex/config.toml`。
+- export、parse、shape、size 或 atomic write 任一失败时，必须在 `thread/start` / Binding / Turn side effect 前 fail closed；不得 silent fallback 到 Responses Lite。
+- 图片完成只认 native `image_generation_call` + non-empty payload；assistant “已生成” 文本不是成功 authority。Realtime/history 继续复用既有 generated-image projection。
+
+### 4. Validation & Error Matrix
+
+| 场景 | 必须行为 | 禁止行为 |
+|---|---|---|
+| managed exact binary exports valid catalog | patch three slugs、atomic write、append absolute override | hardcode full upstream models snapshot |
+| future binary already marks one slug non-Lite | preserve and produce same effective false value | reject merely because source is already false |
+| target slug missing/duplicate/not object | return `[MANAGED_CODEX_MODEL_CATALOG]` before spawn | partial patch and continue |
+| command non-zero/timeout/oversized/empty | bounded diagnostic + terminate/reap | hang startup or log secret-bearing env |
+| disk/local/custom provider | no materializer/no override | alter user-owned provider semantics |
+| image response contains base64 result | existing generated-image card completes | infer success from prose |
+
+### 5. Good / Base / Bad Cases
+
+- Good：Doge managed Codex cold launch derives current binary catalog、patches three booleans、token2api记录 image accounting，幕布渲染真实 preview。
+- Base：同 binary/provider home重复启动，artifact content保持相同，atomic writer不留 temp file。
+- Bad：把 `models.json` snapshot随App发布后永久复用；或 exporter失败时继续用 bundled Lite metadata。
+
+### 6. Tests Required
+
+- Pure Rust tests：三 slug exact patch、unknown preservation、already-false、missing/duplicate/malformed rejection。
+- Process tests：success、non-zero、timeout、stdout oversize；assert stable redacted error prefix。
+- File tests：same content idempotence、changed content replace、no staged residue、Unix mode `0600`。
+- Args tests：含空格路径 round-trip 为一个 `-c model_catalog_json=...` value，且 appended after existing args。
+- Integration smoke：使用当前真实 Codex binary materialize，managed request无 Responses Lite；token2api usage出现 `按次(图片)` + one image，Hot Doge native event为 `image_generation_call`。
+- L3：`cargo test --manifest-path src-tauri/Cargo.toml --lib managed_model_catalog`、`cargo check --manifest-path src-tauri/Cargo.toml --lib`、`npm run check:runtime-contracts`、strict OpenSpec validation。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```rust
+// Stale full catalog copied from one Codex release.
+let path = app_resources.join("models-0.151.json");
+spawn_codex_with_catalog(path).await?;
+```
+
+#### Correct
+
+```rust
+let catalog = materialize_managed_codex_model_catalog(
+    selected_codex_bin.as_deref(),
+    isolated_provider_home,
+).await?;
+let args = managed_model_catalog_codex_args(&catalog);
+// Append after workspace/provider overrides, before app-server spawn.
+```
+
 ## Scenario: Codex curated-skill deactivation across resumed threads
 
 ### 1. Scope / Trigger
