@@ -667,3 +667,36 @@ v0.1.10 signed Release 33173561758成功；tag精确指向 cdd7ecb29，macOS/Lin
 ### Next Steps
 
 - None - task complete
+
+
+## Session 79: 启用 managed Codex 生图
+
+**Date**: 2026-08-30
+**Task**: 启用 managed Codex 生图
+**Branch**: `codex/enable-codex-image-generation`
+
+### Summary
+
+为 Doge managed Codex 动态导出 exact-binary bundled catalog，关闭 GPT-5.6 trio Responses Lite，注入 launch-scoped model_catalog_json；补齐 OpenSpec、Trellis contract、ADR 与 L3 focused/real image evidence。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7955d25dd` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
