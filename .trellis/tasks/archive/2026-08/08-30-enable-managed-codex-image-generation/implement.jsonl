@@ -1,0 +1,10 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": "openspec/changes/enable-managed-codex-image-generation/design.md", "reason": "行为计划与错误矩阵"}
+{"file": ".trellis/spec/backend/codex-provider-scoped-runtime.md", "reason": "Codex managed provider launch contract"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Rust boundary error handling"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Rust quality and focused tests"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 verification"}
+{"file": "docs/research/mossx-multi-cli-provider-session-foundation-design.md", "reason": "Provider/runtime architecture redlines"}
+{"file": "src-tauri/src/codex/provider_profile.rs", "reason": "Provider-home materialization and argv escaping pattern"}
+{"file": "src-tauri/src/codex/session_runtime.rs", "reason": "Managed cold-launch owner"}

@@ -17,6 +17,7 @@ mod doctor;
 pub(crate) mod home;
 mod installer;
 pub(crate) mod launch_profile;
+mod managed_model_catalog;
 mod mcp_config;
 mod model_selection;
 pub(crate) mod provider_env;

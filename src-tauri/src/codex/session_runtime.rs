@@ -1,3 +1,6 @@
+use super::managed_model_catalog::{
+    managed_model_catalog_codex_args, materialize_managed_codex_model_catalog,
+};
 use super::provider_profile::{
     codex_runtime_key, legacy_codex_runtime_key, materialize_codex_provider_profile,
     resolve_codex_provider_profile, CodexProviderProfile, CODEX_DISK_PROVIDER_PROFILE_ID,
@@ -417,8 +420,22 @@ async fn ensure_codex_session_with_mode(
             .codex_home
             .clone()
             .or_else(|| resolve_workspace_codex_home(&entry, parent_entry.as_ref()));
-        let codex_args =
-            merge_codex_args(base_codex_args, materialized_profile.codex_args_override);
+        let managed_model_catalog_args =
+            if profile.id() == crate::account::configuration::ACCOUNT_CODEX_PROVIDER_ID {
+                let managed_home = materialized_profile.codex_home.as_deref().ok_or_else(|| {
+                    "managed Codex provider did not resolve an isolated CODEX_HOME".to_string()
+                })?;
+                let catalog_path =
+                    materialize_managed_codex_model_catalog(default_bin.as_deref(), managed_home)
+                        .await?;
+                Some(managed_model_catalog_codex_args(&catalog_path))
+            } else {
+                None
+            };
+        let codex_args = merge_codex_args(
+            merge_codex_args(base_codex_args, materialized_profile.codex_args_override),
+            managed_model_catalog_args,
+        );
         let mode_enforcement_enabled = {
             let settings = state.app_settings.lock().await;
             settings.codex_mode_enforcement_enabled

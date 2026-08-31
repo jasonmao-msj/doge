@@ -385,7 +385,7 @@ fn shell_escape_codex_arg(value: &str) -> String {
     format!("'{escaped}'")
 }
 
-fn join_shell_escaped_codex_args(args: &[String]) -> String {
+pub(super) fn join_shell_escaped_codex_args(args: &[String]) -> String {
     args.iter()
         .map(|arg| shell_escape_codex_arg(arg))
         .collect::<Vec<_>>()

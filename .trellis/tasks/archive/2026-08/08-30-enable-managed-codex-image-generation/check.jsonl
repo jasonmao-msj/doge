@@ -1,0 +1,5 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": "openspec/changes/enable-managed-codex-image-generation/specs/managed-codex-image-generation/spec.md", "reason": "Acceptance contract"}
+{"file": ".trellis/spec/backend/codex-provider-scoped-runtime.md", "reason": "Provider isolation review"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "Verification level review"}
