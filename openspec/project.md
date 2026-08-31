@@ -1,7 +1,7 @@
 # Project Context
 
 - Type: OpenSpec Workspace
-- Updated At: 2026-08-30T23:30:00+08:00
+- Updated At: 2026-08-31T00:00:00-07:00
 - Scope: governance snapshot for the current `doge` repository workspace
 - Product version fact: `doge@0.1.0` from `config/brand.json`, `package.json`, and `src-tauri/tauri.conf.json`
 
@@ -65,7 +65,7 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 ## Current Inventory
 
 - Active changes: `31`
-- Archive changes: `887`
+- Archive changes: `888`
 - Main specs: `517`
 - Completed task sets still active: `1`
 - Ready-for-implementation task sets: `0`
@@ -88,6 +88,12 @@ Active OpenSpec changes in the current working tree (31; see [`changes/README.md
 The previous v0.5.11 performance and recovery follow-up chain has been archived. Future performance work should open a new chain instead of reusing the archived change directories.
 
 ## Recent Archive / Sync Snapshot
+
+### 2026-08-31 Shared Event Log WAL Recovery Probe Archive
+
+Archived `fix-shared-event-log-wal-recovery-probe` after L3 crash/recovery verification. Synced the hot-WAL `READONLY` two-stage integrity probe requirement into `shared-event-storage` and calibrated the foundation ADR; final L4 `main` CI remains the v0.1.13 Release gate.
+
+Current counts: active=`31`, archive=`888`, specs=`517`.
 
 ### 2026-08-30 Managed Session Target Cold-Start Archive
 

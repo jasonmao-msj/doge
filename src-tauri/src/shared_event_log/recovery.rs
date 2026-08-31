@@ -2,13 +2,15 @@
 //!
 //! 契约（Foundation §14.4.7 / spec「Startup Recovery MUST Fail Closed」）：
 //! - 文件不存在或空文件 → 允许新建；
-//! - 文件存在且非空 → 先跑 `PRAGMA quick_check(1)`（错误输出最多一条，不承诺 wall-clock timeout）；
-//! - quick_check 失败或打开即损坏 → [`OpenOutcome::ReadOnlyRecovery`]，
-//!   **禁止**删除/重命名/新建覆盖原文件。
+//! - 文件存在且非空 → 先以 READ_ONLY 跑 `PRAGMA quick_check(1)`（错误输出最多一条，不承诺
+//!   wall-clock timeout）；
+//! - 只有 typed SQLite `READONLY` 才以 READ_WRITE|NO_CREATE + query_only 复检 hot WAL；
+//! - quick_check 失败或打开即损坏 → [`OpenOutcome::ReadOnlyRecovery`]，**禁止**删除/重命名/
+//!   新建覆盖原文件。
 
 use std::path::Path;
 
-use rusqlite::{Connection, OpenFlags};
+use rusqlite::{ffi::ErrorCode, Connection, OpenFlags};
 
 use super::error::StoreError;
 use super::schema;
@@ -155,7 +157,8 @@ fn open_ready(path: &Path) -> Result<OpenOutcome, StoreError> {
     Ok(OpenOutcome::Ready(writer))
 }
 
-/// 非破坏性 integrity 探测：READ_ONLY 连接 + 单错误输出 quick_check。
+/// 非破坏性 integrity 探测：优先 READ_ONLY；仅当 hot WAL recovery 需要 writable
+/// pager 时，升级为 READ_WRITE|NO_CREATE + query_only 后重试。
 fn probe_integrity(path: &Path) -> Result<(), RecoveryReason> {
     let conn =
         Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY).map_err(|source| {
@@ -168,13 +171,140 @@ fn probe_integrity(path: &Path) -> Result<(), RecoveryReason> {
             detail: format!("configure probe busy_timeout: {source}"),
         }
     })?;
-    let status: Result<String, rusqlite::Error> =
-        conn.query_row("PRAGMA quick_check(1)", [], |row| row.get(0));
+    let status = quick_check(&conn);
     match status {
+        Ok(status) if status == "ok" => Ok(()),
+        Ok(status) => Err(RecoveryReason::IntegrityCheckFailed { detail: status }),
+        Err(source) if is_readonly_sqlite_error(&source) => {
+            probe_integrity_after_readonly_wal_recovery(path).map_err(|fallback_reason| {
+                RecoveryReason::IntegrityCheckFailed {
+                    detail: format!(
+                        "read-only probe requires WAL recovery ({source}); writable query-only fallback failed: {fallback_reason}"
+                    ),
+                }
+            })
+        }
+        Err(source) => Err(RecoveryReason::IntegrityCheckFailed {
+            detail: source.to_string(),
+        }),
+    }
+}
+
+fn probe_integrity_after_readonly_wal_recovery(path: &Path) -> Result<(), RecoveryReason> {
+    let conn = open_wal_recovery_probe(path)?;
+
+    match quick_check(&conn) {
         Ok(status) if status == "ok" => Ok(()),
         Ok(status) => Err(RecoveryReason::IntegrityCheckFailed { detail: status }),
         Err(source) => Err(RecoveryReason::IntegrityCheckFailed {
             detail: source.to_string(),
         }),
+    }
+}
+
+fn open_wal_recovery_probe(path: &Path) -> Result<Connection, RecoveryReason> {
+    let flags = OpenFlags::SQLITE_OPEN_READ_WRITE | OpenFlags::SQLITE_OPEN_NO_MUTEX;
+    let conn = Connection::open_with_flags(path, flags).map_err(|source| {
+        RecoveryReason::IntegrityCheckFailed {
+            detail: format!("open WAL recovery probe: {source}"),
+        }
+    })?;
+    conn.busy_timeout(schema::BUSY_TIMEOUT).map_err(|source| {
+        RecoveryReason::IntegrityCheckFailed {
+            detail: format!("configure WAL recovery probe busy_timeout: {source}"),
+        }
+    })?;
+    conn.pragma_update(None, "query_only", true)
+        .map_err(|source| RecoveryReason::IntegrityCheckFailed {
+            detail: format!("enable query_only for WAL recovery probe: {source}"),
+        })?;
+    Ok(conn)
+}
+
+fn quick_check(conn: &Connection) -> Result<String, rusqlite::Error> {
+    conn.query_row("PRAGMA quick_check(1)", [], |row| row.get(0))
+}
+
+fn is_readonly_sqlite_error(error: &rusqlite::Error) -> bool {
+    matches!(
+        error,
+        rusqlite::Error::SqliteFailure(sqlite_error, _)
+            if sqlite_error.code == ErrorCode::ReadOnly
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{is_readonly_sqlite_error, open_wal_recovery_probe};
+    use rusqlite::ffi::{Error as SqliteError, ErrorCode};
+    use rusqlite::Connection;
+    use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn unique_test_db_path(label: &str) -> PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("system clock after epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "doge-shared-event-log-{label}-{}-{nonce}.sqlite3",
+            std::process::id()
+        ))
+    }
+
+    #[test]
+    fn wal_recovery_fallback_only_matches_sqlite_readonly() {
+        let readonly = rusqlite::Error::SqliteFailure(
+            SqliteError {
+                code: ErrorCode::ReadOnly,
+                extended_code: 8,
+            },
+            Some("attempt to write a readonly database".to_string()),
+        );
+        let corrupt = rusqlite::Error::SqliteFailure(
+            SqliteError {
+                code: ErrorCode::DatabaseCorrupt,
+                extended_code: 11,
+            },
+            Some("database disk image is malformed".to_string()),
+        );
+
+        assert!(is_readonly_sqlite_error(&readonly));
+        assert!(!is_readonly_sqlite_error(&corrupt));
+        assert!(!is_readonly_sqlite_error(&rusqlite::Error::InvalidQuery));
+    }
+
+    #[test]
+    fn wal_recovery_probe_never_creates_a_missing_database() {
+        let path = unique_test_db_path("no-create");
+        assert!(!path.exists());
+
+        let result = open_wal_recovery_probe(&path);
+
+        assert!(result.is_err());
+        assert!(!path.exists(), "probe must not create a missing database");
+    }
+
+    #[test]
+    fn wal_recovery_probe_enables_query_only_before_integrity_sql() {
+        let path = unique_test_db_path("query-only");
+        {
+            let conn = Connection::open(&path).expect("create test database");
+            conn.execute_batch("CREATE TABLE probe_guard(value INTEGER);")
+                .expect("create probe guard table");
+        }
+
+        let conn = open_wal_recovery_probe(&path).expect("open WAL recovery probe");
+        let query_only: i64 = conn
+            .pragma_query_value(None, "query_only", |row| row.get(0))
+            .expect("read query_only state");
+        assert_eq!(query_only, 1);
+        let mutation_error = conn
+            .execute("INSERT INTO probe_guard(value) VALUES (1)", [])
+            .expect_err("query-only probe must reject application writes");
+        assert!(is_readonly_sqlite_error(&mutation_error));
+
+        drop(conn);
+        std::fs::remove_file(&path).expect("remove test database");
     }
 }

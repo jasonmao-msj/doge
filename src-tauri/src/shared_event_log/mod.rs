@@ -9,7 +9,8 @@
 //!   partial unique index `(session_id, fact_type, dedupe_key)`；
 //! - Provider Usage Ledger 独立归属，revision/supersede 链校验（[`ledger`]）；
 //! - deterministic-json + SHA-256 payload checksum，由 writer 内部计算落盘；
-//! - 启动恢复：`PRAGMA quick_check(1)` 将错误输出限制为一条，integrity failure → read-only recovery，
+//! - 启动恢复：read-only `PRAGMA quick_check(1)` 将错误输出限制为一条；hot WAL 的 typed
+//!   `READONLY` 使用 no-create/query-only fallback，真实 integrity failure → read-only recovery，
 //!   绝不删除/重命名/覆盖损坏文件（[`recovery`]）。
 //!
 //! 设计来源：`openspec/changes/establish-shared-event-storage/design.md` 与
