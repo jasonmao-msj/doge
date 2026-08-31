@@ -35,6 +35,7 @@ const rawModels: ProductModelViewV1[] = [
       "openai-chat-completions",
     ]),
     productModel("claude-sonnet-4-8", "Claude Sonnet 4.8", [
+      "openai-responses",
       "anthropic-messages",
     ]),
     productModel("kimi-for-coding", "Kimi For Coding", [
@@ -81,7 +82,7 @@ describe("ProductEngineModelSelect", () => {
     fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
 
     expect(screen.getByRole("dialog", { name: "选择引擎与模型" })).toBeTruthy();
-    expect(screen.getAllByRole("radio")).toHaveLength(7);
+    expect(screen.getAllByRole("radio")).toHaveLength(8);
     expect(screen.queryByText("切换渠道")).toBeNull();
     expect(screen.queryByText("添加模型")).toBeNull();
     expect(screen.queryByText(/Doge 订阅已生效/)).toBeNull();
@@ -187,6 +188,42 @@ describe("ProductEngineModelSelect", () => {
     );
   });
 
+  it("keeps Claude-family models available in Codex and Claude but not Kimi", () => {
+    const onExecutionTargetChange = vi.fn();
+    render(
+      <ProductEngineModelSelect
+        catalog={catalog}
+        executionTarget={initialTarget}
+        onExecutionTargetChange={onExecutionTargetChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Claude Sonnet 4.8/ }));
+    expect(onExecutionTargetChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        engine: "codex",
+        modelCatalogEntryId: "claude-sonnet-4-8",
+        model: "claude-sonnet-4-8",
+        providerProfileId: "doge-token-matrix",
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: "Kimi CLI" }));
+    expect(screen.queryByRole("radio", { name: /Claude Sonnet 4.8/ })).toBeNull();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Claude" }));
+    fireEvent.click(screen.getByRole("radio", { name: /Claude Sonnet 4.8/ }));
+    expect(onExecutionTargetChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        engine: "claude",
+        modelCatalogEntryId: "claude-sonnet-4-8",
+        model: "claude-sonnet-4-8",
+        providerProfileId: "doge-token-matrix",
+      }),
+    );
+  });
+
   it("searches only the selected engine's compatible dynamic models and closes with Escape", () => {
     render(
       <ProductEngineModelSelect
@@ -231,8 +268,9 @@ describe("ProductEngineModelSelect", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /当前组合/ }));
     expect(
-      (screen.getByRole("radio", { name: /^Claude/ }) as HTMLButtonElement)
-        .disabled,
+      (screen.getByRole("radio", {
+        name: "Claude · 当前订阅目录没有该引擎已验收的模型",
+      }) as HTMLButtonElement).disabled,
     ).toBe(true);
   });
 

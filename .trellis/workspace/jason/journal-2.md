@@ -600,3 +600,70 @@ v0.1.10 signed Release 33173561758成功；tag精确指向 cdd7ecb29，macOS/Lin
 ### Next Steps
 
 - None - task complete
+
+
+## Session 77: Codex 使用 Claude 模型并完成交付
+
+**Date**: 2026-08-30
+**Task**: Codex 使用 Claude 模型并完成交付
+**Branch**: `codex/enable-claude-models-in-codex`
+
+### Summary
+
+验证并接入 Claude-family Responses 路由到 Codex，统一 Product 模型投影，升级 managed configuration revision 以覆盖新旧用户，补齐跨层回归、OpenSpec/ADR、Hot Doge 目视验收与 PR #56。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f6312d6c9` | (see git log) |
+| `549b6ce92` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 78: 准备 doge v0.1.12 发布
+
+**Date**: 2026-08-30
+**Task**: 准备 doge v0.1.12 发布
+**Branch**: `codex/release-v0.1.12`
+
+### Summary
+
+从合入 PR #56 后的最新 main 创建 v0.1.12 release commit，统一更新七处版本事实，并以双语 CHANGELOG 汇总 Codex 使用 Claude、会话目标恢复和线程引擎路由修复。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `235eac815` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

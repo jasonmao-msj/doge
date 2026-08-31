@@ -195,7 +195,10 @@ fn product_models_preserve_dynamic_display_runtime_and_protocol_metadata() {
         models[0]["api_protocols"],
         json!(["openai-responses", "anthropic-messages"])
     );
-    assert_eq!(models[1]["api_protocols"], json!(["anthropic-messages"]));
+    assert_eq!(
+        models[1]["api_protocols"],
+        json!(["openai-responses", "anthropic-messages"])
+    );
 }
 
 #[test]
@@ -231,7 +234,10 @@ fn product_models_follow_new_ids_within_known_engine_families() {
         models[0]["api_protocols"],
         json!(["openai-responses", "openai-chat-completions"])
     );
-    assert_eq!(models[1]["api_protocols"], json!(["anthropic-messages"]));
+    assert_eq!(
+        models[1]["api_protocols"],
+        json!(["openai-responses", "anthropic-messages"])
+    );
     assert_eq!(
         models[2]["api_protocols"],
         json!(["openai-responses", "openai-chat-completions"])
@@ -246,6 +252,32 @@ fn k3_family_fallback_supports_both_openai_endpoints() {
         models[0]["api_protocols"],
         json!(["openai-responses", "openai-chat-completions"])
     );
+}
+
+#[test]
+fn claude_family_fallback_supports_responses_and_messages() {
+    let models =
+        safe_product_models(vec![product_model("claude-opus-4-8")]).expect("safe Claude model");
+
+    assert_eq!(
+        models[0]["api_protocols"],
+        json!(["openai-responses", "anthropic-messages"])
+    );
+}
+
+#[test]
+fn explicit_claude_protocol_metadata_remains_authoritative() {
+    let models = safe_product_models(vec![ProductModelWire {
+        id: "claude-opus-4-8".into(),
+        display_name: None,
+        model: None,
+        compatible_engines: None,
+        api_protocols: Some(vec!["anthropic-messages".into()]),
+        capabilities: Some(vec!["messages".into()]),
+    }])
+    .expect("safe Claude model with explicit protocol metadata");
+
+    assert_eq!(models[0]["api_protocols"], json!(["anthropic-messages"]));
 }
 
 #[test]

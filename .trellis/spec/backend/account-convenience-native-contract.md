@@ -1019,7 +1019,7 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 - Managed target：`providerProfileId="doge-token-matrix"`、`providerProfileSource="managed"`、`modelCatalogEntryId` 与 runtime `model` 分域。
 - Doubao runtime：`PRODUCT_DOUBAO_RUNTIME_MODEL = "豆包"`；公开 catalog 的 `id/display_name/model` 任一命中 `豆包 | doubao | ark-code` 时，UI、Native per-thread selection、`ExecutionTarget.model`、Kimi `--model` 与 launch config alias MUST 使用 Composite 公开别名“豆包”。`ark-code-latest` 是 account 内部 upstream model，直接发给 Composite 会返回 400。
 - Managed display：`PRODUCT_MANAGED_PROVIDER_LABEL = "Doge"`；内部 stable id 仍为 `doge-token-matrix`。`account_product_v1_prepare(operationId, engineId?)` 在 `engineId=null` 时只 reconcile credential/model catalog；exact engine 时只幂等覆盖该 engine registry 的 `name="Doge"`，旧本机显示名在该 engine 第一次 managed send 时迁移。
-- Managed configuration revision：`ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64` 写入三个 same-id provider entry 的 `managedRevision`。readiness/plan verify 必须要求 exact current revision；缺失或较旧 revision 不得进入 ready，authenticated prepare 以 deterministic builder 覆盖旧 Doge entry，但保留其他 local/custom provider rows。
+- Managed configuration revision：`ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64 = 2` 写入三个 same-id provider entry 的 `managedRevision`。revision 2 表示包含verified Claude-family Responses routing contract；readiness/plan verify必须要求exact current revision；缺失或较旧revision不得进入ready，authenticated exact-engine prepare以deterministic builder覆盖旧Doge entry，但保留其他local/custom provider rows。
 - Child isolation：Doge-launched Codex 设置 isolated `CODEX_HOME`，Kimi 设置 isolated `KIMI_CODE_HOME`，Claude 使用 per-turn owner-only private `--settings`；这些 adapter 不得改写用户 global CLI home。terminal direct launch 因没有 Doge child env/args，继续使用用户本地配置。
 - Claude product projection：`project_claude_model_for_managed_product(provider_profile_id, requested_model, provider_env)`；projection 只作用于 managed product profile 的 child turn。
 - Native model wire：`ProductModelWire { id, display_name?, model?, compatible_engines?, capabilities? }`；renderer view=`{ id, display_name, model, compatible_engines, capabilities }`。
@@ -1039,7 +1039,7 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 - same-engine concurrent sends MUST share one provisioning promise；logout/account switch MUST generation-invalidate late completion。Codex/Claude activation成功后继续 original send；Kimi one-shot直接继续 exact target。Composer provisioning failure MUST restore submitted text/images。
 - `UpdateToast` 与 `EngineProvisioningToast` MUST 由一个 `.update-toasts` host stack。bundled/external ready 的 access/config/inspect/activation 全程 silent；只有 actual `cli_install_run` 才显示 installing，post-install success 才 bounded ready，error提供 Retry/Dismiss。禁止为了强调内部 readiness 而显示 checking/configuring/activating/ready；raw secret/path/unbounded installer output不得进入 card。
 - Native MUST preserve upstream order and separate catalog `id`、user `display_name`、callable `model`。`model/runtime_model` 缺失时回退公开 `id`；禁止从 display name 或 admin-only account mapping 猜调用名。
-- `compatible_engines` 缺失时使用 stable family fallback：GPT/OpenAI→Codex、Claude/Anthropic→Claude Code、Kimi/Moonshot/K3→Kimi CLI、豆包/Ark Coding→三种 managed adapter；unknown family fail closed。显式空/unknown-only集合时 row 不可选。`capabilities` 有 positive conversation value 时优先；image/audio/realtime/embedding-only row必须过滤，legacy catalog用 bounded negative heuristic。
+- `compatible_engines` 缺失时使用已验证的endpoint family fallback：GPT/OpenAI→Codex+Kimi、Claude/Anthropic→Codex+Claude Code、Kimi/Moonshot/K3→Codex+Kimi CLI、豆包/Ark Coding→三种 managed adapter；unknown family fail closed。Claude-family不得扩到Kimi。显式空/unknown-only集合时row不可选；explicit protocol metadata仍是authority。`capabilities`有positive conversation value时优先；image/audio/realtime/embedding-only row必须过滤，legacy catalog用bounded negative heuristic。
 - 目录刷新 pending/error MUST 保留 last-known-good；成功刷新删除当前 model 时，在下一次发送前按同一 target repair contract 原子收敛。
 - 切换 engine 时 current model 兼容则保留；否则必须与 engine 一起原子切换为 upstream order 中第一个 compatible model。空交集 fail closed；切换 model 不得改变 engine。
 - Product surface MUST 隐藏 provider/channel/configuration/add-model controls；local/expert provider catalog owner 在 `mode="product"` MUST disabled，不发 profile/model prefetch。
@@ -1069,6 +1069,7 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 | 豆包 display/runtime alias | `豆包`、`doubao-*`、`ark-code-*` 使用同一本地 PNG | 不回退通用 Doubao SVG 或 engine icon |
 | Kimi + 豆包 Native send | UI/per-thread/runtime/config alias/`--model`=`豆包`；token2api account 内部再映射 `ark-code-latest` | UI 显示豆包但请求 `gpt-5.5`，或直发 private model 导致 Composite 400 |
 | upstream 新增 `claude-opus-4-8` | bounded refresh 后进入同一 snapshot | 不修改 Doge exact-id manifest |
+| `claude-opus-4-8` metadata缺失但verified Responses route存在 | 同一row进入Codex+Claude，Kimi排除；Codex actual-send保留exact runtime model | 仅改Picker、默认回退其他model或把Claude扩到Chat Completions |
 | refresh pending / failure | 保留 rows，显示 refreshing/stale + retry | 不清空 Composer / Account Center |
 | login 后三 CLI 均缺失 | active entitlement 后直接 mount AppShell；后台只做 catalog-only prepare | engine-specific full-screen preparing/failure |
 | 首次 Kimi send 且无 verified toolchain | exact Kimi bundle/external inspect；必要时只运行 Kimi installer，post-install re-probe | 检查/安装 Codex、Claude 或锁定 App |
@@ -1107,7 +1108,7 @@ match authority.create_product_api_key(&access, group_id, &key_name, operation_i
 - Composer regression：Home dynamic product mode；Shared removed-model selection 自动 repair并持久化 managed target；readiness/display/runtime identity 跟随 `selectedAtomicTarget`。
 - Native Kimi regression：product picker 点豆包调用 `onSelectModel("豆包")`；managed Kimi hook 保留 catalog 外 alias；local/unmanaged Kimi 仍遵循 CLI catalog repair。
 - Rust unit：display/runtime/engine metadata、upstream order/dedupe、non-conversation filtering、main-window IPC、managed product Claude Unicode model、Kimi Unicode bare+`doge/` alias。
-- Managed config regression：legacy same-id Codex/Claude/Kimi entry（stale revision、旧 endpoint、legacy secret）经三次 builder 后全部升级到 current revision；unrelated/local provider rows 保留；Claude/Kimi registry 不含 secret；Codex isolated TOML 必须 exact match current recipe。
+- Managed config regression：legacy revision-1 same-id Codex/Claude/Kimi entry（旧endpoint、legacy secret）经三次builder后全部升级到revision 2；unrelated/local provider rows保留；repeated current prepare稳定；Claude/Kimi registry不含secret；Codex isolated TOML必须exact match current recipe。
 - Settings regression：sidebar 与 model menu 不渲染 Engine Management，`providers/vendors/permissions` deep link 回退 Basic Settings 且不 mount `VendorSettingsPanel`；fresh/legacy `disabledCliEngines` 都不能隐藏 Claude/Codex/Kimi。
 - Real E2E：当前 selectable catalog 对三 CLI 的 exact model/terminal evidence；失败不得被 minimal endpoint probe覆盖，并必须记录 upstream/config prerequisite。
 - Required commands（用户本次 L4）：全量 Vitest/Rust tests、full ESLint/typecheck、Rust check/build、runtime/engine contracts、OpenSpec strict、hot-dev visual/E2E。
