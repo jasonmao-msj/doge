@@ -832,3 +832,36 @@ PR #58 创建后完成任务清单、同步 managed-codex-image-generation 主�
 ### Next Steps
 
 - None - task complete
+
+
+## Session 84: 修复托管 Codex 首轮路由与 Shared 生图
+
+**Date**: 2026-08-31
+**Task**: 修复托管 Codex 首轮路由与 Shared 生图
+**Branch**: `codex/fix-managed-codex-first-turn-target`
+
+### Summary
+
+将 existing managed Codex 配置自动迁移至 GPT-5.6 Sol，冻结 Native 首轮完整执行目标；Shared 端从 exact provider rollout 持久化真实图片、同步 canonical projection，并仅开放受控 App Data 图片目录。完成 v0.1.14 双语发布准备与 L3/目视验收。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `803d5e1bb` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

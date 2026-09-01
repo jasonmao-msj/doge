@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 83
+- **Total Sessions**: 84
 - **Last Active**: 2026-08-31
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~834 | Active |
+| `journal-2.md` | ~867 | Active |
 | `journal-1.md` | ~1980 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 84 | 2026-08-31 | 修复托管 Codex 首轮路由与 Shared 生图 | `803d5e1bb` | `codex/fix-managed-codex-first-turn-target` |
 | 83 | 2026-08-31 | 修复 Shared Event Log WAL 恢复误判 | `cad06e11c` | `codex/fix-shared-event-log-crash-probe` |
 | 82 | 2026-08-31 | 补齐 v0.1.13 并行修复说明 | `5a266f09c` | `codex/release-v0.1.13-changelog-followup` |
 | 81 | 2026-08-31 | 准备 doge v0.1.13 发布 | `121a487c5` | `codex/release-v0.1.13` |
