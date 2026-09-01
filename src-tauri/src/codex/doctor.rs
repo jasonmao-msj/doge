@@ -693,7 +693,10 @@ mod tests {
 
     #[test]
     fn kimi_diagnostic_categories_are_stable_and_frontend_safe() {
-        assert_eq!(kimi_diagnostic_category("[KIMI_BINARY_MISSING] missing"), "missing");
+        assert_eq!(
+            kimi_diagnostic_category("[KIMI_BINARY_MISSING] missing"),
+            "missing"
+        );
         assert_eq!(
             kimi_diagnostic_category("[KIMI_SHELL_CHECKSUM_MISMATCH] mismatch"),
             "checksum-mismatch"
@@ -706,8 +709,14 @@ mod tests {
             kimi_diagnostic_category("[KIMI_SHELL_UNSUPPORTED_PLATFORM] unsupported"),
             "unsupported-platform"
         );
-        assert_eq!(kimi_diagnostic_category("[KIMI_PROBE_FAILED] failed"), "probe-failed");
-        assert_eq!(safe_kimi_diagnostic_message("[KIMI_PROBE_FAILED] secret-free detail"), "secret-free detail");
+        assert_eq!(
+            kimi_diagnostic_category("[KIMI_PROBE_FAILED] failed"),
+            "probe-failed"
+        );
+        assert_eq!(
+            safe_kimi_diagnostic_message("[KIMI_PROBE_FAILED] secret-free detail"),
+            "secret-free detail"
+        );
     }
 
     #[tokio::test]

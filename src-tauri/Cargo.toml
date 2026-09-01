@@ -15,6 +15,10 @@ path = "src/main.rs"
 name = "doge_daemon"
 path = "src/bin/doge_daemon.rs"
 
+[[bin]]
+name = "wechat-bridge"
+path = "src/bin/wechat_bridge.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]

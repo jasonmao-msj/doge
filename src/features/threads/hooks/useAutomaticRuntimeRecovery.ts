@@ -6,6 +6,7 @@ export type AutomaticRuntimeRecoverySource =
   | "thread-list-live"
   | "workspace-restore"
   | "focus-refresh"
+  | "wechat-session-updated"
   | "web-service-reconnected";
 
 type AutomaticRuntimeRecoveryGuardState = "leader" | "waiter" | "cooldown";

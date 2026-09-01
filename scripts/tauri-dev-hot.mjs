@@ -12,6 +12,11 @@ const tauriCliScriptPath = path.resolve(
   "cli",
   "tauri.js",
 );
+const devFrontendCommand = "node scripts/tauri-dev-frontend.mjs";
+const devResourceScripts = [
+  "scripts/prepare-bundled-engines.mjs",
+  "scripts/prepare-wechat-bridge.mjs",
+];
 
 export function findConflictingPackagedDogeProcesses(psOutput) {
   return String(psOutput)
@@ -73,9 +78,35 @@ export function getTauriSpawnSpec(platform = process.platform, args = []) {
   };
 }
 
+export function prepareDevResources() {
+  for (const script of devResourceScripts) {
+    execFileSync(process.execPath, [path.resolve(repoRoot, script)], {
+      cwd: repoRoot,
+      env: process.env,
+      stdio: "inherit",
+    });
+  }
+}
+
+export function getHotDevTauriArgs(args = []) {
+  return [
+    "--config",
+    JSON.stringify({
+      build: {
+        beforeDevCommand: devFrontendCommand,
+      },
+    }),
+    ...args,
+  ];
+}
+
 export function startTauriDev(args = process.argv.slice(2)) {
   assertNoConflictingPackagedDogeApp();
-  const { command, args: spawnArgs } = getTauriSpawnSpec(process.platform, args);
+  prepareDevResources();
+  const { command, args: spawnArgs } = getTauriSpawnSpec(
+    process.platform,
+    getHotDevTauriArgs(args),
+  );
   const child = spawn(command, spawnArgs, {
     cwd: repoRoot,
     env: process.env,

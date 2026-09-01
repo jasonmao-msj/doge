@@ -20,6 +20,7 @@ import Cog from "lucide-react/dist/esm/icons/cog";
 import Keyboard from "lucide-react/dist/esm/icons/keyboard";
 import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 import Mail from "lucide-react/dist/esm/icons/mail";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import Archive from "lucide-react/dist/esm/icons/archive";
 import NotebookPen from "lucide-react/dist/esm/icons/notebook-pen";
 import Boxes from "lucide-react/dist/esm/icons/boxes";
@@ -100,6 +101,7 @@ import {
 import { DetachedExternalChangeToggles } from "./settings-view/sections/DetachedExternalChangeToggles";
 import { WebServiceSettings } from "./settings-view/sections/WebServiceSettings";
 import { EmailSenderSettings } from "./settings-view/sections/EmailSenderSettings";
+import { WechatChannelSettings } from "./settings-view/sections/WechatChannelSettings";
 import { DictationSection } from "./settings-view/sections/DictationSection";
 import { ExperimentalToggleRow } from "./settings-view/components/ExperimentalToggleRow";
 import { BasicBehaviorSection } from "./settings-view/sections/BasicBehaviorSection";
@@ -385,6 +387,7 @@ export function SettingsView({
     | "open-apps"
     | "web-service"
     | "email"
+    | "wechat"
   >("appearance");
   const [projectManagementSubTab, setProjectManagementSubTab] = useState<
     "groups" | "sessions"
@@ -2031,6 +2034,14 @@ export function SettingsView({
                   <Mail className="settings-basic-tab-icon" aria-hidden />
                   {t("settings.basicEmailTab")}
                 </button>
+                <button
+                  type="button"
+                  className={`settings-basic-tab ${basicSubTab === "wechat" ? "active" : ""}`}
+                  onClick={() => setBasicSubTab("wechat")}
+                >
+                  <MessageCircle className="settings-basic-tab-icon" aria-hidden />
+                  {t("settings.basicWechatTab")}
+                </button>
               </div>
               <BasicBehaviorSection
                 active={basicSubTab === "behavior"}
@@ -2146,6 +2157,13 @@ export function SettingsView({
                   appSettings={appSettings}
                   onUpdateAppSettings={onUpdateAppSettings}
                   onOpenMailSession={onOpenMailSession}
+                />
+              )}
+              {basicSubTab === "wechat" && (
+                <WechatChannelSettings
+                  t={t}
+                  appSettings={appSettings}
+                  onUpdateAppSettings={onUpdateAppSettings}
                 />
               )}
             </section>

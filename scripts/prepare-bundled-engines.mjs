@@ -5,7 +5,7 @@ import { createReadStream, existsSync, mkdirSync, readFileSync, rmSync, writeFil
 import { chmod, cp, mkdtemp, rename, stat } from "node:fs/promises";
 import { statSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
@@ -138,6 +138,93 @@ async function sha256(path) {
   return hash.digest("hex");
 }
 
+function runtimeVariantMetadata(version, target, variant, outputPath) {
+  const executableRelative = validateRelativePath(variant.executable, "Executable");
+  return {
+    version,
+    executable: `${runtimeArchitecture(target)}/${outputPath}/${executableRelative}`.replaceAll("\\", "/"),
+    archiveSha256: variant.sha256,
+    ...(variant.root ? { root: variant.root } : {}),
+    ...(variant.requiredFiles ? { requiredFiles: variant.requiredFiles } : {}),
+  };
+}
+
+export function buildRuntimeManifest(source, requestedTarget) {
+  const runtime = { schemaVersion: 1, target: requestedTarget, architectures: {} };
+  for (const target of targetVariants(requestedTarget)) {
+    const arch = runtimeArchitecture(target);
+    runtime.architectures[arch] = { target, engines: {}, runtimes: {} };
+    for (const [engineId, engine] of Object.entries(source.engines)) {
+      const variant = engine.variants?.[target];
+      if (!variant) throw new Error(`Missing ${engineId} artifact for ${target}`);
+      runtime.architectures[arch].engines[engineId] = runtimeVariantMetadata(
+        engine.version,
+        target,
+        variant,
+        engineId,
+      );
+    }
+    for (const [runtimeId, runtimeDefinition] of Object.entries(source.runtimes ?? {})) {
+      const variant = runtimeDefinition.variants?.[target];
+      if (!variant) continue;
+      runtime.architectures[arch].runtimes[runtimeId] = {
+        ...runtimeVariantMetadata(
+          runtimeDefinition.version,
+          target,
+          variant,
+          `runtimes/${runtimeId}`,
+        ),
+        ...(runtimeDefinition.source ? { source: runtimeDefinition.source } : {}),
+        ...(runtimeDefinition.license ? { license: runtimeDefinition.license } : {}),
+      };
+    }
+  }
+  return runtime;
+}
+
+function isRegularFile(path) {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
+export function isPreparedOutputCurrent(outputDir, expectedRuntime) {
+  let currentRuntime;
+  try {
+    currentRuntime = JSON.parse(readFileSync(join(outputDir, "manifest.json"), "utf8"));
+  } catch {
+    return false;
+  }
+  if (JSON.stringify(currentRuntime) !== JSON.stringify(expectedRuntime)) return false;
+
+  for (const [arch, architecture] of Object.entries(expectedRuntime.architectures)) {
+    const artifacts = [
+      ...Object.entries(architecture.engines).map(([id, metadata]) => ({
+        base: join(outputDir, arch, id),
+        metadata,
+      })),
+      ...Object.entries(architecture.runtimes).map(([id, metadata]) => ({
+        base: join(outputDir, arch, "runtimes", id),
+        metadata,
+      })),
+    ];
+    for (const { base, metadata } of artifacts) {
+      const executable = resolve(outputDir, validateRelativePath(metadata.executable, "Executable"));
+      if (!isRegularFile(executable)) return false;
+      for (const requiredFile of metadata.requiredFiles ?? []) {
+        const relativePath = validateRelativePath(requiredFile, "Required file");
+        const resolvedPath = resolve(base, relativePath);
+        if (relative(base, resolvedPath).split(sep).includes("..") || !isRegularFile(resolvedPath)) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
 async function downloadToCache(engineId, target, variant) {
   mkdirSync(CACHE_DIR, { recursive: true });
   const extension = variant.archive === "zip"
@@ -221,6 +308,34 @@ export function parseSevenZipEntries(output) {
   return entries;
 }
 
+const RETRYABLE_RENAME_CODES = new Set(["EACCES", "EBUSY", "EPERM"]);
+const COPY_FALLBACK_RENAME_CODES = new Set([
+  ...RETRYABLE_RENAME_CODES,
+  "EXDEV",
+]);
+
+function wait(milliseconds) {
+  return new Promise((resolveWait) => setTimeout(resolveWait, milliseconds));
+}
+
+async function renameWithRetry(source, destination, {
+  renamePath = rename,
+  sleep = wait,
+  retries = 4,
+} = {}) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await renamePath(source, destination);
+      return;
+    } catch (error) {
+      if (!RETRYABLE_RENAME_CODES.has(error?.code) || attempt >= retries) {
+        throw error;
+      }
+      await sleep(50 * (2 ** attempt));
+    }
+  }
+}
+
 function listSevenZipEntries(archivePath) {
   return parseSevenZipEntries(runSevenZip(["l", "-slt", archivePath]));
 }
@@ -261,31 +376,42 @@ async function prepareVariant(engineId, version, target, variant, stageRoot, out
     const destination = join(stageRoot, arch, outputPath);
     mkdirSync(dirname(destination), { recursive: true });
     await cp(artifactRoot, destination, { recursive: true, force: true });
-    return {
-      version,
-      executable: `${arch}/${outputPath}/${executableRelative}`.replaceAll("\\", "/"),
-      archiveSha256: variant.sha256,
-      ...(variant.root ? { root: variant.root } : {}),
-      ...(variant.requiredFiles ? { requiredFiles: variant.requiredFiles } : {}),
-    };
+    return runtimeVariantMetadata(version, target, { ...variant, executable: executableRelative }, outputPath);
   } finally {
     rmSync(extracted, { recursive: true, force: true });
   }
 }
 
-export async function replaceOutputTree(outputDir, stageRoot) {
+export async function replaceOutputTree(outputDir, stageRoot, operations = {}) {
+  const copyPath = operations.copyPath ?? cp;
+  const removeTree = operations.removeTree
+    ?? ((path) => rmSync(path, { recursive: true, force: true }));
+  const renameOptions = {
+    renamePath: operations.renamePath,
+    sleep: operations.sleep,
+    retries: operations.renameRetries,
+  };
   const previousOutput = `${outputDir}.previous-${process.pid}`;
-  rmSync(previousOutput, { recursive: true, force: true });
-  if (existsSync(outputDir)) await rename(outputDir, previousOutput);
+  removeTree(previousOutput);
+  if (existsSync(outputDir)) {
+    await renameWithRetry(outputDir, previousOutput, renameOptions);
+  }
   try {
-    await rename(stageRoot, outputDir);
+    try {
+      await renameWithRetry(stageRoot, outputDir, renameOptions);
+    } catch (error) {
+      if (!COPY_FALLBACK_RENAME_CODES.has(error?.code)) throw error;
+      await copyPath(stageRoot, outputDir, { recursive: true, force: true });
+      removeTree(stageRoot);
+    }
   } catch (error) {
+    removeTree(outputDir);
     if (existsSync(previousOutput) && !existsSync(outputDir)) {
-      await rename(previousOutput, outputDir);
+      await renameWithRetry(previousOutput, outputDir, renameOptions);
     }
     throw error;
   }
-  rmSync(previousOutput, { recursive: true, force: true });
+  removeTree(previousOutput);
 }
 
 async function main() {
@@ -293,17 +419,19 @@ async function main() {
   if (source.schemaVersion !== 1 || !source.engines) throw new Error("Unsupported bundled engine source manifest.");
   const requestedTarget = resolveRequestedTarget();
   const variants = targetVariants(requestedTarget);
+  const runtime = buildRuntimeManifest(source, requestedTarget);
+  if (isPreparedOutputCurrent(OUTPUT_DIR, runtime)) {
+    process.stdout.write(`Bundled engines already prepared for ${requestedTarget}: ${relative(ROOT, OUTPUT_DIR)}\n`);
+    return;
+  }
   const stageRoot = await createOutputStage(OUTPUT_DIR, STAGING_DIR);
-  const runtime = { schemaVersion: 1, target: requestedTarget, architectures: {} };
   try {
     for (const target of variants) {
-      const arch = runtimeArchitecture(target);
-      runtime.architectures[arch] = { target, engines: {}, runtimes: {} };
       for (const [engineId, engine] of Object.entries(source.engines)) {
         const variant = engine.variants?.[target];
         if (!variant) throw new Error(`Missing ${engineId} artifact for ${target}`);
         process.stdout.write(`Preparing ${engineId} ${engine.version} for ${target}...\n`);
-        runtime.architectures[arch].engines[engineId] = await prepareVariant(
+        await prepareVariant(
           engineId,
           engine.version,
           target,
@@ -315,18 +443,14 @@ async function main() {
         const variant = runtimeDefinition.variants?.[target];
         if (!variant) continue;
         process.stdout.write(`Preparing runtime ${runtimeId} ${runtimeDefinition.version} for ${target}...\n`);
-        runtime.architectures[arch].runtimes[runtimeId] = {
-          ...(await prepareVariant(
+        await prepareVariant(
           runtimeId,
           runtimeDefinition.version,
           target,
           variant,
           stageRoot,
           `runtimes/${runtimeId}`,
-          )),
-          ...(runtimeDefinition.source ? { source: runtimeDefinition.source } : {}),
-          ...(runtimeDefinition.license ? { license: runtimeDefinition.license } : {}),
-        };
+        );
       }
     }
     writeFileSync(join(stageRoot, "manifest.json"), `${JSON.stringify(runtime, null, 2)}\n`);

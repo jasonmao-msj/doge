@@ -4,6 +4,7 @@ export type * from "./types/conversation";
 export type * from "./types/settings";
 export type * from "./types/computerUse";
 export type * from "./types/email";
+export type * from "./types/wechat";
 export type * from "./types/runtime";
 export type * from "./types/diagnostics";
 export type * from "./types/interaction";

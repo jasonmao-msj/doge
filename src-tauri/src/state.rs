@@ -48,6 +48,7 @@ pub(crate) struct AppState {
         crate::shared_runtime_coordinator::SharedRuntimeCoordinator,
     pub(crate) renderer_heartbeats: Mutex<crate::renderer_stability::RendererHeartbeatStore>,
     pub(crate) semantic_navigation_runtime: crate::code_intel_lsp::SemanticNavigationRuntime,
+    pub(crate) wechat: crate::wechat::WechatRuntime,
     pub(crate) engine_manager: EngineManager,
 }
 
@@ -234,6 +235,7 @@ impl AppState {
             semantic_navigation_runtime: crate::code_intel_lsp::SemanticNavigationRuntime::new(
                 crate::code_intel_lsp::cache_root_for_channel(&data_dir, cfg!(debug_assertions)),
             ),
+            wechat: crate::wechat::WechatRuntime::default(),
             engine_manager,
         }
     }

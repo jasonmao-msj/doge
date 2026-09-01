@@ -3,6 +3,7 @@ import test from "node:test";
 import path from "node:path";
 import {
   findConflictingPackagedDogeProcesses,
+  getHotDevTauriArgs,
   getTauriSpawnSpec,
 } from "./tauri-dev-hot.mjs";
 
@@ -28,6 +29,18 @@ test("uses the tauri executable on non-Windows platforms", () => {
     command: "tauri",
     args: ["dev"],
   });
+});
+
+test("prepares resources before Tauri starts waiting for the frontend", () => {
+  const args = getHotDevTauriArgs(["--runner", "/tmp/signed-cargo"]);
+
+  assert.equal(args[0], "--config");
+  assert.deepEqual(JSON.parse(args[1]), {
+    build: {
+      beforeDevCommand: "node scripts/tauri-dev-frontend.mjs",
+    },
+  });
+  assert.deepEqual(args.slice(2), ["--runner", "/tmp/signed-cargo"]);
 });
 
 test("detects packaged Doge processes that can capture the dev single-instance identity", () => {

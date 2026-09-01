@@ -30,6 +30,7 @@
 | [CLI Version Status Contract](./cli-version-status.md) | login shell noise 隔离、semver comparison 与 latest unknown UI contract |
 | [Quality Guidelines](./quality-guidelines.md) | review 门禁与验证命令 |
 | [Web Assets Package Contract](./web-assets-package-contract.md) | Web Service ZIP artifact、安装事务、Tauri status 与 daemon asset resolution contract |
+| [WeChat Bundled Bridge Contract](./wechat-bundled-bridge-contract.md) | bundled WeChat provider 的资源发现、自动生命周期、内部 IPC/HTTP contract 与 fail-readable 状态 |
 
 ## Pre-Development Checklist
 

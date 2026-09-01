@@ -14,6 +14,7 @@ import {
   subscribeNativeProviderContinuationProgress,
   subscribeRuntimeLogStatus,
   subscribeTerminalOutput,
+  subscribeWechatSessionUpdated,
 } from "./events";
 
 vi.mock("@tauri-apps/api/event", () => ({
@@ -55,6 +56,34 @@ describe("events subscriptions", () => {
     cleanup();
     await Promise.resolve();
     expect(unlisten).toHaveBeenCalledTimes(2);
+  });
+
+  it("delivers canonical WeChat session updates", async () => {
+    const listeners = new Map<string, EventCallback<unknown>>();
+    const unlisten = vi.fn();
+    vi.mocked(listen).mockImplementation((eventName, handler) => {
+      listeners.set(String(eventName), handler as EventCallback<unknown>);
+      return Promise.resolve(unlisten);
+    });
+    const onEvent = vi.fn();
+    const cleanup = subscribeWechatSessionUpdated(onEvent);
+    const payload = {
+      workspaceId: "workspace-a",
+      sessionId: "native-thread-a",
+      engine: "codex" as const,
+      model: "gpt-5.6-sol",
+    };
+
+    listeners.get("wechat://session-updated")?.({
+      event: "wechat://session-updated",
+      id: 10,
+      payload,
+    });
+
+    expect(onEvent).toHaveBeenCalledWith(payload);
+    cleanup();
+    await Promise.resolve();
+    expect(unlisten).toHaveBeenCalledTimes(1);
   });
 
   it("fans out app-server-event-batch predecessors before terminal settlement", async () => {

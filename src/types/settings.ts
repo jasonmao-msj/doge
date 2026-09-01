@@ -1,5 +1,6 @@
 import type { AccessMode, ComposerEnginePrefs } from "./conversation";
 import type { EmailInboundSettings, EmailSenderSettings } from "./email";
+import type { WechatChannelSettings } from "./wechat";
 import type { EngineType } from "./engine";
 import type { WorkspaceGroup } from "./workspace";
 
@@ -179,6 +180,7 @@ export type AppSettings = {
   systemNotificationEnabled: boolean;
   emailSender: EmailSenderSettings;
   emailInbound?: EmailInboundSettings;
+  wechatChannel?: WechatChannelSettings;
   preloadGitDiffs: boolean;
   detachedExternalChangeAwarenessEnabled?: boolean;
   detachedExternalChangeWatcherEnabled?: boolean;

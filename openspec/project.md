@@ -1,7 +1,7 @@
 # Project Context
 
 - Type: OpenSpec Workspace
-- Updated At: 2026-08-31T00:00:00-07:00
+- Updated At: 2026-09-01T00:00:00+08:00
 - Scope: governance snapshot for the current `doge` repository workspace
 - Product version fact: `doge@0.1.0` from `config/brand.json`, `package.json`, and `src-tauri/tauri.conf.json`
 
@@ -20,7 +20,7 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 - Change workflow artifacts: `openspec/changes/<change-id>/{proposal,design,tasks,verification}.md`
 - Archive: `openspec/changes/archive/*`
 - Implementation rules: `.trellis/spec/**`
-- Current workspace state: active changes = `31`, archive changes = `886`, main specs = `517`
+- Current workspace state: active changes = `31`, archive changes = `890`, main specs = `518`
 
 ## Entry Surfaces
 
@@ -65,8 +65,8 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 ## Current Inventory
 
 - Active changes: `31`
-- Archive changes: `888`
-- Main specs: `517`
+- Archive changes: `890`
+- Main specs: `518`
 - Completed task sets still active: `1`
 - Ready-for-implementation task sets: `0`
 - Demand-pool proposal directories without `proposal.md` / `tasks.md`: `0`
@@ -88,6 +88,12 @@ Active OpenSpec changes in the current working tree (31; see [`changes/README.md
 The previous v0.5.11 performance and recovery follow-up chain has been archived. Future performance work should open a new chain instead of reusing the archived change directories.
 
 ## Recent Archive / Sync Snapshot
+
+### 2026-09-01 WeChat Bundled Bridge Archive
+
+Archived `add-wechat-bridge-channel` under an explicit user-authorized waiver after L3 focused verification. Synced the new `wechat-bridge-channel` capability covering bundled Tencent Weixin iLink lifecycle, QR login, per-`wxid` command-driven target selection, native session visibility, and Windows startup hardening. Real-device WeChat send/receive smoke and macOS/Linux package smoke remain release/manual residuals.
+
+Current counts: active=`31`, archive=`890`, specs=`518`.
 
 ### 2026-08-31 Shared Event Log WAL Recovery Probe Archive
 
