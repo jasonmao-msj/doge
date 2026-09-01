@@ -1,0 +1,8 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/backend/account-convenience-native-contract.md", "reason": "managed configuration revision and product target authority"}
+{"file": ".trellis/spec/backend/codex-provider-scoped-runtime.md", "reason": "Codex provider fallback/send contract"}
+{"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "catalog id/runtime identity and fail-closed selection"}
+{"file": ".trellis/spec/frontend/codex-provider-session-ui.md", "reason": "Native managed provider UI binding"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "UI target to Runtime request audit"}

@@ -16,6 +16,8 @@
 - Service bridge: `forkThread(workspaceId, threadId, messageId?, { providerProfileId?, targetUserTurnIndex?, targetUserMessageText?, targetUserMessageOccurrence?, localUserMessageCount? })`。
 - Thread metadata fields: `providerProfileId`, `providerProfileSource`, `providerProfileName`, `providerAvailability`, `sourceLabel`。
 - Runtime hooks/helpers: `startThreadForWorkspace(..., { providerProfileId?, providerProfile? })`, `forkThreadForWorkspace(..., { providerProfileId?, providerProfile? })`, `extractProviderBindingFromStartedThread`, `providerBindingFromSelectedProfile`。
+- Native send snapshot: `MessageExecutionTargetSnapshot` + `MessageSendOptions.nativeExecutionTarget`。
+- Shared terminal projection convergence: `refreshThread(workspaceId, sharedThreadId)` after durable `v2.committed=true`。
 - Engine authority: `setActiveEngine(engine, { ensureRuntime?, providerProfileId? }) -> Promise<boolean>`. When the exact managed product provider `doge-token-matrix` is selected for Codex/Claude, it MUST activate the verified managed toolchain before generic engine status/switch checks.
 - Display helper: `resolveCodexProviderLabel(thread: ThreadSummary) -> string | null`。
 
@@ -29,11 +31,13 @@
 - Provider label display MUST derive from thread metadata: `providerProfileName`, then `sourceLabel`, then non-disk `providerProfileId`. Non-Codex threads return no Codex provider label.
 - When sidebar provider labels are enabled, Codex `__disk__` and Claude Code `__local_settings_json__` MUST render the stable technical tag `local`; internal profile names such as `codex-tui/default-config` MUST remain hidden.
 - Composer footer/button area MAY show the active Codex provider label, but the label MUST come from active thread metadata and not from supplier-management active state.
+- Product-ready Existing Native Composer MUST use one canonical `nativeProductTarget` for trigger/readiness/send。submit MUST stay disabled while that managed target is unresolved；once resolved, send MUST carry the complete `nativeExecutionTarget` object so asynchronous client cache/durable hydration cannot replace the visible model before first Turn。
 - Codex stale recovery fresh continuation and fork continuation MUST inherit the source thread's non-empty `providerProfileId` from thread metadata. Blank/whitespace provider ids MUST be normalized away so legacy disk/default behavior remains intentional.
 - Provider metadata resolvers passed into stable messaging/AppShell context paths MUST use ref-backed latest state or another identity-stable mechanism. They MUST NOT depend directly on `threadsByWorkspace` if that would recreate send/recovery callbacks on each thread list update.
 - Fork UI MUST default selected provider to parent thread binding. Provider-selected message fork MUST send parent thread id, selected provider id, target user turn index/text/occurrence, and local user message count so backend can resolve native Codex anchors.
 - Provider-selected Codex message fork MUST create/activate a child thread and preserve parent row/metadata. It MUST NOT use the destructive rewind `renameThreadId(parent -> child)` / `hideThread(parent)` transition.
 - Supplier management Codex cards manage reusable provider profiles. They MUST NOT expose a global enable action or active styling that implies already-created conversations will switch provider.
+- Shared V2 durable commit MUST refresh canonical history before processing cleanup so generated images and other terminal-only artifacts appear in the already-open timeline。Refresh failure MUST remain a presentation diagnostic and MUST NOT reclassify a committed Turn as send failure。
 
 ### 4. Validation & Error Matrix
 
@@ -41,6 +45,7 @@
 |---|---|---|
 | 用户从 workspace menu 新建 Codex | 显示 disk + managed submenu，payload 包含 selected `providerProfileId` | 使用供应商 tab 的 active provider |
 | product-ready Composer 修改 Native conversation | 只显示 Codex/Claude/Kimi product panel，选择产出 `doge-token-matrix` target | 回落 legacy Grok/OpenCode/channel picker 或原地改 binding |
+| managed Native 新会话立即发送 | trigger/readiness/dispatch 使用同一 complete target | UI 显示 Sol、Runtime 回落 `config.toml` 的其他 model |
 | 两次同 workspace 同 provider start | 复用同一个 in-flight promise | 创建重复 pending/backend start |
 | 两次同 workspace 不同 provider start | 各自独立 start | 因 workspace 相同而 collapse |
 | catalog row 带 provider metadata | reducer/list/display 保留字段并显示 label | 后续 ensureThread 丢字段 |
@@ -50,6 +55,7 @@
 | fork 选择不同 provider | 发送 selected provider + native anchor hints，parent 保持可见 | hide/rename parent 或 seed transcript |
 | provider unavailable | label/status 可区分 unavailable | 静默显示为 disk |
 | product-managed Codex create/continuation | 先激活 verified managed toolchain，再确认 native engine | 只信 generic CLI detection，因 bundled binary 未被探测而中止 |
+| Shared image exists only in canonical terminal | refresh current timeline and render generated-image card | require user to reopen or infer image from prose |
 
 ### 5. Good / Base / Bad Cases
 
@@ -70,6 +76,8 @@
 - Vitest for `resolveCodexProviderLabel`, sidebar/thread list/pinned list badges, and composer provider tag rendering.
 - Vitest for provider-selected fork preserving parent metadata and producing child provider binding.
 - Vitest for managed Codex direct creation/continuation passing `providerProfileId="doge-token-matrix"` to engine authority and activating `account_engine_v1_activate("codex")` before session side effects.
+- Vitest for managed Native immediate first send、unresolved target disabled state、stale cache precedence and Provider mismatch fail-closed behavior.
+- Vitest for Shared V2 committed canonical refresh、refresh failure preserving durable success、generated-image projection mapping。
 
 ### 7. Wrong vs Correct
 

@@ -4,7 +4,8 @@ use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
 use super::provider_profile::{
-    materialize_codex_provider_profile, resolve_codex_provider_profile, CodexProviderProfile,
+    materialize_codex_provider_profile, resolve_codex_provider_profile,
+    resolve_managed_codex_provider_home, CodexProviderProfile,
 };
 use super::{resolve_default_codex_home, resolve_workspace_codex_home};
 use crate::shared::workspace_snapshot::resolve_workspace_and_parent;
@@ -112,6 +113,18 @@ pub(super) async fn resolve_codex_provider_history_path(
     find_codex_history_file(&home, thread_id).ok_or_else(|| {
         format!(
             "[CODEX_HISTORY_NOT_FOUND] workspaceId={workspace_id}; threadId={thread_id}; providerProfileId={provider_profile_id}"
+        )
+    })
+}
+
+pub(super) fn resolve_managed_codex_provider_history_path(
+    provider_profile_id: &str,
+    thread_id: &str,
+) -> Result<PathBuf, String> {
+    let home = resolve_managed_codex_provider_home(provider_profile_id)?;
+    find_codex_history_file(&home, thread_id).ok_or_else(|| {
+        format!(
+            "[CODEX_HISTORY_NOT_FOUND] threadId={thread_id}; providerProfileId={provider_profile_id}"
         )
     })
 }

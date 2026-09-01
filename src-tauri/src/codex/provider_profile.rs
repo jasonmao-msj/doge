@@ -399,6 +399,16 @@ pub(crate) fn materialize_codex_provider_profile(
     materialize_codex_provider_profile_in_root(profile, &provider_homes_root)
 }
 
+pub(crate) fn resolve_managed_codex_provider_home(
+    provider_profile_id: &str,
+) -> Result<PathBuf, String> {
+    let profile = resolve_codex_provider_profile(Some(provider_profile_id))?;
+    let CodexProviderProfile::Managed { id, .. } = profile else {
+        return Err("managed Codex home resolution requires a managed provider".to_string());
+    };
+    provider_home_for_id_in_root(&app_paths::codex_provider_homes_dir()?, &id)
+}
+
 fn materialize_codex_provider_profile_in_root(
     profile: CodexProviderProfile,
     provider_homes_root: &Path,

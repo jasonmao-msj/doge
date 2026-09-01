@@ -142,6 +142,11 @@ type EngineModelInfo = {
   Composer 外部的 hero Engine icon MUST 消费当前 creation target 的低频 Engine
   projection，不得继续读取可能滞后的 global `selectedEngine`；禁止为标题回显上提
   Provider/Model/Reasoning 或整份 draft target。
+- Product-ready Existing Native session MUST 先通过
+  `resolveProductManagedExecutionTargetV1` 得到 canonical target，再同时供 Atomic picker、
+  send readiness 与 `MessageSendOptions.nativeExecutionTarget` 消费。catalog/cache/durable
+  hydration 未完成时不得用 provider config default 发送；target Engine 或已知 Provider
+  binding 不一致时必须在 optimistic UI / Runtime side effect 前 fail closed。
 
 ### 4. Validation & Error Matrix
 
@@ -204,6 +209,9 @@ type EngineModelInfo = {
 - `Composer.file-reference-token.test.tsx` +
   `useLayoutNodes.client-ui-visibility.test.tsx`：覆盖 Home creation target Engine 从
   Composer 投影到 Home hero owner，且不改变 Native/Shared target owner。
+- `Composer.file-reference-token.test.tsx` + `useThreadMessaging.test.tsx`：覆盖 Product Native
+  immediate first send冻结完整 target、unresolved 禁发、stale composer cache不能覆盖 catalog
+  id、已知 Provider mismatch 零 send。
 - `src-tauri/src/backend/app_server_tests.rs`：覆盖 managed Provider session 的
   `model/list` 路由，不回退 disk/global session。
 - 必跑：`npm run typecheck`、`npm run lint`、`npm run check:runtime-contracts`、`cargo test --manifest-path src-tauri/Cargo.toml engine::status::tests --lib`、`cargo check --manifest-path src-tauri/Cargo.toml --bins`。

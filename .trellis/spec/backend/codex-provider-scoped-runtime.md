@@ -211,6 +211,156 @@ let args = managed_model_catalog_codex_args(&catalog);
 // Append after workspace/provider overrides, before app-server spawn.
 ```
 
+## Scenario: Shared managed Codex generated-image durability and live convergence
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `src-tauri/src/shared_generated_image_artifact.rs`、`shared_session_v2::commit_observed_runtime_settlement`、`shared_projection::SharedProjector`、`workspaces::read_local_image_data_url` 或 Shared V2 committed UI boundary。
+- 目标：Codex app-server realtime surface 未转发 provider-private `response_item/image_generation_call` 时，Shared 仍从 exact managed rollout 建立真实 image artifact；当前页面、reload 与 app restart 使用同一 canonical projection。
+- Upgrade contract：existing product user 安装新 binary 后，下一个 managed Shared Codex Turn 自动走该链路；不要求清配置、重新登录或重建 Shared Session。旧版本已提交且 `artifactRefs=[]` 的历史 Turn 不伪造 backfill。
+
+### 2. Signatures
+
+- `resolve_managed_codex_native_history_path(provider_profile_id: &str, thread_id: &str) -> Result<PathBuf, String>`
+- `resolve_managed_codex_provider_home(provider_profile_id: &str) -> Result<PathBuf, String>`（read-only path resolution；不得 materialize/rewrite config）
+- `materialize_codex_generated_images_from_history(app_data_dir: &Path, history_path: &Path, runtime_turn_id: &str) -> Result<Vec<ArtifactRef>, String>`
+- `reconcile_managed_codex_generated_images(state: &AppState, settled: &mut SettledSharedRuntimeAttempt)`
+- `ArtifactRef { artifactId, mediaType, sizeBytes, sha256, locator, sourceToolName, promptText }`
+- shared payload bound：`workspaces::MAX_INLINE_IMAGE_BYTES = 20 MiB`（materializer 与 preview reader 共用）
+- storage：`<Tauri App Data>/generated-images/shared/<sha256>.<ext>`
+- local preview allowlist：`append_app_owned_image_preview_roots(..., <App Data>/generated-images/shared)`
+- UI terminal convergence：`useThreadMessaging -> refreshThread(workspaceId, sharedThreadId)` after `v2.committed=true`。
+
+### 3. Contracts
+
+- Success authority MUST be exact provider-scoped rollout `response_item` with type `image_generation_call|image_generation_end`、completed status、non-empty result and `internal_chat_message_metadata_passthrough.turn_id == owner.runtime_turn_id`。assistant prose/link MUST NOT count as image evidence。
+- Reconcile MUST use frozen managed `providerProfileId` + exact `nativeSessionId` + exact `runtimeTurnId`；same-session older Turn image MUST NOT attach to current Turn。
+- Terminal history lookup MUST resolve the managed provider home without rewriting `config.toml`/`auth.json`；configuration materialization remains owned by exact engine prepare。
+- History reconcile MUST read only the latest 64 MiB tail and use a 32 MiB hard-capped line reader；oversized lines are discarded with `fill_buf/consume` without first allocating the whole line。Base64 decode MUST be bounded to 20 MiB decoded bytes；only PNG/JPEG/GIF/WebP magic is accepted。bytes MUST publish by SHA-256 content-addressed temp + fsync + rename；same content is idempotent。
+- Shared SQLite/checkpoint/React durable state MUST store only compact `ArtifactRef` and stable local locator，never multi-megabyte Base64。
+- `turnCommitted.artifactRefs -> SharedProjector::GeneratedImage -> toSharedConversationItems -> GeneratedImageRow` is the only restored render path。Projection image id MUST reuse `artifactId` to merge with any live item rather than duplicate。
+- Shared V2 committed boundary MUST install exact terminal barrier first，then best-effort `refreshThread` canonical projection，then clear processing。Refresh failure writes diagnostic but MUST NOT roll back durable success。
+- `read_local_image_data_url` MAY read the canonical `<App Data>/generated-images/shared` root；its parent/sibling/arbitrary absolute paths remain denied。Remote mode behavior remains unchanged。
+
+### 4. Validation & Error Matrix
+
+| State | Required result | Forbidden result |
+|---|---|---|
+| exact Turn has valid completed PNG | atomic file + compact artifact + visible card | infer from “已生成” text |
+| same native session only has older image | no current artifact | attach stale image |
+| malformed/oversized/unsupported result | warning + no image artifact；durable terminal remains authoritative | Base64 in SQLite or unbounded allocation |
+| content repeats | reuse same SHA path | duplicate bytes/temp residue |
+| Shared canvas already open | committed boundary refreshes canonical projection | require manual reopen |
+| projection refresh fails | keep committed result + diagnostic | report send failure/retry Runtime |
+| locator under exact managed root | local data URL preview | allow whole App Data or arbitrary filesystem |
+
+### 5. Good / Base / Bad Cases
+
+- Good：existing v0.1.13 user upgrades，keeps login/config/session，next Shared Sol image Turn writes one App Data PNG、one canonical artifact，current canvas immediately renders and restart still renders。
+- Base：normal text Turn scans exact history but finds no matching image，returns empty artifact list without changing terminal semantics。
+- Bad：wait for a nonexistent `codex/raw image_generation_call` realtime event；或 scan latest image without matching runtime turn id。
+- Bad：store raw Base64 in `turnCommitted`；或 add App Data root itself to preview allowlist。
+
+### 6. Tests Required
+
+- Rust materializer：exact-turn match、older-turn rejection、bounded tail/line discard、invalid/oversized result、format magic、idempotent content-addressed write、no Base64 in `ArtifactRef`。
+- Rust lifecycle：artifact survives accumulator/terminal snapshot；Shared projection emits `GeneratedImage` with stable artifact id/path/prompt。
+- Rust preview policy：allow exact `generated-images/shared`，assert parent App Data and `generated-images` parent are not added。
+- Vitest：Shared V2 committed response calls `refreshThread` before processing cleanup；refresh rejection preserves `v2.committed=true` and emits diagnostic。
+- Hot Doge：assert rollout model=`gpt-5.6-sol`、completed native image result、physical file、non-empty `turnCommitted.artifactRefs`、current UI image visible、reopen visible。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```rust
+// App server does not promise this provider-private response item.
+if method == "codex/raw" && payload_type == "image_generation_call" {
+    canonical.artifact_refs.push(data_url_artifact(payload.result));
+}
+```
+
+#### Correct
+
+```rust
+let history = resolve_managed_codex_native_history_path(provider_id, native_session_id)?;
+let artifacts = materialize_codex_generated_images_from_history(
+    app_data_dir,
+    &history,
+    runtime_turn_id,
+)?;
+settled.final_snapshot.artifacts.extend(artifacts);
+```
+
+## Scenario: Product-managed Codex first-turn target MUST be atomic
+
+### 1. Scope / Trigger
+
+- Trigger：修改 `src-tauri/src/account/configuration.rs` 的 managed Codex recipe/revision，或修改 `Composer`、`MessageSendOptions`、`useThreadMessaging` 的 Product Native first-send model routing。
+- 目标：UI target、readiness、durable target 与 Codex `turn_context.model` 必须同源；新会话立即发送不得回落被 Product channel 禁止的 config/global model。
+
+### 2. Signatures
+
+- `ACCOUNT_MANAGED_CODEX_MODEL: &str = "gpt-5.6-sol"`
+- `ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64 = 3`
+- `MessageExecutionTargetSnapshot { engine, providerProfileId, modelCatalogEntryId, model, reasoning, providerProfileNameSnapshot, providerProfileSource }`
+- `MessageSendOptions.nativeExecutionTarget?: MessageExecutionTargetSnapshot`
+- `resolveProductManagedExecutionTargetV1(...) -> ExecutionTarget | null`
+
+### 3. Contracts
+
+- Managed Codex isolated config MUST set both `model` and `review_model` to `ACCOUNT_MANAGED_CODEX_MODEL`；exact-engine prepare MUST replace revision-2 projection before ready。Kimi's independent default MUST remain unchanged。
+- Product-ready Existing Native session MUST derive `selectedAtomicTarget` from canonical `nativeProductTarget` before falling back to presentation-only native state。
+- If managed Native target is unresolved, Composer input remains editable but submit MUST be disabled；no Session/Binding/Turn fallback side effect is allowed。
+- Resolved managed Native send MUST carry one complete `nativeExecutionTarget` object。`useThreadMessaging` MUST consume runtime model、catalog id and effort from the same snapshot before per-thread/cache/default values。
+- Snapshot Engine mismatch or known Provider binding mismatch MUST fail closed before optimistic UI and Runtime send。
+- Local/disk/custom provider paths MUST preserve existing behavior and MUST NOT inherit Product Sol fallback semantics。
+
+### 4. Validation & Error Matrix
+
+| State | Required result | Forbidden result |
+|---|---|---|
+| revision-2 Doge Codex config | revision 3 + Sol model/review model | keep `gpt-5.5` |
+| Product Native target resolved | exact frozen send | read stale composer cache |
+| Product Native target unresolved | submit disabled | config/global fallback send |
+| target model Terra/Luna | exact selected runtime | replace with Sol fallback |
+| target Engine/Provider mismatch | zero native send + localized failure | send target into another binding |
+| Kimi/local/custom | unchanged | Codex migration rewrites their runtime model |
+
+### 5. Good/Base/Bad Cases
+
+- Good：UI 显示 `gpt-5.6-sol`，`nativeExecutionTarget.model`、`send_user_message.model` 与 rollout `turn_context.model` 全部为 Sol。
+- Base：无 explicit target 的 internal managed fallback 使用 Sol，但 normal Product send仍以 frozen target为authority。
+- Bad：把 `model` 与 `modelCatalogEntryId` 作为独立 optional fields，让类型可表达 Sol/5.5 split truth。
+- Bad：为消除 503 仅在 token2api pricing 中放开 `gpt-5.5`；这会掩盖客户端 target drift。
+
+### 6. Tests Required
+
+- Rust configuration tests MUST cover revision-2 migration、exact Sol recipe、Kimi default isolation、local/custom preservation and idempotent current prepare。
+- Composer test MUST cover immediate first send and unresolved managed target zero-send。
+- Messaging test MUST cover stale cache cannot overwrite snapshot catalog/runtime identity and Provider mismatch zero-send。
+- L3 gates：focused Vitest、target ESLint、`npm run typecheck`、`npm run check:runtime-contracts`、`cargo test ... account:: --lib`、`cargo check --lib`、strict OpenSpec validation。
+- Hot Doge smoke MUST compare exact UI model、rollout `turn_context.model` and native completed `image_generation_call`。
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```ts
+send({
+  model: resolvedComposerSelection?.model ?? managedConfigDefault,
+  modelCatalogEntryId: cachedSelection?.modelId,
+});
+```
+
+#### Correct
+
+```ts
+const target = resolveProductManagedExecutionTargetV1(productSnapshot);
+if (!isResolvedExecutionTarget(target)) return keepSubmitDisabled();
+send({ nativeExecutionTarget: freezeExecutionTarget(target) });
+```
+
 ## Scenario: Codex curated-skill deactivation across resumed threads
 
 ### 1. Scope / Trigger

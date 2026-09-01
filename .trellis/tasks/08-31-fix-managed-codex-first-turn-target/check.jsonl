@@ -1,0 +1,5 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 verification"}
+{"file": ".trellis/spec/backend/account-convenience-native-contract.md", "reason": "configuration migration checks"}
+{"file": ".trellis/spec/backend/provider-scoped-model-catalog.md", "reason": "model identity checks"}

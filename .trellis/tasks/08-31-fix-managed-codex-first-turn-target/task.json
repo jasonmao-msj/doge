@@ -1,0 +1,55 @@
+{
+  "id": "fix-managed-codex-first-turn-target",
+  "name": "fix-managed-codex-first-turn-target",
+  "title": "修复托管 Codex 首轮模型漂移",
+  "description": "修复 v0.1.13 Native managed Codex 首轮 UI 显示 gpt-5.6-sol 但实际回落 gpt-5.5，升级老用户配置并冻结 exact ExecutionTarget。",
+  "status": "completed",
+  "dev_type": "fullstack",
+  "scope": "src-tauri/src/account/configuration.rs; src-tauri/src/account/configuration_tests.rs; src/features/composer/components/Composer.tsx; src/features/threads/hooks/useThreadMessaging.ts; src/types/conversation.ts; OpenSpec target/image contracts",
+  "package": null,
+  "priority": "P0",
+  "creator": "jason",
+  "assignee": "jason",
+  "createdAt": "2026-08-31",
+  "completedAt": "2026-08-31",
+  "branch": "codex/fix-managed-codex-first-turn-target",
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 6,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {
+    "openSpecChange": "fix-managed-codex-first-turn-target-drift"
+  }
+}
