@@ -585,3 +585,36 @@
 
 - 人工 UI 验收：重启后 catalog hydration 不再出现 guardian 会话（tasks.md 4.3）
 - 本机无 Python（WindowsApps stub），Trellis record 为手工补录，未运行 get_context.py
+
+
+## Session 19: 内置微信桥接并归档渠道变更
+
+**Date**: 2026-09-01
+**Task**: 内置微信桥接并归档渠道变更
+**Branch**: `codex/add-wechat-bridge-channel`
+
+### Summary
+
+内置跨平台 Tencent Weixin iLink Rust sidecar，渠道启用时自动启动；支持联系人按 wxid 使用微信指令选择 workspace、engine 与 model，并刷新会话列表；完成 Windows dev resource EPERM 加固、OpenSpec/Trellis 归档和 L3 focused verification。真实设备扫码收发及 macOS/Linux package smoke 保留为 release/manual residual。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `620d931f8` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 18
-- **Last Active**: 2026-08-31
+- **Total Sessions**: 19
+- **Last Active**: 2026-09-01
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~550 | Active |
+| `journal-1.md` | ~620 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 19 | 2026-09-01 | 内置微信桥接并归档渠道变更 | `620d931f8` | `codex/add-wechat-bridge-channel` |
 | 18 | 2026-08-31 | 修复 guardian 后台会话重新出现在侧边栏 | `5997fb563` | `fix/codex-guardian-session-catalog-visibility` |
 | 17 | 2026-08-30 | 淇 Kimi managed session catalog 閲嶅惎鎭㈠ | `cb0812385` | `codex/fix-kimi-managed-session-catalog` |
 | 16 | 2026-08-30 | 瑙ｅ喅 PR #53 涓诲垎鏀啿绐?| `ead66f4a8` | `codex/fix-managed-session-target-cold-start` |
