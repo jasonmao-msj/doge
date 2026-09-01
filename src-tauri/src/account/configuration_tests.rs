@@ -3,8 +3,8 @@ use serde_json::{json, Value};
 use std::fs;
 
 #[test]
-fn managed_configuration_revision_tracks_claude_responses_routing() {
-    assert_eq!(ACCOUNT_MANAGED_CONFIGURATION_REVISION, 2);
+fn managed_configuration_revision_tracks_product_safe_codex_fallback() {
+    assert_eq!(ACCOUNT_MANAGED_CONFIGURATION_REVISION, 3);
 }
 
 #[test]
@@ -40,6 +40,13 @@ fn provider_recipe_has_fixed_authority_and_no_secret() {
     assert!(ACCOUNT_CODEX_CONFIG_TOML.contains("https://token-matrix.com"));
     assert!(ACCOUNT_CODEX_CONFIG_TOML.contains("wire_api = \"responses\""));
     assert!(ACCOUNT_CODEX_CONFIG_TOML.contains("env_key = \"OPENAI_API_KEY\""));
+    assert!(
+        ACCOUNT_CODEX_CONFIG_TOML.contains(&format!("model = \"{ACCOUNT_MANAGED_CODEX_MODEL}\""))
+    );
+    assert!(ACCOUNT_CODEX_CONFIG_TOML
+        .contains(&format!("review_model = \"{ACCOUNT_MANAGED_CODEX_MODEL}\"")));
+    assert_eq!(ACCOUNT_MANAGED_CODEX_MODEL, "gpt-5.6-sol");
+    assert_eq!(ACCOUNT_MANAGED_KIMI_MODEL, "gpt-5.5");
     assert!(!ACCOUNT_CODEX_CONFIG_TOML.contains("sk-"));
     assert!(!ACCOUNT_CODEX_CONFIG_TOML.contains("auth.json"));
 }
@@ -131,7 +138,7 @@ fn managed_projection_replaces_legacy_doge_entries_and_preserves_local_profiles(
                     "id": "doge-token-matrix",
                     "name": "Legacy Doge",
                     "source": "legacy-doge",
-                    "managedRevision": 1,
+                    "managedRevision": 2,
                     "configToml": "model_provider = 'legacy'"
                 }
             }
@@ -144,7 +151,7 @@ fn managed_projection_replaces_legacy_doge_entries_and_preserves_local_profiles(
                     "id": "doge-token-matrix",
                     "name": "Legacy Doge",
                     "source": "legacy-doge",
-                    "managedRevision": 1,
+                    "managedRevision": 2,
                     "settingsConfig": {
                         "env": {
                             "ANTHROPIC_BASE_URL": "https://openrouter.ai",
@@ -162,7 +169,7 @@ fn managed_projection_replaces_legacy_doge_entries_and_preserves_local_profiles(
                     "id": "doge-token-matrix",
                     "name": "Legacy Doge",
                     "source": "legacy-doge",
-                    "managedRevision": 1,
+                    "managedRevision": 2,
                     "baseUrl": "https://legacy.invalid/v1",
                     "apiKey": "synthetic-legacy-secret"
                 }
@@ -203,6 +210,8 @@ fn managed_projection_replaces_legacy_doge_entries_and_preserves_local_profiles(
         .is_none());
     assert!(!after_kimi.contains("synthetic-legacy-secret"));
     assert!(!after_kimi.contains("openrouter.ai"));
+    assert!(after_codex.contains("model = \\\"gpt-5.6-sol\\\""));
+    assert!(after_codex.contains("review_model = \\\"gpt-5.6-sol\\\""));
 }
 
 #[test]

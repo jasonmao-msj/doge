@@ -1386,6 +1386,103 @@ describe("Composer file reference token", () => {
     );
   });
 
+  it("freezes the canonical Product target for an immediate Native send", async () => {
+    publishProductReadyV1({
+      entitlement: {
+        status: "active",
+        subscriptionId: 9,
+        groupId: 5,
+        groupName: "Doge",
+        planName: "Doge subscription",
+        expiresAt: "2030-02-01T00:00:00Z",
+        usage: null,
+      },
+      engines: [{ id: "codex", displayName: "Codex" }],
+      models: [
+        {
+          id: "gpt-5.6-sol",
+          displayName: "GPT-5.6 Sol",
+          model: "gpt-5.6-sol",
+          apiProtocols: ["openai-responses"],
+          capabilities: ["chat"],
+        },
+      ],
+    });
+    const onSend = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={onSend}
+        selectedEngine="codex"
+        activeThreadId="01a-managed-codex-first-turn"
+        providerProfileId="doge-token-matrix"
+        selectedModelId="gpt-5.6-sol"
+        models={[]}
+      />,
+    );
+
+    const textarea = getTextarea(view.container);
+    fireEvent.change(textarea, {
+      target: { value: "generate an image immediately" },
+    });
+    fireEvent.keyDown(textarea, { key: "Enter" });
+
+    await waitFor(() => expect(onSend).toHaveBeenCalledOnce());
+    expect(onSend).toHaveBeenCalledWith(
+      "generate an image immediately",
+      expect.objectContaining({
+        nativeExecutionTarget: {
+          engine: "codex",
+          providerProfileId: "doge-token-matrix",
+          modelCatalogEntryId: "gpt-5.6-sol",
+          model: "gpt-5.6-sol",
+          reasoning: null,
+          providerProfileNameSnapshot: "Doge",
+          providerProfileSource: "managed",
+        },
+      }),
+    );
+    expect(view.getByTestId("composer-target-authority").dataset).toMatchObject(
+      {
+        readinessEngine: "codex",
+        readinessModel: "GPT-5.6 Sol",
+      },
+    );
+  });
+
+  it("blocks a managed Native send until the Product target resolves", async () => {
+    publishProductReadyV1({
+      entitlement: {
+        status: "active",
+        subscriptionId: 9,
+        groupId: 5,
+        groupName: "Doge",
+        planName: "Doge subscription",
+        expiresAt: "2030-02-01T00:00:00Z",
+        usage: null,
+      },
+      engines: [{ id: "codex", displayName: "Codex" }],
+      models: [],
+    });
+    const onSend = vi.fn();
+    const view = render(
+      <ComposerHarness
+        onSend={onSend}
+        selectedEngine="codex"
+        activeThreadId="01a-managed-codex-unresolved"
+        providerProfileId="doge-token-matrix"
+        selectedModelId="gpt-5.6-sol"
+        models={[]}
+      />,
+    );
+
+    const textarea = getTextarea(view.container);
+    fireEvent.change(textarea, { target: { value: "do not fallback" } });
+    fireEvent.keyDown(textarea, { key: "Enter" });
+
+    await act(async () => undefined);
+    expect(onSend).not.toHaveBeenCalled();
+  });
+
   it("keeps Shared CLI navigation transitional until a complete Model target exists", () => {
     const view = render(
       <ComposerHarness

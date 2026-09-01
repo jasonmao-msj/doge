@@ -492,7 +492,10 @@ impl SharedProjector {
                         &fact.target.engine,
                     );
                     items.push(ProjectionItem {
-                        id: format!("{}:artifact:{}", event.sequence, index),
+                        id: projection_artifact_item_id(
+                            artifact_ref,
+                            format!("{}:artifact:{}", event.sequence, index),
+                        ),
                         kind,
                         content,
                         fidelity: event.fidelity,
@@ -510,7 +513,10 @@ impl SharedProjector {
             let (kind, content) =
                 project_artifact_ref(artifact_ref, &fact.logical_turn_id, &fact.target.engine);
             items.push(ProjectionItem {
-                id: format!("{}:artifact-ref:{}", event.sequence, index),
+                id: projection_artifact_item_id(
+                    artifact_ref,
+                    format!("{}:artifact-ref:{}", event.sequence, index),
+                ),
                 kind,
                 content,
                 fidelity: event.fidelity,
@@ -1234,12 +1240,22 @@ fn project_artifact_ref(
     engine: &str,
 ) -> (ProjectionItemKind, Value) {
     if artifact_ref.media_type.starts_with("image/") {
+        let source_tool_name = artifact_ref
+            .extra
+            .get("sourceToolName")
+            .and_then(Value::as_str)
+            .unwrap_or("artifact");
+        let prompt_text = artifact_ref
+            .extra
+            .get("promptText")
+            .and_then(Value::as_str)
+            .unwrap_or_default();
         return (
             ProjectionItemKind::GeneratedImage,
             json!({
                 "status": "completed",
-                "sourceToolName": "artifact",
-                "promptText": artifact_ref.locator,
+                "sourceToolName": source_tool_name,
+                "promptText": prompt_text,
                 "turnId": logical_turn_id,
                 "engineSource": engine,
                 "images": [{
@@ -1260,6 +1276,16 @@ fn project_artifact_ref(
             "engineSource": engine,
         }),
     )
+}
+
+fn projection_artifact_item_id(artifact_ref: &ArtifactRef, fallback: String) -> String {
+    if artifact_ref.media_type.starts_with("image/") {
+        let artifact_id = artifact_ref.artifact_id.trim();
+        if !artifact_id.is_empty() {
+            return artifact_id.to_string();
+        }
+    }
+    fallback
 }
 
 fn merge_projected_items(items: &mut Vec<ProjectionItem>, projected: Vec<ProjectionItem>) {

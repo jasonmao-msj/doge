@@ -128,6 +128,95 @@ describe("useThreadMessaging", () => {
     );
   });
 
+  it("uses the explicit managed Native target before stale composer cache", async () => {
+    const threadId = "01a-managed-codex-first-turn";
+    const { result } = makeThreadMessagingHook("codex", {
+      activeThreadId: threadId,
+      threadEngineById: { [threadId]: "codex" },
+      providerProfileByThread: { [threadId]: "doge-token-matrix" },
+      resolveComposerSelection: () => ({
+        id: "gpt-5.5",
+        model: "gpt-5.5",
+        source: "configured",
+        providerProfileId: "doge-token-matrix",
+        effort: "low",
+        collaborationMode: null,
+      }),
+    });
+
+    await act(async () => {
+      await result.current.sendUserMessageToThread(
+        workspace,
+        threadId,
+        "generate an image immediately",
+        [],
+        {
+          nativeExecutionTarget: {
+            engine: "codex",
+            providerProfileId: "doge-token-matrix",
+            modelCatalogEntryId: "gpt-5.6-sol",
+            model: "gpt-5.6-sol",
+            reasoning: { effort: "medium" },
+            providerProfileNameSnapshot: "Doge",
+            providerProfileSource: "managed",
+          },
+        },
+      );
+    });
+
+    expect(sendUserMessage).toHaveBeenCalledWith(
+      "ws-1",
+      threadId,
+      "generate an image immediately",
+      expect.objectContaining({
+        model: "gpt-5.6-sol",
+        modelCatalogEntryId: "gpt-5.6-sol",
+        effort: "medium",
+      }),
+    );
+    expect(ensureProductEngineReadyV1).toHaveBeenCalledWith({
+      engine: "codex",
+      providerProfileId: "doge-token-matrix",
+    });
+  });
+
+  it("rejects a frozen Native target from another provider binding", async () => {
+    const threadId = "01a-provider-a-codex-thread";
+    const { result, pushThreadErrorMessage } = makeThreadMessagingHook("codex", {
+      activeThreadId: threadId,
+      threadEngineById: { [threadId]: "codex" },
+      providerProfileByThread: { [threadId]: "provider-a" },
+    });
+
+    await act(async () => {
+      await result.current.sendUserMessageToThread(
+        workspace,
+        threadId,
+        "must not cross provider",
+        [],
+        {
+          nativeExecutionTarget: {
+            engine: "codex",
+            providerProfileId: "doge-token-matrix",
+            modelCatalogEntryId: "gpt-5.6-sol",
+            model: "gpt-5.6-sol",
+            reasoning: null,
+            providerProfileNameSnapshot: "Doge",
+            providerProfileSource: "managed",
+          },
+        },
+      );
+    });
+
+    expect(sendUserMessage).not.toHaveBeenCalled();
+    expect(ensureProductEngineReadyV1).not.toHaveBeenCalled();
+    expect(pushThreadErrorMessage).toHaveBeenCalledWith(
+      "ws-1",
+      threadId,
+      expect.any(String),
+    );
+  });
+
   it.each(["claude", "grok", "kimi", "opencode"] as const)(
     "does not block %s sends with non-empty images at client boundary",
     async (engine) => {
@@ -910,6 +999,7 @@ describe("useThreadMessaging", () => {
   it("does not revive a canonically committed Shared V2 turn from its response", async () => {
     const sharedThreadId = "shared:thread-committed-response";
     const onSharedDurableTurnCommitted = vi.fn();
+    const refreshThread = vi.fn(async () => sharedThreadId);
     selectNextTarget("ws-1", sharedThreadId, {
       engine: "claude",
       providerProfileId: "provider-a",
@@ -935,6 +1025,7 @@ describe("useThreadMessaging", () => {
         activeThreadId: sharedThreadId,
         threadEngineById: { [sharedThreadId]: "claude" },
         onSharedDurableTurnCommitted,
+        refreshThread,
       });
 
     await act(async () => {
@@ -949,6 +1040,7 @@ describe("useThreadMessaging", () => {
       sharedThreadId,
       "runtime-turn-already-completed",
     );
+    expect(refreshThread).toHaveBeenCalledWith("ws-1", sharedThreadId);
     expect(markProcessing).toHaveBeenCalledWith(sharedThreadId, false);
     expect(setActiveTurnId).toHaveBeenCalledWith(sharedThreadId, null);
     expect(
@@ -966,6 +1058,58 @@ describe("useThreadMessaging", () => {
     );
     expect(engineSendMessage).not.toHaveBeenCalled();
     expect(sendUserMessage).not.toHaveBeenCalled();
+  });
+
+  it("keeps a durable Shared success when canonical projection refresh fails", async () => {
+    const sharedThreadId = "shared:thread-projection-refresh-failed";
+    selectNextTarget("ws-1", sharedThreadId, {
+      engine: "codex",
+      providerProfileId: "doge-token-matrix",
+      modelCatalogEntryId: "gpt-5.6-sol",
+      providerProfileNameSnapshot: "Doge",
+      providerProfileSource: "managed",
+      model: "gpt-5.6-sol",
+      reasoning: { effort: "low" },
+    });
+    vi.mocked(sendSharedSessionTurnRouted).mockResolvedValueOnce({
+      nativeThreadId: "native-session-image",
+      runtimeTurnId: "runtime-turn-image",
+      v2: {
+        attemptId: "attempt-image",
+        logicalTurnId: "logical-turn-image",
+        committed: true,
+        duplicate: false,
+      },
+    });
+    const refreshThread = vi.fn(async () => {
+      throw new Error("projection unavailable");
+    });
+    const { result, markProcessing, onDebug } = makeThreadMessagingHook("codex", {
+      activeThreadId: sharedThreadId,
+      threadEngineById: { [sharedThreadId]: "codex" },
+      refreshThread,
+    });
+
+    let response: unknown;
+    await act(async () => {
+      response = await result.current.sendUserMessageToThread(
+        workspace,
+        sharedThreadId,
+        "generate image",
+      );
+    });
+
+    expect(response).toEqual(
+      expect.objectContaining({
+        v2: expect.objectContaining({ committed: true }),
+      }),
+    );
+    expect(markProcessing).toHaveBeenCalledWith(sharedThreadId, false);
+    expect(onDebug).toHaveBeenCalledWith(
+      expect.objectContaining({
+        label: "shared-session/canonical-projection-refresh-failed",
+      }),
+    );
   });
 
   it("keeps Shared processing attached when only the terminal observer detached", async () => {

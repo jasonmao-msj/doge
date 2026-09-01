@@ -1,8 +1,5 @@
-# managed-codex-image-generation Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change enable-managed-codex-image-generation. Update Purpose after archive.
-## Requirements
 ### Requirement: Managed Codex MUST Use A Version-Matched Non-Lite Catalog For Image-Capable GPT-5.6 Models
 
 Doge SHALL derive the managed custom-provider model catalog from the exact Codex binary being launched, SHALL disable Responses Lite only for verified GPT-5.6 Product models, and SHALL keep the managed configuration fallback on an allowed image-capable GPT-5.6 model.
@@ -34,25 +31,6 @@ Doge SHALL derive the managed custom-provider model catalog from the exact Codex
 - **WHEN** `providerProfileId` is absent or is not `doge-token-matrix`
 - **THEN** Doge SHALL preserve the existing provider-owned catalog behavior
 - **AND** Doge MUST NOT inject the managed `model_catalog_json` override
-
-### Requirement: Managed Catalog Materialization MUST Fail Closed Before Session Side Effects
-
-The managed catalog export、validation and atomic write SHALL complete before Codex creates or resumes a Session、Binding or Turn.
-
-#### Scenario: Bundled catalog export succeeds
-- **WHEN** `codex debug models --bundled` exits successfully with a bounded valid catalog
-- **THEN** Doge SHALL validate all three exact target entries and atomically write the managed catalog artifact
-- **AND** the app-server launch SHALL receive its absolute path through `model_catalog_json`
-
-#### Scenario: Export or validation fails
-- **WHEN** the command fails、times out、exceeds the output bound or returns malformed/missing/duplicate target entries
-- **THEN** managed Codex activation SHALL fail with a diagnostic error before native side effects
-- **AND** Doge MUST NOT silently launch with Responses Lite or mutate user global Codex config
-
-#### Scenario: The same managed runtime is prepared repeatedly
-- **WHEN** Doge prepares the same binary/provider home more than once
-- **THEN** the effective catalog SHALL remain equivalent
-- **AND** replacement SHALL be atomic with no partial artifact visible to Codex
 
 ### Requirement: Managed Codex Image Generation MUST Be Proven By Native Image Evidence
 

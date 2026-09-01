@@ -3402,6 +3402,71 @@ mod tests {
     }
 
     #[test]
+    fn codex_raw_generated_image_artifact_survives_terminal_snapshot() {
+        let coordinator = SharedRuntimeCoordinator::default();
+        coordinator
+            .register_attempt(owner(
+                "attempt-image",
+                Some("run-image"),
+                Some("native-image"),
+            ))
+            .expect("register");
+        let artifact = ArtifactRef {
+            artifact_id: "ig-image-1".to_string(),
+            media_type: "image/png".to_string(),
+            size_bytes: Some(68),
+            sha256: "a".repeat(64),
+            locator: "/tmp/generated-image.png".to_string(),
+            redaction: None,
+            extra: json!({
+                "sourceToolName": "image_generation_call",
+                "promptText": "black doge",
+            }),
+        };
+        let raw = json!({
+            "method": "codex/raw",
+            "params": {
+                "threadId": "native-image",
+                "turnId": "run-image",
+                "payload": {
+                    "type": "image_generation_call",
+                    "id": "ig-image-1",
+                    "status": "completed"
+                },
+                "artifactRefs": [artifact]
+            }
+        });
+        assert!(coordinator
+            .ingest_codex_event("ws-1", &raw)
+            .settled
+            .is_none());
+
+        let settled = coordinator
+            .ingest_codex_event(
+                "ws-1",
+                &json!({
+                    "method": "turn/completed",
+                    "params": {
+                        "threadId": "native-image",
+                        "turnId": "run-image",
+                        "status": "completed"
+                    }
+                }),
+            )
+            .settled
+            .expect("settled");
+        assert_eq!(settled.final_snapshot.artifacts.len(), 1);
+        assert_eq!(
+            settled.final_snapshot.artifacts[0].artifact_id,
+            "ig-image-1"
+        );
+        assert_eq!(
+            settled.final_snapshot.artifacts[0].locator,
+            "/tmp/generated-image.png"
+        );
+    }
+
+    #[test]
     fn early_runtime_events_replay_after_exact_binding() {
         let coordinator = SharedRuntimeCoordinator::default();
         coordinator

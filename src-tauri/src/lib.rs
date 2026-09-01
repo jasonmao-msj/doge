@@ -176,6 +176,7 @@ mod settings;
 mod shared;
 pub mod shared_context;
 pub mod shared_event_log;
+mod shared_generated_image_artifact;
 pub mod shared_projection;
 mod shared_runtime_coordinator;
 pub mod shared_session_v2;

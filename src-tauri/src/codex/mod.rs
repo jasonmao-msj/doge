@@ -57,6 +57,13 @@ pub(crate) async fn resolve_codex_native_history_path(
 ) -> Result<std::path::PathBuf, String> {
     resolve_codex_provider_history_path(state, workspace_id, thread_id, provider_profile_id).await
 }
+
+pub(crate) fn resolve_managed_codex_native_history_path(
+    provider_profile_id: &str,
+    thread_id: &str,
+) -> Result<std::path::PathBuf, String> {
+    provider_fork::resolve_managed_codex_provider_history_path(provider_profile_id, thread_id)
+}
 use self::provider_profile::{resolve_codex_provider_profile, CODEX_DISK_PROVIDER_PROFILE_ID};
 use self::run_metadata::{extract_json_value, sanitize_run_worktree_name};
 use self::thread_listing::{

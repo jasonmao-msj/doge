@@ -1124,7 +1124,7 @@ function ComposerImpl({
       : selectedSharedTarget
     : createSessionTargetPicker
       ? effectiveCreationTarget
-      : nativeSessionTarget;
+      : (nativeProductTarget ?? nativeSessionTarget);
   const [agentArmed, setAgentArmed] = useState(false);
   const agentProjection = useAgentProjection(activeWorkspaceId, activeThreadId);
   const agentTargetSupported = isMultiAgentTargetSupported(
@@ -1348,8 +1348,18 @@ function ComposerImpl({
   const managedCreationTargetPending =
     usesManagedCreationDefault &&
     !isResolvedExecutionTarget(effectiveCreationTarget);
+  const managedNativeTargetPending =
+    usesProductTargetCatalog &&
+    !isSharedSessionResolved &&
+    !createSessionTargetPicker &&
+    nativeSessionTarget?.providerProfileId?.trim() ===
+      MANAGED_PROVIDER_PROFILE_ID_V1 &&
+    !isResolvedExecutionTarget(nativeProductTarget);
   const effectiveSubmitDisabled =
-    submitDisabled || !sharedTargetResolved || managedCreationTargetPending;
+    submitDisabled ||
+    !sharedTargetResolved ||
+    managedCreationTargetPending ||
+    managedNativeTargetPending;
   const sharedTargetPersistenceByThreadRef = useRef(
     new Map<string, Promise<void>>(),
   );
@@ -2834,6 +2844,14 @@ function ComposerImpl({
               effort: effectiveCreationTarget.reasoning?.effort ?? null,
             }
           : null;
+      const managedNativeSendTarget =
+        !isSharedSessionResolved &&
+        !createSessionTargetPicker &&
+        selectedAtomicTarget?.providerProfileId?.trim() ===
+          MANAGED_PROVIDER_PROFILE_ID_V1 &&
+        isResolvedExecutionTarget(selectedAtomicTarget)
+          ? selectedAtomicTarget
+          : null;
       const sendOptions: MessageSendOptions | undefined =
         skillInvocations.length > 0 ||
         selectedMemoryIds.length > 0 ||
@@ -2841,6 +2859,7 @@ function ComposerImpl({
         shouldReferenceMemory ||
         hasBrowserContextAttachment ||
         createSessionTarget !== null ||
+        managedNativeSendTarget !== null ||
         isAgentSubmission
           ? {
               ...(skillInvocations.length > 0 ? { skillInvocations } : {}),
@@ -2855,6 +2874,19 @@ function ComposerImpl({
                 : {}),
               ...(browserContextAttachment ? { browserContextAttachment } : {}),
               ...(createSessionTarget ? { createSessionTarget } : {}),
+              ...(managedNativeSendTarget
+                ? {
+                    nativeExecutionTarget: {
+                      ...managedNativeSendTarget,
+                      providerProfileId:
+                        managedNativeSendTarget.providerProfileId?.trim() ||
+                        null,
+                      reasoning: managedNativeSendTarget.reasoning
+                        ? { ...managedNativeSendTarget.reasoning }
+                        : null,
+                    },
+                  }
+                : {}),
               ...(isAgentSubmission &&
               isResolvedExecutionTarget(selectedAtomicTarget)
                 ? {

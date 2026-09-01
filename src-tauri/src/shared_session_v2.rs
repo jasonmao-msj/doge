@@ -3187,9 +3187,10 @@ pub(crate) fn commit_settled_runtime_attempt(
 
 pub(crate) fn commit_observed_runtime_settlement(
     state: &AppState,
-    settled: crate::shared_runtime_coordinator::SettledSharedRuntimeAttempt,
+    mut settled: crate::shared_runtime_coordinator::SettledSharedRuntimeAttempt,
 ) -> Result<CommitTurnOutcome, String> {
     let writer = require_writer(state)?;
+    reconcile_managed_codex_generated_images(state, &mut settled);
     let owner = settled.owner.clone();
     let binding_recovery_required = owner.engine == EngineType::Claude
         && settled.final_snapshot.outcome == OutcomeStatus::Failed
@@ -3243,6 +3244,84 @@ pub(crate) fn commit_observed_runtime_settlement(
             );
             Err(error)
         }
+    }
+}
+
+fn reconcile_managed_codex_generated_images(
+    state: &AppState,
+    settled: &mut crate::shared_runtime_coordinator::SettledSharedRuntimeAttempt,
+) {
+    if settled.owner.engine != EngineType::Codex
+        || settled.final_snapshot.outcome != OutcomeStatus::Completed
+        || settled
+            .owner
+            .execution_target_snapshot
+            .provider_profile_source
+            != Some(CanonicalProviderProfileSource::Managed)
+    {
+        return;
+    }
+    let Some(provider_profile_id) = settled
+        .owner
+        .execution_target_snapshot
+        .provider_profile_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return;
+    };
+    let Some(native_session_id) = settled
+        .owner
+        .native_session_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return;
+    };
+    let Some(runtime_turn_id) = settled
+        .owner
+        .runtime_turn_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    else {
+        return;
+    };
+    let app_data_dir = state
+        .storage_path
+        .parent()
+        .unwrap_or_else(|| std::path::Path::new("."));
+    let result = crate::codex::resolve_managed_codex_native_history_path(
+        provider_profile_id,
+        native_session_id,
+    )
+    .and_then(|history_path| {
+        crate::shared_generated_image_artifact::materialize_codex_generated_images_from_history(
+            app_data_dir,
+            &history_path,
+            runtime_turn_id,
+        )
+    });
+    match result {
+        Ok(artifacts) => {
+            for artifact in artifacts {
+                if !settled.final_snapshot.artifacts.iter().any(|existing| {
+                    existing.artifact_id == artifact.artifact_id
+                        || existing.sha256 == artifact.sha256
+                }) {
+                    settled.final_snapshot.artifacts.push(artifact);
+                }
+            }
+        }
+        Err(error) => log::warn!(
+            "[shared-runtime] generated image history reconciliation failed shared_session_id={} attempt_id={} native_session_id={} error={}",
+            settled.owner.shared_session_id,
+            settled.owner.attempt_id,
+            native_session_id,
+            error
+        ),
     }
 }
 

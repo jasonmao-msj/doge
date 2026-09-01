@@ -12,16 +12,17 @@ pub(crate) const ACCOUNT_RECIPE_ID: &str = "doge.account.codex-token-service";
 /// provider projection changes. A missing or stale revision is fail-closed so
 /// account preparation deterministically replaces legacy Doge entries while
 /// preserving unrelated user-managed providers.
-pub(crate) const ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64 = 2;
+pub(crate) const ACCOUNT_MANAGED_CONFIGURATION_REVISION: i64 = 3;
 /// kimi CLI resolves OpenAI-compatible endpoints relative to the configured
 /// base URL, so the managed entry must carry the `/v1` path segment.
 pub(crate) const ACCOUNT_MANAGED_KIMI_BASE_URL: &str = "https://token-matrix.com/v1";
+pub(crate) const ACCOUNT_MANAGED_CODEX_MODEL: &str = "gpt-5.6-sol";
 pub(crate) const ACCOUNT_MANAGED_KIMI_MODEL: &str = "gpt-5.5";
 const ACCOUNT_MANAGED_KIMI_MAX_CONTEXT_SIZE: i64 = 128_000;
 
 pub(crate) const ACCOUNT_CODEX_CONFIG_TOML: &str = r#"model_provider = "DogeTokenMatrix"
-model = "gpt-5.5"
-review_model = "gpt-5.5"
+model = "gpt-5.6-sol"
+review_model = "gpt-5.6-sol"
 disable_response_storage = true
 network_access = "enabled"
 windows_wsl_setup_acknowledged = true
@@ -344,7 +345,7 @@ pub(crate) fn read_file_detail(
             safe_change("Provider", "Doge"),
             safe_change("Endpoint", "Token Matrix"),
             safe_change("Protocol", "Responses API"),
-            safe_change("Model", "gpt-5.5"),
+            safe_change("Model", ACCOUNT_MANAGED_CODEX_MODEL),
         ]
     };
     Ok(json!({

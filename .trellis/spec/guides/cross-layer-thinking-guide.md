@@ -117,6 +117,11 @@ React Component
     不能先经过 catalog/default resolver 再被当成“旧值修复”持久化；generation guard 只保护
     已有 mutation 的写序，不能证明 mutation 来源合法。双存储并存时必须显式定义 read
     authority，并保证 read path 不反向写回。
+37. Provider-private artifact 可能只存在 persisted rollout，不出现在 app-server realtime wire。
+    Shared terminal commit 必须用 frozen Provider/native session/runtime Turn identity exact reconcile，
+    不能扫“最后一张图”或信 assistant prose。大 payload 先 bounded、content-addressed 落盘，canonical
+    只存 compact ref；already-open UI 在 durable commit 后主动 refresh projection。若 locator 位于 App
+    Data，媒体读取只 allowlist exact managed subtree，禁止为修破图放开整个 filesystem。
 
 ## 常见失败模式
 
@@ -174,6 +179,9 @@ React Component
 - 把 Responses 与 Chat Completions 合并成 broad `openai`，route capability 变化后仍靠 model
   名称猜可见性；结果既可能让真实 Codex turn 暴露 Composite 400，也可能在 route 已修复后继续
   隐藏本可调用的 K3/Kimi row。
+- Shared backend 已有 valid image `ArtifactRef`，但 committed UI 只清 processing 不 refresh canonical
+  projection，导致用户必须重开；或图片已落 App Data，却因 preview allowlist 未包含 exact managed
+  subtree 显示破图。相反，直接 allow whole App Data 会把 presentation bug 变成 filesystem exposure。
 
 ## Optional Payload Contract
 

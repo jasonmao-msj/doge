@@ -1,5 +1,31 @@
 # Changelog
 
+### **2026年8月31日（v0.1.14）**
+
+中文：
+
+#### 改进
+
+- 现有用户升级后，托管 Codex 会在首次使用时自动迁移到当前 GPT-5.6 配置，无需清除配置、重新登录或重建会话。
+
+#### 修复
+
+- 修复新建或刚切换的 Codex 会话虽然显示 GPT-5.6 Sol，首次请求却可能错误使用旧模型并返回“服务暂时不可用”的问题。
+- 修复 Shared CLI 已成功生成图片却只显示文字、刷新后丢失图片或出现破图的问题；生成结果现在会安全保存，并在当前对话与历史记录中正常显示。
+
+English:
+
+#### Improvements
+
+- Existing users now migrate to the current managed GPT-5.6 Codex configuration on first use after updating, without clearing settings, signing in again, or recreating conversations.
+
+#### Fixes
+
+- Fixed newly created or recently switched Codex conversations displaying GPT-5.6 Sol while the first request could still use a legacy model and return “Service temporarily unavailable.”
+- Fixed Shared CLI image generation completing with text only, disappearing after reload, or showing a broken preview; generated images are now stored safely and remain visible in the current conversation and restored history.
+
+---
+
 ### **2026年8月31日（v0.1.13）**
 
 中文：

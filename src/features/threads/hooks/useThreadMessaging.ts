@@ -21,6 +21,7 @@ import type {
   ComposerCreateSessionTarget,
   EngineType,
   IntentCanvasContextSendAttachment,
+  MessageExecutionTargetSnapshot,
   SelectedAgentOption,
   SharedQueuedExecutionTarget,
   SkillInvocation,
@@ -191,6 +192,7 @@ type SendMessageOptions = {
   codexInvalidThreadRetryAttempted?: boolean;
   autoSession?: AutoSessionMetadata | null;
   createSessionTarget?: ComposerCreateSessionTarget;
+  nativeExecutionTarget?: MessageExecutionTargetSnapshot;
   sharedExecutionTarget?: SharedQueuedExecutionTarget;
   /** Queue  drain 专用：enqueue 瞬间冻结的引擎，优先于 activeEngine 路由。 */
   engineOverride?: EngineType;
@@ -492,6 +494,36 @@ export function useThreadMessaging({
       }
       const threadKind = resolveThreadKind(workspace.id, threadId);
       const resolvedThreadEngine = resolveThreadEngine(workspace.id, threadId);
+      const nativeExecutionTarget = options?.nativeExecutionTarget ?? null;
+      if (
+        nativeExecutionTarget &&
+        nativeExecutionTarget.engine !== resolvedThreadEngine
+      ) {
+        pushThreadErrorMessage(
+          workspace.id,
+          threadId,
+          t("sharedSend.targetUnavailable"),
+        );
+        safeMessageActivity();
+        return;
+      }
+      const boundNativeProviderProfileId =
+        getThreadProviderProfileId?.(workspace.id, threadId)?.trim() || null;
+      const frozenNativeProviderProfileId =
+        nativeExecutionTarget?.providerProfileId?.trim() || null;
+      if (
+        nativeExecutionTarget &&
+        boundNativeProviderProfileId &&
+        frozenNativeProviderProfileId !== boundNativeProviderProfileId
+      ) {
+        pushThreadErrorMessage(
+          workspace.id,
+          threadId,
+          t("sharedSend.targetUnavailable"),
+        );
+        safeMessageActivity();
+        return;
+      }
       if (threadKind !== "shared") {
         assertEngineExecutionEnabled(resolvedThreadEngine);
       }
@@ -634,7 +666,8 @@ export function useThreadMessaging({
       const provisioningProviderProfileId =
         threadKind === "shared"
           ? (supportedStoredSharedTarget?.providerProfileId ?? null)
-          : options?.createSessionTarget?.providerProfileId?.trim() ||
+          : nativeExecutionTarget?.providerProfileId?.trim() ||
+            options?.createSessionTarget?.providerProfileId?.trim() ||
             getThreadProviderProfileId?.(workspace.id, threadId) ||
             null;
       if (provisioningEngine) {
@@ -1249,20 +1282,24 @@ export function useThreadMessaging({
       }
       const resolvedComposerSelection = resolveComposerSelection?.() ?? null;
       const modelFromOptions =
-        options?.model !== undefined ? options.model : undefined;
+        nativeExecutionTarget?.model ??
+        (options?.model !== undefined ? options.model : undefined);
       const modelFromHook = resolvedComposerSelection?.model ?? model;
       const selectedModelId =
         threadKind === "shared"
           ? (supportedStoredSharedTarget?.modelCatalogEntryId ?? null)
           : (resolvedComposerSelection?.id ?? null);
       const executionTargetModelCatalogEntryId =
+        nativeExecutionTarget?.modelCatalogEntryId?.trim() ||
         options?.createSessionTarget?.modelCatalogEntryId?.trim() ||
         selectedModelId?.trim() ||
         null;
       const selectedModelSource =
         threadKind === "shared"
           ? (supportedStoredSharedTarget?.providerProfileSource ?? "unknown")
-          : (resolvedComposerSelection?.source ?? "unknown");
+          : (nativeExecutionTarget?.providerProfileSource ??
+            resolvedComposerSelection?.source ??
+            "unknown");
       const resolvedModel =
         threadKind === "shared" && supportedStoredSharedTarget
           ? (supportedStoredSharedTarget.model ?? null)
@@ -1272,6 +1309,8 @@ export function useThreadMessaging({
       const rawResolvedEffort =
         threadKind === "shared" && supportedStoredSharedTarget
           ? (supportedStoredSharedTarget.reasoning?.effort ?? null)
+          : nativeExecutionTarget
+            ? (nativeExecutionTarget.reasoning?.effort ?? null)
           : options?.effort !== undefined
             ? options.effort
             : (resolvedComposerSelection?.effort ?? effort);
@@ -1941,6 +1980,22 @@ export function useThreadMessaging({
                     );
                   }
                 });
+            }
+            try {
+              await refreshThread(workspace.id, threadId);
+            } catch (error) {
+              onDebug?.({
+                id: `${Date.now()}-shared-canonical-projection-refresh-failed`,
+                timestamp: Date.now(),
+                source: "error",
+                label: "shared-session/canonical-projection-refresh-failed",
+                payload: {
+                  workspaceId: workspace.id,
+                  threadId,
+                  attemptId: asString(sharedV2Result.attemptId).trim() || null,
+                  reason: error instanceof Error ? error.message : String(error),
+                },
+              });
             }
             // 此处只收敛 Shared UI projection；不得落入 Native turn-start lifecycle。
             markProcessing(threadId, false);

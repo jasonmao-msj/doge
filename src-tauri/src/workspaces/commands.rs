@@ -345,7 +345,7 @@ fn normalize_image_local_path(raw_path: &str) -> Option<PathBuf> {
     Some(PathBuf::from(decoded))
 }
 
-const MAX_INLINE_IMAGE_BYTES: u64 = 20 * 1024 * 1024;
+pub(crate) const MAX_INLINE_IMAGE_BYTES: u64 = 20 * 1024 * 1024;
 
 fn is_supported_image_extension(path: &Path) -> bool {
     matches!(
@@ -371,6 +371,11 @@ fn is_path_under_allowed_roots(path: &Path, roots: &[PathBuf]) -> bool {
     roots.iter().any(|root| path.starts_with(root))
 }
 
+fn append_app_owned_image_preview_roots(roots: &mut Vec<PathBuf>, app_data_dir: &Path) {
+    roots.push(app_data_dir.join("workspaces"));
+    roots.push(app_data_dir.join("generated-images").join("shared"));
+}
+
 async fn allowed_image_preview_roots(
     state: &AppState,
     workspace_id: &str,
@@ -392,7 +397,10 @@ async fn allowed_image_preview_roots(
     if let Some(parent_path) = parent_workspace_path {
         roots.push(PathBuf::from(parent_path));
     }
-    roots.push(app_data_dir_for_state(state)?.join("workspaces"));
+    let app_data_dir = app_data_dir_for_state(state)?;
+    // Shared generated images are content-addressed, app-owned artifacts. Allow
+    // only this exact managed root; arbitrary siblings under App Data remain denied.
+    append_app_owned_image_preview_roots(&mut roots, &app_data_dir);
     roots.extend(app_paths::workspace_root_candidates()?);
     roots.push(app_paths::note_card_dir()?);
     // Grok CLI persists multimodal attachments under ~/.grok/sessions/.../assets/
@@ -480,8 +488,8 @@ pub(crate) async fn read_local_image_data_url(
 #[cfg(test)]
 mod image_preview_policy_tests {
     use super::{
-        allowed_external_project_map_roots, is_path_under_allowed_roots,
-        is_supported_image_extension,
+        allowed_external_project_map_roots, append_app_owned_image_preview_roots,
+        is_path_under_allowed_roots, is_supported_image_extension,
     };
     use crate::types::{WorkspaceEntry, WorkspaceKind, WorkspaceSettings};
     use std::path::PathBuf;
@@ -504,6 +512,18 @@ mod image_preview_policy_tests {
             &PathBuf::from("/tmp/other/a.png"),
             &roots,
         ));
+    }
+
+    #[test]
+    fn app_owned_preview_roots_allow_only_managed_generated_images_subtree() {
+        let app_data = PathBuf::from("/tmp/doge-app-data");
+        let mut roots = Vec::new();
+        append_app_owned_image_preview_roots(&mut roots, &app_data);
+
+        assert!(roots.contains(&app_data.join("workspaces")));
+        assert!(roots.contains(&app_data.join("generated-images").join("shared")));
+        assert!(!roots.contains(&app_data.join("generated-images")));
+        assert!(!roots.contains(&app_data));
     }
 
     #[test]

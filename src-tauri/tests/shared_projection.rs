@@ -598,7 +598,10 @@ fn standalone_runtime_artifact_is_visible_after_history_reload() {
         sha256: "a".repeat(64),
         locator: "/tmp/image.png".to_string(),
         redaction: None,
-        extra: serde_json::Value::Object(Default::default()),
+        extra: serde_json::json!({
+            "sourceToolName": "image_generation_call",
+            "promptText": "black doge",
+        }),
     });
     writer
         .append_canonical_fact(SESSION, fact)
@@ -611,8 +614,11 @@ fn standalone_runtime_artifact_is_visible_after_history_reload() {
         .iter()
         .find(|item| item.kind == ProjectionItemKind::GeneratedImage)
         .expect("standalone artifact projection");
+    assert_eq!(image.id, "image-1");
     assert_eq!(image.content["turnId"], "turn-1");
     assert_eq!(image.content["engineSource"], "claude");
+    assert_eq!(image.content["sourceToolName"], "image_generation_call");
+    assert_eq!(image.content["promptText"], "black doge");
     assert_eq!(image.content["images"][0]["src"], "/tmp/image.png");
 
     writer.shutdown().unwrap();

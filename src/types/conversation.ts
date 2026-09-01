@@ -287,12 +287,12 @@ export type ComposerEnginePrefs = {
 };
 
 /**
- * Shared follow-up 入队时冻结的可执行目标。
+ * Message send boundary 冻结的完整可执行目标。
  *
- * 该结构刻意放在通用 conversation contract 中，避免 queue 层反向依赖
- * shared-session feature；字段与 ResolvedExecutionTarget 保持结构兼容。
+ * 该结构刻意放在通用 conversation contract 中，供 Shared queue 与 Existing
+ * Native managed send 复用；字段与 ResolvedExecutionTarget 保持结构兼容。
  */
-export type SharedQueuedExecutionTarget = {
+export type MessageExecutionTargetSnapshot = {
   engine: EngineType;
   providerProfileId: string | null;
   modelCatalogEntryId: string;
@@ -301,6 +301,9 @@ export type SharedQueuedExecutionTarget = {
   providerProfileNameSnapshot: string;
   providerProfileSource: "disk" | "managed";
 };
+
+/** Shared follow-up queue 的兼容语义别名。 */
+export type SharedQueuedExecutionTarget = MessageExecutionTargetSnapshot;
 
 export type QueuedMessage = {
   id: string;
@@ -516,6 +519,8 @@ export type MessageSendOptions = {
   browserContextAttachment?: BrowserContextSendAttachment | null;
   intentCanvasContextAttachments?: IntentCanvasContextSendAttachment[];
   createSessionTarget?: ComposerCreateSessionTarget;
+  /** Existing Native managed send：与当前 UI 同源的完整冻结目标。 */
+  nativeExecutionTarget?: MessageExecutionTargetSnapshot;
   /** Queue/Fusion 专用：发送边界必须优先使用该冻结目标，禁止重读 Picker。 */
   sharedExecutionTarget?: SharedQueuedExecutionTarget;
   /** Queue drain 专用：发送边界必须优先使用该冻结引擎，禁止重读 activeEngine。 */
