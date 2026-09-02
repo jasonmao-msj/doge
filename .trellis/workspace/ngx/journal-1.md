@@ -620,15 +620,15 @@
 - None - task complete
 
 
-## Session 20: 微信双向多媒体消息与归档
+## Session 20: 修复 CI 品牌门禁与微信桥接构建冲突
 
 **Date**: 2026-09-02
-**Task**: 微信双向多媒体消息与归档
-**Branch**: `codex/add-wechat-multimedia-messages`
+**Task**: 修复 CI 品牌门禁与微信桥接构建冲突
+**Branch**: `codex/fix-ci-wechat-contract`
 
 ### Summary
 
-实现微信 inbound image/voice/video/file 下载解密与安全落盘，outbound image/video/file CDN 上传和 typed item 发送；所有 selected engine 共用本地 Markdown artifact 转换，修复 accessMode 继承且不改变非微信会话 contract；同步 OpenSpec 与可执行 Trellis spec，L3 自动化验证通过，真实设备完整媒体矩阵保留为用户授权 waiver。
+修复 locale brand contract 误扫 settings.wechat 文案，并将 WeChat bridge Cargo 内部 binary 改为 wechat_bridge，保留发布 sidecar 文件名 wechat-bridge，验证 focused tests、runtime contracts、typecheck 与 ESLint。
 
 ### Main Changes
 
@@ -638,8 +638,7 @@
 
 | Hash | Message |
 |------|---------|
-| `2cee7dbad964da9e94e493b4abecf998ae14c094` | (see git log) |
-| `d297d1ac42cde8b79d414a36d3e029a82cdecbee` | (see git log) |
+| `9fe2f71fe` | (see git log) |
 
 ### Testing
 

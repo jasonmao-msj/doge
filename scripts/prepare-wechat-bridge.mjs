@@ -72,6 +72,10 @@ function executableName(target) {
   return target.endsWith("-pc-windows-msvc") ? "wechat-bridge.exe" : "wechat-bridge";
 }
 
+function cargoExecutableName(target) {
+  return target.endsWith("-pc-windows-msvc") ? "wechat_bridge.exe" : "wechat_bridge";
+}
+
 async function sha256(path) {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(path)) hash.update(chunk);
@@ -172,7 +176,7 @@ function buildTarget(target) {
     "--manifest-path",
     join(ROOT, "src-tauri", "Cargo.toml"),
     "--bin",
-    "wechat-bridge",
+    "wechat_bridge",
     "--release",
     "--target",
     target,
@@ -185,7 +189,7 @@ function buildTarget(target) {
   });
 
   const executable = executableName(target);
-  const source = join(ROOT, "src-tauri", "target", target, "release", executable);
+  const source = join(ROOT, "src-tauri", "target", target, "release", cargoExecutableName(target));
   if (!existsSync(source)) {
     throw new Error(`WeChat bridge build completed without ${source}`);
   }

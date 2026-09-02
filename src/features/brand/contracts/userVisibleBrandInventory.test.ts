@@ -117,8 +117,11 @@ describe("user-visible doge brand inventory", () => {
     );
   });
 
-  it.each(inventory.locales)("%s keeps upstream-owned support channels out of locale copy", (locale) => {
-    expect(JSON.stringify(localeBundles[locale])).not.toMatch(
+  it.each(inventory.locales)("%s keeps upstream-owned support channels out of inventoried brand copy", (locale) => {
+    const inventoriedCopy = inventory.surfaces
+      .map(({ localeKey }) => stringAt(localeBundles[locale], localeKey))
+      .join("\n");
+    expect(inventoriedCopy).not.toMatch(
       /(?:WeChat|公众号|微信群)/iu,
     );
   });
