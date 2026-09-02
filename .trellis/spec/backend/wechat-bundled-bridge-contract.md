@@ -16,6 +16,30 @@ integration：React settings -> Tauri command -> in-memory runtime secrets/proce
 - `GET /login/qrcode` sidecar response：`{ "value": <qr image content>, "expiresAt": <epoch-ms string> }`；Doge parser MUST 直接识别顶层 `value`，同时保留 legacy `qrcode/qrCode/url/dataUrl` compatibility。
 - `wechat_get_login_status()`：状态覆盖 `loggedout | awaitingconfirmation | needverification | loggedin | disconnected | error`。
 - `wechat_submit_login_verify({ code })`：提交 1-8 位手机微信数字验证码并继续同一 QR login。
+- `extract_outbound_media(response)`：只从当前 sync response 的 `images`、typed path collections
+  与 `artifacts` 提取 absolute local path，并归一为 `path/kind/mimeType/fileName`；进入发送队列前
+  必须与 Markdown-linked artifact 共用 canonical path、allowed root、extension、regular file、non-empty
+  与 `<= 8 MiB` validation。
+- `materialize_wechat_markdown_artifacts(response_text, workspace_root, app_data_dir)`：只解析当前
+  selected engine reply 的 Markdown link；local target canonicalize 后必须位于 current workspace 或
+  `generated-images` managed subtree，且为 non-empty regular file、size `<= 8 MiB`。返回清理后的
+  text 与 `WechatOutboundMedia { path, kind, mimeType, fileName }`。只有 allowlisted
+  image/video/audio/document/archive extension 才可进入该 materializer；source-code link 保持 text。
+- `POST /message/send` media request：`{ to, content: "", media: { path, kind, mimeType,
+  fileName? } }`；`kind` 只允许 `image | video | file`，voice/audio fail readable。
+- `UploadedMedia.aes_key_hex`：保存用于 `getuploadurl.aeskey` 的 32-character lowercase hex
+  string；typed item `media.aes_key` 只允许从该 string 的 ASCII bytes 计算 Base64。
+- `download_inbound_media(state, source)`：只允许 HTTPS Tencent Weixin CDN `full_url`，或用
+  `encrypt_query_param` 构造固定 `/download` URL；response body 逐 chunk 读取且 plaintext/ciphertext
+  均不得超过 100 MiB。
+- `parse_inbound_aes_key(value)`：兼容 Base64(raw 16 bytes) 与 Base64(32-character hex ASCII)；
+  image-level raw hex `aeskey` 优先于 `media.aes_key`。
+- `materialize_inbound_prompt(text, attachments)`：只在 WeChat webhook handler 内把 validated
+  managed local path 追加到当前 turn；无 path 时必须 byte-for-byte 返回原 text。
+- `resolve_wechat_access_mode(default_access_mode)`：微信 turn dispatch 前归一化
+  `AppSettings.default_access_mode`；`full-access/current/read-only` 原样保留，legacy `default`、
+  空值和异常值 fail bounded 到 workspace-scoped `current`，不得传 `None` 触发
+  engine-specific read-only fallback。
 - Provider executable：由 `resolve_bundled_bridge(AppHandle)` 从 bundled resources 解析并作为 child process 运行。
 - `prepareDevResources()`：同步完成 bundled engines 与 WeChat bridge resource preparation，成功后才允许 spawn `tauri dev`。
 - `getHotDevTauriArgs(args)`：保留 caller args，并注入 `build.beforeDevCommand="node scripts/tauri-dev-frontend.mjs"` 的 dev config override。
@@ -39,10 +63,35 @@ integration：React settings -> Tauri command -> in-memory runtime secrets/proce
 
 Provider MUST 实现 `GET /health`、`GET /login/qrcode`、`GET /login/status`、
 `POST /login/verify`、`POST /message/send`，并将 direct text inbound JSON POST 到
-localhost webhook。secrets 只能通过 environment 注入，不得进入 argv 或日志。
+localhost webhook。`POST /message/send` 的 text-only request MUST 保持既有
+`type=1/text_item` payload；携带 outbound image/video/file 时 MUST 先调用
+`ilink/bot/getuploadurl`，使用 bounded local file + AES-128-ECB 上传加密内容，
+再发送包含 CDN reference 的 typed item。`media.aes_key` MUST 对同一 32-character
+lowercase hex AES key 的 ASCII bytes 做 Base64，不得直接编码 raw 16-byte key。
+local API MUST 返回 upload/read/provider 错误，不得将媒体失败静默降级为成功的
+text-only reply；显式 voice/audio typed artifact 在 verified provider contract 加入前 MUST fail readable。
+任意 selected engine 的 Markdown-linked audio MUST 显式标记 `kind=file` 并作为 generic `file_item` 发送，不得伪装成
+voice message。成功 materialize 的 local Markdown link MUST 从 WeChat text 删除；失败 link MUST
+替换为可读原因，remote/data/anchor link 保持普通 text 且不得触发 filesystem read。
+secrets 只能通过 environment
+注入，不得进入 argv 或日志。
 local API key 与 webhook token MUST 在每次 runtime start 时重新生成、仅驻留
 `WechatRuntime` 内存，并在 stop 时清除；MUST NOT 依赖 OS vault/keychain，避免系统
 credential store 锁定时阻断自动启动。
+
+Inbound `image_item/voice_item/video_item/file_item` 的 CDN 内容 MUST 对齐 Tencent 2.4.6：
+`full_url` 只能使用 HTTPS Tencent Weixin host；缺失时用固定 CDN base +
+`/download?encrypted_query_param=<percent-encoded>`。加密内容使用 AES-128-ECB + PKCS#7；
+`media.aes_key` MUST 同时兼容 Base64(raw 16 bytes) 和 Base64(32-character hex ASCII)，image
+顶层 raw hex `aeskey` 优先。下载 MUST bounded 到单附件 100 MiB，禁止自动 follow redirect。
+明文只允许以 sanitized collision-safe name 写入 `DOGE_WECHAT_DATA_DIR/inbound`；sidecar 完成写入后
+才可通过 authenticated localhost webhook 暴露 path。
+
+Main process MUST 再次 canonicalize inbound path，并要求其位于 exact
+`<settings-parent>/wechat-bridge/inbound`、为 regular non-empty file、size `<= 100 MiB`。
+validated attachment path 只在 `wechat_webhook` task 内追加到 current prompt；`<= 8 MiB` image
+额外转换为现有 engine `images` data URL。不得修改 desktop Composer payload、
+`engine_send_message_sync_inner` signature、普通 history/routing 或任何 non-WeChat caller。
 
 设置页 MUST NOT 显示 workspace / engine / model routing selector。每个联系人必须在微信内通过
 `/workspace` -> 数字、`/engine` -> 数字、`/model` -> 数字完成 target 选择；`/target` 查看当前
@@ -129,7 +178,26 @@ pre-build authority，因为 Windows linker 对同一 source 的 PE bytes 不保
 | 用户关闭/应用退出 | abort monitor、终止 child、释放 webhook 端口 |
 | 旧配置携带远程 URL/token | backend 忽略连接字段并归一化到 loopback contract |
 | token 失效或 long poll 连续失败 | status=`disconnected`，保留主流程并引导重新扫码 |
+| 入站 file/video/voice/image 带有效 CDN reference 与 AES key | bounded download、byte-exact decrypt、写入 managed inbox；webhook 只传 canonical local path 和 metadata |
+| 入站 `full_url` 非 HTTPS/Tencent host、redirect、malformed key、invalid padding 或 body > 100 MiB | 不落盘、不向 engine 暴露 remote reference；保留可读媒体 fallback，日志不得包含 URL/key |
+| webhook attachment path 越界、symlink escape、empty/non-file/oversized | HTTP 400 fail closed，不创建 engine turn |
+| 微信 text-only turn | prompt 与现有 text byte-for-byte 一致，`images=None` |
+| 微信 turn + writable `defaultAccessMode` | 显式传 `full-access` 或 `current`，Codex 不得因 `accessMode=None` 降级为 `readOnly` |
+| 微信 turn + explicit `read-only` | 保持 `read-only`，不得由渠道静默提权 |
+| 微信 turn + legacy `default` / malformed access value | 归一为 workspace-scoped `current`，不得变成 unrestricted 或 read-only dead end |
+| 普通桌面会话 turn | Composer/send/history/routing contract 不变，不注入 WeChat attachment context |
 | 首次 dev 启动需要长时间编译 sidecar | resource preparation 在 spawn Tauri 前运行；不得进入 `devUrl` readiness timeout |
+| outbound generated image/video/file path 可读且不超过限制 | 先 `getuploadurl` + AES-128-ECB CDN upload，再发送 typed item；不得直接发送本地路径 |
+| outbound media AES key | `getuploadurl.aeskey` 使用 32-character lowercase hex；item `media.aes_key` 为该 hex string ASCII bytes 的 Base64 |
+| outbound media path 缺失/过大/CDN 失败 | 返回 contextual error，不发送伪成功的 text-only response |
+| outbound voice/audio artifact | 返回 unsupported-media error；不得伪装成 file item |
+| 任意 engine reply 链接 workspace 内 `.pptx/.pdf/.zip` | canonicalize + size gate 后返回 `kind=file` artifact；微信发送真实 `file_item` 并移除 local link |
+| 任意 engine reply 链接 workspace 内 `.mp4/.mov/.webm` | 返回 `kind=video` artifact；微信发送真实 `video_item` |
+| 任意 engine reply 链接 workspace 内 `.wav/.mp3/.m4a` | 保留 audio MIME，但显式 `kind=file`；微信发送 downloadable `file_item`，不得声称 voice |
+| 任意 engine reply 链接缺失/空/超限/越界/symlink escape 文件 | 不创建 artifact；link 原位替换为可读失败，不读取或上传越界文件 |
+| 任意 engine reply 链接 `.rs/.ts/.tsx` 等 source file | 保留 ordinary Markdown text；不得自动上传 workspace source code |
+| 任意 engine structured media 指向 workspace / managed subtree 之外 | 不加入发送队列，并在 reply 中追加可读失败；不得绕过 Markdown artifact 的 allowed-root gate |
+| 当前 workspace metadata 不可用 | fail closed，不发送任何 structured/local media，并返回“无法确认当前工作区”的可读附件提示 |
 | bundled-engine manifest/声明文件均未变化 | preparation 在下载/解压/staging 前返回 `already prepared`，不得改写 resource mtime 或触发 Rust relink |
 | manifest 相同但 executable/required file 缺失 | 判定为 stale，重建完整 stage；不得仅凭 manifest 跳过 |
 | Windows final stage rename 返回 `EPERM/EBUSY/EACCES` | bounded retry；仍失败则 copy complete stage，并删除 staging/previous tree |
@@ -148,6 +216,13 @@ pre-build authority，因为 Windows linker 对同一 source 的 PE bytes 不保
 - Good：UI 不展示 routing 表单；联系人在微信内用指令和数字选择 target，provider profile 随 model choice 原子持久化，微信 turn 与桌面会话共用 canonical native history/catalog。
 - Good：`npm run tauri:dev:hot` 先完成 cold resource build，再启动只负责拉起 frontend 的 Tauri dev lifecycle。
 - Good：资源未变化时 `prepare-bundled-engines.mjs` 亚秒级返回，连续 hot start 不重复 relink Rust 全库。
+- Good：同一个 `aes_key_hex` 同时进入 `getuploadurl.aeskey`，并通过
+  `BASE64.encode(aes_key_hex.as_bytes())` 进入 typed item；image/video/file 共用该规则。
+- Good：`[下载 report.pptx](report.pptx)` 在 workspace boundary + size gate 后变为
+  `WechatOutboundMedia(kind=file)`，微信收到 CDN-backed `file_item`；该步骤位于 channel adapter，
+  不依赖 response 中的 `engine` 值。
+- Good：微信 `report.pdf` 先在 sidecar 以 bounded CDN stream 解密到 `wechat-bridge/inbound`，
+  main process 二次 canonicalize 后只为该微信 turn 增加 local path；六个 engine 共用既有 sync dispatch。
 - Good：sidecar Cargo check 即使执行，unchanged binary/manifest 也不触碰 Tauri resource mtime。
 - Base：source checkout 没有当前 target binary 时显示明确 unavailable error；`npm run prepare:wechat-bridge` 生成本机资源。
 - Bad：要求用户填写 bridge URL、provider API key/proxy URL，或把 iLink bot token 写入普通 `settings.json`。
@@ -156,12 +231,19 @@ pre-build authority，因为 Windows linker 对同一 source 的 PE bytes 不保
 - Bad：只保存 model string，却在 sync send 时使用 global current provider；同名 model 可能被路由到错误 credential/runtime home。
 - Bad：在 base `beforeDevCommand` 中串行执行 release sidecar build 后才启动 Vite；Windows cold build 可超过 Tauri 的 180 秒等待窗口。
 - Bad：每次 dev start 无条件 rename/copy `resources/bundled-engines/current`，或按 netstat 任意包含 `:1420` 的 row 终止 client process。
+- Bad：`BASE64.encode(aes_key)` 直接编码 raw 16-byte key；Tencent 接受 item shape 后，微信客户端仍无法解密媒体预览。
+- Bad：扫描回复中的任意 path 并上传，导致普通 source-code citation 被误当成附件发送。
+- Bad：把 inbound file path 新增为 shared engine/Composer 字段，导致普通桌面会话 contract 被迫变化。
 - Bad：`copyFileSync(source, destination)` 与 `writeFile(manifest)` 无条件执行，造成下一次 sidecar build 永久 cache miss。
 
 ## Tests Required
 
-- Sidecar Rust tests：official headers 无 deployment credentials、send payload/context token、QR status、redirect allowlist、session persistence。
-- Main Rust tests：ephemeral secret lifecycle、login status mapping、verification code validation、exact health identity、legacy settings normalization、webhook auth/dedupe/session routing、target command parser、无效数字/pending 文本拦截、per-wxid target/pending persistence 与 legacy route fallback。
+- Sidecar Rust tests：official headers 无 deployment credentials、send payload/context token、
+  outbound upload request/AES typed media item、hex-string AES key encoding、QR status、redirect allowlist、session persistence；
+  inbound tests MUST 覆盖 raw/hex AES key byte-exact fixture、PKCS#7、Tencent URL allowlist、filename sanitize、bounded body 与 managed write。
+- Main Rust tests：ephemeral secret lifecycle、login status mapping、verification code validation、exact health identity、legacy settings normalization、webhook auth/dedupe/session routing、target command parser、无效数字/pending 文本拦截、per-wxid target/pending persistence 与 legacy route fallback、typed media parsing/image size gate、outbound image/video/file artifact mapping 与 voice rejection；WeChat Markdown artifact tests MUST 覆盖 every engine response、relative/absolute path、`kind/mimeType/fileName`、audio-as-file、structured/link dedupe、remote/source link ignore、missing/outside/empty/oversized rejection，以及 structured media 越界和 workspace-unavailable fail-closed。
+- Inbound main-process tests MUST 覆盖 managed canonical path、path traversal/symlink escape、empty/oversized file、attachment prompt、downloaded image data URL，以及 text-only prompt byte-for-byte compatibility。
+- WeChat access regression MUST 覆盖 `full-access/current/read-only` passthrough、legacy `default` 与 malformed fallback，并断言 webhook dispatch 不再传 `None`；桌面 command signature 与 payload mapping 不变。
 - Routing regression MUST 覆盖 exact target 复用、provider/model target 变化新建、真实 sessionId 回写、user-visible Codex retention，以及 explicit provider profile 优先于 session/global fallback。
 - QR parser regression MUST 使用 bundled sidecar 的 exact `{ value, expiresAt }` payload，并保留 nested/legacy response coverage。
 - Vitest：开启后自动取 QR 并经 `qrcode` 渲染、`needverification` 提交数字、设置页不出现 routing selector、session-updated refresh、UI 不暴露 bridge/provider fields、poll cleanup。
@@ -234,4 +316,17 @@ resolve_engine_provider_profile_id(
     engine,
     settings.provider_profile_id.as_deref(),
 )?;
+```
+
+Wrong:
+
+```rust
+"aes_key": BASE64.encode(aes_key) // raw 16-byte key
+```
+
+Correct:
+
+```rust
+let aes_key_hex = aes_key.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+"aes_key": BASE64.encode(aes_key_hex.as_bytes())
 ```
