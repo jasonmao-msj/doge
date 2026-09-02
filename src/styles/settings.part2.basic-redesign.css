@@ -3138,6 +3138,41 @@
   padding: 8px 18px 0;
 }
 
+.settings-section-basic .settings-wechat-qr {
+  display: flex;
+  justify-content: center;
+  padding: 16px 18px 4px;
+}
+
+.settings-section-basic .settings-wechat-qr img {
+  display: block;
+  width: min(240px, 100%);
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--settings-basic-border) 88%, transparent);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.settings-section-basic .settings-wechat-verify {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 14px 18px 0;
+  border-top: 1px solid color-mix(in srgb, var(--settings-basic-divider) 92%, transparent);
+}
+
+.settings-section-basic .settings-wechat-verify-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-section-basic .settings-wechat-verify-controls .settings-input {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
 .settings-section-basic .settings-email-doc-list {
   margin: 6px 0 0;
   padding-left: 18px;

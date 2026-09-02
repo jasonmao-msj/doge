@@ -50,6 +50,7 @@ test("creates Tauri dev resource placeholders for bundle globs", async () => {
 test("development commands inherit the canonical doge Tauri identity", async () => {
   const packageJson = JSON.parse(await readFile("package.json", "utf8"));
   const baseConfig = JSON.parse(await readFile("src-tauri/tauri.conf.json", "utf8"));
+  const hotRunner = await readFile("scripts/tauri-dev-hot.mjs", "utf8");
   const isolatedRunner = await readFile("scripts/tauri-dev-isolated.mjs", "utf8");
 
   assert.equal(
@@ -63,6 +64,13 @@ test("development commands inherit the canonical doge Tauri identity", async () 
   assert.doesNotMatch(packageJson.scripts["tauri:dev:hot:signed:mac"], /tauri\.dev\.conf/);
   assert.doesNotMatch(isolatedRunner, /tauri\.dev\.conf/);
   assert.match(isolatedRunner, /assertNoConflictingPackagedDogeApp/);
+  assert.match(isolatedRunner, /getTauriSpawnSpec/);
+  assert.match(isolatedRunner, /prepareDevResources/);
+  assert.doesNotMatch(isolatedRunner, /tauri\.cmd/);
+  assert.match(hotRunner, /prepare-bundled-engines\.mjs/);
+  assert.match(hotRunner, /prepare-wechat-bridge\.mjs/);
+  assert.match(hotRunner, /getHotDevTauriArgs/);
+  assert.match(isolatedRunner, /beforeDevCommand:\s*"node scripts\/tauri-dev-frontend\.mjs"/);
   await assert.rejects(readFile("src-tauri/tauri.dev.conf.json", "utf8"), {
     code: "ENOENT",
   });

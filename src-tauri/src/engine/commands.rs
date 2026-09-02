@@ -22,7 +22,7 @@ use tokio::time::timeout;
 
 use crate::backend::events::AppServerEvent;
 use crate::remote_backend;
-use crate::session_management::{self, AutoSessionMetadata};
+use crate::session_management::{self, AutoSessionMetadata, AutoSessionVisibility};
 use crate::state::AppState;
 use crate::types::WorkspaceEntry;
 
@@ -3276,10 +3276,56 @@ pub async fn engine_send_message_sync(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<Value, String> {
+    engine_send_message_sync_inner(
+        workspace_id,
+        text,
+        engine,
+        model,
+        effort,
+        disable_thinking,
+        access_mode,
+        images,
+        continue_session,
+        session_id,
+        fork_session_id,
+        agent,
+        variant,
+        custom_spec_root,
+        auto_session,
+        None,
+        &app,
+        &state,
+    )
+    .await
+}
+
+/// Command-independent sync send path used by inbound channels that already
+/// own an `AppHandle` and must not construct a fake Tauri `State` wrapper.
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn engine_send_message_sync_inner(
+    workspace_id: String,
+    text: String,
+    engine: Option<EngineType>,
+    model: Option<String>,
+    effort: Option<String>,
+    disable_thinking: Option<bool>,
+    access_mode: Option<String>,
+    images: Option<Vec<String>>,
+    continue_session: bool,
+    session_id: Option<String>,
+    fork_session_id: Option<String>,
+    agent: Option<String>,
+    variant: Option<String>,
+    custom_spec_root: Option<String>,
+    auto_session: Option<AutoSessionMetadata>,
+    provider_profile_id: Option<String>,
+    app: &AppHandle,
+    state: &AppState,
+) -> Result<Value, String> {
     if text.trim().is_empty() {
         return Err("Prompt text cannot be empty".to_string());
     }
-    let settings = read_app_settings_snapshot(&state).await;
+    let settings = state.app_settings.lock().await.clone();
 
     if remote_backend::is_remote_mode(&*state).await {
         let remote_engine = validate_remote_requested_engine(&settings, engine)?;
@@ -3300,7 +3346,7 @@ pub async fn engine_send_message_sync(
             custom_spec_root,
             auto_session,
         );
-        return remote_backend::call_remote(&*state, app, method, params).await;
+        return remote_backend::call_remote(&*state, app.clone(), method, params).await;
     }
 
     let manager = &state.engine_manager;
@@ -3312,15 +3358,36 @@ pub async fn engine_send_message_sync(
 
     match effective_engine {
         EngineType::Claude => {
-            let workspace_path = {
+            let workspace_entry = {
                 let workspaces = state.workspaces.lock().await;
                 workspaces
                     .get(&workspace_id)
-                    .map(|w| std::path::PathBuf::from(&w.path))
+                    .cloned()
                     .ok_or_else(|| "Workspace not found".to_string())?
             };
+            let effective_provider_profile_id =
+                crate::session_management::resolve_engine_provider_profile_id(
+                    state.storage_path.as_path(),
+                    &workspace_id,
+                    session_id.as_deref(),
+                    "claude",
+                    provider_profile_id.as_deref(),
+                )?;
+            let mut provider_launch_profile = state
+                .account_runtime
+                .hydrate_managed_claude_launch_profile(
+                    crate::engine::claude::resolve_claude_provider_launch_profile(
+                        effective_provider_profile_id.as_deref(),
+                    )?,
+                )
+                .await?;
+            let workspace_path = std::path::PathBuf::from(&workspace_entry.path);
             let session = manager
-                .get_claude_session(&workspace_id, &workspace_path)
+                .get_claude_session_for_provider(
+                    &workspace_id,
+                    &workspace_path,
+                    effective_provider_profile_id.as_deref(),
+                )
                 .await;
 
             let has_images = has_non_empty_images(&images);
@@ -3353,10 +3420,35 @@ pub async fn engine_send_message_sync(
                     }
                 });
 
+            let requested_runtime_model = sanitized_model;
+            let cli_model = if let Some(profile) = provider_launch_profile.as_mut() {
+                project_claude_model_for_managed_product(
+                    effective_provider_profile_id.as_deref(),
+                    requested_runtime_model,
+                    &mut profile.env,
+                )
+            } else {
+                requested_runtime_model
+            };
+
             let response_session_id = resolved_session_id.clone();
+            if let (Some(provider_launch_profile), Some(binding_session_id)) = (
+                provider_launch_profile.as_ref(),
+                response_session_id.as_deref(),
+            ) {
+                crate::session_management::record_engine_provider_binding_core(
+                    &state.workspaces,
+                    state.storage_path.as_path(),
+                    workspace_id.clone(),
+                    binding_session_id.to_string(),
+                    "claude".to_string(),
+                    provider_launch_profile.binding.clone(),
+                )
+                .await?;
+            }
             let params = super::SendMessageParams {
                 text,
-                model: sanitized_model,
+                model: cli_model,
                 effort,
                 disable_thinking: disable_thinking.unwrap_or(false),
                 access_mode,
@@ -3421,7 +3513,7 @@ pub async fn engine_send_message_sync(
                     &workspace_id,
                     session_id.as_deref(),
                     "opencode",
-                    None,
+                    provider_profile_id.as_deref(),
                 )?;
                 if from_session.is_some() {
                     from_session
@@ -3520,6 +3612,9 @@ pub async fn engine_send_message_sync(
             }))
         }
         EngineType::Codex => {
+            let preserve_session = auto_session
+                .as_ref()
+                .is_some_and(|metadata| metadata.visibility == AutoSessionVisibility::UserVisible);
             let response = run_codex_prompt_sync(
                 &workspace_id,
                 &text,
@@ -3529,14 +3624,19 @@ pub async fn engine_send_message_sync(
                 images,
                 normalized_custom_spec_root.clone(),
                 auto_session.clone(),
-                &app,
+                session_id,
+                continue_session,
+                preserve_session,
+                provider_profile_id,
+                app,
                 &state,
             )
             .await?;
 
             Ok(json!({
                 "engine": "codex",
-                "text": response
+                "sessionId": response.session_id,
+                "text": response.text
             }))
         }
         EngineType::Gemini => {
@@ -3626,7 +3726,7 @@ pub async fn engine_send_message_sync(
                     &workspace_id,
                     session_id.as_deref(),
                     "kimi",
-                    None,
+                    provider_profile_id.as_deref(),
                 )?;
                 if from_session.is_some() {
                     from_session
@@ -3749,7 +3849,7 @@ pub async fn engine_send_message_sync(
                     &workspace_id,
                     session_id.as_deref(),
                     "grok",
-                    None,
+                    provider_profile_id.as_deref(),
                 )?;
                 if from_session.is_some() {
                     from_session

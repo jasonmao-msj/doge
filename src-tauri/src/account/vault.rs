@@ -90,6 +90,8 @@ fn validate_purpose(purpose: &str) -> Result<(), String> {
         .or_else(|| purpose.strip_prefix("managed-engine:codex:"))
         .or_else(|| purpose.strip_prefix("managed-engine:claude-code:"))
         .or_else(|| purpose.strip_prefix("managed-engine:kimi:"))
+        .or_else(|| purpose.strip_prefix("wechat-api-key:"))
+        .or_else(|| purpose.strip_prefix("wechat-webhook-token:"))
         .is_some_and(valid_scope);
     if valid {
         Ok(())

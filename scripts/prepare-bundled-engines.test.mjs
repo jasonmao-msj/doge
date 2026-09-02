@@ -4,8 +4,11 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { rename } from "node:fs/promises";
 import {
+  buildRuntimeManifest,
   createOutputStage,
+  isPreparedOutputCurrent,
   resolveRequestedTarget,
   runtimeArchitecture,
   targetVariants,
@@ -129,6 +132,68 @@ test("replaces a stale output tree only after a complete stage exists", async ()
     await replaceOutputTree(output, stage);
     assert.equal(readFileSync(join(output, "new.txt"), "utf8"), "new");
     assert.equal(existsSync(join(output, "old.txt")), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("reuses a matching prepared output only while all declared files exist", () => {
+  const root = mkdtempSync(join(tmpdir(), "doge-output-current-test-"));
+  try {
+    const source = {
+      engines: {
+        codex: {
+          version: "1.2.3",
+          variants: {
+            "x86_64-pc-windows-msvc": {
+              executable: "bin/codex.exe",
+              requiredFiles: ["bin/helper.dll"],
+              sha256: "a".repeat(64),
+            },
+          },
+        },
+      },
+    };
+    const runtime = buildRuntimeManifest(source, "x86_64-pc-windows-msvc");
+    const artifact = join(root, "x86_64", "codex", "bin");
+    mkdirSync(artifact, { recursive: true });
+    writeFileSync(join(root, "manifest.json"), JSON.stringify(runtime));
+    writeFileSync(join(artifact, "codex.exe"), "binary");
+    writeFileSync(join(artifact, "helper.dll"), "library");
+
+    assert.equal(isPreparedOutputCurrent(root, runtime), true);
+    rmSync(join(artifact, "helper.dll"));
+    assert.equal(isPreparedOutputCurrent(root, runtime), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("copies a complete stage when Windows refuses the final directory rename", async () => {
+  const root = mkdtempSync(join(tmpdir(), "doge-output-copy-fallback-test-"));
+  try {
+    const output = join(root, "current");
+    const stage = join(root, "staging", ".current-stage-test");
+    mkdirSync(output, { recursive: true });
+    mkdirSync(stage, { recursive: true });
+    writeFileSync(join(output, "old.txt"), "old");
+    writeFileSync(join(stage, "new.txt"), "new");
+
+    await replaceOutputTree(output, stage, {
+      renamePath: async (source, destination) => {
+        if (source === stage) {
+          const error = new Error("simulated Windows directory lock");
+          error.code = "EPERM";
+          throw error;
+        }
+        await rename(source, destination);
+      },
+      renameRetries: 0,
+    });
+
+    assert.equal(readFileSync(join(output, "new.txt"), "utf8"), "new");
+    assert.equal(existsSync(join(output, "old.txt")), false);
+    assert.equal(existsSync(stage), false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

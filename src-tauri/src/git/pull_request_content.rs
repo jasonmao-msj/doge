@@ -396,6 +396,7 @@ mod tests {
             ),
             semantic_navigation_runtime: crate::code_intel_lsp::SemanticNavigationRuntime::default(
             ),
+            wechat: crate::wechat::WechatRuntime::default(),
             engine_manager: crate::engine::EngineManager::new(),
         }
     }

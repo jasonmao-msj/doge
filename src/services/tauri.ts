@@ -197,6 +197,7 @@ export {
 } from "./tauri/sessionManagement";
 export type { CodexRuntimeReloadResult, DockIconApplyResult, SettingsRecoveryNotice } from "./tauri/settings";
 export { getAppSettings, getCodexConfigPath, getCodexUnifiedExecExternalStatus, reloadCodexRuntimeConfig, restoreCodexUnifiedExecOfficialDefault, setCodexUnifiedExecOfficialOverride, setDockIcon, takeSettingsRecoveryNotice, updateAppSettings } from "./tauri/settings";
+export { getWechatChannel, getWechatLoginQrCode, getWechatLoginStatus, sendWechatReply, submitWechatLoginVerify, testWechatConnection, updateWechatChannel } from "./tauri/wechat";
 export type {
   AgentMdResponse,
   ClaudeMdResponse,

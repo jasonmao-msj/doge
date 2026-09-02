@@ -1,6 +1,10 @@
 import net from "node:net";
 import { spawnSync } from "node:child_process";
+import { resolve } from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
+
+const scriptPath = fileURLToPath(import.meta.url);
 
 const DEFAULT_PORT = 1420;
 const RETRY_ATTEMPTS = 10;
@@ -65,13 +69,24 @@ function getPidsFromPortWindows(port) {
   if (result.status !== 0 || !result.stdout.trim()) {
     return [];
   }
-  const lines = result.stdout
+  return parseWindowsListeningPids(result.stdout, port);
+}
+
+export function parseWindowsListeningPids(output, port) {
+  const lines = String(output)
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
   const pids = new Set();
   for (const line of lines) {
     const cols = line.split(/\s+/);
+    if (cols.length < 5 || cols[0].toUpperCase() !== "TCP") continue;
+    const localEndpoint = cols[1];
+    const localPort = Number.parseInt(
+      localEndpoint.slice(localEndpoint.lastIndexOf(":") + 1),
+      10,
+    );
+    if (localPort !== port || cols[3].toUpperCase() !== "LISTENING") continue;
     const pidText = cols[cols.length - 1];
     const pid = Number.parseInt(pidText, 10);
     if (Number.isInteger(pid) && pid > 0) {
@@ -121,6 +136,19 @@ function terminatePid(pid, force = false) {
   }
 }
 
+export function terminatePortPids(pids, terminate = terminatePid) {
+  let terminatedAny = false;
+  for (const pid of pids) {
+    terminatedAny = terminate(pid) || terminatedAny;
+  }
+  if (terminatedAny) return true;
+
+  for (const pid of pids) {
+    terminatedAny = terminate(pid, true) || terminatedAny;
+  }
+  return terminatedAny;
+}
+
 async function releasePort(port) {
   const pids = process.platform === "win32"
     ? getPidsFromPortWindows(port)
@@ -130,16 +158,12 @@ async function releasePort(port) {
     return false;
   }
 
-  let terminatedAny = false;
-  for (const pid of uniquePids) {
-    if (process.platform !== "win32") {
-      const commandLine = getCommandLineUnix(pid);
-      if (commandLine && !canAutoTerminate(commandLine)) {
-        continue;
-      }
-    }
-    terminatedAny = terminatePid(pid) || terminatedAny;
-  }
+  const terminablePids = uniquePids.filter((pid) => {
+    if (process.platform === "win32") return true;
+    const commandLine = getCommandLineUnix(pid);
+    return !commandLine || canAutoTerminate(commandLine);
+  });
+  const terminatedAny = terminatePortPids(terminablePids);
 
   if (!terminatedAny) {
     return false;
@@ -189,11 +213,13 @@ async function main() {
   process.exit(1);
 }
 
-try {
-  await main();
-} catch (error) {
-  console.error(
-    `ensure-dev-port: failed\n${error instanceof Error ? error.message : String(error)}`,
-  );
-  process.exit(1);
+if (process.argv[1] && resolve(process.argv[1]) === scriptPath) {
+  try {
+    await main();
+  } catch (error) {
+    console.error(
+      `ensure-dev-port: failed\n${error instanceof Error ? error.message : String(error)}`,
+    );
+    process.exit(1);
+  }
 }

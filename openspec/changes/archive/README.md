@@ -2,7 +2,7 @@
 
 本页为 `mossx` 已归档 OpenSpec proposal 的完整可点击索引。目录名中的日期是 archive date，不代表 proposal 首次创建时间。
 
-- Indexed proposals: `889`
+- Indexed proposals: `890`
 - Updated At: `2026-09-01`
 - Source of truth: `openspec/changes/archive/<archive-date>-<change-id>/proposal.md`
 - Back to current changes: [`../README.md`](../README.md)
@@ -12,6 +12,7 @@
 
 ### 2026-09-01
 
+- [`2026-09-01-add-wechat-bridge-channel`](2026-09-01-add-wechat-bridge-channel/proposal.md) — user-authorized waiver archive；已同步 `wechat-bridge-channel`，内置 Tencent Weixin iLink bridge，并支持微信联系人通过指令选择 workspace / engine / model；真实设备与跨平台 package smoke 保留为 release/manual residual
 - [`2026-09-01-fix-managed-codex-first-turn-target-drift`](2026-09-01-fix-managed-codex-first-turn-target-drift/proposal.md) — completed change；已同步 `engine-per-session-provider-binding` 与 `managed-codex-image-generation`，修复 managed Codex 首轮模型漂移与 Shared 图片持久化/预览链路
 
 ## 2026-08

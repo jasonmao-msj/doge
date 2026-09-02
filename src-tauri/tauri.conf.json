@@ -4,9 +4,9 @@
   "version": "0.1.14",
   "identifier": "io.github.jasonmao-msj.doge",
   "build": {
-    "beforeDevCommand": "npm run prepare:bundled-engines && node scripts/tauri-dev-frontend.mjs",
+    "beforeDevCommand": "npm run prepare:bundled-engines && npm run prepare:wechat-bridge && node scripts/tauri-dev-frontend.mjs",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run prepare:bundled-engines && npm run build",
+    "beforeBuildCommand": "npm run prepare:bundled-engines && npm run prepare:wechat-bridge && npm run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -38,6 +38,7 @@
       "resources/agent-catalogs": "agent-catalogs",
       "resources/curated-skills": "curated-skills",
       "resources/bundled-engines": "bundled-engines",
+      "resources/wechat-bridge": "wechat-bridge",
       "../skills-lock.json": "."
     },
     "macOS": {

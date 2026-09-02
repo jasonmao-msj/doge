@@ -7,7 +7,10 @@ import type {
   WorkspaceSessionAttributionMode,
 } from "../../../types";
 import { useAppServerEvents } from "../../app/hooks/useAppServerEvents";
-import { subscribeWebServiceReconnect } from "../../../services/events";
+import {
+  subscribeWechatSessionUpdated,
+  subscribeWebServiceReconnect,
+} from "../../../services/events";
 import { createInitialThreadState, threadReducer } from "./useThreadsReducer";
 import {
   type PendingMemoryCapture,
@@ -1102,6 +1105,46 @@ export function useThreads({
     state.itemsByThread,
     state.threadStatusById,
   ]);
+
+  useEffect(() => {
+    return subscribeWechatSessionUpdated(
+      (event) => {
+        const workspace = activeWorkspaceRef.current;
+        if (!workspace || workspace.id !== event.workspaceId) {
+          return;
+        }
+        void listThreadsForWorkspace(workspace, {
+          preserveState: true,
+          recoverySource: "wechat-session-updated",
+        }).catch((error) => {
+          onDebug?.({
+            id: `${Date.now()}-wechat-session-refresh-error`,
+            timestamp: Date.now(),
+            source: "error",
+            label: "wechat/session refresh error",
+            payload: {
+              workspaceId: event.workspaceId,
+              sessionId: event.sessionId,
+              error: error instanceof Error ? error.message : String(error),
+            },
+          });
+        });
+      },
+      {
+        onError: (error) => {
+          onDebug?.({
+            id: `${Date.now()}-wechat-session-listener-error`,
+            timestamp: Date.now(),
+            source: "error",
+            label: "wechat/session listener error",
+            payload: {
+              error: error instanceof Error ? error.message : String(error),
+            },
+          });
+        },
+      },
+    );
+  }, [listThreadsForWorkspace, onDebug]);
 
   useEffect(() => {
     if (!isWebServiceRuntime()) {

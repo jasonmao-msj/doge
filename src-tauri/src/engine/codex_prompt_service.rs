@@ -11,6 +11,7 @@ use crate::engine::codex_adapter::params_to_codex_input;
 use crate::engine::error_mapper::extract_error_message;
 use crate::engine::SendMessageParams;
 use crate::session_management::{self, AutoSessionMetadata};
+use crate::shared::codex_core;
 use crate::state::AppState;
 
 pub(crate) fn normalize_custom_spec_root(custom_spec_root: Option<&str>) -> Option<String> {
@@ -240,6 +241,11 @@ pub(crate) fn extract_turn_completed_text(event: &Value) -> Option<String> {
     .filter(|text| !text.trim().is_empty())
 }
 
+pub(crate) struct CodexPromptSyncResult {
+    pub(crate) text: String,
+    pub(crate) session_id: String,
+}
+
 pub(crate) async fn run_codex_prompt_sync(
     workspace_id: &str,
     text: &str,
@@ -249,28 +255,49 @@ pub(crate) async fn run_codex_prompt_sync(
     images: Option<Vec<String>>,
     custom_spec_root: Option<String>,
     auto_session: Option<AutoSessionMetadata>,
+    session_id: Option<String>,
+    continue_session: bool,
+    preserve_session: bool,
+    provider_profile_id: Option<String>,
     app: &AppHandle,
     state: &AppState,
-) -> Result<String, String> {
-    crate::codex::ensure_codex_session(workspace_id, state, app).await?;
+) -> Result<CodexPromptSyncResult, String> {
+    let provider_profile_id =
+        codex_core::normalize_provider_profile_id(provider_profile_id.as_deref());
+    crate::codex::ensure_codex_session_for_provider(workspace_id, &provider_profile_id, state, app)
+        .await?;
 
     let session = {
         let sessions = state.sessions.lock().await;
         sessions
-            .get(workspace_id)
+            .get(&codex_core::session_key_for_provider(
+                workspace_id,
+                Some(&provider_profile_id),
+            ))
             .ok_or("workspace not connected")?
             .clone()
     };
 
-    let thread_result = session
-        .send_request(
-            "thread/start",
-            json!({
-                "cwd": session.entry.path,
-                "approvalPolicy": "never"
-            }),
-        )
-        .await?;
+    let thread_result = if continue_session {
+        let session_id = session_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| "sessionId is required to continue Codex sync session".to_string())?;
+        session
+            .send_request("thread/resume", json!({ "threadId": session_id }))
+            .await?
+    } else {
+        session
+            .send_request(
+                "thread/start",
+                json!({
+                    "cwd": session.entry.path,
+                    "approvalPolicy": "never"
+                }),
+            )
+            .await?
+    };
 
     if thread_result.get("error").is_some() {
         return Err(extract_error_message(
@@ -294,6 +321,16 @@ pub(crate) async fn run_codex_prompt_sync(
         .ok_or_else(|| "Failed to get thread id for Codex prompt".to_string())?
         .to_string();
 
+    if preserve_session {
+        crate::codex::record_codex_provider_binding(
+            state,
+            workspace_id,
+            &helper_thread_id,
+            &provider_profile_id,
+        )
+        .await;
+    }
+
     if let Some(metadata) = auto_session.clone() {
         let _ = session_management::record_auto_session_metadata_core(
             &state.workspaces,
@@ -305,19 +342,21 @@ pub(crate) async fn run_codex_prompt_sync(
         .await;
     }
 
-    let _ = app.emit(
-        "app-server-event",
-        AppServerEvent {
-            workspace_id: workspace_id.to_string(),
-            message: json!({
-                "method": "codex/backgroundThread",
-                "params": {
-                    "threadId": helper_thread_id,
-                    "action": "hide"
-                }
-            }),
-        },
-    );
+    if !preserve_session {
+        let _ = app.emit(
+            "app-server-event",
+            AppServerEvent {
+                workspace_id: workspace_id.to_string(),
+                message: json!({
+                    "method": "codex/backgroundThread",
+                    "params": {
+                        "threadId": helper_thread_id,
+                        "action": "hide"
+                    }
+                }),
+            },
+        );
+    }
 
     let (tx, mut rx) = mpsc::unbounded_channel::<Value>();
     {
@@ -382,24 +421,28 @@ pub(crate) async fn run_codex_prompt_sync(
         Ok(result) => result,
         Err(error) => {
             callback_guard.cleanup().await;
-            let _ = session
-                .send_request(
-                    "thread/archive",
-                    json!({ "threadId": helper_thread_id.as_str() }),
-                )
-                .await;
+            if !preserve_session {
+                let _ = session
+                    .send_request(
+                        "thread/archive",
+                        json!({ "threadId": helper_thread_id.as_str() }),
+                    )
+                    .await;
+            }
             return Err(error);
         }
     };
 
     if turn_result.get("error").is_some() {
         callback_guard.cleanup().await;
-        let _ = session
-            .send_request(
-                "thread/archive",
-                json!({ "threadId": helper_thread_id.as_str() }),
-            )
-            .await;
+        if !preserve_session {
+            let _ = session
+                .send_request(
+                    "thread/archive",
+                    json!({ "threadId": helper_thread_id.as_str() }),
+                )
+                .await;
+        }
         return Err(extract_error_message(
             turn_result.get("error"),
             "Unknown error starting Codex turn",
@@ -443,9 +486,14 @@ pub(crate) async fn run_codex_prompt_sync(
 
     callback_guard.cleanup().await;
 
-    let _ = session
-        .send_request("thread/archive", json!({ "threadId": helper_thread_id }))
-        .await;
+    if !preserve_session {
+        let _ = session
+            .send_request(
+                "thread/archive",
+                json!({ "threadId": helper_thread_id.as_str() }),
+            )
+            .await;
+    }
 
     match collect_result {
         Ok(Ok(())) => {}
@@ -457,7 +505,10 @@ pub(crate) async fn run_codex_prompt_sync(
     if trimmed.is_empty() {
         return Err("Codex returned empty response".to_string());
     }
-    Ok(trimmed)
+    Ok(CodexPromptSyncResult {
+        text: trimmed,
+        session_id: helper_thread_id,
+    })
 }
 
 #[cfg(test)]

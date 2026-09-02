@@ -922,6 +922,78 @@ fn default_email_inbound_action_window_hours() -> i64 {
     24
 }
 
+fn default_wechat_webhook_port() -> u16 {
+    18790
+}
+
+fn default_wechat_webhook_path() -> String {
+    "/webhook/wechat".to_string()
+}
+
+fn default_wechat_device_type() -> String {
+    "ipad".to_string()
+}
+
+/// WeChat personal-account bridge channel settings (OpenClaw-style contract).
+/// Secrets (apiKey / webhookToken) never live here; see `wechat` module secret store.
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct WechatChannelSettings {
+    #[serde(default)]
+    pub(crate) enabled: bool,
+    #[serde(default, rename = "bridgeBaseUrl")]
+    pub(crate) bridge_base_url: String,
+    #[serde(default = "default_wechat_webhook_host", rename = "webhookHost")]
+    pub(crate) webhook_host: String,
+    #[serde(default = "default_wechat_webhook_port", rename = "webhookPort")]
+    pub(crate) webhook_port: u16,
+    #[serde(default = "default_wechat_webhook_path", rename = "webhookPath")]
+    pub(crate) webhook_path: String,
+    #[serde(default = "default_wechat_device_type", rename = "deviceType")]
+    pub(crate) device_type: String,
+    /// User explicitly acknowledged Tencent iLink authorization and local data handling.
+    #[serde(default, rename = "riskAcknowledged")]
+    pub(crate) risk_acknowledged: bool,
+    /// Business routing target. Bridge/network wiring remains fully managed by Doge.
+    #[serde(default, rename = "workspaceId")]
+    pub(crate) workspace_id: Option<String>,
+    #[serde(default)]
+    pub(crate) engine: Option<String>,
+    #[serde(default)]
+    pub(crate) model: Option<String>,
+    #[serde(default, rename = "modelCatalogEntryId")]
+    pub(crate) model_catalog_entry_id: Option<String>,
+    #[serde(default, rename = "providerProfileId")]
+    pub(crate) provider_profile_id: Option<String>,
+}
+
+impl Default for WechatChannelSettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            bridge_base_url: String::new(),
+            webhook_host: default_wechat_webhook_host(),
+            webhook_port: default_wechat_webhook_port(),
+            webhook_path: default_wechat_webhook_path(),
+            device_type: default_wechat_device_type(),
+            risk_acknowledged: false,
+            workspace_id: None,
+            engine: None,
+            model: None,
+            model_catalog_entry_id: None,
+            provider_profile_id: None,
+        }
+    }
+}
+
+fn default_wechat_channel_settings() -> WechatChannelSettings {
+    WechatChannelSettings::default()
+}
+
+fn default_wechat_webhook_host() -> String {
+    "127.0.0.1".to_string()
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub(crate) struct AppSettings {
     #[serde(default, rename = "codexBin")]
@@ -1232,6 +1304,8 @@ pub(crate) struct AppSettings {
     pub(crate) email_sender: EmailSenderSettings,
     #[serde(default = "default_email_inbound_settings", rename = "emailInbound")]
     pub(crate) email_inbound: EmailInboundSettings,
+    #[serde(default = "default_wechat_channel_settings", rename = "wechatChannel")]
+    pub(crate) wechat_channel: WechatChannelSettings,
     #[serde(default = "default_preload_git_diffs", rename = "preloadGitDiffs")]
     pub(crate) preload_git_diffs: bool,
     #[serde(
@@ -2051,6 +2125,7 @@ impl Default for AppSettings {
             system_notification_enabled: true,
             email_sender: EmailSenderSettings::default(),
             email_inbound: EmailInboundSettings::default(),
+            wechat_channel: WechatChannelSettings::default(),
             preload_git_diffs: default_preload_git_diffs(),
             detached_external_change_awareness_enabled:
                 default_detached_external_change_awareness_enabled(),

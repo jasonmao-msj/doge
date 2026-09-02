@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::Output;
 use std::time::Duration;
 
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use tokio::process::Command;
 use tokio::time::timeout;
 

@@ -194,6 +194,7 @@ mod types;
 mod utils;
 mod vendors;
 mod web_service;
+mod wechat;
 mod window;
 #[cfg(any(test, target_os = "windows"))]
 mod windows_f5_reload_guard;
@@ -280,6 +281,13 @@ pub fn run() {
             }
             let state = state::AppState::load(&app.handle());
             app.manage(state);
+            {
+                let app_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    let state = app_handle.state::<state::AppState>();
+                    state.wechat.sync(app_handle.clone()).await;
+                });
+            }
             renderer_stability::spawn_renderer_heartbeat_watchdog(app.handle().clone());
             {
                 // Start the in-process AskUserQuestion MCP server so mid-turn
@@ -483,6 +491,7 @@ pub fn run() {
             let state = app_handle.state::<state::AppState>();
             let manager = &state.engine_manager;
             tauri::async_runtime::block_on(async {
+                state.wechat.stop().await;
                 manager.claude_manager.interrupt_all().await;
                 if let Err(error) = manager.shutdown_gemini_sessions().await {
                     log::error!("[app_exit] Gemini shutdown failed: {error}");

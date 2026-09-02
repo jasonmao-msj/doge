@@ -6,6 +6,7 @@ import type {
   RuntimePoolSnapshot,
 } from "../types";
 import type { CliInstallProgressEvent } from "../types";
+import type { WechatSessionUpdatedEvent } from "../types/wechat";
 import type { RuntimeLogSessionSnapshot } from "./tauri";
 import { createEventBackpressure } from "./eventBackpressure";
 import { appendEventBackpressureDiagnostic } from "./rendererDiagnostics";
@@ -385,6 +386,9 @@ const detachedExternalFileChangeBatchHub =
 const runtimePoolChangedHub = createEventHub<RuntimePoolSnapshot>(
   "runtime-pool-changed",
 );
+const wechatSessionUpdatedHub = createEventHub<WechatSessionUpdatedEvent>(
+  "wechat://session-updated",
+);
 const updaterCheckHub = createEventHub<void>("updater-check");
 const claudeCommandsChangedHub = createEventHub<void>("claude-commands-changed");
 const menuNewAgentHub = createEventHub<void>("menu-new-agent");
@@ -609,6 +613,13 @@ export function subscribeRuntimePoolChanged(
   options?: SubscriptionOptions,
 ): Unsubscribe {
   return runtimePoolChangedHub.subscribe(onEvent, options);
+}
+
+export function subscribeWechatSessionUpdated(
+  onEvent: (event: WechatSessionUpdatedEvent) => void,
+  options?: SubscriptionOptions,
+): Unsubscribe {
+  return wechatSessionUpdatedHub.subscribe(onEvent, options);
 }
 
 export function subscribeUpdaterCheck(

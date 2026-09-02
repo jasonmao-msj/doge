@@ -11,6 +11,10 @@ node_modules
 .cache/bundled-engines/
 src-tauri/resources/bundled-engines/current/
 src-tauri/resources/bundled-engines/.current-stage-*/
+src-tauri/resources/wechat-bridge/*/wechat-bridge
+src-tauri/resources/wechat-bridge/*/wechat-bridge.exe
+src-tauri/resources/wechat-bridge/manifest.json
+src-tauri/target-wechat-check/
 dist
 dist-ssr
 *.local

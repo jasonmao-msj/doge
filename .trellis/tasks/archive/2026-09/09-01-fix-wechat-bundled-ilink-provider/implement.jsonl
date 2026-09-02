@@ -1,0 +1,15 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend development guide"}
+{"file": ".trellis/spec/backend/wechat-bundled-bridge-contract.md", "reason": "微信 provider/runtime contract"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "sidecar 与 Tauri 可读错误边界"}
+{"file": ".trellis/spec/backend/logging-guidelines.md", "reason": "token 与消息日志脱敏"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Rust focused quality gate"}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "微信设置组件规范"}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "登录状态轮询与 cleanup"}
+{"file": ".trellis/spec/frontend/type-safety.md", "reason": "IPC 状态 mapping"}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "frontend test gate"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "UI-service-Tauri-sidecar contract"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 verification"}
+{"file": "openspec/changes/add-wechat-bridge-channel/design.md", "reason": "authoritative provider decision"}
+{"file": "openspec/changes/add-wechat-bridge-channel/specs/wechat-bridge-channel/spec.md", "reason": "behavior acceptance"}
