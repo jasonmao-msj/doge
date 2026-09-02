@@ -8,13 +8,17 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
+use aes::Aes128;
 use axum::extract::State;
 use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use base64::engine::general_purpose::STANDARD as BASE64;
 use base64::Engine as _;
-use reqwest::{Client, Method};
+use md5::{Digest, Md5};
+use reqwest::redirect::Policy;
+use reqwest::{Client, Method, Url};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tokio::sync::Mutex;
@@ -30,6 +34,7 @@ const PROVIDER_VERSION: &str = "2.4.6";
 const PROVIDER_INTEGRITY: &str =
     "sha512-qw9k3PLTiMWGNjjsknHgcTManH1w4j+Ji1ArWIaYLKCq3aFRsVwcqnPi127bvOoVMJGW4dbyJ8NECEMgoO+iRw==";
 const FIXED_ILINK_BASE_URL: &str = "https://ilinkai.weixin.qq.com";
+const FIXED_ILINK_CDN_BASE_URL: &str = "https://novac2c.cdn.weixin.qq.com/c2c";
 const ILINK_APP_ID: &str = "bot";
 const ILINK_APP_CLIENT_VERSION: &str = "132102";
 const ILINK_BOT_TYPE: &str = "3";
@@ -37,11 +42,18 @@ const QR_TTL_MS: u64 = 5 * 60_000;
 const QR_POLL_TIMEOUT: Duration = Duration::from_secs(35);
 const API_TIMEOUT: Duration = Duration::from_secs(15);
 const UPDATES_TIMEOUT: Duration = Duration::from_secs(40);
+const MAX_INLINE_MEDIA_BYTES: usize = 8 * 1024 * 1024;
+const MAX_OUTBOUND_MEDIA_BYTES: u64 = 8 * 1024 * 1024;
+const MAX_INBOUND_MEDIA_BYTES: usize = 100 * 1024 * 1024;
+const MAX_INBOUND_CIPHERTEXT_BYTES: usize = MAX_INBOUND_MEDIA_BYTES + 16;
+const INBOUND_MEDIA_DIR: &str = "inbound";
+const UPLOAD_MAX_RETRIES: usize = 3;
 
 #[derive(Clone)]
 struct BridgeState {
     config: BridgeConfig,
     client: Client,
+    cdn_client: Client,
     session: Arc<Mutex<SessionState>>,
     login: Arc<Mutex<Option<ActiveLogin>>>,
     runtime: Arc<Mutex<RuntimeState>>,
@@ -87,6 +99,20 @@ struct RuntimeState {
 struct SendMessageRequest {
     to: String,
     content: String,
+    #[serde(default)]
+    media: Option<OutboundMediaRequest>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OutboundMediaRequest {
+    path: String,
+    #[serde(default)]
+    kind: Option<String>,
+    #[serde(default)]
+    file_name: Option<String>,
+    #[serde(default)]
+    mime_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -146,6 +172,10 @@ struct MessageItem {
     #[serde(rename = "type")]
     item_type: i64,
     text_item: Option<TextItem>,
+    image_item: Option<Value>,
+    voice_item: Option<Value>,
+    video_item: Option<Value>,
+    file_item: Option<Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -159,7 +189,40 @@ struct WebhookMessage {
     msg_id: String,
     wxid: String,
     text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    message_type: Option<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    images: Vec<String>,
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    attachments: Vec<MediaAttachment>,
     is_group: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct MediaAttachment {
+    kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mime_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    file_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    data_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    path: Option<String>,
+    #[serde(skip)]
+    source: Option<InboundMediaSource>,
+}
+
+#[derive(Debug, Clone)]
+struct InboundMediaSource {
+    encrypt_query_param: Option<String>,
+    full_url: Option<String>,
+    aes_key: Result<Option<[u8; 16]>, String>,
 }
 
 impl BridgeConfig {
@@ -194,9 +257,17 @@ async fn main() {
         .connect_timeout(Duration::from_secs(10))
         .build()
         .unwrap_or_else(|error| exit_configuration_error(&format!("HTTP client error: {error}")));
+    let cdn_client = Client::builder()
+        .connect_timeout(Duration::from_secs(10))
+        .redirect(Policy::none())
+        .build()
+        .unwrap_or_else(|error| {
+            exit_configuration_error(&format!("CDN HTTP client error: {error}"))
+        });
     let state = Arc::new(BridgeState {
         config,
         client,
+        cdn_client,
         session: Arc::new(Mutex::new(session)),
         login: Arc::new(Mutex::new(None)),
         runtime: Arc::new(Mutex::new(RuntimeState::default())),
@@ -379,10 +450,10 @@ async fn send_message(
     authorize(&headers, &state.config)?;
     let to = request.to.trim();
     let content = request.content.trim();
-    if to.is_empty() || content.is_empty() {
+    if to.is_empty() || (content.is_empty() && request.media.is_none()) {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(json!({"ok": false, "error": "message target and content are required"})),
+            Json(json!({"ok": false, "error": "message target and content or media are required"})),
         ));
     }
 
@@ -392,30 +463,40 @@ async fn send_message(
         .as_deref()
         .ok_or_else(|| provider_error("WeChat is not logged in".to_string()))?;
     let base_url = session.base_url.as_deref().unwrap_or(FIXED_ILINK_BASE_URL);
-    let client_id = format!(
-        "doge-weixin:{}-{}",
-        now_ms(),
-        &Uuid::new_v4().simple().to_string()[..8]
-    );
-    let payload = build_send_message_payload(
-        to,
-        content,
-        &client_id,
-        session.context_tokens.get(to).map(String::as_str),
-    );
-    let response = provider_json(
-        &state,
-        Method::POST,
-        base_url,
-        "ilink/bot/sendmessage",
-        Some(token),
-        Some(payload),
-        API_TIMEOUT,
-    )
-    .await
-    .map_err(provider_error)?;
-    ensure_provider_success(&response).map_err(provider_error)?;
-    Ok(Json(json!({"ok": true, "messageId": client_id})))
+    let context_token = session.context_tokens.get(to).map(String::as_str);
+    let mut message_id = None;
+    if !content.is_empty() {
+        let client_id = new_client_id();
+        send_provider_message(
+            &state,
+            base_url,
+            token,
+            build_send_message_payload(to, content, &client_id, context_token),
+        )
+        .await
+        .map_err(provider_error)?;
+        message_id = Some(client_id);
+    }
+
+    if let Some(media) = request.media {
+        let client_id = new_client_id();
+        let item = upload_media_and_build_item(&state, base_url, token, to, &media)
+            .await
+            .map_err(provider_error)?;
+        send_provider_message(
+            &state,
+            base_url,
+            token,
+            build_send_message_item_payload(to, item, &client_id, context_token),
+        )
+        .await
+        .map_err(provider_error)?;
+        message_id = Some(client_id);
+    }
+
+    Ok(Json(
+        json!({"ok": true, "messageId": message_id.unwrap_or_else(new_client_id)}),
+    ))
 }
 
 async fn poll_login(state: Arc<BridgeState>, generation: String) {
@@ -713,12 +794,13 @@ async fn monitor_updates(state: Arc<BridgeState>) {
 
         consecutive_failures = 0;
         *state.runtime.lock().await = RuntimeState::default();
-        let inbound = updates
-            .msgs
-            .unwrap_or_default()
-            .into_iter()
-            .filter_map(extract_inbound_message)
-            .collect::<Vec<_>>();
+        let mut inbound = Vec::new();
+        for message in updates.msgs.unwrap_or_default() {
+            if let Some((mut message, context_token)) = extract_inbound_message(message) {
+                materialize_inbound_attachments(&state, &mut message).await;
+                inbound.push((message, context_token));
+            }
+        }
         {
             let mut persisted = state.session.lock().await;
             if persisted.bot_token.as_deref() != Some(token.as_str()) {
@@ -763,17 +845,45 @@ fn extract_inbound_message(message: IlinkMessage) -> Option<(WebhookMessage, Opt
     if wxid.is_empty() {
         return None;
     }
-    let text = message
-        .item_list
-        .unwrap_or_default()
-        .into_iter()
-        .filter(|item| item.item_type == 1)
-        .filter_map(|item| item.text_item.and_then(|item| item.text))
-        .collect::<Vec<_>>()
-        .join("\n")
-        .trim()
-        .to_string();
-    if text.is_empty() {
+    let mut text_parts = Vec::new();
+    let mut images = Vec::new();
+    let mut attachments = Vec::new();
+    let mut kinds = Vec::new();
+    for item in message.item_list.unwrap_or_default() {
+        if item.item_type == 1 {
+            if let Some(text) = item.text_item.and_then(|item| item.text) {
+                if !text.trim().is_empty() {
+                    text_parts.push(text);
+                }
+            }
+            continue;
+        }
+        let (kind, value) = match item.item_type {
+            2 => ("image", item.image_item),
+            3 => ("voice", item.voice_item),
+            4 => ("file", item.file_item),
+            5 => ("video", item.video_item),
+            _ => continue,
+        };
+        if let Some(value) = value {
+            if let Some(attachment) = extract_media_attachment(kind, &value) {
+                if let Some(data_url) = attachment.data_url.as_deref() {
+                    if kind == "image" && validate_inline_media_data_url(data_url) {
+                        images.push(data_url.to_string());
+                    }
+                }
+                if kind == "voice" {
+                    if let Some(transcript) = first_string_field(&value, &["text", "transcript"]) {
+                        text_parts.push(transcript);
+                    }
+                }
+                kinds.push(kind.to_string());
+                attachments.push(attachment);
+            }
+        }
+    }
+    let text = text_parts.join("\n").trim().to_string();
+    if text.is_empty() && kinds.is_empty() {
         return None;
     }
     let msg_id = message
@@ -786,12 +896,514 @@ fn extract_inbound_message(message: IlinkMessage) -> Option<(WebhookMessage, Opt
             msg_id,
             wxid,
             text,
+            message_type: if kinds.is_empty() {
+                Some("text".to_string())
+            } else {
+                Some(kinds.join(","))
+            },
+            images,
+            attachments,
             is_group: false,
         },
         message
             .context_token
             .filter(|value| !value.trim().is_empty()),
     ))
+}
+
+fn extract_media_attachment(kind: &str, value: &Value) -> Option<MediaAttachment> {
+    let mime_type = first_string_field(
+        value,
+        &["mimeType", "mime_type", "contentType", "content_type"],
+    )
+    .or_else(|| (kind == "image").then(|| "image/jpeg".to_string()));
+    let mut data_url = first_string_field(value, &["dataUrl", "data_url"]);
+    let url = first_string_field(
+        value,
+        &[
+            "url",
+            "downloadUrl",
+            "download_url",
+            "mediaUrl",
+            "media_url",
+            "cdnUrl",
+            "cdn_url",
+            "fullUrl",
+            "full_url",
+        ],
+    );
+    if data_url.is_none() {
+        if let Some(data) = first_string_field(value, &["data", "base64"]) {
+            if data.starts_with("data:") {
+                data_url = Some(data);
+            } else if kind == "image" && data.len() <= MAX_INLINE_MEDIA_BYTES * 2 {
+                data_url = Some(format!(
+                    "data:{};base64,{}",
+                    mime_type.as_deref().unwrap_or("image/jpeg"),
+                    data
+                ));
+            }
+        }
+    }
+    let data_url = data_url.filter(|value| validate_inline_media_data_url(value));
+    let file_name = first_string_field(value, &["fileName", "file_name", "name"]);
+    let size = first_u64_field(value, &["fileSize", "file_size", "size"]);
+    let source = extract_inbound_media_source(kind, value);
+    if data_url.is_none() && url.is_none() && file_name.is_none() && size.is_none() {
+        return Some(MediaAttachment {
+            kind: kind.to_string(),
+            mime_type,
+            file_name: None,
+            data_url: None,
+            url: None,
+            size: None,
+            path: None,
+            source,
+        });
+    }
+    Some(MediaAttachment {
+        kind: kind.to_string(),
+        mime_type,
+        file_name,
+        data_url,
+        url: url.filter(|value| value.starts_with("https://")),
+        size,
+        path: None,
+        source,
+    })
+}
+
+fn extract_inbound_media_source(kind: &str, value: &Value) -> Option<InboundMediaSource> {
+    let media = value.get("media")?.as_object()?;
+    let encrypt_query_param = media
+        .get("encrypt_query_param")
+        .or_else(|| media.get("encryptQueryParam"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    let full_url = media
+        .get("full_url")
+        .or_else(|| media.get("fullUrl"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(ToString::to_string);
+    if encrypt_query_param.is_none() && full_url.is_none() {
+        return None;
+    }
+    let aes_key = if kind == "image" {
+        value
+            .get("aeskey")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(|value| parse_hex_aes_key(value).map(Some))
+            .unwrap_or_else(|| parse_optional_inbound_aes_key(media))
+    } else {
+        parse_optional_inbound_aes_key(media)
+    };
+    Some(InboundMediaSource {
+        encrypt_query_param,
+        full_url,
+        aes_key,
+    })
+}
+
+fn parse_optional_inbound_aes_key(
+    media: &serde_json::Map<String, Value>,
+) -> Result<Option<[u8; 16]>, String> {
+    media
+        .get("aes_key")
+        .or_else(|| media.get("aesKey"))
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(parse_inbound_aes_key)
+        .transpose()
+}
+
+fn parse_inbound_aes_key(value: &str) -> Result<[u8; 16], String> {
+    let decoded = BASE64
+        .decode(value.as_bytes())
+        .map_err(|_| "inbound media AES key is not valid Base64".to_string())?;
+    if decoded.len() == 16 {
+        return decoded
+            .try_into()
+            .map_err(|_| "inbound media AES key must be 16 bytes".to_string());
+    }
+    if decoded.len() == 32 {
+        let encoded = std::str::from_utf8(&decoded)
+            .map_err(|_| "inbound media AES hex key is not ASCII".to_string())?;
+        return parse_hex_aes_key(encoded);
+    }
+    Err("inbound media AES key must decode to 16 raw bytes or 32 hex characters".to_string())
+}
+
+fn parse_hex_aes_key(value: &str) -> Result<[u8; 16], String> {
+    if value.len() != 32 || !value.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err("inbound media AES hex key must contain 32 characters".to_string());
+    }
+    let mut key = [0_u8; 16];
+    for (index, byte) in key.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(&value[index * 2..index * 2 + 2], 16)
+            .map_err(|_| "inbound media AES hex key is invalid".to_string())?;
+    }
+    Ok(key)
+}
+
+fn first_string_field(value: &Value, keys: &[&str]) -> Option<String> {
+    let object = value.as_object()?;
+    for key in keys {
+        if let Some(value) = object.get(*key).and_then(Value::as_str) {
+            let value = value.trim();
+            if !value.is_empty() {
+                return Some(value.to_string());
+            }
+        }
+    }
+    object
+        .values()
+        .find_map(|value| first_string_field(value, keys))
+}
+
+fn first_u64_field(value: &Value, keys: &[&str]) -> Option<u64> {
+    let object = value.as_object()?;
+    for key in keys {
+        if let Some(value) = object.get(*key) {
+            if let Some(value) = value.as_u64() {
+                return Some(value);
+            }
+            if let Some(value) = value.as_str() {
+                if let Ok(value) = value.trim().parse() {
+                    return Some(value);
+                }
+            }
+        }
+    }
+    object
+        .values()
+        .find_map(|value| first_u64_field(value, keys))
+}
+
+fn validate_inline_media_data_url(value: &str) -> bool {
+    let Some((metadata, payload)) = value.split_once(',') else {
+        return false;
+    };
+    metadata.starts_with("data:image/")
+        && metadata.contains(";base64")
+        && !payload.is_empty()
+        && payload.len() <= (MAX_INLINE_MEDIA_BYTES * 4 / 3) + 4
+        && BASE64
+            .decode(payload.as_bytes())
+            .is_ok_and(|bytes| !bytes.is_empty() && bytes.len() <= MAX_INLINE_MEDIA_BYTES)
+}
+
+async fn materialize_inbound_attachments(state: &BridgeState, message: &mut WebhookMessage) {
+    for attachment in &mut message.attachments {
+        let Some(source) = attachment.source.take() else {
+            continue;
+        };
+        let result = async {
+            let plaintext = download_inbound_media(state, &attachment.kind, &source).await?;
+            let file_name = attachment
+                .file_name
+                .as_deref()
+                .unwrap_or_else(|| default_inbound_file_name(&attachment.kind));
+            let path = save_inbound_media(
+                &state.config.data_dir,
+                &message.msg_id,
+                file_name,
+                &plaintext,
+            )
+            .await?;
+            attachment.size = Some(plaintext.len() as u64);
+            attachment.file_name = path
+                .file_name()
+                .and_then(|value| value.to_str())
+                .map(|value| {
+                    value
+                        .split_once('-')
+                        .map(|(_, name)| name)
+                        .unwrap_or(value)
+                        .to_string()
+                });
+            if attachment.mime_type.is_none() {
+                attachment.mime_type = Some(inbound_mime_type(&attachment.kind, &path));
+            }
+            attachment.path = Some(path.to_string_lossy().into_owned());
+            attachment.url = None;
+            Ok::<(), String>(())
+        }
+        .await;
+        if let Err(error) = result {
+            eprintln!(
+                "[wechat-bridge] inbound {} attachment unavailable: {error}",
+                attachment.kind
+            );
+        }
+    }
+}
+
+async fn download_inbound_media(
+    state: &BridgeState,
+    kind: &str,
+    source: &InboundMediaSource,
+) -> Result<Vec<u8>, String> {
+    let url = inbound_download_url(source)?;
+    let mut response = state
+        .cdn_client
+        .get(url)
+        .timeout(API_TIMEOUT)
+        .send()
+        .await
+        .map_err(|error| {
+            if error.is_timeout() {
+                "inbound media CDN download timed out".to_string()
+            } else {
+                "inbound media CDN connection failed".to_string()
+            }
+        })?;
+    if !response.status().is_success() {
+        return Err(format!(
+            "inbound media CDN download failed (HTTP {})",
+            response.status().as_u16()
+        ));
+    }
+    if response
+        .content_length()
+        .is_some_and(|length| length > MAX_INBOUND_CIPHERTEXT_BYTES as u64)
+    {
+        return Err(format!(
+            "inbound media download exceeds {MAX_INBOUND_MEDIA_BYTES} bytes"
+        ));
+    }
+    let mut downloaded = Vec::new();
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|_| "inbound media CDN body read failed".to_string())?
+    {
+        let next_size = checked_inbound_download_size(downloaded.len(), chunk.len())?;
+        downloaded.reserve(next_size.saturating_sub(downloaded.len()));
+        downloaded.extend_from_slice(&chunk);
+    }
+    if downloaded.is_empty() {
+        return Err("inbound media CDN returned an empty body".to_string());
+    }
+    let key = source.aes_key.clone()?;
+    let plaintext = match key {
+        Some(key) => decrypt_aes_128_ecb(&downloaded, &key)?,
+        None if kind == "image" => downloaded,
+        None => return Err("inbound media AES key is missing".to_string()),
+    };
+    if plaintext.is_empty() || plaintext.len() > MAX_INBOUND_MEDIA_BYTES {
+        return Err(format!(
+            "inbound media plaintext exceeds {MAX_INBOUND_MEDIA_BYTES} bytes"
+        ));
+    }
+    Ok(plaintext)
+}
+
+fn inbound_download_url(source: &InboundMediaSource) -> Result<Url, String> {
+    let url = if let Some(full_url) = source.full_url.as_deref() {
+        if full_url.len() > 32 * 1024 {
+            return Err("inbound media full_url is too long".to_string());
+        }
+        Url::parse(full_url).map_err(|_| "inbound media full_url is invalid".to_string())?
+    } else {
+        let parameter = source
+            .encrypt_query_param
+            .as_deref()
+            .filter(|value| !value.is_empty() && value.len() <= 16 * 1024)
+            .ok_or_else(|| "inbound media encrypt_query_param is invalid".to_string())?;
+        Url::parse(&format!(
+            "{FIXED_ILINK_CDN_BASE_URL}/download?encrypted_query_param={}",
+            url_encode(parameter)
+        ))
+        .map_err(|_| "failed to construct inbound media CDN URL".to_string())?
+    };
+    let host = url
+        .host_str()
+        .ok_or_else(|| "inbound media CDN URL host is missing".to_string())?;
+    if url.scheme() != "https"
+        || !url.username().is_empty()
+        || url.password().is_some()
+        || url.port_or_known_default() != Some(443)
+        || !is_safe_redirect_host(host)
+    {
+        return Err("inbound media CDN URL is not an allowed Tencent HTTPS host".to_string());
+    }
+    Ok(url)
+}
+
+fn checked_inbound_download_size(current: usize, chunk: usize) -> Result<usize, String> {
+    let next = current
+        .checked_add(chunk)
+        .ok_or_else(|| "inbound media download size overflow".to_string())?;
+    if next > MAX_INBOUND_CIPHERTEXT_BYTES {
+        return Err(format!(
+            "inbound media download exceeds {MAX_INBOUND_MEDIA_BYTES} bytes"
+        ));
+    }
+    Ok(next)
+}
+
+fn decrypt_aes_128_ecb(ciphertext: &[u8], key: &[u8; 16]) -> Result<Vec<u8>, String> {
+    if ciphertext.is_empty() || ciphertext.len() % 16 != 0 {
+        return Err("inbound media ciphertext is not AES block aligned".to_string());
+    }
+    let cipher =
+        Aes128::new_from_slice(key).map_err(|_| "invalid AES-128 inbound media key".to_string())?;
+    let mut plaintext = Vec::with_capacity(ciphertext.len());
+    for chunk in ciphertext.chunks_exact(16) {
+        let mut block = GenericArray::clone_from_slice(chunk);
+        cipher.decrypt_block(&mut block);
+        plaintext.extend_from_slice(&block);
+    }
+    let padding = *plaintext
+        .last()
+        .ok_or_else(|| "inbound media plaintext is empty".to_string())? as usize;
+    if padding == 0
+        || padding > 16
+        || padding > plaintext.len()
+        || !plaintext[plaintext.len() - padding..]
+            .iter()
+            .all(|byte| *byte as usize == padding)
+    {
+        return Err("inbound media PKCS#7 padding is invalid".to_string());
+    }
+    plaintext.truncate(plaintext.len() - padding);
+    Ok(plaintext)
+}
+
+async fn save_inbound_media(
+    data_dir: &Path,
+    message_id: &str,
+    original_file_name: &str,
+    plaintext: &[u8],
+) -> Result<PathBuf, String> {
+    if plaintext.is_empty() || plaintext.len() > MAX_INBOUND_MEDIA_BYTES {
+        return Err("inbound media file size is invalid".to_string());
+    }
+    let root = data_dir.join(INBOUND_MEDIA_DIR);
+    tokio::fs::create_dir_all(&root)
+        .await
+        .map_err(|_| "failed to create inbound media directory".to_string())?;
+    let canonical_data_dir = tokio::fs::canonicalize(data_dir)
+        .await
+        .map_err(|_| "failed to canonicalize WeChat provider data directory".to_string())?;
+    let canonical_root = tokio::fs::canonicalize(&root)
+        .await
+        .map_err(|_| "failed to canonicalize inbound media directory".to_string())?;
+    if !canonical_root.starts_with(&canonical_data_dir) {
+        return Err("inbound media directory escapes provider data storage".to_string());
+    }
+    let message_dir = canonical_root.join(sanitize_path_component(message_id, "message"));
+    tokio::fs::create_dir_all(&message_dir)
+        .await
+        .map_err(|_| "failed to create inbound message directory".to_string())?;
+    let canonical_message_dir = tokio::fs::canonicalize(&message_dir)
+        .await
+        .map_err(|_| "failed to canonicalize inbound message directory".to_string())?;
+    if !canonical_message_dir.starts_with(&canonical_root) {
+        return Err("inbound message directory escapes managed storage".to_string());
+    }
+    let safe_name = sanitize_path_component(original_file_name, "attachment.bin");
+    let unique = Uuid::new_v4().simple().to_string();
+    let final_path = canonical_message_dir.join(format!("{unique}-{safe_name}"));
+    let temporary = canonical_message_dir.join(format!(".{unique}.part"));
+    tokio::fs::write(&temporary, plaintext)
+        .await
+        .map_err(|_| "failed to write inbound media file".to_string())?;
+    if let Err(error) = tokio::fs::rename(&temporary, &final_path).await {
+        let _ = tokio::fs::remove_file(&temporary).await;
+        return Err(format!("failed to finalize inbound media file: {error}"));
+    }
+    if let Err(error) = set_private_permissions(&final_path) {
+        let _ = tokio::fs::remove_file(&final_path).await;
+        return Err(error);
+    }
+    let canonical = tokio::fs::canonicalize(&final_path)
+        .await
+        .map_err(|_| "failed to canonicalize inbound media file".to_string())?;
+    let metadata = tokio::fs::metadata(&canonical)
+        .await
+        .map_err(|_| "failed to inspect inbound media file".to_string())?;
+    if !canonical.starts_with(&canonical_root)
+        || !metadata.is_file()
+        || metadata.len() != plaintext.len() as u64
+    {
+        let _ = tokio::fs::remove_file(&canonical).await;
+        return Err("inbound media file failed managed storage validation".to_string());
+    }
+    Ok(canonical)
+}
+
+fn sanitize_path_component(value: &str, fallback: &str) -> String {
+    let base_name = value
+        .rsplit(|character| character == '/' || character == '\\')
+        .next()
+        .unwrap_or_default();
+    let mut sanitized = base_name
+        .chars()
+        .map(|character| {
+            if character.is_control()
+                || matches!(
+                    character,
+                    '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|'
+                )
+            {
+                '_'
+            } else {
+                character
+            }
+        })
+        .take(120)
+        .collect::<String>();
+    sanitized = sanitized.trim_matches([' ', '.']).to_string();
+    if sanitized.is_empty() {
+        fallback.to_string()
+    } else {
+        sanitized
+    }
+}
+
+fn default_inbound_file_name(kind: &str) -> &'static str {
+    match kind {
+        "image" => "image.jpg",
+        "voice" => "voice.silk",
+        "video" => "video.mp4",
+        _ => "attachment.bin",
+    }
+}
+
+fn inbound_mime_type(kind: &str, path: &Path) -> String {
+    match kind {
+        "image" => "image/jpeg",
+        "voice" => "audio/silk",
+        "video" => "video/mp4",
+        _ => match path
+            .extension()
+            .and_then(|value| value.to_str())
+            .unwrap_or_default()
+            .to_ascii_lowercase()
+            .as_str()
+        {
+            "pdf" => "application/pdf",
+            "txt" | "md" => "text/plain",
+            "json" => "application/json",
+            "doc" => "application/msword",
+            "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "xls" => "application/vnd.ms-excel",
+            "xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "ppt" => "application/vnd.ms-powerpoint",
+            "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "zip" => "application/zip",
+            _ => "application/octet-stream",
+        },
+    }
+    .to_string()
 }
 
 async fn post_webhook(state: &BridgeState, message: &WebhookMessage) -> Result<(), String> {
@@ -917,9 +1529,53 @@ fn base_info() -> Value {
     })
 }
 
+fn new_client_id() -> String {
+    format!(
+        "doge-weixin:{}-{}",
+        now_ms(),
+        &Uuid::new_v4().simple().to_string()[..8]
+    )
+}
+
+async fn send_provider_message(
+    state: &BridgeState,
+    base_url: &str,
+    token: &str,
+    payload: Value,
+) -> Result<(), String> {
+    let response = provider_json(
+        state,
+        Method::POST,
+        base_url,
+        "ilink/bot/sendmessage",
+        Some(token),
+        Some(payload),
+        API_TIMEOUT,
+    )
+    .await?;
+    ensure_provider_success(&response)
+}
+
 fn build_send_message_payload(
     to: &str,
     content: &str,
+    client_id: &str,
+    context_token: Option<&str>,
+) -> Value {
+    build_send_message_item_payload(
+        to,
+        json!({
+            "type": 1,
+            "text_item": { "text": content }
+        }),
+        client_id,
+        context_token,
+    )
+}
+
+fn build_send_message_item_payload(
+    to: &str,
+    item: Value,
     client_id: &str,
     context_token: Option<&str>,
 ) -> Value {
@@ -930,14 +1586,255 @@ fn build_send_message_payload(
             "client_id": client_id,
             "message_type": 2,
             "message_state": 2,
-            "item_list": [{
-                "type": 1,
-                "text_item": { "text": content }
-            }],
+            "item_list": [item],
             "context_token": context_token
         },
         "base_info": base_info()
     })
+}
+
+#[derive(Debug)]
+struct UploadedMedia {
+    media_type: i64,
+    download_param: String,
+    aes_key_hex: String,
+    raw_size: u64,
+    encrypted_size: usize,
+}
+
+async fn upload_media_and_build_item(
+    state: &BridgeState,
+    base_url: &str,
+    token: &str,
+    to: &str,
+    media: &OutboundMediaRequest,
+) -> Result<Value, String> {
+    let path = media.path.trim();
+    if path.is_empty() {
+        return Err("outbound media path is required".to_string());
+    }
+    let path = Path::new(path);
+    if !path.is_absolute() {
+        return Err("outbound media path must be absolute".to_string());
+    }
+    let metadata = tokio::fs::metadata(path)
+        .await
+        .map_err(|error| format!("failed to read outbound media metadata: {error}"))?;
+    if !metadata.is_file() {
+        return Err("outbound media path is not a regular file".to_string());
+    }
+    if metadata.len() == 0 {
+        return Err("outbound media file is empty".to_string());
+    }
+    if metadata.len() > MAX_OUTBOUND_MEDIA_BYTES {
+        return Err(format!(
+            "outbound media exceeds {MAX_OUTBOUND_MEDIA_BYTES} bytes"
+        ));
+    }
+    let plaintext = tokio::fs::read(path)
+        .await
+        .map_err(|error| format!("failed to read outbound media file: {error}"))?;
+    let kind = outbound_media_kind(media, path)?;
+    let aes_key = *Uuid::new_v4().as_bytes();
+    let encrypted = encrypt_aes_128_ecb(&plaintext, &aes_key)?;
+    let mut md5 = Md5::new();
+    md5.update(&plaintext);
+    let rawfilemd5 = format!("{:x}", md5.finalize());
+    let filekey = Uuid::new_v4().simple().to_string();
+    let aes_key_hex = aes_key
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
+    let upload_response = provider_json(
+        state,
+        Method::POST,
+        base_url,
+        "ilink/bot/getuploadurl",
+        Some(token),
+        Some(json!({
+            "filekey": filekey,
+            "media_type": kind.media_type,
+            "to_user_id": to,
+            "rawsize": plaintext.len(),
+            "rawfilemd5": rawfilemd5,
+            "filesize": encrypted.len(),
+            "no_need_thumb": true,
+            "aeskey": aes_key_hex.clone(),
+            "base_info": base_info()
+        })),
+        API_TIMEOUT,
+    )
+    .await?;
+    ensure_provider_success(&upload_response)?;
+    let upload_url = upload_response
+        .get("upload_full_url")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .or_else(|| {
+            upload_response
+                .get("upload_param")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(|param| {
+                    format!(
+                        "{FIXED_ILINK_CDN_BASE_URL}/upload?encrypted_query_param={}&filekey={}",
+                        url_encode(param),
+                        url_encode(&filekey)
+                    )
+                })
+        })
+        .ok_or_else(|| "Tencent iLink upload URL is missing".to_string())?;
+    let download_param = upload_encrypted_media(state, &upload_url, &encrypted).await?;
+    let uploaded = UploadedMedia {
+        media_type: kind.media_type,
+        download_param,
+        aes_key_hex,
+        raw_size: plaintext.len() as u64,
+        encrypted_size: encrypted.len(),
+    };
+    Ok(build_media_item(&uploaded, media, path))
+}
+
+#[derive(Debug, Clone, Copy)]
+struct OutboundMediaKind {
+    media_type: i64,
+}
+
+fn outbound_media_kind(
+    media: &OutboundMediaRequest,
+    path: &Path,
+) -> Result<OutboundMediaKind, String> {
+    let kind = media
+        .kind
+        .as_deref()
+        .or(media.mime_type.as_deref())
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+    let kind = if kind.starts_with("image/") || kind == "image" {
+        Some(OutboundMediaKind { media_type: 1 })
+    } else if kind.starts_with("video/") || kind == "video" {
+        Some(OutboundMediaKind { media_type: 2 })
+    } else if kind == "file" {
+        Some(OutboundMediaKind { media_type: 3 })
+    } else if path
+        .extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|extension| {
+            matches!(
+                extension.to_ascii_lowercase().as_str(),
+                "png" | "jpg" | "jpeg" | "gif" | "webp"
+            )
+        })
+    {
+        Some(OutboundMediaKind { media_type: 1 })
+    } else {
+        None
+    };
+    kind.ok_or_else(|| {
+        "unsupported outbound media type; expected image, video, or file".to_string()
+    })
+}
+
+async fn upload_encrypted_media(
+    state: &BridgeState,
+    upload_url: &str,
+    encrypted: &[u8],
+) -> Result<String, String> {
+    let mut last_error = None;
+    for attempt in 1..=UPLOAD_MAX_RETRIES {
+        let response = state
+            .client
+            .post(upload_url)
+            .header("content-type", "application/octet-stream")
+            .timeout(API_TIMEOUT)
+            .body(encrypted.to_vec())
+            .send()
+            .await;
+        match response {
+            Ok(response) if response.status().is_success() => {
+                if let Some(value) = response
+                    .headers()
+                    .get("x-encrypted-param")
+                    .and_then(|value| value.to_str().ok())
+                    .map(str::trim)
+                    .filter(|value| !value.is_empty())
+                {
+                    return Ok(value.to_string());
+                }
+                last_error = Some("CDN upload response missing x-encrypted-param".to_string());
+            }
+            Ok(response) => {
+                let status = response.status();
+                let body = response.text().await.unwrap_or_default();
+                last_error = Some(format!("CDN upload failed (HTTP {status}): {body}"));
+                if status.is_client_error() {
+                    break;
+                }
+            }
+            Err(error) => {
+                last_error = Some(if error.is_timeout() {
+                    "CDN upload timed out".to_string()
+                } else {
+                    format!("CDN upload connection failed: {error}")
+                });
+            }
+        }
+        if attempt < UPLOAD_MAX_RETRIES {
+            tokio::time::sleep(Duration::from_millis(100 * attempt as u64)).await;
+        }
+    }
+    Err(last_error.unwrap_or_else(|| "CDN upload failed".to_string()))
+}
+
+fn build_media_item(uploaded: &UploadedMedia, media: &OutboundMediaRequest, path: &Path) -> Value {
+    let media_ref = json!({
+        "encrypt_query_param": uploaded.download_param,
+        "aes_key": BASE64.encode(uploaded.aes_key_hex.as_bytes()),
+        "encrypt_type": 1
+    });
+    match uploaded.media_type {
+        1 => json!({
+            "type": 2,
+            "image_item": {
+                "media": media_ref,
+                "mid_size": uploaded.encrypted_size
+            }
+        }),
+        2 => json!({
+            "type": 5,
+            "video_item": {
+                "media": media_ref,
+                "video_size": uploaded.encrypted_size
+            }
+        }),
+        _ => json!({
+            "type": 4,
+            "file_item": {
+                "media": media_ref,
+                "file_name": media.file_name.as_deref().or_else(|| path.file_name().and_then(|value| value.to_str())),
+                "len": uploaded.raw_size.to_string()
+            }
+        }),
+    }
+}
+
+fn encrypt_aes_128_ecb(plaintext: &[u8], key: &[u8; 16]) -> Result<Vec<u8>, String> {
+    let cipher = Aes128::new_from_slice(key)
+        .map_err(|_| "invalid AES-128 outbound media key".to_string())?;
+    let padding = 16 - (plaintext.len() % 16);
+    let mut padded = Vec::with_capacity(plaintext.len() + padding);
+    padded.extend_from_slice(plaintext);
+    padded.extend(std::iter::repeat_n(padding as u8, padding));
+    let mut encrypted = Vec::with_capacity(padded.len());
+    for chunk in padded.chunks_exact(16) {
+        let mut block = GenericArray::clone_from_slice(chunk);
+        cipher.encrypt_block(&mut block);
+        encrypted.extend_from_slice(&block);
+    }
+    Ok(encrypted)
 }
 
 fn ensure_provider_success(value: &Value) -> Result<(), String> {
@@ -945,7 +1842,15 @@ fn ensure_provider_success(value: &Value) -> Result<(), String> {
     if ret == 0 {
         Ok(())
     } else {
-        Err(format!("Tencent iLink send failed (ret={ret})"))
+        let message = value
+            .get("errmsg")
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|message| !message.is_empty())
+            .unwrap_or("unknown provider error");
+        Err(format!(
+            "Tencent iLink request failed (ret={ret}, errmsg={message})"
+        ))
     }
 }
 
@@ -1111,6 +2016,140 @@ mod tests {
     }
 
     #[test]
+    fn encrypts_aes_ecb_with_pkcs7_padding() {
+        let key = [0x11_u8; 16];
+        for (plaintext, expected_len) in [
+            (b"".as_slice(), 16),
+            (b"1234567890abcdef".as_slice(), 32),
+            (b"1234567890abcdefx".as_slice(), 32),
+        ] {
+            let encrypted = encrypt_aes_128_ecb(plaintext, &key).expect("encrypted media");
+            assert_eq!(encrypted.len(), expected_len);
+            assert_eq!(encrypted.len() % 16, 0);
+        }
+    }
+
+    #[test]
+    fn image_item_contains_encrypted_media_reference() {
+        let item = build_media_item(
+            &UploadedMedia {
+                media_type: 1,
+                download_param: "download-param".to_string(),
+                aes_key_hex: "07".repeat(16),
+                raw_size: 12,
+                encrypted_size: 16,
+            },
+            &OutboundMediaRequest {
+                path: "C:\\\\tmp\\\\generated.png".to_string(),
+                kind: Some("image".to_string()),
+                file_name: None,
+                mime_type: Some("image/png".to_string()),
+            },
+            Path::new("C:\\\\tmp\\\\generated.png"),
+        );
+        assert_eq!(item.pointer("/type"), Some(&json!(2)));
+        assert_eq!(item.pointer("/image_item/mid_size"), Some(&json!(16)));
+        assert_eq!(
+            item.pointer("/image_item/media/encrypt_query_param"),
+            Some(&json!("download-param"))
+        );
+        assert_eq!(
+            item.pointer("/image_item/media/encrypt_type"),
+            Some(&json!(1))
+        );
+        assert_eq!(
+            item.pointer("/image_item/media/aes_key"),
+            Some(&json!(BASE64.encode("07".repeat(16).as_bytes())))
+        );
+    }
+
+    #[test]
+    fn video_and_file_items_use_tencent_hex_key_encoding() {
+        let uploaded = |media_type| UploadedMedia {
+            media_type,
+            download_param: "download-param".to_string(),
+            aes_key_hex: "ab".repeat(16),
+            raw_size: 12,
+            encrypted_size: 16,
+        };
+        let video = build_media_item(
+            &uploaded(2),
+            &OutboundMediaRequest {
+                path: "C:\\\\tmp\\\\clip.mp4".to_string(),
+                kind: Some("video".to_string()),
+                file_name: None,
+                mime_type: Some("video/mp4".to_string()),
+            },
+            Path::new("C:\\\\tmp\\\\clip.mp4"),
+        );
+        assert_eq!(video.pointer("/type"), Some(&json!(5)));
+        assert_eq!(video.pointer("/video_item/video_size"), Some(&json!(16)));
+        assert_eq!(
+            video.pointer("/video_item/media/aes_key"),
+            Some(&json!(BASE64.encode("ab".repeat(16).as_bytes())))
+        );
+
+        let file = build_media_item(
+            &uploaded(3),
+            &OutboundMediaRequest {
+                path: "C:\\\\tmp\\\\report.pdf".to_string(),
+                kind: Some("file".to_string()),
+                file_name: Some("report.pdf".to_string()),
+                mime_type: Some("application/pdf".to_string()),
+            },
+            Path::new("C:\\\\tmp\\\\report.pdf"),
+        );
+        assert_eq!(file.pointer("/type"), Some(&json!(4)));
+        assert_eq!(
+            file.pointer("/file_item/file_name"),
+            Some(&json!("report.pdf"))
+        );
+        assert_eq!(file.pointer("/file_item/len"), Some(&json!("12")));
+        assert_eq!(
+            file.pointer("/file_item/media/aes_key"),
+            Some(&json!(BASE64.encode("ab".repeat(16).as_bytes())))
+        );
+    }
+
+    #[test]
+    fn outbound_media_kind_maps_image_mime_and_extension() {
+        let by_mime = outbound_media_kind(
+            &OutboundMediaRequest {
+                path: "C:\\\\tmp\\\\generated.bin".to_string(),
+                kind: None,
+                file_name: None,
+                mime_type: Some("image/png".to_string()),
+            },
+            Path::new("C:\\\\tmp\\\\generated.bin"),
+        )
+        .expect("image mime");
+        assert_eq!(by_mime.media_type, 1);
+
+        let by_extension = outbound_media_kind(
+            &OutboundMediaRequest {
+                path: "C:\\\\tmp\\\\generated.webp".to_string(),
+                kind: None,
+                file_name: None,
+                mime_type: None,
+            },
+            Path::new("C:\\\\tmp\\\\generated.webp"),
+        )
+        .expect("image extension");
+        assert_eq!(by_extension.media_type, 1);
+    }
+
+    #[test]
+    fn provider_errors_preserve_tencent_error_message() {
+        let error = ensure_provider_success(&json!({
+            "ret": -14,
+            "errmsg": "upload denied"
+        }))
+        .expect_err("provider error");
+        assert!(error.contains("ret=-14"));
+        assert!(error.contains("upload denied"));
+    }
+
+    #[test]
     fn inbound_parser_accepts_finished_direct_text_and_rejects_groups() {
         let direct = IlinkMessage {
             seq: Some(7),
@@ -1125,6 +2164,10 @@ mod tests {
                 text_item: Some(TextItem {
                     text: Some("hello".to_string()),
                 }),
+                image_item: None,
+                voice_item: None,
+                video_item: None,
+                file_item: None,
             }]),
             context_token: Some("ctx".to_string()),
         };
@@ -1146,6 +2189,183 @@ mod tests {
             context_token: None,
         };
         assert!(extract_inbound_message(group).is_none());
+    }
+
+    #[test]
+    fn inbound_parser_preserves_image_and_other_media_items() {
+        let image_data = "data:image/png;base64,aGVsbG8=";
+        let message = IlinkMessage {
+            seq: Some(8),
+            message_id: Some(44),
+            client_id: None,
+            from_user_id: Some("wx-user".to_string()),
+            group_id: None,
+            message_type: Some(1),
+            message_state: Some(2),
+            item_list: Some(vec![
+                MessageItem {
+                    item_type: 2,
+                    text_item: None,
+                    image_item: Some(json!({
+                        "mimeType": "image/png",
+                        "dataUrl": image_data,
+                        "fileSize": 5
+                    })),
+                    voice_item: None,
+                    video_item: None,
+                    file_item: None,
+                },
+                MessageItem {
+                    item_type: 4,
+                    text_item: None,
+                    image_item: None,
+                    voice_item: None,
+                    video_item: None,
+                    file_item: Some(json!({
+                        "fileName": "report.pdf",
+                        "fileSize": 1024
+                    })),
+                },
+            ]),
+            context_token: None,
+        };
+
+        let (message, _) = extract_inbound_message(message).expect("media message");
+        assert_eq!(message.message_type.as_deref(), Some("image,file"));
+        assert_eq!(message.images, vec![image_data]);
+        assert_eq!(message.attachments.len(), 2);
+        assert_eq!(
+            message.attachments[1].file_name.as_deref(),
+            Some("report.pdf")
+        );
+        assert!(message.text.is_empty());
+    }
+
+    #[test]
+    fn inbound_parser_degrades_oversized_inline_image_to_metadata() {
+        let oversized = format!(
+            "data:image/png;base64,{}",
+            "A".repeat((MAX_INLINE_MEDIA_BYTES * 4 / 3) + 8)
+        );
+        let message = IlinkMessage {
+            seq: Some(9),
+            message_id: Some(45),
+            client_id: None,
+            from_user_id: Some("wx-user".to_string()),
+            group_id: None,
+            message_type: Some(1),
+            message_state: Some(2),
+            item_list: Some(vec![MessageItem {
+                item_type: 2,
+                text_item: None,
+                image_item: Some(json!({"dataUrl": oversized})),
+                voice_item: None,
+                video_item: None,
+                file_item: None,
+            }]),
+            context_token: None,
+        };
+        let (message, _) = extract_inbound_message(message).expect("media fallback");
+        assert!(message.images.is_empty());
+        assert!(message.attachments[0].data_url.is_none());
+    }
+
+    #[test]
+    fn inbound_aes_key_encodings_decrypt_tencent_compatible_fixture() {
+        let raw_key = "AAECAwQFBgcICQoLDA0ODw==";
+        let hex_key = "MDAwMTAyMDMwNDA1MDYwNzA4MDkwYTBiMGMwZDBlMGY=";
+        let ciphertext = (0..64)
+            .step_by(2)
+            .map(|index| {
+                u8::from_str_radix(
+                    &"269ea8ce8573c5dcab59099987501a42fd1aeb70dd15113774968465d8818bdb"
+                        [index..index + 2],
+                    16,
+                )
+                .expect("fixture byte")
+            })
+            .collect::<Vec<_>>();
+
+        for encoded in [raw_key, hex_key] {
+            let key = parse_inbound_aes_key(encoded).expect("Tencent AES key representation");
+            let plaintext = decrypt_aes_128_ecb(&ciphertext, &key).expect("fixture decrypt");
+            assert_eq!(plaintext, b"wechat-file-fixture");
+        }
+    }
+
+    #[test]
+    fn inbound_image_raw_hex_key_takes_precedence() {
+        let attachment = extract_media_attachment(
+            "image",
+            &json!({
+                "aeskey": "000102030405060708090a0b0c0d0e0f",
+                "media": {
+                    "encrypt_query_param": "download-param",
+                    "aes_key": "EREREREREREREREREREREQ=="
+                }
+            }),
+        )
+        .expect("image attachment");
+        let key = attachment
+            .source
+            .expect("download source")
+            .aes_key
+            .expect("valid key")
+            .expect("present key");
+        assert_eq!(key, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+    }
+
+    #[test]
+    fn inbound_download_urls_are_tencent_https_only() {
+        let source = InboundMediaSource {
+            encrypt_query_param: Some("a/b+c".to_string()),
+            full_url: None,
+            aes_key: Ok(None),
+        };
+        assert_eq!(
+            inbound_download_url(&source)
+                .expect("fallback URL")
+                .as_str(),
+            "https://novac2c.cdn.weixin.qq.com/c2c/download?encrypted_query_param=a%2Fb%2Bc"
+        );
+
+        for full_url in [
+            "http://novac2c.cdn.weixin.qq.com/c2c/download",
+            "https://evil.example/download",
+            "https://novac2c.cdn.weixin.qq.com:444/download",
+            "https://novac2c.cdn.weixin.qq.com@evil.example/download",
+        ] {
+            let source = InboundMediaSource {
+                encrypt_query_param: None,
+                full_url: Some(full_url.to_string()),
+                aes_key: Ok(None),
+            };
+            assert!(inbound_download_url(&source).is_err(), "{full_url}");
+        }
+    }
+
+    #[test]
+    fn inbound_key_padding_and_size_fail_closed() {
+        assert!(parse_inbound_aes_key("not-base64").is_err());
+        assert!(parse_inbound_aes_key("c2hvcnQ=").is_err());
+        assert!(decrypt_aes_128_ecb(&[0_u8; 15], &[0_u8; 16]).is_err());
+        assert!(checked_inbound_download_size(MAX_INBOUND_CIPHERTEXT_BYTES, 1).is_err());
+    }
+
+    #[tokio::test]
+    async fn inbound_media_write_sanitizes_name_and_stays_in_managed_root() {
+        let root = std::env::temp_dir().join(format!("doge-wechat-inbound-{}", Uuid::new_v4()));
+        std::fs::create_dir_all(&root).expect("create test root");
+        let path = save_inbound_media(&root, "../message", "../../report?.pdf", b"pdf bytes")
+            .await
+            .expect("save inbound file");
+        let canonical_root = std::fs::canonicalize(root.join(INBOUND_MEDIA_DIR)).expect("root");
+        assert!(path.starts_with(canonical_root));
+        assert_eq!(std::fs::read(&path).expect("read saved file"), b"pdf bytes");
+        let name = path.file_name().unwrap().to_string_lossy();
+        assert!(name.ends_with("report_.pdf"));
+        assert!(!name.contains(".."));
+        std::fs::remove_dir_all(root).expect("remove test root");
     }
 
     #[test]

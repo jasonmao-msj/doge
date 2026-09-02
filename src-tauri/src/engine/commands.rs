@@ -3633,11 +3633,15 @@ pub(crate) async fn engine_send_message_sync_inner(
             )
             .await?;
 
-            Ok(json!({
+            let mut result = json!({
                 "engine": "codex",
                 "sessionId": response.session_id,
                 "text": response.text
-            }))
+            });
+            if !response.image_paths.is_empty() {
+                result["images"] = json!(response.image_paths);
+            }
+            Ok(result)
         }
         EngineType::Gemini => {
             let workspace_path = {

@@ -1,0 +1,5 @@
+{"file":".trellis/spec/backend/wechat-bundled-bridge-contract.md","reason":"Check exact inbound signatures, limits and validation matrix"}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Backend quality and regression requirements"}
+{"file":".trellis/spec/guides/risk-based-test-strategy.md","reason":"L3 command selection and reporting"}
+{"file":".trellis/spec/guides/cross-layer-thinking-guide.md","reason":"Verify WeChat-only ownership and desktop sibling isolation"}
+{"file":"openspec/changes/add-wechat-multimedia-messages/specs/wechat-bridge-channel/spec.md","reason":"Acceptance scenarios"}
