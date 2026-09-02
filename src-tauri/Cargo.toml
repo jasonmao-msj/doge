@@ -52,6 +52,8 @@ tauri-plugin-dialog = "2"
 git2 = "0.20.3"
 notify = "6"
 base64 = "0.22"
+aes = "0.8"
+md-5 = "0.10"
 fix-path-env = { git = "https://github.com/tauri-apps/fix-path-env-rs" }
 ignore = "0.4.25"
 portable-pty = "0.8"

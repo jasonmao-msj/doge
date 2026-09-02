@@ -122,6 +122,13 @@ React Component
     不能扫“最后一张图”或信 assistant prose。大 payload 先 bounded、content-addressed 落盘，canonical
     只存 compact ref；already-open UI 在 durable commit 后主动 refresh projection。若 locator 位于 App
     Data，媒体读取只 allowlist exact managed subtree，禁止为修破图放开整个 filesystem。
+38. 加密、签名或 binary reference 的 wire contract 必须写到 byte representation。遇到
+    `hex`、Base64、raw bytes 组合时，要分别记录 provider request 与 downstream item 的 exact
+    source bytes，并用 upstream-compatible fixture 做断言；禁止让 production code 与 test 从同一
+    未验证假设推导 expected value。
+39. Channel adapter 不能假设外部客户端可访问 engine reply 中的 local Markdown link。若产品要求
+    返回真实附件，producer 层必须先输出 typed artifact，再由 provider adapter upload；local path
+    必须 canonicalize、限定 allowed root/size/extension，普通 source-code citation 不得自动上传。
 
 ## 常见失败模式
 
@@ -182,6 +189,9 @@ React Component
 - Shared backend 已有 valid image `ArtifactRef`，但 committed UI 只清 processing 不 refresh canonical
   projection，导致用户必须重开；或图片已落 App Data，却因 preview allowlist 未包含 exact managed
   subtree 显示破图。相反，直接 allow whole App Data 会把 presentation bug 变成 filesystem exposure。
+- Provider 接受 media item 但客户端显示破图：upload 使用 16-byte AES key，`getuploadurl.aeskey`
+  使用其 32-character hex string，而 item `media.aes_key` 却错误 Base64 raw 16 bytes。接口返回成功
+  只证明 payload shape 被接受，不证明 downstream 能按 exact byte representation 解密。
 
 ## Optional Payload Contract
 
@@ -190,6 +200,7 @@ React Component
   - `[]` / `Some([])`：调用方显式清空 scope，backend MUST 保持空结果，禁止回退到全量 diff。
   - `["a", "b"]` / `Some([...])`：调用方提供显式 scope，backend MUST 只处理该集合。
 - 如果 UI 有“默认选中”与“用户手动清空后为空”两种空态，hook/service 层必须保留这个差异，不能只看当前集合内容。
+- Channel adapter 转发 optional multimodal collection 到 legacy engine API 前，若集合为空必须归一为未提供（`None` / `undefined`）；否则纯文本请求可能误进入 image/media branch。
 - 涉及 path scope 的 payload，frontend 与 backend 必须共享 normalize contract，至少统一 `\\` / `/`、leading slash 与 trailing slash 处理。
 
 ## 最低验证集（Minimum Verification）

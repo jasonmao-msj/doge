@@ -2,13 +2,17 @@
 
 本页为 `mossx` 已归档 OpenSpec proposal 的完整可点击索引。目录名中的日期是 archive date，不代表 proposal 首次创建时间。
 
-- Indexed proposals: `890`
-- Updated At: `2026-09-01`
+- Indexed proposals: `891`
+- Updated At: `2026-09-02`
 - Source of truth: `openspec/changes/archive/<archive-date>-<change-id>/proposal.md`
 - Back to current changes: [`../README.md`](../README.md)
 - Back to workspace overview: [`../../project.md`](../../project.md)
 
 ## 2026-09
+
+### 2026-09-02
+
+- [`2026-09-02-add-wechat-multimedia-messages`](2026-09-02-add-wechat-multimedia-messages/proposal.md) — user-authorized waiver archive；已同步 `wechat-bridge-channel`，支持微信双向 image/video/file 与 inbound voice/file fallback，并保持非微信会话 contract 不变；真实设备完整媒体矩阵保留为 manual residual
 
 ### 2026-09-01
 

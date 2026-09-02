@@ -9,6 +9,8 @@ use axum::extract::{Query, State as AxumState};
 use axum::http::{HeaderMap, StatusCode};
 use axum::routing::post;
 use axum::{Json, Router};
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine as _;
 use reqwest::header::HeaderValue;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -22,11 +24,15 @@ use crate::state::AppState;
 use crate::storage::write_settings;
 use crate::types::WechatChannelSettings;
 
+mod outbound_artifacts;
 mod target_commands;
 
 use target_commands::{handle_target_control_message, PendingTargetSelection};
 
 const MAX_MESSAGE_CHARS: usize = 1800;
+const MAX_WECHAT_IMAGE_BYTES: usize = 8 * 1024 * 1024;
+const MAX_WECHAT_INBOUND_MEDIA_BYTES: u64 = 100 * 1024 * 1024;
+const WECHAT_INBOUND_MEDIA_DIR: &str = "inbound";
 const INTERNAL_BRIDGE_HOST: &str = "127.0.0.1";
 const INTERNAL_BRIDGE_PORT: u16 = 18789;
 const INTERNAL_WEBHOOK_HOST: &str = "127.0.0.1";
@@ -106,7 +112,29 @@ pub(crate) struct WechatInboundMessage {
     #[serde(default)]
     pub(crate) message_type: String,
     #[serde(default)]
+    pub(crate) images: Vec<String>,
+    #[serde(default)]
+    pub(crate) attachments: Vec<WechatMediaAttachment>,
+    #[serde(default)]
     pub(crate) is_group: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct WechatMediaAttachment {
+    pub(crate) kind: String,
+    #[serde(default)]
+    pub(crate) mime_type: Option<String>,
+    #[serde(default)]
+    pub(crate) file_name: Option<String>,
+    #[serde(default)]
+    pub(crate) data_url: Option<String>,
+    #[serde(default)]
+    pub(crate) url: Option<String>,
+    #[serde(default)]
+    pub(crate) size: Option<u64>,
+    #[serde(default)]
+    pub(crate) path: Option<String>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -592,11 +620,51 @@ pub(crate) fn parse_inbound_message(value: Value) -> Result<WechatInboundMessage
         .get("data")
         .and_then(Value::as_object)
         .unwrap_or(object);
-    let text = first_string(data, &["text", "content", "message"]);
+    let mut text = first_string(data, &["text", "content", "message"]).unwrap_or_default();
     let msg_id = first_string(data, &["msgId", "msg_id", "id"]);
     let wxid = first_string(data, &["wxid", "fromWxid", "from_wxid", "sender"]);
     let message_type = first_string(data, &["type", "messageType", "message_type"])
         .unwrap_or_else(|| "text".to_string());
+    let attachments = data
+        .get("attachments")
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| {
+                    serde_json::from_value::<WechatMediaAttachment>(item.clone()).ok()
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    let mut images = data
+        .get("images")
+        .or_else(|| data.get("imageUrls"))
+        .and_then(Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    images.extend(
+        attachments
+            .iter()
+            .filter(|attachment| attachment.kind.eq_ignore_ascii_case("image"))
+            .filter_map(|attachment| attachment.data_url.clone()),
+    );
+    images = normalize_wechat_images(images)?;
+    if text.is_empty() {
+        text = if images.is_empty() && attachments.is_empty() {
+            String::new()
+        } else {
+            media_fallback_text(&message_type, &attachments)
+        };
+    }
     let is_group = data
         .get("isGroup")
         .or_else(|| data.get("is_group"))
@@ -605,17 +673,222 @@ pub(crate) fn parse_inbound_message(value: Value) -> Result<WechatInboundMessage
 
     let msg_id = msg_id.ok_or_else(|| "wechat webhook rejected: msgId is required".to_string())?;
     let wxid = wxid.ok_or_else(|| "wechat webhook rejected: wxid is required".to_string())?;
-    let text = text.ok_or_else(|| "wechat webhook rejected: text is required".to_string())?;
     if msg_id.trim().is_empty() || wxid.trim().is_empty() {
         return Err("wechat webhook rejected: msgId and wxid are required".to_string());
+    }
+    if text.is_empty() {
+        return Err("wechat webhook rejected: text or media is required".to_string());
     }
     Ok(WechatInboundMessage {
         msg_id,
         wxid,
         text,
         message_type,
+        images,
+        attachments,
         is_group,
     })
+}
+
+fn normalize_wechat_images(images: Vec<String>) -> Result<Vec<String>, String> {
+    let mut normalized = Vec::with_capacity(images.len());
+    for image in images {
+        let Some((metadata, payload)) = image.split_once(',') else {
+            return Err("wechat webhook rejected: image data URL is invalid".to_string());
+        };
+        if !metadata.starts_with("data:image/") || !metadata.contains(";base64") {
+            return Err("wechat webhook rejected: image data URL is invalid".to_string());
+        }
+        if payload.len() > (MAX_WECHAT_IMAGE_BYTES * 4 / 3) + 4 {
+            return Err("wechat webhook rejected: image payload is too large".to_string());
+        }
+        let bytes = BASE64
+            .decode(payload.as_bytes())
+            .map_err(|_| "wechat webhook rejected: image data URL is invalid".to_string())?;
+        if bytes.is_empty() || bytes.len() > MAX_WECHAT_IMAGE_BYTES {
+            return Err("wechat webhook rejected: image payload is too large".to_string());
+        }
+        normalized.push(image);
+    }
+    normalized.sort();
+    normalized.dedup();
+    Ok(normalized)
+}
+
+fn optional_engine_images(images: Vec<String>) -> Option<Vec<String>> {
+    (!images.is_empty()).then_some(images)
+}
+
+fn resolve_wechat_access_mode(default_access_mode: &str) -> String {
+    match default_access_mode.trim() {
+        "full-access" => "full-access",
+        "read-only" => "read-only",
+        "current" => "current",
+        // Legacy `default` and malformed persisted values must remain writable
+        // without escalating beyond the selected workspace.
+        _ => "current",
+    }
+    .to_string()
+}
+
+fn wechat_inbound_media_root(settings_path: &Path) -> PathBuf {
+    settings_path
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join("wechat-bridge")
+        .join(WECHAT_INBOUND_MEDIA_DIR)
+}
+
+fn validate_inbound_attachment_paths(
+    attachments: &mut [WechatMediaAttachment],
+    managed_root: &Path,
+) -> Result<(), String> {
+    if !attachments
+        .iter()
+        .any(|attachment| attachment.path.is_some())
+    {
+        return Ok(());
+    }
+    let canonical_root = std::fs::canonicalize(managed_root)
+        .map_err(|_| "wechat webhook rejected: inbound media root is unavailable".to_string())?;
+    let canonical_parent = managed_root
+        .parent()
+        .and_then(|parent| std::fs::canonicalize(parent).ok())
+        .ok_or_else(|| {
+            "wechat webhook rejected: inbound media parent is unavailable".to_string()
+        })?;
+    if !canonical_root.starts_with(&canonical_parent) {
+        return Err(
+            "wechat webhook rejected: inbound media root escapes managed storage".to_string(),
+        );
+    }
+    for attachment in attachments {
+        let Some(path) = attachment.path.as_deref() else {
+            continue;
+        };
+        let path = Path::new(path.trim());
+        if !path.is_absolute() {
+            return Err("wechat webhook rejected: inbound media path must be absolute".to_string());
+        }
+        let canonical = std::fs::canonicalize(path).map_err(|_| {
+            "wechat webhook rejected: inbound media path is unavailable".to_string()
+        })?;
+        let metadata = std::fs::metadata(&canonical).map_err(|_| {
+            "wechat webhook rejected: inbound media metadata is unavailable".to_string()
+        })?;
+        if !canonical.starts_with(&canonical_root) {
+            return Err(
+                "wechat webhook rejected: inbound media path is outside managed storage"
+                    .to_string(),
+            );
+        }
+        if !metadata.is_file() || metadata.len() == 0 {
+            return Err(
+                "wechat webhook rejected: inbound media must be a non-empty file".to_string(),
+            );
+        }
+        if metadata.len() > MAX_WECHAT_INBOUND_MEDIA_BYTES {
+            return Err("wechat webhook rejected: inbound media is too large".to_string());
+        }
+        attachment.path = Some(canonical.to_string_lossy().into_owned());
+        attachment.size = Some(metadata.len());
+        if attachment.file_name.is_none() {
+            attachment.file_name = canonical
+                .file_name()
+                .and_then(|value| value.to_str())
+                .map(ToString::to_string);
+        }
+    }
+    Ok(())
+}
+
+fn materialize_inbound_prompt(text: &str, attachments: &[WechatMediaAttachment]) -> String {
+    let entries = attachments
+        .iter()
+        .filter_map(|attachment| {
+            let path = attachment.path.as_deref()?;
+            Some(serde_json::json!({
+                "kind": attachment.kind,
+                "fileName": attachment.file_name,
+                "mimeType": attachment.mime_type,
+                "size": attachment.size,
+                "localPath": path,
+            }))
+        })
+        .collect::<Vec<_>>();
+    if entries.is_empty() {
+        return text.to_string();
+    }
+    let attachment_context = entries
+        .iter()
+        .filter_map(|entry| serde_json::to_string(entry).ok())
+        .collect::<Vec<_>>()
+        .join("\n");
+    format!("{text}\n\n[微信附件：以下 localPath 是当前消息已验证的本地文件]\n{attachment_context}")
+}
+
+fn prepare_inbound_engine_input(
+    text: &str,
+    attachments: &[WechatMediaAttachment],
+    mut images: Vec<String>,
+) -> (String, Option<Vec<String>>) {
+    for attachment in attachments {
+        if !attachment.kind.eq_ignore_ascii_case("image")
+            || attachment
+                .size
+                .is_none_or(|size| size > MAX_WECHAT_IMAGE_BYTES as u64)
+        {
+            continue;
+        }
+        let Some(path) = attachment.path.as_deref() else {
+            continue;
+        };
+        let Ok(bytes) = std::fs::read(path) else {
+            continue;
+        };
+        if bytes.is_empty() || bytes.len() > MAX_WECHAT_IMAGE_BYTES {
+            continue;
+        }
+        let mime_type = attachment
+            .mime_type
+            .as_deref()
+            .filter(|value| value.starts_with("image/"))
+            .unwrap_or("image/jpeg");
+        images.push(format!("data:{mime_type};base64,{}", BASE64.encode(bytes)));
+    }
+    images.sort();
+    images.dedup();
+    (
+        materialize_inbound_prompt(text, attachments),
+        optional_engine_images(images),
+    )
+}
+
+fn media_fallback_text(message_type: &str, attachments: &[WechatMediaAttachment]) -> String {
+    let kinds = attachments
+        .iter()
+        .map(|attachment| attachment.kind.as_str())
+        .filter(|kind| !kind.is_empty())
+        .collect::<Vec<_>>();
+    let kind = if kinds.is_empty() {
+        message_type
+    } else {
+        kinds[0]
+    };
+    let materialized = attachments
+        .iter()
+        .any(|attachment| attachment.path.is_some());
+    match kind.to_ascii_lowercase().as_str() {
+        "image" => "收到一张微信图片，请描述图片内容。".to_string(),
+        "voice" if materialized => "收到一条微信语音消息，请读取附件并根据内容回应。".to_string(),
+        "video" if materialized => "收到一段微信视频消息，请读取附件并根据内容回应。".to_string(),
+        "file" if materialized => "收到一个微信文件，请读取附件并根据内容回应。".to_string(),
+        "voice" => "收到一条微信语音消息，但附件下载或解密失败，请让用户重试。".to_string(),
+        "video" => "收到一段微信视频消息，但附件下载或解密失败，请让用户重试。".to_string(),
+        "file" => "收到一个微信文件，但附件下载或解密失败，请让用户重试。".to_string(),
+        _ => "收到一条微信媒体消息。当前 engine 未提供该媒体类型的直接输入，请补充文字说明。"
+            .to_string(),
+    }
 }
 
 fn first_string(object: &serde_json::Map<String, Value>, keys: &[&str]) -> Option<String> {
@@ -699,6 +972,289 @@ fn extract_sync_session_id(response: &Value) -> Option<String> {
         .map(ToString::to_string)
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct WechatOutboundMedia {
+    path: String,
+    kind: String,
+    mime_type: String,
+    file_name: Option<String>,
+}
+
+fn outbound_media_kind(media_type: Option<&str>, path: &Path) -> &'static str {
+    let media_type = media_type.unwrap_or_default().trim().to_ascii_lowercase();
+    if media_type.starts_with("image/") {
+        return "image";
+    }
+    if media_type.starts_with("video/") {
+        return "video";
+    }
+    if media_type.starts_with("audio/") || media_type == "voice" {
+        return "voice";
+    }
+    if !media_type.is_empty() {
+        return "file";
+    }
+    match path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "png" | "jpg" | "jpeg" | "gif" | "webp" => "image",
+        "mp4" | "mov" | "webm" | "mkv" | "avi" | "m4v" => "video",
+        "mp3" | "wav" | "m4a" | "aac" | "ogg" | "opus" => "voice",
+        _ => "file",
+    }
+}
+
+fn outbound_media_mime_type(kind: &str, path: &Path) -> &'static str {
+    match path
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .unwrap_or_default()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "mp4" | "m4v" => "video/mp4",
+        "mov" => "video/quicktime",
+        "webm" => "video/webm",
+        "mp3" => "audio/mpeg",
+        "wav" => "audio/wav",
+        "m4a" => "audio/mp4",
+        "pdf" => "application/pdf",
+        "txt" => "text/plain",
+        "json" => "application/json",
+        _ if kind == "image" => "image/png",
+        _ if kind == "video" => "video/mp4",
+        _ if kind == "voice" => "audio/mpeg",
+        _ => "application/octet-stream",
+    }
+}
+
+fn extract_outbound_media(value: &Value) -> Vec<WechatOutboundMedia> {
+    const IMAGE_KEYS: [&str; 5] = [
+        "images",
+        "imagePaths",
+        "image_paths",
+        "generatedImages",
+        "generated_images",
+    ];
+    const VIDEO_KEYS: [&str; 3] = ["videos", "videoPaths", "video_paths"];
+    const FILE_KEYS: [&str; 3] = ["files", "filePaths", "file_paths"];
+    const VOICE_KEYS: [&str; 5] = [
+        "audio",
+        "audioPaths",
+        "audio_paths",
+        "voicePaths",
+        "voice_paths",
+    ];
+    const ARTIFACT_KEYS: [&str; 3] = ["artifacts", "artifactRefs", "artifact_refs"];
+
+    fn add_path(
+        media: &mut Vec<WechatOutboundMedia>,
+        seen: &mut HashSet<String>,
+        candidate: &str,
+        forced_kind: Option<&str>,
+        media_type: Option<&str>,
+        file_name: Option<&str>,
+    ) {
+        let candidate = candidate.trim();
+        if candidate.is_empty()
+            || candidate.starts_with("data:")
+            || candidate.starts_with("http://")
+            || candidate.starts_with("https://")
+        {
+            return;
+        }
+        let path = Path::new(candidate);
+        if !path.is_absolute() {
+            return;
+        }
+        let kind = forced_kind.unwrap_or_else(|| outbound_media_kind(media_type, path));
+        let dedupe_key = format!("{kind}\0{candidate}");
+        if seen.insert(dedupe_key) {
+            let mime_type = media_type
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToString::to_string)
+                .unwrap_or_else(|| outbound_media_mime_type(kind, path).to_string());
+            media.push(WechatOutboundMedia {
+                path: candidate.to_string(),
+                kind: kind.to_string(),
+                mime_type,
+                file_name: file_name
+                    .map(str::trim)
+                    .filter(|value| !value.is_empty())
+                    .map(ToString::to_string),
+            });
+        }
+    }
+
+    fn add_value(
+        value: &Value,
+        media: &mut Vec<WechatOutboundMedia>,
+        seen: &mut HashSet<String>,
+        forced_kind: Option<&str>,
+    ) {
+        match value {
+            Value::String(candidate) => add_path(media, seen, candidate, forced_kind, None, None),
+            Value::Array(items) => {
+                for item in items {
+                    add_value(item, media, seen, forced_kind);
+                }
+            }
+            Value::Object(object) => {
+                let declared_kind = object
+                    .get("kind")
+                    .and_then(Value::as_str)
+                    .map(str::trim)
+                    .filter(|kind| matches!(*kind, "image" | "video" | "file" | "voice"));
+                let media_type = object
+                    .get("mediaType")
+                    .or_else(|| object.get("media_type"))
+                    .and_then(Value::as_str);
+                let file_name = object
+                    .get("fileName")
+                    .or_else(|| object.get("file_name"))
+                    .or_else(|| object.get("name"))
+                    .and_then(Value::as_str);
+                for key in ["locator", "path", "filePath", "file_path"] {
+                    if let Some(candidate) = object.get(key).and_then(Value::as_str) {
+                        add_path(
+                            media,
+                            seen,
+                            candidate,
+                            forced_kind.or(declared_kind),
+                            media_type,
+                            file_name,
+                        );
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn visit(
+        value: &Value,
+        depth: usize,
+        media: &mut Vec<WechatOutboundMedia>,
+        seen: &mut HashSet<String>,
+    ) {
+        if depth > 3 {
+            return;
+        }
+        let Some(object) = value.as_object() else {
+            return;
+        };
+        for key in IMAGE_KEYS {
+            if let Some(images) = object.get(key) {
+                add_value(images, media, seen, Some("image"));
+            }
+        }
+        for key in VIDEO_KEYS {
+            if let Some(videos) = object.get(key) {
+                add_value(videos, media, seen, Some("video"));
+            }
+        }
+        for key in FILE_KEYS {
+            if let Some(files) = object.get(key) {
+                add_value(files, media, seen, Some("file"));
+            }
+        }
+        for key in VOICE_KEYS {
+            if let Some(voice) = object.get(key) {
+                add_value(voice, media, seen, Some("voice"));
+            }
+        }
+        for key in ARTIFACT_KEYS {
+            if let Some(artifacts) = object.get(key) {
+                add_value(artifacts, media, seen, None);
+            }
+        }
+        for key in ["data", "result", "response", "payload"] {
+            if let Some(child) = object.get(key) {
+                visit(child, depth + 1, media, seen);
+            }
+        }
+    }
+
+    let mut media = Vec::new();
+    let mut seen = HashSet::new();
+    visit(value, 0, &mut media, &mut seen);
+    media
+}
+
+fn prepare_outbound_reply(
+    response: &Value,
+    workspace_root: &Path,
+    app_data_dir: &Path,
+) -> (String, Vec<WechatOutboundMedia>) {
+    let raw_reply = crate::engine::extract_turn_result_text(Some(response)).unwrap_or_default();
+    let (reply, linked_media) = outbound_artifacts::materialize_wechat_markdown_artifacts(
+        &raw_reply,
+        workspace_root,
+        app_data_dir,
+    );
+    let mut combined = extract_outbound_media(response);
+    combined.extend(linked_media);
+
+    let mut seen = HashSet::new();
+    let mut failures = Vec::new();
+    let media = combined
+        .into_iter()
+        .filter_map(|item| {
+            let item = match outbound_artifacts::validate_wechat_outbound_media(
+                &item,
+                workspace_root,
+                app_data_dir,
+            ) {
+                Ok(item) => item,
+                Err(reason) => {
+                    let file_name = Path::new(&item.path)
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .filter(|name| !name.trim().is_empty())
+                        .unwrap_or("attachment");
+                    failures.push(format!("[附件未发送：{file_name}（{reason}）]"));
+                    return None;
+                }
+            };
+            let normalized_path = Path::new(&item.path).to_string_lossy().into_owned();
+            #[cfg(windows)]
+            let normalized_path = normalized_path.to_ascii_lowercase();
+            seen.insert(format!("{}\0{normalized_path}", item.kind))
+                .then_some(item)
+        })
+        .collect();
+    let reply = if failures.is_empty() {
+        reply
+    } else if reply.trim().is_empty() {
+        failures.join("\n")
+    } else {
+        format!("{reply}\n{}", failures.join("\n"))
+    };
+    (reply, media)
+}
+
+fn prepare_outbound_reply_without_workspace(
+    response: &Value,
+) -> (String, Vec<WechatOutboundMedia>) {
+    let mut reply = crate::engine::extract_turn_result_text(Some(response)).unwrap_or_default();
+    if !extract_outbound_media(response).is_empty() {
+        if !reply.trim().is_empty() {
+            reply.push('\n');
+        }
+        reply.push_str("[附件未发送：无法确认当前工作区]");
+    }
+    (reply, Vec::new())
+}
+
 fn readable_bind_error(error: &std::io::Error) -> &'static str {
     match error.kind() {
         std::io::ErrorKind::AddrInUse => "端口已被占用",
@@ -755,7 +1311,7 @@ async fn wechat_webhook(
             )
         }
     };
-    let message = match parse_inbound_message(payload) {
+    let mut message = match parse_inbound_message(payload) {
         Ok(message) => message,
         Err(error) => {
             return (
@@ -768,6 +1324,15 @@ async fn wechat_webhook(
         return (
             StatusCode::OK,
             Json(serde_json::json!({ "ok": true, "ignored": "group" })),
+        );
+    }
+    let inbound_media_root = wechat_inbound_media_root(&state.settings_path);
+    if let Err(error) =
+        validate_inbound_attachment_paths(&mut message.attachments, &inbound_media_root)
+    {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "ok": false, "error": error })),
         );
     }
     let accepted = {
@@ -806,6 +1371,8 @@ async fn wechat_webhook(
     let text_for_task = message.text.clone();
     let msg_id_for_task = message.msg_id.clone();
     let message_type_for_task = message.message_type.clone();
+    let images_for_task = message.images.clone();
+    let attachments_for_task = message.attachments.clone();
     tokio::spawn(async move {
         let state = app_for_task.state::<AppState>();
         let session_lock = state.wechat.session_lock(&wxid_for_task).await;
@@ -860,6 +1427,12 @@ async fn wechat_webhook(
             .await
             .session_for_target(&wxid_for_task, &target);
         let continue_session = existing_session_id.is_some();
+        let access_mode_for_engine = {
+            let settings = state.app_settings.lock().await;
+            resolve_wechat_access_mode(&settings.default_access_mode)
+        };
+        let (text_for_engine, images_for_engine) =
+            prepare_inbound_engine_input(&text_for_task, &attachments_for_task, images_for_task);
         let _ = app_for_task.emit(
             "wechat://message",
             serde_json::json!({
@@ -875,13 +1448,13 @@ async fn wechat_webhook(
         );
         let result = crate::engine::engine_send_message_sync_inner(
             target.workspace_id.clone(),
-            text_for_task.clone(),
+            text_for_engine,
             Some(target.engine),
             target.model.clone(),
             None,
             Some(false),
-            None,
-            None,
+            Some(access_mode_for_engine),
+            images_for_engine,
             continue_session,
             existing_session_id,
             None,
@@ -899,6 +1472,12 @@ async fn wechat_webhook(
                 let Some(session_id) = extract_sync_session_id(&response) else {
                     log::error!("[wechat] agent turn did not return a canonical session id");
                     return;
+                };
+                let workspace_root = {
+                    let workspaces = state.workspaces.lock().await;
+                    workspaces
+                        .get(&target.workspace_id)
+                        .map(|workspace| PathBuf::from(&workspace.path))
                 };
                 {
                     let mut ledger = state.wechat.ledger.lock().await;
@@ -934,11 +1513,29 @@ async fn wechat_webhook(
                         "model": target.model,
                     }),
                 );
-                if let Some(reply) = crate::engine::extract_turn_result_text(Some(&response)) {
-                    if let Err(error) = send_reply_with_state(&state, &wxid_for_task, &reply).await
-                    {
-                        log::error!("[wechat] reply delivery failed: {error}");
-                    }
+                let (reply, outbound_media) = if let Some(workspace_root) = workspace_root {
+                    let app_data_dir = state
+                        .storage_path
+                        .parent()
+                        .unwrap_or_else(|| Path::new("."));
+                    prepare_outbound_reply(&response, &workspace_root, app_data_dir)
+                } else {
+                    log::warn!(
+                        "[wechat] outbound artifact materialization skipped: workspace unavailable"
+                    );
+                    prepare_outbound_reply_without_workspace(&response)
+                };
+                if reply.trim().is_empty() && outbound_media.is_empty() {
+                    log::warn!("[wechat] agent turn returned neither text nor outbound media");
+                } else if let Err(error) = send_reply_with_media_with_state(
+                    &state,
+                    &wxid_for_task,
+                    &reply,
+                    &outbound_media,
+                )
+                .await
+                {
+                    log::error!("[wechat] reply delivery failed: {error}");
                 }
             }
             Err(error) => {
@@ -1066,6 +1663,62 @@ struct WechatBridgeClient {
     device_type: String,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct WechatOutboundMediaRequest {
+    path: String,
+    kind: String,
+    mime_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    file_name: Option<String>,
+}
+
+fn validate_outbound_media_path(media: &WechatOutboundMedia) -> Result<&Path, String> {
+    if media.kind == "voice" {
+        return Err("微信暂不支持发送语音或音频 artifact".to_string());
+    }
+    if !matches!(media.kind.as_str(), "image" | "video" | "file") {
+        return Err(format!("微信不支持发送 {} 类型 artifact", media.kind));
+    }
+    let path = Path::new(media.path.trim());
+    if !path.is_absolute() {
+        return Err("生成媒体路径必须是绝对路径".to_string());
+    }
+    let metadata = std::fs::metadata(path).map_err(|error| format!("生成媒体不可读：{error}"))?;
+    if !metadata.is_file() {
+        return Err("生成媒体路径不是文件".to_string());
+    }
+    if metadata.len() == 0 {
+        return Err("生成媒体文件为空".to_string());
+    }
+    if metadata.len() > MAX_WECHAT_IMAGE_BYTES as u64 {
+        return Err(format!(
+            "生成媒体超过 {} MB 限制",
+            MAX_WECHAT_IMAGE_BYTES / (1024 * 1024)
+        ));
+    }
+    Ok(path)
+}
+
+fn build_outbound_media_payload(wxid: &str, media: &WechatOutboundMedia) -> Result<Value, String> {
+    let path_ref = validate_outbound_media_path(media)?;
+    Ok(serde_json::json!({
+        "to": wxid,
+        "content": "",
+        "media": WechatOutboundMediaRequest {
+            path: path_ref.to_string_lossy().into_owned(),
+            kind: media.kind.clone(),
+            mime_type: media.mime_type.clone(),
+            file_name: media.file_name.clone().or_else(|| {
+                path_ref
+                    .file_name()
+                    .and_then(|value| value.to_str())
+                    .map(ToString::to_string)
+            }),
+        }
+    }))
+}
+
 struct WechatBridgeLoginStatus {
     state: WechatLoginState,
     message: String,
@@ -1171,12 +1824,22 @@ impl WechatBridgeClient {
     }
 
     async fn send_text(&self, wxid: &str, content: &str) -> Result<(), String> {
+        self.send_request(serde_json::json!({ "to": wxid, "content": content }))
+            .await
+    }
+
+    async fn send_media(&self, wxid: &str, media: &WechatOutboundMedia) -> Result<(), String> {
+        self.send_request(build_outbound_media_payload(wxid, media)?)
+            .await
+    }
+
+    async fn send_request(&self, payload: Value) -> Result<(), String> {
         let response = self
             .client
             .post(format!("{}/message/send", self.base_url))
             .header("x-api-key", &self.api_key)
             .bearer_auth(&self.api_key)
-            .json(&serde_json::json!({ "to": wxid, "content": content }))
+            .json(&payload)
             .send()
             .await
             .map_err(|_| "bridge 连接失败，消息未发送".to_string())?;
@@ -1292,15 +1955,30 @@ async fn bridge_client_for_state(state: &AppState) -> Result<WechatBridgeClient,
 }
 
 async fn send_reply_with_state(state: &AppState, wxid: &str, text: &str) -> Result<usize, String> {
+    send_reply_with_media_with_state(state, wxid, text, &[]).await
+}
+
+async fn send_reply_with_media_with_state(
+    state: &AppState,
+    wxid: &str,
+    text: &str,
+    outbound_media: &[WechatOutboundMedia],
+) -> Result<usize, String> {
     let chunks = split_reply(text);
-    if chunks.is_empty() {
+    if chunks.is_empty() && outbound_media.is_empty() {
         return Ok(0);
+    }
+    for media in outbound_media {
+        validate_outbound_media_path(media)?;
     }
     let client = bridge_client_for_state(state).await?;
     for chunk in &chunks {
         client.send_text(wxid, chunk).await?;
     }
-    Ok(chunks.len())
+    for media in outbound_media {
+        client.send_media(wxid, media).await?;
+    }
+    Ok(chunks.len() + outbound_media.len())
 }
 
 #[tauri::command]
@@ -1565,6 +2243,228 @@ mod tests {
     }
 
     #[test]
+    fn extracts_typed_current_response_media() {
+        let image_path = std::env::temp_dir()
+            .join("doge-generated-image.png")
+            .to_string_lossy()
+            .into_owned();
+        let video_path = std::env::temp_dir()
+            .join("doge-generated-video.mp4")
+            .to_string_lossy()
+            .into_owned();
+        let file_path = std::env::temp_dir()
+            .join("doge-generated-report.pdf")
+            .to_string_lossy()
+            .into_owned();
+        let voice_path = std::env::temp_dir()
+            .join("doge-generated-voice.mp3")
+            .to_string_lossy()
+            .into_owned();
+        let audio_file_path = std::env::temp_dir()
+            .join("doge-generated-audio.wav")
+            .to_string_lossy()
+            .into_owned();
+        let value = serde_json::json!({
+            "text": "done",
+            "images": [image_path, "data:image/png;base64,aGVsbG8=", "https://example.com/a.png"],
+            "artifacts": [
+                { "mediaType": "video/mp4", "locator": video_path },
+                { "mediaType": "application/pdf", "locator": file_path, "fileName": "report.pdf" },
+                { "mediaType": "audio/mpeg", "locator": voice_path },
+                { "kind": "file", "mediaType": "audio/wav", "locator": audio_file_path, "fileName": "audio.wav" }
+            ]
+        });
+        let media = extract_outbound_media(&value);
+        assert_eq!(media.len(), 5);
+        assert_eq!(media[0].kind, "image");
+        assert_eq!(media[1].kind, "video");
+        assert_eq!(media[2].kind, "file");
+        assert_eq!(media[2].file_name.as_deref(), Some("report.pdf"));
+        assert_eq!(media[3].kind, "voice");
+        assert_eq!(media[4].kind, "file");
+        assert_eq!(media[4].mime_type, "audio/wav");
+        assert_eq!(media[4].file_name.as_deref(), Some("audio.wav"));
+    }
+
+    #[test]
+    fn prepares_local_artifacts_for_every_engine_response() {
+        let root =
+            std::env::temp_dir().join(format!("doge-wechat-claude-{}", uuid::Uuid::new_v4()));
+        let workspace = root.join("workspace");
+        let app_data = root.join("app-data");
+        std::fs::create_dir_all(&workspace).expect("create workspace");
+        std::fs::create_dir_all(&app_data).expect("create app data");
+        std::fs::write(workspace.join("report.pptx"), b"pptx bytes").expect("write pptx");
+        std::fs::write(workspace.join("clip.mp4"), b"video bytes").expect("write mp4");
+        std::fs::write(workspace.join("answer.wav"), b"wav bytes").expect("write wav");
+        for engine in ["claude", "codex", "opencode", "kimi", "grok", "gemini"] {
+            let response = serde_json::json!({
+                "engine": engine,
+                "sessionId": format!("{engine}-session"),
+                "text": "已生成：[下载报告](report.pptx)\n[下载视频](clip.mp4)\n[下载音频](answer.wav)"
+            });
+
+            let (reply, media) = prepare_outbound_reply(&response, &workspace, &app_data);
+
+            assert_eq!(reply, "已生成：", "engine={engine}");
+            assert_eq!(media.len(), 3, "engine={engine}");
+            assert_eq!(media[0].kind, "file", "engine={engine}");
+            assert_eq!(
+                media[0].file_name.as_deref(),
+                Some("report.pptx"),
+                "engine={engine}"
+            );
+            assert_eq!(media[1].kind, "video", "engine={engine}");
+            assert_eq!(media[1].mime_type, "video/mp4", "engine={engine}");
+            assert_eq!(media[2].kind, "file", "engine={engine}");
+            assert_eq!(media[2].mime_type, "audio/wav", "engine={engine}");
+        }
+        std::fs::remove_dir_all(root).expect("remove test root");
+    }
+
+    #[test]
+    fn rejects_structured_media_outside_the_workspace_boundary() {
+        let root = std::env::temp_dir().join(format!(
+            "doge-wechat-structured-boundary-{}",
+            uuid::Uuid::new_v4()
+        ));
+        let workspace = root.join("workspace");
+        let app_data = root.join("app-data");
+        std::fs::create_dir_all(&workspace).expect("create workspace");
+        std::fs::create_dir_all(&app_data).expect("create app data");
+        let outside = root.join("outside.pdf");
+        std::fs::write(&outside, b"outside bytes").expect("write outside file");
+        let response = serde_json::json!({
+            "engine": "claude",
+            "text": "已生成报告",
+            "artifacts": [{
+                "kind": "file",
+                "mediaType": "application/pdf",
+                "locator": outside
+            }]
+        });
+
+        let (reply, media) = prepare_outbound_reply(&response, &workspace, &app_data);
+
+        assert!(media.is_empty());
+        assert!(reply.contains("已生成报告"));
+        assert!(reply.contains("附件未发送：outside.pdf（文件不在允许目录内）"));
+        std::fs::remove_dir_all(root).expect("remove test root");
+    }
+
+    #[test]
+    fn refuses_structured_media_when_workspace_is_unavailable() {
+        let response = serde_json::json!({
+            "engine": "gemini",
+            "text": "已生成图片",
+            "images": ["C:\\private\\preview.png"]
+        });
+
+        let (reply, media) = prepare_outbound_reply_without_workspace(&response);
+
+        assert!(media.is_empty());
+        assert_eq!(reply, "已生成图片\n[附件未发送：无法确认当前工作区]");
+    }
+
+    #[test]
+    fn deduplicates_structured_and_markdown_media_for_codex_responses() {
+        let root = std::env::temp_dir().join(format!("doge-wechat-codex-{}", uuid::Uuid::new_v4()));
+        let workspace = root.join("workspace");
+        let app_data = root.join("app-data");
+        std::fs::create_dir_all(&workspace).expect("create workspace");
+        std::fs::create_dir_all(&app_data).expect("create app data");
+        let image_path = workspace.join("preview.png");
+        std::fs::write(&image_path, b"png bytes").expect("write image");
+        let response = serde_json::json!({
+            "engine": "codex",
+            "sessionId": "codex-session",
+            "text": format!("![预览](<{}>)", image_path.display()),
+            "images": [image_path.to_string_lossy()]
+        });
+
+        let (reply, media) = prepare_outbound_reply(&response, &workspace, &app_data);
+
+        assert!(reply.is_empty());
+        assert_eq!(media.len(), 1);
+        assert_eq!(media[0].kind, "image");
+        std::fs::remove_dir_all(root).expect("remove test root");
+    }
+
+    #[test]
+    fn builds_image_media_request_without_changing_text_payload_shape() {
+        let root = std::env::temp_dir().join(format!("doge-wechat-image-{}", uuid::Uuid::new_v4()));
+        std::fs::write(&root, b"png bytes").expect("write test image");
+        let media = WechatOutboundMedia {
+            path: root.to_string_lossy().into_owned(),
+            kind: "image".to_string(),
+            mime_type: "image/png".to_string(),
+            file_name: None,
+        };
+        let payload = build_outbound_media_payload("wxid-a", &media).expect("media payload");
+        assert_eq!(payload.pointer("/to"), Some(&serde_json::json!("wxid-a")));
+        assert_eq!(payload.pointer("/content"), Some(&serde_json::json!("")));
+        assert_eq!(
+            payload.pointer("/media/kind"),
+            Some(&serde_json::json!("image"))
+        );
+        assert_eq!(
+            payload.pointer("/media/mimeType"),
+            Some(&serde_json::json!("image/png"))
+        );
+        assert_eq!(
+            payload.pointer("/media/path"),
+            Some(&serde_json::json!(root.to_string_lossy().to_string()))
+        );
+        std::fs::remove_file(root).expect("remove test image");
+    }
+
+    #[test]
+    fn builds_video_and_file_requests_and_rejects_voice() {
+        let root = std::env::temp_dir().join(format!("doge-wechat-media-{}", uuid::Uuid::new_v4()));
+        std::fs::write(&root, b"media bytes").expect("write test media");
+        let path = root.to_string_lossy().into_owned();
+
+        let video = WechatOutboundMedia {
+            path: path.clone(),
+            kind: "video".to_string(),
+            mime_type: "video/mp4".to_string(),
+            file_name: Some("clip.mp4".to_string()),
+        };
+        let payload = build_outbound_media_payload("wxid-a", &video).expect("video payload");
+        assert_eq!(
+            payload.pointer("/media/kind"),
+            Some(&serde_json::json!("video"))
+        );
+        assert_eq!(
+            payload.pointer("/media/fileName"),
+            Some(&serde_json::json!("clip.mp4"))
+        );
+
+        let file = WechatOutboundMedia {
+            path: path.clone(),
+            kind: "file".to_string(),
+            mime_type: "application/pdf".to_string(),
+            file_name: Some("report.pdf".to_string()),
+        };
+        let payload = build_outbound_media_payload("wxid-a", &file).expect("file payload");
+        assert_eq!(
+            payload.pointer("/media/kind"),
+            Some(&serde_json::json!("file"))
+        );
+
+        let voice = WechatOutboundMedia {
+            path,
+            kind: "voice".to_string(),
+            mime_type: "audio/mpeg".to_string(),
+            file_name: Some("voice.mp3".to_string()),
+        };
+        let error = build_outbound_media_payload("wxid-a", &voice)
+            .expect_err("voice must remain unsupported");
+        assert!(error.contains("暂不支持发送语音"));
+        std::fs::remove_file(root).expect("remove test media");
+    }
+
+    #[test]
     fn splits_unicode_reply_by_character_boundary() {
         let text = "中".repeat(MAX_MESSAGE_CHARS + 1);
         let chunks = split_reply(&text);
@@ -1587,6 +2487,194 @@ mod tests {
         assert_eq!(message.msg_id, "m1");
         assert_eq!(message.wxid, "wxid-a");
         assert!(message.is_group);
+    }
+
+    #[test]
+    fn parses_image_attachment_without_text_and_exposes_engine_image_input() {
+        let image = "data:image/png;base64,aGVsbG8=";
+        let message = parse_inbound_message(serde_json::json!({
+            "msgId": "image-1",
+            "wxid": "wxid-a",
+            "messageType": "image",
+            "attachments": [{
+                "kind": "image",
+                "mimeType": "image/png",
+                "dataUrl": image,
+                "size": 5
+            }]
+        }))
+        .expect("valid image message");
+        assert_eq!(message.text, "收到一张微信图片，请描述图片内容。");
+        assert_eq!(message.images, vec![image]);
+        assert_eq!(
+            message.attachments[0].mime_type.as_deref(),
+            Some("image/png")
+        );
+    }
+
+    #[test]
+    fn parses_non_image_media_with_readable_fallback() {
+        let message = parse_inbound_message(serde_json::json!({
+            "msgId": "file-1",
+            "wxid": "wxid-a",
+            "messageType": "file",
+            "attachments": [{
+                "kind": "file",
+                "mimeType": "application/pdf",
+                "fileName": "report.pdf",
+                "size": 1024
+            }]
+        }))
+        .expect("valid file message");
+        assert!(message.images.is_empty());
+        assert!(message.text.contains("微信文件"));
+        assert_eq!(
+            message.attachments[0].file_name.as_deref(),
+            Some("report.pdf")
+        );
+    }
+
+    #[test]
+    fn validates_managed_attachment_and_builds_wechat_only_prompt() {
+        let root = std::env::temp_dir().join(format!("doge-wechat-inbox-{}", uuid::Uuid::new_v4()));
+        let managed = root.join("wechat-bridge").join(WECHAT_INBOUND_MEDIA_DIR);
+        std::fs::create_dir_all(&managed).expect("create managed inbox");
+        let image_path = managed.join("photo.png");
+        std::fs::write(&image_path, b"png bytes").expect("write inbound image");
+        let mut attachments = vec![WechatMediaAttachment {
+            kind: "image".to_string(),
+            mime_type: Some("image/png".to_string()),
+            file_name: Some("photo.png".to_string()),
+            data_url: None,
+            url: None,
+            size: None,
+            path: Some(image_path.to_string_lossy().into_owned()),
+        }];
+
+        validate_inbound_attachment_paths(&mut attachments, &managed).expect("managed attachment");
+        let (prompt, images) =
+            prepare_inbound_engine_input("看一下这张图", &attachments, Vec::new());
+
+        assert!(prompt.starts_with("看一下这张图\n\n[微信附件"));
+        assert!(prompt.contains("\"localPath\""));
+        let attachment_json = prompt.lines().last().expect("attachment JSON");
+        let attachment: Value = serde_json::from_str(attachment_json).expect("valid JSON");
+        let canonical_image = std::fs::canonicalize(&image_path)
+            .expect("canonical image")
+            .to_string_lossy()
+            .into_owned();
+        assert_eq!(
+            attachment.get("localPath").and_then(Value::as_str),
+            Some(canonical_image.as_str())
+        );
+        assert_eq!(
+            images,
+            Some(vec!["data:image/png;base64,cG5nIGJ5dGVz".to_string()])
+        );
+        std::fs::remove_dir_all(root).expect("remove test root");
+    }
+
+    #[test]
+    fn text_only_engine_input_is_byte_for_byte_unchanged() {
+        let original = "普通桌面/微信文本保持原样\n第二行";
+        let (prompt, images) = prepare_inbound_engine_input(original, &[], Vec::new());
+        assert_eq!(prompt, original);
+        assert_eq!(images, None);
+    }
+
+    #[test]
+    fn inbound_attachment_paths_fail_closed_outside_managed_root() {
+        let root =
+            std::env::temp_dir().join(format!("doge-wechat-escape-{}", uuid::Uuid::new_v4()));
+        let managed = root.join("wechat-bridge").join(WECHAT_INBOUND_MEDIA_DIR);
+        std::fs::create_dir_all(&managed).expect("create managed inbox");
+        let outside = root.join("outside.pdf");
+        std::fs::write(&outside, b"outside").expect("write outside file");
+        let mut attachments = vec![WechatMediaAttachment {
+            kind: "file".to_string(),
+            mime_type: Some("application/pdf".to_string()),
+            file_name: Some("outside.pdf".to_string()),
+            data_url: None,
+            url: None,
+            size: None,
+            path: Some(outside.to_string_lossy().into_owned()),
+        }];
+
+        let error = validate_inbound_attachment_paths(&mut attachments, &managed)
+            .expect_err("outside path must fail");
+        assert!(error.contains("outside managed storage"));
+        std::fs::remove_dir_all(root).expect("remove test root");
+    }
+
+    #[test]
+    fn inbound_attachment_paths_reject_empty_and_oversized_files() {
+        let root = std::env::temp_dir().join(format!("doge-wechat-size-{}", uuid::Uuid::new_v4()));
+        let managed = root.join("wechat-bridge").join(WECHAT_INBOUND_MEDIA_DIR);
+        std::fs::create_dir_all(&managed).expect("create managed inbox");
+        let empty = managed.join("empty.bin");
+        std::fs::write(&empty, []).expect("write empty file");
+        let oversized = managed.join("oversized.bin");
+        std::fs::File::create(&oversized)
+            .expect("create oversized file")
+            .set_len(MAX_WECHAT_INBOUND_MEDIA_BYTES + 1)
+            .expect("set sparse size");
+
+        for (path, expected) in [(empty, "non-empty"), (oversized, "too large")] {
+            let mut attachments = vec![WechatMediaAttachment {
+                kind: "file".to_string(),
+                mime_type: None,
+                file_name: None,
+                data_url: None,
+                url: None,
+                size: None,
+                path: Some(path.to_string_lossy().into_owned()),
+            }];
+            let error = validate_inbound_attachment_paths(&mut attachments, &managed)
+                .expect_err("invalid file must fail");
+            assert!(error.contains(expected));
+        }
+        std::fs::remove_dir_all(root).expect("remove test root");
+    }
+
+    #[test]
+    fn text_only_messages_do_not_enable_engine_image_mode() {
+        assert_eq!(optional_engine_images(Vec::new()), None);
+        assert_eq!(
+            optional_engine_images(vec!["data:image/png;base64,aGVsbG8=".to_string()]),
+            Some(vec!["data:image/png;base64,aGVsbG8=".to_string()])
+        );
+    }
+
+    #[test]
+    fn wechat_access_mode_inherits_explicit_defaults_and_bounds_legacy_values() {
+        for access_mode in ["full-access", "current", "read-only"] {
+            assert_eq!(resolve_wechat_access_mode(access_mode), access_mode);
+        }
+        for access_mode in ["default", "", "unknown", "  default  "] {
+            assert_eq!(resolve_wechat_access_mode(access_mode), "current");
+        }
+    }
+
+    #[test]
+    fn rejects_invalid_or_oversized_image_data_urls() {
+        let invalid = parse_inbound_message(serde_json::json!({
+            "msgId": "image-2",
+            "wxid": "wxid-a",
+            "images": ["data:image/png;base64,not-valid"]
+        }))
+        .expect_err("invalid image must be rejected");
+        assert!(invalid.contains("image data URL is invalid"));
+
+        let oversized = parse_inbound_message(serde_json::json!({
+            "msgId": "image-3",
+            "wxid": "wxid-a",
+            "images": [format!(
+                "data:image/png;base64,{}",
+                "A".repeat((MAX_WECHAT_IMAGE_BYTES * 4 / 3) + 8)
+            )]
+        }))
+        .expect_err("oversized image must be rejected");
+        assert!(oversized.contains("image payload is too large"));
     }
 
     #[test]

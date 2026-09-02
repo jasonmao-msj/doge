@@ -1,0 +1,22 @@
+# Implementation Tasks
+
+- [x] 扩展 sidecar `item_list` parser，覆盖 `text/image/voice/file/video` typed media。
+- [x] 增加 `attachments` 与 `images` webhook payload，并保持 text-only compatibility。
+- [x] 接入 Doge inbound parser 和现有 engine `images` contract。
+- [x] 为 image、media-only、invalid/oversized payload 增加 Rust regression tests。
+- [x] 接入 generated image artifact 的 outbound path，并通过 iLink CDN 上传后发送 `image_item`。
+- [x] 为 outbound upload、AES payload、image item 和错误路径增加 focused Rust regression tests。
+- [x] 修正 `media.aes_key`：对 32-character lowercase hex key 的 ASCII bytes 做 Base64，并增加 byte-exact regression test。
+- [x] 将 main-process artifact extraction 扩展为 typed image/video/file media request；voice fail readable。
+- [x] 为 `video_item`、`file_item`、typed artifact extraction 与 unsupported voice 增加 focused Rust regression tests。
+- [x] 移除 Codex-only Markdown artifact response contract，保留 Codex generated image 的 typed `images` reconciliation。
+- [x] 成功转换的 local download link 从微信 text reply 移除；缺失、越界、空文件或超限文件保留可读失败提示。
+- [x] 将 Markdown-linked audio 显式映射为 generic `file_item`，并覆盖 link/path/size/audio focused regression tests。
+- [x] 将 Codex-only Markdown artifact materializer 下沉到 WeChat outbound adapter，使所有 selected engine 共用同一转换与安全边界。
+- [x] 增加 non-Codex sync response 的 local document/video/audio link regression，并验证 structured media 去重。
+- [x] 对齐 Tencent 2.4.6 inbound `full_url` / `encrypt_query_param` 下载与 AES key 双编码解密。
+- [x] 将解密内容受限写入 WeChat managed inbox，并向 webhook 发送 typed local path。
+- [x] 在 WeChat handler 内验证 managed path、构造所有 selected engine 共用的附件 prompt，并复用 image-input contract。
+- [x] 增加 malformed key、unsafe URL、oversized、path traversal、text-only 与 desktop isolation regression。
+- [x] 修复微信 turn 遗漏 `accessMode`：继承并归一化 Doge `defaultAccessMode`，覆盖 writable/read-only/legacy fallback regression。
+- [ ] 完成真实设备微信图片可查看、视频可播放、文件可打开及 inbound media fallback smoke test；该项需要用户登录态与设备样本。

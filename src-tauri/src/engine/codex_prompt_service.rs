@@ -244,6 +244,7 @@ pub(crate) fn extract_turn_completed_text(event: &Value) -> Option<String> {
 pub(crate) struct CodexPromptSyncResult {
     pub(crate) text: String,
     pub(crate) session_id: String,
+    pub(crate) image_paths: Vec<String>,
 }
 
 pub(crate) async fn run_codex_prompt_sync(
@@ -262,6 +263,9 @@ pub(crate) async fn run_codex_prompt_sync(
     app: &AppHandle,
     state: &AppState,
 ) -> Result<CodexPromptSyncResult, String> {
+    let collect_wechat_generated_images = auto_session
+        .as_ref()
+        .is_some_and(|metadata| metadata.owner_feature == "wechat-channel");
     let provider_profile_id =
         codex_core::normalize_provider_profile_id(provider_profile_id.as_deref());
     crate::codex::ensure_codex_session_for_provider(workspace_id, &provider_profile_id, state, app)
@@ -450,8 +454,12 @@ pub(crate) async fn run_codex_prompt_sync(
     }
 
     let mut response_text = String::new();
+    let mut runtime_turn_id = extract_codex_turn_id(&turn_result);
     let collect_result = timeout(Duration::from_secs(600), async {
         while let Some(event) = rx.recv().await {
+            if runtime_turn_id.is_none() {
+                runtime_turn_id = extract_codex_turn_id(&event);
+            }
             let method = event.get("method").and_then(|m| m.as_str()).unwrap_or("");
             if let Some(delta) = extract_codex_text_delta(&event) {
                 response_text.push_str(&delta);
@@ -502,21 +510,124 @@ pub(crate) async fn run_codex_prompt_sync(
     }
 
     let trimmed = response_text.trim().to_string();
-    if trimmed.is_empty() {
+    let image_paths = if collect_wechat_generated_images {
+        let Some(runtime_turn_id) = runtime_turn_id.as_deref() else {
+            if trimmed.is_empty() {
+                return Err("Codex returned empty response".to_string());
+            }
+            return Ok(CodexPromptSyncResult {
+                text: trimmed,
+                session_id: helper_thread_id,
+                image_paths: Vec::new(),
+            });
+        };
+        let app_data_dir = state
+            .storage_path
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new("."));
+        match crate::codex::resolve_codex_native_history_path(
+            state,
+            workspace_id,
+            &helper_thread_id,
+            &provider_profile_id,
+        )
+        .await
+        .and_then(|history_path| {
+            crate::shared_generated_image_artifact::materialize_codex_generated_images_from_history(
+                app_data_dir,
+                &history_path,
+                runtime_turn_id,
+            )
+        }) {
+            Ok(artifacts) => artifacts
+                .into_iter()
+                .filter(|artifact| artifact.media_type.starts_with("image/"))
+                .map(|artifact| artifact.locator)
+                .collect(),
+            Err(error) => {
+                log::debug!(
+                    "[codex-sync] generated image reconciliation skipped workspace_id={} thread_id={} turn_id={} error={}",
+                    workspace_id,
+                    helper_thread_id,
+                    runtime_turn_id,
+                    error
+                );
+                Vec::new()
+            }
+        }
+    } else {
+        Vec::new()
+    };
+    if trimmed.is_empty() && image_paths.is_empty() {
         return Err("Codex returned empty response".to_string());
     }
     Ok(CodexPromptSyncResult {
         text: trimmed,
         session_id: helper_thread_id,
+        image_paths,
     })
+}
+
+fn extract_codex_turn_id(value: &Value) -> Option<String> {
+    fn walk(value: &Value, depth: usize) -> Option<String> {
+        if depth > 5 {
+            return None;
+        }
+        let object = value.as_object()?;
+        for key in ["turnId", "turn_id"] {
+            if let Some(value) = object
+                .get(key)
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+            {
+                return Some(value.to_string());
+            }
+        }
+        if let Some(turn) = object.get("turn").and_then(Value::as_object) {
+            if let Some(value) = turn
+                .get("id")
+                .and_then(Value::as_str)
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+            {
+                return Some(value.to_string());
+            }
+        }
+        for key in ["result", "params", "turn", "data", "payload"] {
+            if let Some(child) = object.get(key) {
+                if let Some(value) = walk(child, depth + 1) {
+                    return Some(value);
+                }
+            }
+        }
+        None
+    }
+
+    walk(value, 0)
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        extract_agent_message_snapshot_text, extract_codex_text_delta, extract_turn_completed_text,
+        extract_agent_message_snapshot_text, extract_codex_text_delta, extract_codex_turn_id,
+        extract_turn_completed_text,
     };
     use serde_json::json;
+
+    #[test]
+    fn extracts_turn_id_from_completed_event_shapes() {
+        let event = json!({
+            "method": "turn/completed",
+            "params": {
+                "turn": { "id": "turn-generated-image" }
+            }
+        });
+        assert_eq!(
+            extract_codex_turn_id(&event).as_deref(),
+            Some("turn-generated-image")
+        );
+    }
 
     #[test]
     fn extracts_codex_agent_message_delta_aliases() {
