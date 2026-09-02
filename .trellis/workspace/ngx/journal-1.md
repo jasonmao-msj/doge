@@ -618,3 +618,36 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: 修复 CI 品牌门禁与微信桥接构建冲突
+
+**Date**: 2026-09-02
+**Task**: 修复 CI 品牌门禁与微信桥接构建冲突
+**Branch**: `codex/fix-ci-wechat-contract`
+
+### Summary
+
+修复 locale brand contract 误扫 settings.wechat 文案，并将 WeChat bridge Cargo 内部 binary 改为 wechat_bridge，保留发布 sidecar 文件名 wechat-bridge，验证 focused tests、runtime contracts、typecheck 与 ESLint。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9fe2f71fe` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
