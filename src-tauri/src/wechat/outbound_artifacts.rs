@@ -26,13 +26,19 @@ fn strip_markdown_target_wrapper(target: &str) -> &str {
         .trim()
 }
 
-fn windows_uri_path(path: &str) -> &str {
+#[cfg(windows)]
+fn platform_local_path(path: &str) -> &str {
     let bytes = path.as_bytes();
-    if bytes.len() >= 3 && bytes[0] == b'/' && bytes[2] == b':' {
+    if bytes.len() >= 3 && bytes[0] == b'/' && bytes[1].is_ascii_alphabetic() && bytes[2] == b':' {
         &path[1..]
     } else {
         path
     }
+}
+
+#[cfg(not(windows))]
+fn platform_local_path(path: &str) -> &str {
+    path
 }
 
 fn markdown_target_path(target: &str, workspace_root: &Path) -> MarkdownTarget {
@@ -51,14 +57,14 @@ fn markdown_target_path(target: &str, workspace_root: &Path) -> MarkdownTarget {
     }
 
     let local = if lowercase.starts_with("file://") {
-        windows_uri_path(&target[7..])
+        platform_local_path(&target[7..])
     } else if lowercase.starts_with("sandbox:") {
-        windows_uri_path(&target[8..])
+        platform_local_path(&target[8..])
     } else {
         if target.contains("://") {
             return MarkdownTarget::Ignore;
         }
-        target
+        platform_local_path(target)
     };
     let path = PathBuf::from(local);
     if path.is_absolute() {
@@ -113,6 +119,7 @@ fn artifact_type(path: &Path) -> Option<(&'static str, &'static str)> {
         "tar" => ("file", "application/x-tar"),
         "gz" => ("file", "application/gzip"),
         "csv" => ("file", "text/csv"),
+        "md" => ("file", "text/markdown"),
         "txt" => ("file", "text/plain"),
         "json" => ("file", "application/json"),
         _ => return None,
@@ -189,6 +196,16 @@ fn attachment_failure(label: &str, target: &str, reason: &str) -> String {
     format!("[附件未发送：{display_name}（{reason}）]")
 }
 
+fn remove_trailing_attachment_list_marker(rewritten: &mut String, remaining_line: &str) {
+    if !remaining_line.trim().is_empty() {
+        return;
+    }
+    let line_start = rewritten.rfind('\n').map_or(0, |index| index + 1);
+    if matches!(rewritten[line_start..].trim(), "-" | "*" | "+") {
+        rewritten.truncate(line_start);
+    }
+}
+
 pub(super) fn materialize_wechat_markdown_artifacts(
     response_text: &str,
     workspace_root: &Path,
@@ -240,6 +257,11 @@ pub(super) fn materialize_wechat_markdown_artifacts(
                 continue;
             }
         };
+
+        let remaining_line = response_text[link_match.end()..]
+            .split_once('\n')
+            .map_or(&response_text[link_match.end()..], |(line, _)| line);
+        remove_trailing_attachment_list_marker(&mut rewritten, remaining_line);
 
         if seen.insert(PathBuf::from(&media.path)) {
             artifacts.push(media);
@@ -313,6 +335,60 @@ mod tests {
         assert_eq!(artifacts.len(), 2);
         assert_eq!(artifacts[0].kind, "video");
         assert_eq!(artifacts[1].kind, "image");
+        fs::remove_dir_all(root).expect("remove artifact test root");
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn preserves_non_windows_absolute_paths_that_resemble_windows_uri_paths() {
+        assert_eq!(
+            platform_local_path("/D:/workspace/report.pptx"),
+            "/D:/workspace/report.pptx"
+        );
+    }
+
+    #[test]
+    fn preserves_nonempty_list_item_text_around_materialized_link() {
+        let (root, workspace, app_data) = artifact_test_roots("list-item-text");
+        fs::write(workspace.join("notes.md"), b"markdown bytes").expect("write markdown");
+
+        let (text, artifacts) = materialize_wechat_markdown_artifacts(
+            "- [下载 notes.md](notes.md)（已校验）\n-",
+            &workspace,
+            &app_data,
+        );
+
+        assert_eq!(text, "- （已校验）\n-");
+        assert_eq!(artifacts.len(), 1);
+        assert_eq!(artifacts[0].mime_type, "text/markdown");
+        fs::remove_dir_all(root).expect("remove artifact test root");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn materializes_slash_prefixed_windows_document_links() {
+        let (root, workspace, app_data) = artifact_test_roots("windows-drive");
+        let markdown_path = workspace.join("文案提取.md");
+        let presentation_path = workspace.join("空白模板.pptx");
+        fs::write(&markdown_path, b"markdown bytes").expect("write markdown");
+        fs::write(&presentation_path, b"pptx bytes").expect("write pptx");
+        let slash_prefixed = |path: &Path| format!("/{}", path.display()).replace('\\', "/");
+        let response = format!(
+            "已完成：\n\n- [文案提取 Markdown]({})\n- [空白 PPT 模板]({})",
+            slash_prefixed(&markdown_path),
+            slash_prefixed(&presentation_path),
+        );
+
+        let (text, artifacts) =
+            materialize_wechat_markdown_artifacts(&response, &workspace, &app_data);
+
+        assert_eq!(text, "已完成：");
+        assert_eq!(artifacts.len(), 2);
+        assert_eq!(artifacts[0].kind, "file");
+        assert_eq!(artifacts[0].mime_type, "text/markdown");
+        assert_eq!(artifacts[0].file_name.as_deref(), Some("文案提取.md"));
+        assert_eq!(artifacts[1].kind, "file");
+        assert_eq!(artifacts[1].file_name.as_deref(), Some("空白模板.pptx"));
         fs::remove_dir_all(root).expect("remove artifact test root");
     }
 

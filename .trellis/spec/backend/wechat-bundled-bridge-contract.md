@@ -191,7 +191,9 @@ pre-build authority，因为 Windows linker 对同一 source 的 PE bytes 不保
 | outbound media AES key | `getuploadurl.aeskey` 使用 32-character lowercase hex；item `media.aes_key` 为该 hex string ASCII bytes 的 Base64 |
 | outbound media path 缺失/过大/CDN 失败 | 返回 contextual error，不发送伪成功的 text-only response |
 | outbound voice/audio artifact | 返回 unsupported-media error；不得伪装成 file item |
-| 任意 engine reply 链接 workspace 内 `.pptx/.pdf/.zip` | canonicalize + size gate 后返回 `kind=file` artifact；微信发送真实 `file_item` 并移除 local link |
+| 任意 engine reply 链接 workspace 内 `.md/.pptx/.pdf/.zip` | canonicalize + size gate 后返回 `kind=file` artifact；`.md` 使用 `text/markdown`；微信发送真实 `file_item` 并移除 local link |
+| Windows engine reply 使用 `/D:/workspace/report.pptx` | 与 `D:/workspace/report.pptx` 同义 normalize 后再 canonicalize；不得拼接成错误的 workspace-relative path |
+| macOS/Linux engine reply 使用 native absolute path（包括 drive-like `/D:/...`） | 保持 Unix absolute path 语义，不得套用 Windows drive rewrite；仍须通过 canonical allowed-root gate |
 | 任意 engine reply 链接 workspace 内 `.mp4/.mov/.webm` | 返回 `kind=video` artifact；微信发送真实 `video_item` |
 | 任意 engine reply 链接 workspace 内 `.wav/.mp3/.m4a` | 保留 audio MIME，但显式 `kind=file`；微信发送 downloadable `file_item`，不得声称 voice |
 | 任意 engine reply 链接缺失/空/超限/越界/symlink escape 文件 | 不创建 artifact；link 原位替换为可读失败，不读取或上传越界文件 |
@@ -241,7 +243,7 @@ pre-build authority，因为 Windows linker 对同一 source 的 PE bytes 不保
 - Sidecar Rust tests：official headers 无 deployment credentials、send payload/context token、
   outbound upload request/AES typed media item、hex-string AES key encoding、QR status、redirect allowlist、session persistence；
   inbound tests MUST 覆盖 raw/hex AES key byte-exact fixture、PKCS#7、Tencent URL allowlist、filename sanitize、bounded body 与 managed write。
-- Main Rust tests：ephemeral secret lifecycle、login status mapping、verification code validation、exact health identity、legacy settings normalization、webhook auth/dedupe/session routing、target command parser、无效数字/pending 文本拦截、per-wxid target/pending persistence 与 legacy route fallback、typed media parsing/image size gate、outbound image/video/file artifact mapping 与 voice rejection；WeChat Markdown artifact tests MUST 覆盖 every engine response、relative/absolute path、`kind/mimeType/fileName`、audio-as-file、structured/link dedupe、remote/source link ignore、missing/outside/empty/oversized rejection，以及 structured media 越界和 workspace-unavailable fail-closed。
+- Main Rust tests：ephemeral secret lifecycle、login status mapping、verification code validation、exact health identity、legacy settings normalization、webhook auth/dedupe/session routing、target command parser、无效数字/pending 文本拦截、per-wxid target/pending persistence 与 legacy route fallback、typed media parsing/image size gate、outbound image/video/file artifact mapping 与 voice rejection；WeChat Markdown artifact tests MUST 覆盖 every engine response、relative/native absolute path、Windows-only slash-prefixed drive normalization、Unix drive-like absolute path preservation、`.md` MIME、`kind/mimeType/fileName`、audio-as-file、structured/link dedupe、remote/source link ignore、missing/outside/empty/oversized rejection，以及 structured media 越界和 workspace-unavailable fail-closed。platform-sensitive test fixture MUST 通过 `std::env::temp_dir()` 等 host-native API 构造 absolute path；不得在跨平台 test 中硬编码另一 OS 的 path syntax。
 - Inbound main-process tests MUST 覆盖 managed canonical path、path traversal/symlink escape、empty/oversized file、attachment prompt、downloaded image data URL，以及 text-only prompt byte-for-byte compatibility。
 - WeChat access regression MUST 覆盖 `full-access/current/read-only` passthrough、legacy `default` 与 malformed fallback，并断言 webhook dispatch 不再传 `None`；桌面 command signature 与 payload mapping 不变。
 - Routing regression MUST 覆盖 exact target 复用、provider/model target 变化新建、真实 sessionId 回写、user-visible Codex retention，以及 explicit provider profile 优先于 session/global fallback。
