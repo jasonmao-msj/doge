@@ -51,6 +51,8 @@ pub(super) enum PendingTargetSelection {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum TargetControlInput {
     Status,
+    Help,
+    NewSession,
     Workspace,
     Engine,
     Model,
@@ -93,7 +95,20 @@ pub(super) async fn handle_target_control_message(
     let input = parse_target_control_input(text, pending.is_some());
     let reply = match input {
         TargetControlInput::Other => return Ok(None),
-        TargetControlInput::Status => target_status(&state, current_target.as_ref()).await,
+        TargetControlInput::Status | TargetControlInput::Help => {
+            target_status(&state, current_target.as_ref()).await
+        }
+        TargetControlInput::NewSession => {
+            if current_target.is_none() {
+                "尚未选择会话目标，请先发送 /workspace。".to_string()
+            } else {
+                persist_ledger_change(&state, |ledger| {
+                    ledger.reset_session(wxid);
+                })
+                .await?;
+                "已开启新会话，当前工作区、引擎和模型保持不变。下一条普通消息将创建新的对话。\n需要查看当前目标可发送 /target，需要切换目标可发送 /workspace。".to_string()
+            }
+        }
         TargetControlInput::Workspace => {
             let choices = workspace_choices(&state).await;
             if choices.is_empty() {
@@ -165,6 +180,8 @@ fn parse_target_control_input(text: &str, has_pending: bool) -> TargetControlInp
     let normalized = text.trim().to_ascii_lowercase();
     match normalized.as_str() {
         "/target" | "/目标" => TargetControlInput::Status,
+        "/help" | "/帮助" => TargetControlInput::Help,
+        "/new" | "/new-session" | "/新会话" | "/重新开始" => TargetControlInput::NewSession,
         "/workspace" | "/工作区" => TargetControlInput::Workspace,
         "/engine" | "/引擎" => TargetControlInput::Engine,
         "/model" | "/模型" => TargetControlInput::Model,
@@ -245,7 +262,7 @@ async fn handle_number_choice(
             };
             persist_target(state, wxid, current.target.clone()).await?;
             Ok(format!(
-                "会话目标已切换：\n工作区：{}\n引擎：{}\n模型：{}\n下一条普通消息将使用此目标。",
+                "会话目标已切换：\n工作区：{}\n引擎：{}\n模型：{}\n下一条普通消息将使用此目标。\n需要重新开聊可发送 /new，需要查看目标可发送 /target。",
                 workspace.label, engine.label, current.label
             ))
         }
@@ -311,7 +328,7 @@ async fn begin_model_selection(
 }
 
 async fn target_status(state: &AppState, target: Option<&WechatExecutionTarget>) -> String {
-    let help = "可用指令：/workspace、/engine、/model、/cancel";
+    let help = "可用指令：/workspace、/engine、/model、/new、/target、/help、/cancel";
     let Some(target) = target else {
         return format!("尚未选择会话目标。\n请发送 /workspace 开始选择。\n{help}");
     };
@@ -784,7 +801,7 @@ fn format_choices<T>(heading: &str, choices: &[T], label: impl Fn(&T) -> &str) -
     for (index, choice) in choices.iter().enumerate() {
         output.push_str(&format!("\n{}. {}", index + 1, label(choice)));
     }
-    output.push_str("\n发送 /cancel 可取消。");
+    output.push_str("\n发送 /cancel 可取消，发送 /help 可查看命令。");
     output
 }
 
@@ -809,6 +826,18 @@ mod tests {
         assert_eq!(
             parse_target_control_input(" /workspace ", false),
             TargetControlInput::Workspace
+        );
+        assert_eq!(
+            parse_target_control_input("/帮助", false),
+            TargetControlInput::Help
+        );
+        assert_eq!(
+            parse_target_control_input(" /new-session ", true),
+            TargetControlInput::NewSession
+        );
+        assert_eq!(
+            parse_target_control_input("/重新开始", false),
+            TargetControlInput::NewSession
         );
         assert_eq!(
             parse_target_control_input("2", false),

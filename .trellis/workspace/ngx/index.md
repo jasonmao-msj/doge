@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 21
+- **Total Sessions**: 22
 - **Last Active**: 2026-09-04
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~687 | Active |
+| `journal-1.md` | ~721 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 22 | 2026-09-04 | 归档微信会话控制改动 | `8b42fefd3`, `f43115d93` | `codex/fix-wechat-cross-platform-file-transfer` |
 | 21 | 2026-09-04 | 修复微信跨平台文件传输 | `ad837e82d`, `a07aaf69e` | `codex/fix-wechat-cross-platform-file-transfer` |
 | 20 | 2026-09-02 | 修复 CI 品牌门禁与微信桥接构建冲突 | `9fe2f71fe` | `codex/fix-ci-wechat-contract` |
 | 19 | 2026-09-01 | 内置微信桥接并归档渠道变更 | `620d931f8` | `codex/add-wechat-bridge-channel` |

@@ -20,7 +20,7 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 - Change workflow artifacts: `openspec/changes/<change-id>/{proposal,design,tasks,verification}.md`
 - Archive: `openspec/changes/archive/*`
 - Implementation rules: `.trellis/spec/**`
-- Current workspace state: active changes = `31`, archive changes = `892`, main specs = `518`
+- Current workspace state: active changes = `31`, archive changes = `893`, main specs = `518`
 
 ## Entry Surfaces
 
@@ -65,7 +65,7 @@ The product in this repository is `doge`: a Tauri 2 desktop AI life-and-work ass
 ## Current Inventory
 
 - Active changes: `31`
-- Archive changes: `892`
+- Archive changes: `893`
 - Main specs: `518`
 - Completed task sets still active: `1`
 - Ready-for-implementation task sets: `0`
@@ -88,6 +88,12 @@ Active OpenSpec changes in the current working tree (31; see [`changes/README.md
 The previous v0.5.11 performance and recovery follow-up chain has been archived. Future performance work should open a new chain instead of reusing the archived change directories.
 
 ## Recent Archive / Sync Snapshot
+
+### 2026-09-04 WeChat Session Control UX Archive
+
+Archived `add-wechat-session-control-ux` after L3 focused verification. Synced the `wechat-bridge-channel` requirement covering per-`wxid` 1-day inactivity expiry, legacy route compatibility, `/new` session reset, and `/help` command discovery without deleting native session history or changing selected targets.
+
+Current counts: active=`31`, archive=`893`, specs=`518`.
 
 ### 2026-09-04 WeChat Cross-Platform Outbound File Link Archive
 

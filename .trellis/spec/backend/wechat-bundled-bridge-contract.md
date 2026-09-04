@@ -10,7 +10,7 @@ integration：React settings -> Tauri command -> in-memory runtime secrets/proce
 ## Signatures
 
 - `update_wechat_channel({ settings })`：UI action 只改变 `enabled` 与首次授权说明 acknowledgement；request schema 中的 legacy routing/bridge/webhook/device fields 仅为 serialized compatibility，backend MUST normalize 为内部 defaults，且不得推导或写回 global execution target。
-- `handle_target_control_message(app, wxid, text)`：在 agent dispatch 前消费 `/target`、`/workspace`、`/engine`、`/model`、`/cancel` 与 pending 状态下的数字回复；返回的控制回复不得写入 native conversation history。
+- `handle_target_control_message(app, wxid, text)`：在 agent dispatch 前消费 `/target`、`/help`、`/workspace`、`/engine`、`/model`、`/new`、`/cancel` 与 pending 状态下的数字回复；返回的控制回复不得写入 native conversation history。
 - `get_wechat_channel()`：返回 `WechatChannelView` 与可读 provider/listener status。
 - `wechat_get_login_qrcode()`：返回 Tencent iLink QR payload 与可选 expiry。
 - `GET /login/qrcode` sidecar response：`{ "value": <qr image content>, "expiresAt": <epoch-ms string> }`；Doge parser MUST 直接识别顶层 `value`，同时保留 legacy `qrcode/qrCode/url/dataUrl` compatibility。
@@ -94,10 +94,14 @@ validated attachment path 只在 `wechat_webhook` task 内追加到 current prom
 `engine_send_message_sync_inner` signature、普通 history/routing 或任何 non-WeChat caller。
 
 设置页 MUST NOT 显示 workspace / engine / model routing selector。每个联系人必须在微信内通过
-`/workspace` -> 数字、`/engine` -> 数字、`/model` -> 数字完成 target 选择；`/target` 查看当前
-target，`/cancel` 取消 pending selection。selected target 与 pending selection MUST 按 `wxid`
-独立持久化，控制消息 MUST 在 agent dispatch 前消费。新联系人没有完整 target 时，普通文本只能
-收到 `/workspace` 引导，不得创建 native session 或隐式使用 global channel settings。
+`/workspace` -> 数字、`/engine` -> 数字、`/model` -> 数字完成 target 选择；`/target` 或 `/help`
+查看当前 target 与命令，`/new` 清除当前 session route 但保留 target，`/cancel` 取消 pending
+selection。selected target、pending selection 与 route MUST 按 `wxid` 独立持久化，控制消息 MUST
+在 agent dispatch 前消费。route MUST 保存 `lastActivityAtMs`；同一 target 仅在 1 天 inactivity TTL
+内 resume，过期或 `/new` 后下一条普通消息 MUST 创建新的 native session，旧 session/history 不得
+被删除。缺少 `lastActivityAtMs` 的 legacy route MUST 按未过期处理，并在下一次成功 turn 补齐。
+新联系人没有完整 target 时，普通文本只能收到 `/workspace` 引导，不得创建 native session 或隐式
+使用 global channel settings。
 
 Product-ready 候选 MUST 与普通会话页使用相同的 `projectProductTargetCatalogV1` compatibility：
 `codex=openai-responses`、`claude=anthropic-messages`、`kimi=openai-chat-completions`，并使用
@@ -165,7 +169,9 @@ pre-build authority，因为 Windows linker 对同一 source 的 PE bytes 不保
 | pending selection 收到 `0`、越界数字或普通文本 | 保持 pending，返回数字范围或 `/cancel` 提示；不得下溢、panic 或进入 agent |
 | 联系人 A 切换 target | 联系人 B 的 selected target、pending state 与 session route 保持不变 |
 | 微信首条消息完成 | route 持久化真实 native sessionId，session catalog 可见，当前 workspace 自动刷新 |
-| 同一 wxid 在相同 target 再次发送 | 续接同一 native session，不创建 helper/临时 session |
+| 同一 wxid 在相同 target 且 route 未过期时再次发送 | 续接同一 native session，不创建 helper/临时 session |
+| 联系人发送 `/new` 或 route 达到 1 天 inactivity TTL | 保留 selected target，下一普通消息创建新 native session；不删除旧 history |
+| 联系人发送 `/help` / `/帮助` | 返回当前 target 与包含 `/new`、`/target`、`/workspace`、`/engine`、`/model`、`/cancel` 的提示 |
 | workspace / engine / model target 变化 | 后续消息创建新 native session，不续接旧 target |
 | 已选 model row 带 providerProfileId | 使用该 exact provider-scoped runtime，并记录 session provider binding；不得采用全局 current provider |
 | Product-ready 联系人发送 `/engine` 或 `/model` | 候选遵循会话页相同 protocol compatibility、managed provider binding 与 runtime model normalization |
@@ -246,7 +252,7 @@ pre-build authority，因为 Windows linker 对同一 source 的 PE bytes 不保
 - Main Rust tests：ephemeral secret lifecycle、login status mapping、verification code validation、exact health identity、legacy settings normalization、webhook auth/dedupe/session routing、target command parser、无效数字/pending 文本拦截、per-wxid target/pending persistence 与 legacy route fallback、typed media parsing/image size gate、outbound image/video/file artifact mapping 与 voice rejection；WeChat Markdown artifact tests MUST 覆盖 every engine response、relative/native absolute path、Windows-only slash-prefixed drive normalization、Unix drive-like absolute path preservation、`.md` MIME、`kind/mimeType/fileName`、audio-as-file、structured/link dedupe、remote/source link ignore、missing/outside/empty/oversized rejection，以及 structured media 越界和 workspace-unavailable fail-closed。platform-sensitive test fixture MUST 通过 `std::env::temp_dir()` 等 host-native API 构造 absolute path；不得在跨平台 test 中硬编码另一 OS 的 path syntax。
 - Inbound main-process tests MUST 覆盖 managed canonical path、path traversal/symlink escape、empty/oversized file、attachment prompt、downloaded image data URL，以及 text-only prompt byte-for-byte compatibility。
 - WeChat access regression MUST 覆盖 `full-access/current/read-only` passthrough、legacy `default` 与 malformed fallback，并断言 webhook dispatch 不再传 `None`；桌面 command signature 与 payload mapping 不变。
-- Routing regression MUST 覆盖 exact target 复用、provider/model target 变化新建、真实 sessionId 回写、user-visible Codex retention，以及 explicit provider profile 优先于 session/global fallback。
+- Routing regression MUST 覆盖 exact target 复用、1 天 inactivity expiry、`/new` manual reset、provider/model target 变化新建、真实 sessionId 回写、user-visible Codex retention，以及 explicit provider profile 优先于 session/global fallback。
 - QR parser regression MUST 使用 bundled sidecar 的 exact `{ value, expiresAt }` payload，并保留 nested/legacy response coverage。
 - Vitest：开启后自动取 QR 并经 `qrcode` 渲染、`needverification` 提交数字、设置页不出现 routing selector、session-updated refresh、UI 不暴露 bridge/provider fields、poll cleanup。
 - Packaging：`npm run prepare:wechat-bridge` 后 manifest/provider identity、license 与 target executable 均存在。
