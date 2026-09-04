@@ -651,3 +651,37 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 21: 修复微信跨平台文件传输
+
+**Date**: 2026-09-04
+**Task**: 修复微信跨平台文件传输
+**Branch**: `codex/fix-wechat-cross-platform-file-transfer`
+
+### Summary
+
+修复 Windows slash-prefixed drive 文件链接与 Markdown 附件发送，保持 macOS/Linux native path semantics；修正 macOS CI 的 Windows-only fixture，完成 OpenSpec 与 Trellis 归档。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ad837e82d` | (see git log) |
+| `a07aaf69e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
