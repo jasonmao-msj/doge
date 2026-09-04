@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use axum::body::Bytes;
 use axum::extract::{Query, State as AxumState};
@@ -30,6 +30,7 @@ mod target_commands;
 use target_commands::{handle_target_control_message, PendingTargetSelection};
 
 const MAX_MESSAGE_CHARS: usize = 1800;
+const WECHAT_SESSION_IDLE_TTL_MS: u64 = 24 * 60 * 60 * 1000;
 const MAX_WECHAT_IMAGE_BYTES: usize = 8 * 1024 * 1024;
 const MAX_WECHAT_INBOUND_MEDIA_BYTES: u64 = 100 * 1024 * 1024;
 const WECHAT_INBOUND_MEDIA_DIR: &str = "inbound";
@@ -147,17 +148,29 @@ pub(crate) struct WechatMessageLedger {
 }
 
 impl WechatMessageLedger {
-    fn session_for_target(&self, wxid: &str, target: &WechatExecutionTarget) -> Option<String> {
+    fn session_for_target_at(
+        &self,
+        wxid: &str,
+        target: &WechatExecutionTarget,
+        now_ms: u64,
+    ) -> Option<String> {
         self.routes
             .get(wxid.trim())
             .filter(|route| route.matches_target(target))
+            .filter(|route| !route.is_expired(now_ms))
             .map(|route| route.session_id.clone())
     }
 
-    fn bind_session(&mut self, wxid: &str, target: &WechatExecutionTarget, session_id: String) {
+    fn bind_session_at(
+        &mut self,
+        wxid: &str,
+        target: &WechatExecutionTarget,
+        session_id: String,
+        now_ms: u64,
+    ) {
         self.routes.insert(
             wxid.trim().to_string(),
-            PersistedWechatConversationRoute::from_target(target, session_id),
+            PersistedWechatConversationRoute::from_target(target, session_id, now_ms),
         );
     }
 
@@ -187,6 +200,22 @@ impl WechatMessageLedger {
         let wxid = wxid.trim().to_string();
         self.targets.insert(wxid.clone(), target);
         self.pending_selections.remove(&wxid);
+    }
+
+    fn reset_session(&mut self, wxid: &str) -> bool {
+        let wxid = wxid.trim();
+        if !self.targets.contains_key(wxid) {
+            if let Some(target) = self
+                .routes
+                .get(wxid)
+                .and_then(PersistedWechatConversationRoute::execution_target)
+            {
+                self.targets.insert(wxid.to_string(), target);
+            }
+        }
+        let route_removed = self.routes.remove(wxid).is_some();
+        let pending_removed = self.pending_selections.remove(wxid).is_some();
+        route_removed || pending_removed
     }
 
     pub(crate) fn is_duplicate(&mut self, msg_id: &str) -> bool {
@@ -244,10 +273,12 @@ struct PersistedWechatConversationRoute {
     model_catalog_entry_id: Option<String>,
     #[serde(default)]
     provider_profile_id: Option<String>,
+    #[serde(default)]
+    last_activity_at_ms: Option<u64>,
 }
 
 impl PersistedWechatConversationRoute {
-    fn from_target(target: &WechatExecutionTarget, session_id: String) -> Self {
+    fn from_target(target: &WechatExecutionTarget, session_id: String, now_ms: u64) -> Self {
         Self {
             session_id,
             workspace_id: target.workspace_id.clone(),
@@ -255,7 +286,14 @@ impl PersistedWechatConversationRoute {
             model: target.model.clone(),
             model_catalog_entry_id: target.model_catalog_entry_id.clone(),
             provider_profile_id: target.provider_profile_id.clone(),
+            last_activity_at_ms: Some(now_ms),
         }
+    }
+
+    fn is_expired(&self, now_ms: u64) -> bool {
+        self.last_activity_at_ms.is_some_and(|last_activity_at_ms| {
+            now_ms.saturating_sub(last_activity_at_ms) >= WECHAT_SESSION_IDLE_TTL_MS
+        })
     }
 
     fn matches_target(&self, target: &WechatExecutionTarget) -> bool {
@@ -275,6 +313,13 @@ impl PersistedWechatConversationRoute {
             provider_profile_id: self.provider_profile_id.clone(),
         })
     }
+}
+
+fn wechat_now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_millis() as u64
 }
 
 pub(crate) struct WechatRuntime {
@@ -1420,12 +1465,14 @@ async fn wechat_webhook(
                 return;
             }
         };
-        let existing_session_id = state
-            .wechat
-            .ledger
-            .lock()
-            .await
-            .session_for_target(&wxid_for_task, &target);
+        let now_ms = wechat_now_ms();
+        let existing_session_id =
+            state
+                .wechat
+                .ledger
+                .lock()
+                .await
+                .session_for_target_at(&wxid_for_task, &target, now_ms);
         let continue_session = existing_session_id.is_some();
         let access_mode_for_engine = {
             let settings = state.app_settings.lock().await;
@@ -1482,7 +1529,12 @@ async fn wechat_webhook(
                 {
                     let mut ledger = state.wechat.ledger.lock().await;
                     let ledger_before = ledger.clone();
-                    ledger.bind_session(&wxid_for_task, &target, session_id.clone());
+                    ledger.bind_session_at(
+                        &wxid_for_task,
+                        &target,
+                        session_id.clone(),
+                        wechat_now_ms(),
+                    );
                     if let Err(error) = persist_ledger(&state.settings_path, &ledger) {
                         *ledger = ledger_before;
                         log::error!("[wechat] route persist failed: {error}");
@@ -2111,15 +2163,76 @@ mod tests {
         assert!(ledger.is_duplicate("msg-1"));
 
         let target = execution_target();
-        ledger.bind_session("wxid-a", &target, "session-a".to_string());
+        ledger.bind_session_at("wxid-a", &target, "session-a".to_string(), 100);
         assert_eq!(
-            ledger.session_for_target("wxid-a", &target).as_deref(),
+            ledger
+                .session_for_target_at("wxid-a", &target, 100)
+                .as_deref(),
             Some("session-a"),
         );
 
         let mut changed_target = target.clone();
         changed_target.model = Some("gpt-5.6-terra".to_string());
-        assert_eq!(ledger.session_for_target("wxid-a", &changed_target), None);
+        assert_eq!(
+            ledger.session_for_target_at("wxid-a", &changed_target, 100),
+            None
+        );
+    }
+
+    #[test]
+    fn expires_idle_route_but_keeps_legacy_route_compatible() {
+        let target = execution_target();
+        let mut ledger = WechatMessageLedger::default();
+        ledger.bind_session_at("wxid-a", &target, "session-a".to_string(), 100);
+
+        assert_eq!(
+            ledger
+                .session_for_target_at("wxid-a", &target, 100 + WECHAT_SESSION_IDLE_TTL_MS - 1)
+                .as_deref(),
+            Some("session-a"),
+        );
+        assert_eq!(
+            ledger.session_for_target_at("wxid-a", &target, 100 + WECHAT_SESSION_IDLE_TTL_MS),
+            None
+        );
+
+        let legacy_route = serde_json::json!({
+            "sessionId": "legacy-session",
+            "workspaceId": "workspace-a",
+            "engine": "codex",
+            "model": "gpt-5.6-sol",
+            "modelCatalogEntryId": "codex:gpt-5.6-sol",
+            "providerProfileId": "provider-a"
+        });
+        let route = serde_json::from_value::<PersistedWechatConversationRoute>(legacy_route)
+            .expect("legacy route remains readable");
+        assert_eq!(route.last_activity_at_ms, None);
+        assert!(!route.is_expired(100 + WECHAT_SESSION_IDLE_TTL_MS * 2));
+    }
+
+    #[test]
+    fn manual_session_reset_keeps_selected_target_and_clears_pending_selection() {
+        let target = execution_target();
+        let pending = serde_json::from_value::<PendingTargetSelection>(serde_json::json!({
+            "kind": "workspace",
+            "choices": [{ "id": "workspace-a", "label": "workspace-a" }]
+        }))
+        .expect("pending selection");
+        let mut ledger = WechatMessageLedger::default();
+        ledger.select_target("wxid-a", target.clone());
+        ledger.bind_session_at("wxid-a", &target, "session-a".to_string(), 100);
+        ledger.set_pending_selection("wxid-a", pending);
+
+        assert!(ledger.reset_session("wxid-a"));
+        assert_eq!(ledger.selected_target("wxid-a"), Some(target.clone()));
+        assert_eq!(ledger.route_for("wxid-a"), None);
+        assert_eq!(ledger.pending_selection("wxid-a"), None);
+        assert!(!ledger.reset_session("wxid-a"));
+
+        let mut legacy_like_ledger = WechatMessageLedger::default();
+        legacy_like_ledger.bind_session_at("wxid-b", &target, "session-b".to_string(), 100);
+        assert!(legacy_like_ledger.reset_session("wxid-b"));
+        assert_eq!(legacy_like_ledger.selected_target("wxid-b"), Some(target));
     }
 
     #[test]
@@ -2130,12 +2243,14 @@ mod tests {
         let mut ledger = WechatMessageLedger::default();
         assert!(!ledger.is_duplicate("message-1"));
         let target = execution_target();
-        ledger.bind_session("wxid-a", &target, "session-a".to_string());
+        ledger.bind_session_at("wxid-a", &target, "session-a".to_string(), 100);
         persist_ledger(&settings_path, &ledger).expect("persist ledger");
 
         let mut restored = load_ledger(&settings_path).expect("load ledger");
         assert_eq!(
-            restored.session_for_target("wxid-a", &target).as_deref(),
+            restored
+                .session_for_target_at("wxid-a", &target, 100)
+                .as_deref(),
             Some("session-a"),
         );
         assert_eq!(
@@ -2187,7 +2302,7 @@ mod tests {
         selected_target.model_catalog_entry_id = Some("codex:gpt-5.6-terra".to_string());
 
         let mut ledger = WechatMessageLedger::default();
-        ledger.bind_session("wxid-a", &route_target, "session-a".to_string());
+        ledger.bind_session_at("wxid-a", &route_target, "session-a".to_string(), 100);
         assert_eq!(ledger.selected_target("wxid-a"), Some(route_target));
 
         ledger.select_target("wxid-a", selected_target.clone());
@@ -2213,7 +2328,7 @@ mod tests {
 
         let restored = load_ledger(&settings_path).expect("load ledger");
         assert_eq!(
-            restored.session_for_target("wxid-a", &execution_target()),
+            restored.session_for_target_at("wxid-a", &execution_target(), 100),
             None
         );
         std::fs::remove_dir_all(root).expect("remove test directory");
