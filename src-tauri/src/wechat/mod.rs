@@ -2354,10 +2354,11 @@ mod tests {
 
     #[test]
     fn refuses_structured_media_when_workspace_is_unavailable() {
+        let image_path = std::env::temp_dir().join("doge-unavailable-workspace-preview.png");
         let response = serde_json::json!({
             "engine": "gemini",
             "text": "已生成图片",
-            "images": ["C:\\private\\preview.png"]
+            "images": [image_path]
         });
 
         let (reply, media) = prepare_outbound_reply_without_workspace(&response);

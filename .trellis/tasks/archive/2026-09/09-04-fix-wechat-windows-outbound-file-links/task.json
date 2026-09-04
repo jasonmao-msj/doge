@@ -1,0 +1,53 @@
+{
+  "id": "fix-wechat-windows-outbound-file-links",
+  "name": "fix-wechat-windows-outbound-file-links",
+  "title": "修复微信 Windows 文件链接传输（OpenSpec: fix-wechat-windows-outbound-file-links）",
+  "description": "修复 slash-prefixed Windows drive Markdown 链接与 Markdown 文件未作为微信附件发送的问题",
+  "status": "completed",
+  "dev_type": "backend",
+  "scope": null,
+  "package": null,
+  "priority": "P1",
+  "creator": "ngx",
+  "assignee": "ngx",
+  "createdAt": "2026-09-04",
+  "completedAt": "2026-09-04",
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "brainstorm"
+    },
+    {
+      "phase": 2,
+      "action": "research"
+    },
+    {
+      "phase": 3,
+      "action": "implement"
+    },
+    {
+      "phase": 4,
+      "action": "check"
+    },
+    {
+      "phase": 5,
+      "action": "update-spec"
+    },
+    {
+      "phase": 6,
+      "action": "record-session"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [],
+  "notes": "",
+  "meta": {}
+}

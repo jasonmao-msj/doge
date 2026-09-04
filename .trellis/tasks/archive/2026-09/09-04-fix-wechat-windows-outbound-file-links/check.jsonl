@@ -1,0 +1,6 @@
+{"file": ".claude/commands/trellis/finish-work.md", "reason": "Finish work checklist"}
+{"file": ".claude/commands/trellis/check.md", "reason": "Code quality check spec"}
+{"file": ".trellis/spec/backend/wechat-bundled-bridge-contract.md", "reason": "contract verification"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "backend quality gate"}
+{"file": "openspec/changes/fix-wechat-windows-outbound-file-links/specs/wechat-bridge-channel/spec.md", "reason": "acceptance scenarios"}
+{"file": "src-tauri/src/wechat/outbound_artifacts.rs", "reason": "focused regression implementation"}

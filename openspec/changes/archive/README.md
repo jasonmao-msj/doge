@@ -2,13 +2,17 @@
 
 本页为 `mossx` 已归档 OpenSpec proposal 的完整可点击索引。目录名中的日期是 archive date，不代表 proposal 首次创建时间。
 
-- Indexed proposals: `891`
-- Updated At: `2026-09-02`
+- Indexed proposals: `892`
+- Updated At: `2026-09-04`
 - Source of truth: `openspec/changes/archive/<archive-date>-<change-id>/proposal.md`
 - Back to current changes: [`../README.md`](../README.md)
 - Back to workspace overview: [`../../project.md`](../../project.md)
 
 ## 2026-09
+
+### 2026-09-04
+
+- [`2026-09-04-fix-wechat-windows-outbound-file-links`](2026-09-04-fix-wechat-windows-outbound-file-links/proposal.md) — completed change；已同步 `wechat-bridge-channel`，修复 Windows slash-prefixed drive 文件链接、`.md` 文件发送与 macOS/Linux path semantics；L3 focused verification 通过，真实设备与 L4 cross-platform smoke 保留为 release/CI residual
 
 ### 2026-09-02
 

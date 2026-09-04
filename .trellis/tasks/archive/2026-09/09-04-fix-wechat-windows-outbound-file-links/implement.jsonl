@@ -1,0 +1,6 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and conventions"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development guide"}
+{"file": ".trellis/spec/backend/wechat-bundled-bridge-contract.md", "reason": "微信 outbound artifact executable contract"}
+{"file": ".trellis/spec/guides/risk-based-test-strategy.md", "reason": "L3 verification selection"}
+{"file": "openspec/changes/fix-wechat-windows-outbound-file-links/specs/wechat-bridge-channel/spec.md", "reason": "behavior source of truth"}
+{"file": "src-tauri/src/wechat/outbound_artifacts.rs", "reason": "target parser and file classifier"}
