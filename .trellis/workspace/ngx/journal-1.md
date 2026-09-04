@@ -685,3 +685,37 @@
 ### Next Steps
 
 - None - task complete
+
+
+## Session 22: 归档微信会话控制改动
+
+**Date**: 2026-09-04
+**Task**: 归档微信会话控制改动
+**Branch**: `codex/fix-wechat-cross-platform-file-transfer`
+
+### Summary
+
+提交并归档微信联系人会话生命周期与控制命令改动：增加 1 天 inactivity TTL、legacy route compatibility、/new reset 与 /help discovery，并完成主 spec semantic merge。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8b42fefd3` | (see git log) |
+| `f43115d93` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
